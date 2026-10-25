@@ -1,6 +1,6 @@
 # Backlog et sprints
 
-Sprints de **2 semaines**. Région de la V1 : **Kanto** (à confirmer). Ce fichier sert de backlog tant que Jira n'est pas connecté, puis il en restera le miroir. Les identifiants (`EXP-1`, `CMB-3`…) seront repris dans Jira.
+Sprints de **2 semaines**. Région de la V1 : **Kanto**. Ce fichier sert de backlog tant que Jira n'est pas connecté, puis il en restera le miroir. Les identifiants (`EXP-1`, `CMB-3`…) seront repris dans Jira.
 
 ## Périmètre de la V1 (MVP)
 

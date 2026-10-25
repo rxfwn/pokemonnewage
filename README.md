@@ -2,7 +2,7 @@
 
 Un jeu Pokémon fan-made en 3D réaliste, fait avec **Unreal Engine 5**.
 
-La première version recrée une région Pokémon existante (Kanto, à confirmer) en 3D : on explore, on combat, on capture, on remplit le Pokédex, on bat les champions d'arène et on fait monter ses Pokémon de niveau.
+La première version recrée une région Pokémon existante (Kanto) en 3D : on explore, on combat, on capture, on remplit le Pokédex, on bat les champions d'arène et on fait monter ses Pokémon de niveau.
 
 ## Prérequis
 
