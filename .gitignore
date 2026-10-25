@@ -1,0 +1,31 @@
+# Unreal Engine 5
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+Platforms/
+*.VC.db
+*.opensdf
+*.opendb
+*.sdf
+*.sln
+*.suo
+*.xcodeproj
+*.xcworkspace
+
+# Plugins compilés
+Plugins/**/Binaries/
+Plugins/**/Intermediate/
+
+# Visual Studio Code / Visual Studio
+.vs/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Divers
+.DS_Store
+Thumbs.db
+*.log
