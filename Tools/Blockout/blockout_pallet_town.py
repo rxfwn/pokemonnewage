@@ -104,10 +104,11 @@ def house(label, x, y, length_x, width_y, wall_height, door_side):
     """Maison à deux niveaux, toit à deux pans (faîtage nord-sud), porte côté chemin."""
     folder = f"Buildings/{label}"
     box(f"{label}_Walls", folder, x, y, 0, (length_x, width_y, wall_height), "Wall")
-    # Toit : un cube tourné de 45° autour de X dont seule la moitié haute dépasse
+    # Toit : un cube tourné de 45° autour de X dont seule la moitié haute dépasse.
+    # Même longueur que les murs (un peu moins), sinon la moitié basse dépasse aux pignons.
     side = (width_y + 1.2) / math.sqrt(2)
     spawn(CUBE, f"{label}_Roof", folder, (x, y, wall_height),
-          (length_x + 1.2, side, side), "Roof", unreal.Rotator(roll=45))
+          (length_x - 0.04, side, side), "Roof", unreal.Rotator(roll=45))
     door_y = y + door_side * (width_y / 2 + 0.1)
     box(f"{label}_Door", folder, x, door_y, 0, (1.2, 0.2, 2.2), "Door")
 
