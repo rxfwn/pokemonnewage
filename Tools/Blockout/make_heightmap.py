@@ -82,23 +82,23 @@ def main():
         rows16.append(struct.pack(f">{size}H", *values))
     write_png(os.path.join(HERE, "kanto_v1_heightmap.png"), size, size, rows16, 16, 0)
 
-    # Aperçu : nord en haut, est à droite (on tourne le repère du Landscape), un point sur deux.
+    # Aperçu : nord en haut, est à droite (on tourne le repère du Landscape), un point sur quatre.
     preview_rows = []
-    for column in reversed(range(0, size, 2)):
+    for column in reversed(range(0, size, 4)):
         x = column * step
         pixels = bytearray()
-        for row in range(0, size, 2):
+        for row in range(0, size, 4):
             h = heights[row][column]
             # Pente vers le nord (colonne) et vers l'est (ligne), en m par m.
-            north = (heights[row][min(column + 2, size - 1)] - heights[row][max(column - 2, 0)]) / (4 * step)
-            east = (heights[min(row + 2, size - 1)][column] - heights[max(row - 2, 0)][column]) / (4 * step)
+            north = (heights[row][min(column + 4, size - 1)] - heights[row][max(column - 4, 0)]) / (8 * step)
+            east = (heights[min(row + 4, size - 1)][column] - heights[max(row - 4, 0)][column]) / (8 * step)
             # Lumière du nord-ouest : éclaire les pentes tournées vers le nord et l'ouest.
             shade = 1.0 + 1.2 * (east - north) / 1.414
             shade = max(0.45, min(1.35, shade))
             pixels.extend(preview_color(h, x, row * step, shade))
         preview_rows.append(bytes(pixels))
-    half = (size + 1) // 2
-    write_png(os.path.join(HERE, "kanto_v1_preview.png"), half, half, preview_rows, 8, 2)
+    quarter = (size + 3) // 4
+    write_png(os.path.join(HERE, "kanto_v1_preview.png"), quarter, quarter, preview_rows, 8, 2)
 
     flat = [h for line in heights for h in line]
     print(f"Altitude min {min(flat):.1f} m, max {max(flat):.1f} m")

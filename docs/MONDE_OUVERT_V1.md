@@ -10,7 +10,7 @@ On travaille du grand vers le petit :
 ## Ce qui est réaliste dès maintenant
 
 - **Les tailles** : un personnage fait 1,80 m, une maison 9 × 11 m et 7 m de haut, une arène 26 × 30 m, les arbres 12 à 20 m. Les bâtiments ont leur vraie taille, ce qui laisse la place à des intérieurs sans chargement plus tard.
-- **La forme de Kanto** : le terrain suit la carte officielle de *Let's Go* (terre et mer extraites de l'image). Tout Kanto est déjà là, entouré de mer : environ 2,7 × 1,9 km sur un terrain de 3 km de côté. Seuls les lieux de la V1 (de Bourg Palette à Argenta) sont jouables pour l'instant, le reste est du relief à détailler plus tard.
+- **La forme de Kanto** : le terrain suit la carte officielle de *Let's Go* (terre et mer extraites de l'image). Tout Kanto est déjà là, entouré de mer : environ 5,5 × 3,9 km sur un terrain de 6 km de côté. Seuls les lieux de la V1 (de Bourg Palette à Argenta) sont jouables pour l'instant, le reste est du relief à détailler plus tard.
 - **Le relief** : fait comme un vrai terrain, avec des crêtes de montagne (bruit « en crêtes »), des collines irrégulières, des falaises par endroits et des plages ailleurs, et des côtes déformées pour ne pas être trop régulières. Le Mont Sélénite, la Route Victoire, le Tunnel Roche et les montagnes derrière Argenta montent jusqu'à environ 250 m. Les routes serpentent et les bords des villes sont arrondis, comme de vraies vallées. Elles sont bordées de talus trop raides pour être escaladés : pas de murs invisibles au milieu des champs.
 - **La lumière** : ciel physique, soleil d'après-midi, nuages volumétriques et brume légère.
 - **Le sol** : herbe sur le plat, roche sur les pentes raides, sable au bord de la mer.
@@ -19,20 +19,24 @@ Les couleurs restent des couleurs de blockout : les vrais modèles et textures v
 
 ## Le plan
 
-Vu de dessus, nord en haut. Environ 3 km de côté, la V1 est la bande verte à l'ouest.
+Vu de dessus, nord en haut. Environ 6 km de côté, la V1 est la bande verte à l'ouest.
 
 ![Aperçu du relief](../Tools/Blockout/kanto_v1_preview.png)
 
 | Lieu | Taille | Distance depuis Bourg Palette |
 |---|---|---|
-| Bourg Palette | 110 × 120 m | départ |
-| Route 1 | 230 m de long | |
-| Jadielle | 140 × 160 m | environ 300 m |
-| Route 22 (vers l'ouest) | 240 m de long, finit au Poste de la Ligue (fermé) | |
-| Route 2 (sud) puis Forêt de Jade (180 × 200 m) puis Route 2 (nord) | | |
-| Argenta | 120 × 160 m | environ 850 m |
+| Bourg Palette | 78 × 74 m, plan de Rouge Feu / Vert Feuille | départ |
+| Route 1 | environ 750 m de long | |
+| Jadielle | 185 × 175 m | environ 750 m |
+| Route 22 (vers l'ouest) | environ 750 m, finit au Poste de la Ligue (fermé) | |
+| Route 2 (sud) puis Forêt de Jade (415 × 370 m) puis Route 2 (nord) | | |
+| Argenta | 175 × 150 m | environ 1,7 km |
 
-Bourg Palette → Argenta : environ **6 minutes en marchant, 3 minutes en courant**. À ajuster après le test.
+Bourg Palette → Argenta : environ **12 à 15 minutes en marchant, 6 à 7 minutes en courant**. Les villes ont leur taille réelle ; ce sont les routes qui donnent la durée du trajet. Pour allonger ou raccourcir, on change `MAP_SCALE` dans le plan.
+
+### Bourg Palette
+
+Le plan suit celui de Rouge Feu / Vert Feuille : la maison du joueur (toit rouge) en haut à gauche, celle du rival (toit bleu) en haut à droite, le labo du Prof. Chen en bas à droite, un parterre de fleurs avec sa barrière à gauche, l'étang en bas à gauche, une barrière et un panneau en bas, le tout entouré d'un mur d'arbres avec la sortie de la Route 1 au nord.
 
 Le plan est écrit dans `Tools/Blockout/kanto_v1_layout.py` (lieux repérés en pixels sur la carte de *Let's Go*, massifs, hauteurs, bâtiments, chemins, hautes herbes). La forme terre / mer et la distance à la mer sont dans `Tools/Blockout/kanto_terres.bin`. Pour changer quelque chose, on modifie ce fichier, puis on relance le script.
 
@@ -61,7 +65,7 @@ Le plan est écrit dans `Tools/Blockout/kanto_v1_layout.py` (lieux repérés en 
 3. **Fichier de heightmap** : `D:\Dev\pokemonnewage\Tools\Blockout\kanto_v1_heightmap.png`.
 4. Régler :
    - **Emplacement** : 0, 0, 0 ;
-   - **Échelle** : **150, 150, 100**. C'est important : 150 fait 1,5 m entre deux points, donc un terrain de 3 km (2017 points de côté) ;
+   - **Échelle** : **150, 150, 100**. C'est important : 150 fait 1,5 m entre deux points, donc un terrain de 6 km (4033 points de côté) ;
    - laisser la taille des sections proposée par Unreal (elle se règle d'après le fichier).
 5. Cliquer sur **Importer**. Le relief apparaît (gris quadrillé pour l'instant, le script lui donne une couleur). L'import peut prendre une minute.
 6. Revenir en **mode Sélection** (Maj+1).
@@ -72,7 +76,7 @@ Le plan est écrit dans `Tools/Blockout/kanto_v1_layout.py` (lieux repérés en 
 
 1. **Outils > Exécuter un script Python…**
 2. Choisir `D:\Dev\pokemonnewage\Tools\Blockout\blockout_kanto_v1.py`.
-3. Patienter **2 à 3 minutes** : une barre de progression s'affiche. Le script pose environ 2 400 objets (dont un millier d'arbres), rangés dans le dossier **Kanto_Blockout** de l'Outliner, puis enregistre tout.
+3. Patienter **5 minutes environ** : une barre de progression s'affiche. Le script pose environ 6 000 objets (dont près de 3 000 arbres), rangés dans le dossier **Kanto_Blockout** de l'Outliner, puis enregistre tout.
 
 Le script efface et repose tout à chaque lancement : on peut le relancer après une modification du plan.
 
@@ -113,4 +117,6 @@ L'ancienne map `L_PalletTown` ne sert plus : on peut supprimer le dossier `Conte
 
 ## Refaire le relief
 
-Le relief vient de `Tools/Blockout/make_heightmap.py`, qui lit le même plan. Après une modification du plan, le relancer (`python Tools/Blockout/make_heightmap.py`, environ une minute), puis réimporter le PNG dans le Landscape (mode Paysage > Gérer > Importer) et relancer le script de blockout.
+Le relief vient de `Tools/Blockout/make_heightmap.py`, qui lit le même plan. Après une modification du plan, le relancer (`python Tools/Blockout/make_heightmap.py`, quelques minutes), puis réimporter le PNG dans le Landscape (mode Paysage > Gérer > Importer) et relancer le script de blockout.
+
+**Si la taille du terrain change** (par exemple de 2017 à 4033 points quand on a agrandi la carte), l'outil Importer refuse le fichier : supprimer le Landscape dans l'Outliner, puis refaire l'étape 3 (nouveau Landscape, même échelle 150, 150, 100) et l'étape 7 (charger tout le terrain).

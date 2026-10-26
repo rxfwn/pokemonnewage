@@ -6,8 +6,9 @@ Fichier de données partagé, en Python pur (sans numpy) :
 
 Le contour des terres (kanto_terres.bin) est décalqué de la carte officielle de Kanto
 de Let's Go Pikachu / Évoli. Les lieux sont repérés en pixels sur cette carte (1185 × 843),
-puis convertis en mètres : 1 pixel de la carte = 2,3 m, soit environ 850 m de Bourg Palette
-à Argenta et un Kanto de 2,7 × 1,9 km.
+puis convertis en mètres : 1 pixel de la carte = 4,6 m, soit environ 1,7 km de Bourg Palette
+à Argenta et un Kanto de 5,5 × 3,9 km. Les villes, elles, ont leur taille réelle en mètres :
+agrandir la carte allonge les routes, pas les villes.
 
 Repère du monde : x = nord, y = est, en mètres. Le coin (0, 0) est le coin du Landscape.
 Vraies tailles : un personnage fait 1,80 m.
@@ -18,17 +19,17 @@ import os
 import struct
 import zlib
 
-# Landscape : 2017 × 2017 points, un point tous les 1,5 m, environ 3 km de côté.
-HEIGHTMAP_SIZE = 2017
+# Landscape : 4033 × 4033 points, un point tous les 1,5 m, environ 6 km de côté.
+HEIGHTMAP_SIZE = 4033
 METERS_PER_PIXEL = 1.5
 WORLD_SIZE = (HEIGHTMAP_SIZE - 1) * METERS_PER_PIXEL
 
 SEA_LEVEL = 0.0
 
-# Carte de référence : 1185 × 843 pixels, 2,3 m par pixel.
-MAP_SCALE = 2.3
+# Carte de référence : 1185 × 843 pixels, 4,6 m par pixel.
+MAP_SCALE = 4.6
 MAP_WIDTH, MAP_HEIGHT = 1185, 843
-MAP_OFFSET_X, MAP_OFFSET_Y = 300.0, 100.0  # marge de mer au sud et à l'ouest
+MAP_OFFSET_X, MAP_OFFSET_Y = 1080.0, 300.0  # Kanto centré, la mer tout autour
 
 
 def from_map(u, v):
@@ -78,20 +79,25 @@ def land_at(x, y):
 
 # --- Lieux de la V1 (repérés en pixels sur la carte) ----------------------------------
 
-# Villes et forêt : ellipses (nom, centre u, centre v, demi-largeur u, demi-hauteur v).
+# Villes et forêt : (nom, centre u, centre v en pixels de la carte,
+# demi-largeur est-ouest, demi-profondeur nord-sud en mètres, forme).
+# Forme 2 = ellipse (la forêt) ; 4 = rectangle aux coins arrondis (les villes, bordées
+# d'arbres comme dans le jeu d'origine).
 AREAS = [
-    ("Bourg Palette", 283, 540, 30, 26),
-    ("Jadielle", 297, 380, 40, 38),
-    ("Forêt de Jade", 305, 258, 45, 40),
-    ("Argenta", 297, 172, 38, 32),
+    ("Bourg Palette", 283, 540, 39, 37, 4),
+    ("Jadielle", 297, 380, 92, 87, 4),
+    ("Forêt de Jade", 305, 258, 207, 184, 2),
+    ("Argenta", 297, 172, 87, 74, 4),
 ]
 
-# Routes : couloirs qui suivent une ligne brisée (nom, demi-largeur en pixels, points).
+# Routes : couloirs qui suivent une ligne brisée (nom, demi-largeur en mètres, points
+# en pixels de la carte). Elles partent du centre des villes pour bien s'y raccorder.
 ROUTES = [
-    ("Route 1", 11, [(286, 515), (280, 490), (295, 465), (285, 440), (292, 418)]),
-    ("Route 22", 9, [(257, 385), (220, 392), (180, 380), (140, 382)]),
-    ("Route 2 (sud)", 8, [(292, 342), (290, 300)]),
-    ("Route 2 (nord)", 7, [(298, 216), (297, 204)]),
+    ("Route 1", 30, [(283, 540), (286, 515), (280, 490), (295, 465), (285, 440), (292, 418),
+                     (297, 380)]),
+    ("Route 22", 25, [(297, 382), (257, 385), (220, 392), (180, 380), (140, 382)]),
+    ("Route 2 (sud)", 22, [(297, 380), (292, 342), (290, 300)]),
+    ("Route 2 (nord)", 20, [(298, 216), (297, 204), (297, 172)]),
 ]
 
 # Sol des zones : monte doucement du sud (Bourg Palette, 3 m) au nord (Argenta, 15 m).
@@ -116,7 +122,7 @@ MOUNTAIN_HEIGHT = 300.0
 HILL_HEIGHT = 55.0
 
 def area_center(name):
-    for area_name, u, v, _, _ in AREAS:
+    for area_name, u, v, _, _, _ in AREAS:
         if area_name == name:
             return from_map(u, v)
     raise KeyError(name)
@@ -127,26 +133,58 @@ def _offset(town, dx, dy):
     return cx + dx, cy + dy
 
 
-# Bâtiments : (zone, nom, centre x, centre y, profondeur x, largeur y, hauteur, couleur).
-# Positions relatives au centre de la ville, en mètres. Toutes les portes sont au sud,
-# comme dans le jeu d'origine. Tailles réelles, assez grandes pour un intérieur plus tard.
+# Bâtiments : (zone, nom, centre x, centre y, profondeur x, largeur y, hauteur, mur, toit, style).
+# Positions relatives au centre de la ville, en mètres (x = nord, y = est). Toutes les portes
+# sont au sud, comme dans le jeu d'origine. Style « pignon » = toit à deux pans, « plat » sinon.
+# Bourg Palette suit le plan de Rouge Feu / Vert Feuille : deux maisons en haut, le labo
+# en bas à droite, les fleurs à gauche, l'étang en bas à gauche.
 _BUILDINGS = [
-    ("Bourg Palette", "Maison du joueur", 30, -25, 9, 11, 7, "Wall"),
-    ("Bourg Palette", "Maison du rival", 30, 25, 9, 11, 7, "Wall"),
-    ("Bourg Palette", "Labo du Prof. Chen", -22, 34, 14, 22, 8, "Lab"),
-    ("Jadielle", "Centre Pokémon", -35, -38, 18, 22, 8, "Center"),
-    ("Jadielle", "Boutique", 20, -50, 14, 16, 7, "Mart"),
-    ("Jadielle", "École des dresseurs", 5, 18, 14, 18, 7, "Wall"),
-    ("Jadielle", "Arène (fermée)", 42, 55, 26, 30, 11, "Gym"),
-    ("Jadielle", "Maison", -40, 55, 10, 11, 7, "Wall"),
-    ("Argenta", "Arène de Pierre", -5, -45, 26, 28, 11, "Gym"),
-    ("Argenta", "Musée des sciences", 42, -35, 20, 36, 12, "Lab"),
-    ("Argenta", "Centre Pokémon", -30, 22, 18, 22, 8, "Center"),
-    ("Argenta", "Boutique", 18, 45, 14, 16, 7, "Mart"),
-    ("Argenta", "Maison", -35, 65, 10, 11, 7, "Wall"),
+    ("Bourg Palette", "Maison du joueur", 17, -19, 9, 11, 6.5, "House", "RoofRed", "pignon"),
+    ("Bourg Palette", "Maison du rival", 17, 18, 9, 11, 6.5, "House", "RoofBlue", "pignon"),
+    ("Bourg Palette", "Labo du Prof. Chen", -4, 17, 11, 19, 7.5, "Lab", "RoofGrey", "plat"),
+    ("Jadielle", "Centre Pokémon", -35, -38, 18, 22, 8, "House", "Center", "plat"),
+    ("Jadielle", "Boutique", 20, -50, 14, 16, 7, "House", "Mart", "plat"),
+    ("Jadielle", "École des dresseurs", 5, 18, 14, 18, 7, "House", "RoofGreen", "pignon"),
+    ("Jadielle", "Arène (fermée)", 42, 55, 26, 30, 11, "Gym", "RoofGrey", "plat"),
+    ("Jadielle", "Maison", -40, 55, 10, 11, 7, "House", "RoofRed", "pignon"),
+    ("Argenta", "Arène de Pierre", -5, -45, 26, 28, 11, "Gym", "RoofGrey", "plat"),
+    ("Argenta", "Musée des sciences", 42, -35, 20, 36, 12, "Lab", "RoofBrown", "plat"),
+    ("Argenta", "Centre Pokémon", -30, 22, 18, 22, 8, "House", "Center", "plat"),
+    ("Argenta", "Boutique", 18, 45, 14, 16, 7, "House", "Mart", "plat"),
+    ("Argenta", "Maison", -35, 65, 10, 11, 7, "House", "RoofBrown", "pignon"),
 ]
-BUILDINGS = [(zone, name, *_offset(zone, dx, dy), depth, width, height, color)
-             for zone, name, dx, dy, depth, width, height, color in _BUILDINGS]
+BUILDINGS = [(zone, name, *_offset(zone, dx, dy), *rest) for zone, name, dx, dy, *rest in _BUILDINGS]
+
+# Décor des villes : (zone, type, centre x, centre y, profondeur x, largeur y).
+# Types : Water (étang), Flowers (parterre), Fence (barrière blanche), Sign (panneau),
+# Mailbox (boîte aux lettres), Sand (sable). Relatif au centre de la ville, en mètres.
+_DECOR = [
+    # Boîtes aux lettres à côté des portes.
+    ("Bourg Palette", "Mailbox", 11, -24, 0.5, 0.5),
+    ("Bourg Palette", "Mailbox", 11, 13, 0.5, 0.5),
+    # Parterre de fleurs à gauche, avec sa barrière au nord et son panneau.
+    ("Bourg Palette", "Flowers", -4, -18, 5, 12),
+    ("Bourg Palette", "Fence", -1, -18, 0.15, 13),
+    ("Bourg Palette", "Sign", -1, -10, 0.2, 1.2),
+    # Fleurs devant les maisons.
+    ("Bourg Palette", "Flowers", 9, -14, 2, 4),
+    ("Bourg Palette", "Flowers", 9, 23, 2, 4),
+    # Étang en bas à gauche, qui file vers la mer.
+    ("Bourg Palette", "Water", -25, -22, 24, 10),
+    # Barrière et panneau en bas, puis le chemin de sable et les fleurs en bas à droite.
+    ("Bourg Palette", "Fence", -17, 2, 0.15, 16),
+    ("Bourg Palette", "Sign", -17, 11, 0.2, 1.2),
+    ("Bourg Palette", "Sand", -25, 5, 5, 20),
+    ("Bourg Palette", "Flowers", -28, 19, 3, 8),
+]
+DECOR = [(zone, kind, *_offset(zone, dx, dy), depth, width) for zone, kind, dx, dy, depth, width in _DECOR]
+
+# Murs d'arbres serrés autour des villes : (zone, demi-profondeur x, demi-largeur y,
+# ouvertures). Une ouverture = (côté, début, fin) en mètres le long du côté :
+# côtés « N » et « S » mesurés vers l'est (y), « O » et « E » vers le nord (x).
+TREE_WALLS = [
+    ("Bourg Palette", 34, 36, [("N", -2, 16), ("S", -28, -16)]),
+]
 
 # Postes de passage (on les traverse) : (nom, x, y, axe du passage).
 GATES = [
@@ -157,14 +195,14 @@ GATES = [
 
 # Chemins de terre, en pixels de la carte.
 _PATHS = [
-    ("Chemin Bourg Palette", [(283, 548), (286, 515)]),
+    ("Chemin Bourg Palette", [(283, 534), (286, 515)]),
     ("Chemin Route 1", [(286, 515), (280, 490), (295, 465), (285, 440), (292, 418)]),
     ("Chemin Jadielle", [(292, 418), (292, 342)]),
     ("Chemin Jadielle ouest", [(292, 385), (257, 385)]),
     ("Chemin Route 22", [(257, 385), (220, 392), (180, 380), (144, 382)]),
     ("Chemin Route 2", [(292, 342), (290, 300)]),
     ("Chemin Route 2 nord", [(298, 216), (297, 204)]),
-    ("Chemin Argenta", [(297, 204), (297, 145)]),
+    ("Chemin Argenta", [(297, 204), (297, 160)]),
 ]
 PATHS = [(name, [from_map(u, v) for u, v in points]) for name, points in _PATHS]
 
@@ -175,7 +213,7 @@ def _forest_path():
     points = []
     for step in range(21):
         t = step / 20
-        wave = 55 * math.sin(t * math.pi * 2) * math.sin(t * math.pi)
+        wave = 110 * math.sin(t * math.pi * 2) * math.sin(t * math.pi)
         points.append((x0 + (x1 - x0) * t, y0 + (y1 - y0) * t + wave))
     return points
 
@@ -184,32 +222,33 @@ FOREST_PATH = _forest_path()
 
 # Hautes herbes : (zone, centre u, centre v, profondeur x en m, largeur y en m).
 _TALL_GRASS = [
-    ("Route 1", 281, 497, 25, 22),
-    ("Route 1", 296, 470, 30, 18),
-    ("Route 1", 283, 446, 22, 25),
-    ("Route 22", 228, 389, 22, 30),
-    ("Route 22", 178, 383, 25, 25),
-    ("Route 2 (sud)", 293, 322, 22, 15),
-    ("Forêt de Jade", 283, 272, 30, 30),
-    ("Forêt de Jade", 327, 245, 30, 30),
-    ("Forêt de Jade", 300, 232, 22, 30),
+    ("Route 1", 281, 497, 37, 33),
+    ("Route 1", 296, 470, 45, 27),
+    ("Route 1", 283, 446, 33, 37),
+    ("Route 22", 228, 389, 33, 45),
+    ("Route 22", 178, 383, 37, 37),
+    ("Route 2 (sud)", 293, 322, 33, 22),
+    ("Forêt de Jade", 283, 272, 45, 45),
+    ("Forêt de Jade", 327, 245, 45, 45),
+    ("Forêt de Jade", 300, 232, 33, 45),
 ]
 TALL_GRASS = [(zone, *from_map(u, v), depth, width) for zone, u, v, depth, width in _TALL_GRASS]
 
-# Panneaux à l'entrée de chaque lieu, en pixels.
+# Panneaux à l'entrée de chaque lieu : (nom, ville de référence, décalage x, y en mètres)
+# ou (nom, None, u, v en pixels de la carte).
 _SIGNS = [
-    ("Bourg Palette", 290, 528),
-    ("Route 1", 292, 508),
-    ("Jadielle", 299, 414),
-    ("Route 22", 252, 390),
-    ("Route 2", 297, 338),
-    ("Forêt de Jade", 296, 296),
-    ("Argenta", 303, 200),
+    ("Bourg Palette", "Bourg Palette", 30, 8),
+    ("Route 1", "Bourg Palette", 55, 8),
+    ("Jadielle", "Jadielle", -80, 8),
+    ("Route 22", "Jadielle", 4, -105),
+    ("Route 2", "Jadielle", 100, 8),
+    ("Forêt de Jade", None, 291, 304),
+    ("Argenta", "Argenta", -68, 8),
 ]
-SIGNS = [(name, *from_map(u, v)) for name, u, v in _SIGNS]
+SIGNS = [(name, *(_offset(town, a, b) if town else from_map(a, b))) for name, town, a, b in _SIGNS]
 
 # Point de départ du joueur : entre les deux maisons, face au nord (la sortie vers la Route 1).
-PLAYER_START = _offset("Bourg Palette", 15, 0)
+PLAYER_START = _offset("Bourg Palette", 6, 0)
 
 
 # --- Relief ---------------------------------------------------------------------------
@@ -262,16 +301,18 @@ def zone_distance(x, y):
     """(distance en mètres au lieu de la V1 le plus proche, nom). Négative à l'intérieur.
     Les bords ondulent pour suivre le terrain comme de vraies vallées."""
     u, v = to_map(x, y)
-    wobble = (fractal_noise(x, y, 45, 3, 21) - 0.5) * 2  # entre -1 et 1
+    wobble = (fractal_noise(x, y, 60, 3, 21) - 0.5) * 2  # entre -1 et 1
     best, best_name = 1e9, None
-    for name, cu, cv, ru, rv in AREAS:
-        norm = math.hypot((u - cu) / ru, (v - cv) / rv)
-        distance = (norm - 1 - wobble * 0.15) * min(ru, rv) * MAP_SCALE
+    for name, cu, cv, half_east, half_north, shape in AREAS:
+        cx, cy = from_map(cu, cv)
+        a, b = abs(y - cy) / half_east, abs(x - cx) / half_north
+        norm = (a ** shape + b ** shape) ** (1.0 / shape)
+        distance = (norm - 1 - wobble * 0.12) * min(half_east, half_north)
         if distance < best:
             best, best_name = distance, name
     for name, half_width, points in ROUTES:
         segment = min(_segment_distance(u, v, *a, *b) for a, b in zip(points, points[1:]))
-        distance = (segment - half_width * (1 + wobble * 0.3)) * MAP_SCALE
+        distance = segment * MAP_SCALE - half_width * (1 + wobble * 0.3)
         if distance < best:
             best, best_name = distance, name
     return best, best_name
@@ -298,8 +339,8 @@ def ridged_noise(x, y, scale, octaves=5, seed=0):
 
 def _warp(x, y):
     """Déforme les coordonnées pour que côtes et montagnes ne soient pas trop régulières."""
-    wx = (fractal_noise(x, y, 220, 3, 31) - 0.5) * 90
-    wy = (fractal_noise(x, y, 220, 3, 32) - 0.5) * 90
+    wx = (fractal_noise(x, y, 400, 3, 31) - 0.5) * 160
+    wy = (fractal_noise(x, y, 400, 3, 32) - 0.5) * 160
     return x + wx, y + wy
 
 
@@ -312,15 +353,15 @@ def natural_height(x, y, inland):
         norm = math.hypot((u - cu) / ru, (v - cv) / rv)
         # Union douce (pas de max) : pas d'arête droite là où deux massifs se rejoignent.
         mountain = 1 - (1 - mountain) * (1 - weight * smoothstep(1.0, 0.15, norm))
-    extra = smoothstep(0.55, 0.75, fractal_noise(x, y, 380, 2, 41)) * 0.7
+    extra = smoothstep(0.55, 0.75, fractal_noise(x, y, 700, 2, 41)) * 0.7
     mountain = 1 - (1 - mountain) * (1 - extra)
-    mountain *= smoothstep(10, 120, inland)
+    mountain *= smoothstep(20, 240, inland)
 
-    ridges = ridged_noise(x, y, 300, 5, 51)
+    ridges = ridged_noise(x, y, 500, 6, 51)
     peaks = MOUNTAIN_HEIGHT * mountain * (0.25 + 0.75 * ridges) * (0.6 + 0.4 * mountain)
-    hills = HILL_HEIGHT * fractal_noise(x, y, 180, 6, 7) ** 1.2 * smoothstep(0, 80, inland)
+    hills = HILL_HEIGHT * fractal_noise(x, y, 300, 6, 7) ** 1.2 * smoothstep(0, 150, inland)
     hills += 6.0 * ridged_noise(x, y, 70, 3, 9)  # petites bosses et ravines
-    plain = 1.5 + min(inland, 300) * 0.02
+    plain = 1.5 + min(inland, 600) * 0.012
     return plain + hills + peaks
 
 
@@ -338,7 +379,7 @@ def height_at(x, y):
     ground = floor + (fractal_noise(x, y, 60, 3, 1) - 0.5) * 0.8
 
     # Côtes : falaises par endroits, plages ailleurs.
-    cliff = smoothstep(0.45, 0.7, fractal_noise(x, y, 350, 3, 61))
+    cliff = smoothstep(0.45, 0.7, fractal_noise(x, y, 600, 3, 61))
     shore = smoothstep(0.5, 0.56 + 0.44 * (1 - cliff), wide)
     nature = natural_height(x, y, inland)
     nature = 0.8 + (nature - 0.8) * shore
@@ -352,7 +393,7 @@ def height_at(x, y):
 
     # Mer : fond qui descend au large ; la côte ondule grâce au bruit.
     sea = SEA_LEVEL - 2.0 - 25.0 * (1 - wide)
-    edge = wide + (fractal_noise(x, y, 110, 4, 71) - 0.5) * 0.9
+    edge = wide + (fractal_noise(x, y, 200, 4, 71) - 0.5) * 0.9
     coast = smoothstep(0.42, 0.58, edge)
     coast = max(coast, smoothstep(30, 10, distance))  # les lieux de la V1 restent sur la terre
     height = sea + (land - sea) * coast

@@ -31,8 +31,13 @@ MATERIAL_DIR = "/Game/World/Kanto/Blockout"
 # Palette de docs/DIRECTION_ARTISTIQUE.md
 COLORS = {
     "Dirt": "#A97B52",
-    "Wall": "#C98E4F",
+    "House": "#E9DFC9",
     "Roof": "#B5523A",
+    "RoofRed": "#B5463A",
+    "RoofBlue": "#3F6EA8",
+    "RoofGreen": "#4F7F4A",
+    "RoofGrey": "#7C8088",
+    "RoofBrown": "#7A4E33",
     "Lab": "#D9DDE3",
     "Center": "#D9534F",
     "Mart": "#3E7CB1",
@@ -43,6 +48,11 @@ COLORS = {
     "Trunk": "#6B4A2F",
     "Leaves": "#2F5E24",
     "Water": "#2F6E9E",
+    "Flowers": "#E58FB0",
+    "Fence": "#F2F0EA",
+    "Wood": "#8A6340",
+    "Sand": "#D8C79A",
+    "Stone": "#9C9890",
 }
 
 actors = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
@@ -158,23 +168,90 @@ def build_paths():
 
 
 def build_buildings():
-    for zone, name, x, y, depth, width, height, color in layout.BUILDINGS:
+    for zone, name, x, y, depth, width, height, wall, roof_color, style in layout.BUILDINGS:
         folder = f"Bâtiments/{zone}"
-        box_on_ground(f"{name}", folder, x, y, (depth, width, height), color)
+        box_on_ground(f"{name}", folder, x, y, (depth, width, height), wall)
         roof = GROUND.point(x, y)
         roof.z = GROUND.origin.z + (GROUND.lowest(x, y, depth, width) + height) * 100
-        if color == "Wall":
-            # Maison : toit à deux pans, un cube tourné de 45° dont seule la moitié haute dépasse.
-            side = (width + 1.2) / math.sqrt(2)
-            spawn(CUBE, f"{name}_Toit", folder, roof, (depth - 0.04, side, side), "Roof",
+        if style == "pignon":
+            # Toit à deux pans qui déborde : un cube tourné de 45° dont seule la moitié haute dépasse.
+            side = (width + 1.6) / math.sqrt(2)
+            spawn(CUBE, f"{name}_Toit", folder, roof, (depth + 1.0, side, side), roof_color,
                   unreal.Rotator(roll=45))
         else:
-            # Grand bâtiment : toit plat qui déborde un peu.
+            # Toit plat qui déborde un peu.
             roof.z += 25
-            spawn(CUBE, f"{name}_Toit", folder, roof, (depth + 1.0, width + 1.0, 0.5), "Roof")
-        # Porte au sud, comme dans le jeu d'origine.
-        door_x = x - depth / 2 - 0.1
-        box_on_ground(f"{name}_Porte", folder, door_x, y, (0.3, 1.6, 2.4), "Door")
+            spawn(CUBE, f"{name}_Toit", folder, roof, (depth + 1.0, width + 1.0, 0.5), roof_color)
+        # Porte au sud et fenêtres, comme dans le jeu d'origine.
+        front = x - depth / 2 - 0.1
+        box_on_ground(f"{name}_Porte", folder, front, y, (0.3, 1.6, 2.4), "Door")
+        for side in (-1, 1):
+            window = GROUND.point(front, y + side * width / 4)
+            window.z = GROUND.origin.z + (GROUND.lowest(x, y, depth, width) + 1.9) * 100
+            spawn(CUBE, f"{name}_Fenêtre{side:+d}", folder, window, (0.3, 2.0, 1.2), "Mart")
+
+
+def build_decor():
+    """Étangs, fleurs, barrières, panneaux, boîtes aux lettres et sable des villes."""
+    for index, (zone, kind, x, y, depth, width) in enumerate(layout.DECOR):
+        folder = f"Décor/{zone}"
+        label = f"{kind}_{zone}_{index}"
+        if kind == "Water":
+            # Eau à ras du sol, entourée d'un petit muret de pierre ; on ne peut pas y entrer.
+            box_on_ground(label, folder, x, y, (depth, width, 0.4), "Water", sink=0.35)
+            for side in (-1, 1):
+                box_on_ground(f"{label}_Bord{side:+d}x", folder, x + side * depth / 2, y,
+                              (0.5, width + 0.5, 0.9), "Stone", sink=0.4)
+                box_on_ground(f"{label}_Bord{side:+d}y", folder, x, y + side * width / 2,
+                              (depth + 0.5, 0.5, 0.9), "Stone", sink=0.4)
+        elif kind == "Flowers":
+            box_on_ground(label, folder, x, y, (depth, width, 0.5), "Flowers", sink=0.3,
+                          collision=False)
+        elif kind == "Fence":
+            box_on_ground(label, folder, x, y, (depth, width, 1.1), "Fence", sink=0.1)
+        elif kind == "Sign":
+            box_on_ground(f"{label}_Poteau", folder, x, y, (0.15, 0.15, 1.0), "Wood", sink=0.1)
+            board = GROUND.point(x, y, 1.2)
+            spawn(CUBE, label, folder, board, (depth, width, 0.7), "Wood")
+        elif kind == "Mailbox":
+            box_on_ground(label, folder, x, y, (depth, width, 1.2), "Fence", sink=0.1)
+        elif kind == "Sand":
+            box_on_ground(label, folder, x, y, (depth, width, 0.6), "Sand", sink=0.55,
+                          collision=False)
+
+
+WALL_TREES = []
+
+
+def build_tree_walls(rng, index):
+    """Rangées d'arbres serrées autour des villes, avec des ouvertures pour les sorties."""
+    for zone, half_x, half_y, openings in layout.TREE_WALLS:
+        cx, cy = layout.area_center(zone)
+        for row, offset in enumerate((0.0, 4.0)):
+            hx, hy = half_x + offset, half_y + offset
+            sides = {
+                "N": [(cx + hx, cy + t) for t in _steps(-hy, hy, 4.0, row)],
+                "S": [(cx - hx, cy + t) for t in _steps(-hy, hy, 4.0, row)],
+                "O": [(cx + t, cy - hy) for t in _steps(-hx, hx, 4.0, row)],
+                "E": [(cx + t, cy + hy) for t in _steps(-hx, hx, 4.0, row)],
+            }
+            for side, points in sides.items():
+                for px, py in points:
+                    along = py - cy if side in "NS" else px - cx
+                    if any(o_side == side and start <= along <= end for o_side, start, end in openings):
+                        continue
+                    index += 1
+                    tree(index, px + rng.uniform(-0.6, 0.6), py + rng.uniform(-0.6, 0.6), rng)
+                    WALL_TREES.append((px, py))
+    return index
+
+
+def _steps(start, end, spacing, row):
+    """Positions régulières de start à end ; la 2e rangée est décalée d'un demi-pas."""
+    t = start + (spacing / 2 if row else 0.0)
+    while t <= end:
+        yield t
+        t += spacing
 
 
 def build_gates():
@@ -212,7 +289,7 @@ def near_path(x, y, margin):
 
 
 def near_building(x, y, margin):
-    for _, _, bx, by, depth, width, _, _ in layout.BUILDINGS:
+    for _, _, bx, by, depth, width, *_ in layout.BUILDINGS:
         if abs(x - bx) < depth / 2 + margin and abs(y - by) < width / 2 + margin:
             return True
     for _, gx, gy, _ in layout.GATES:
@@ -233,13 +310,16 @@ def tree(index, x, y, rng):
 
 def v1_bounds(margin):
     """Rectangle (x0, x1, y0, y1) en mètres qui contient tous les lieux de la V1."""
-    us = [u + s * ru for _, u, _, ru, _ in layout.AREAS for s in (-1, 1)]
-    vs = [v + s * rv for _, _, v, _, rv in layout.AREAS for s in (-1, 1)]
-    for _, _, points in layout.ROUTES:
-        us += [u for u, _ in points]
-        vs += [v for _, v in points]
-    xs = [layout.from_map(u, v)[0] for u in (min(us), max(us)) for v in (min(vs), max(vs))]
-    ys = [layout.from_map(u, v)[1] for u in (min(us), max(us)) for v in (min(vs), max(vs))]
+    xs, ys = [], []
+    for _, u, v, half_east, half_north, _ in layout.AREAS:
+        cx, cy = layout.from_map(u, v)
+        xs += [cx - half_north, cx + half_north]
+        ys += [cy - half_east, cy + half_east]
+    for _, half_width, points in layout.ROUTES:
+        for u, v in points:
+            px, py = layout.from_map(u, v)
+            xs += [px - half_width, px + half_width]
+            ys += [py - half_width, py + half_width]
     return min(xs) - margin, max(xs) + margin, min(ys) - margin, max(ys) + margin
 
 
@@ -247,6 +327,7 @@ def build_trees():
     rng = random.Random(151)
     index = 0
     x0, x1, y0, y1 = v1_bounds(60)
+    index = build_tree_walls(rng, index)
     # Forêt de Jade : dense, sauf le long du chemin.
     step = 9
     x = x0
@@ -268,7 +349,8 @@ def build_trees():
         while y < y1:
             px, py = x + rng.uniform(-5, 5), y + rng.uniform(-5, 5)
             distance, _ = layout.zone_distance(px, py)
-            if 4 < distance < 45 and layout.height_at(px, py) > layout.SEA_LEVEL + 1:
+            if (4 < distance < 45 and layout.height_at(px, py) > layout.SEA_LEVEL + 1
+                    and not any(abs(px - wx) < 5 and abs(py - wy) < 5 for wx, wy in WALL_TREES)):
                 index += 1
                 tree(index, px, py, rng)
             y += step
@@ -359,9 +441,12 @@ def landscape_material():
     """Matériau simple du sol : herbe, roche sur les pentes raides, sable près de la mer."""
     path = f"{MATERIAL_DIR}/M_Kanto_Sol"
     if unreal.EditorAssetLibrary.does_asset_exist(path):
-        return unreal.load_asset(path)
-    mat = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
-        "M_Kanto_Sol", MATERIAL_DIR, unreal.Material, unreal.MaterialFactoryNew())
+        # On le refait à chaque lancement, pour que les réglages ci-dessous s'appliquent.
+        mat = unreal.load_asset(path)
+        mel.delete_all_material_expressions(mat)
+    else:
+        mat = unreal.AssetToolsHelpers.get_asset_tools().create_asset(
+            "M_Kanto_Sol", MATERIAL_DIR, unreal.Material, unreal.MaterialFactoryNew())
 
     def node(cls, x, y):
         return mel.create_material_expression(mat, cls, x, y)
@@ -387,7 +472,7 @@ def landscape_material():
     mel.connect_material_expressions(normal, "", up, "")
     flat = node(unreal.MaterialExpressionSubtract, -900, 200)
     mel.connect_material_expressions(up, "", flat, "A")
-    mel.connect_material_expressions(constant(0.8, -1100, 300), "", flat, "B")
+    mel.connect_material_expressions(constant(0.65, -1100, 300), "", flat, "B")
     flat_mul = node(unreal.MaterialExpressionMultiply, -750, 200)
     mel.connect_material_expressions(flat, "", flat_mul, "A")
     mel.connect_material_expressions(constant(10.0, -900, 320), "", flat_mul, "B")
@@ -443,7 +528,7 @@ def main():
         return
     GROUND = Ground(landscapes[0])
 
-    with unreal.ScopedSlowTask(9, "Blockout de Kanto (V1)") as task:
+    with unreal.ScopedSlowTask(10, "Blockout de Kanto (V1)") as task:
         task.make_dialog(True)
         steps = [
             ("Nettoyage", clear_previous_blockout),
@@ -451,6 +536,7 @@ def main():
             ("Mer", build_sea),
             ("Chemins", build_paths),
             ("Bâtiments", build_buildings),
+            ("Décor des villes", build_decor),
             ("Postes", build_gates),
             ("Hautes herbes", build_tall_grass),
             ("Arbres", build_trees),
