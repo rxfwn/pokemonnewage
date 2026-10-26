@@ -1,0 +1,19 @@
+{
+  "files.exclude": {
+    "Binaries": true,
+    "DerivedDataCache": true,
+    "Intermediate": true,
+    "Saved": true,
+    ".vs": true
+  },
+  "search.exclude": {
+    "Content": true
+  },
+  "files.associations": {
+    "*.uproject": "json",
+    "*.uplugin": "json"
+  },
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "C_Cpp.default.cppStandard": "c++20"
+}
