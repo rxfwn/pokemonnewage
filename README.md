@@ -19,7 +19,7 @@ La première version recrée une région Pokémon existante (Kanto) en 3D : on e
 
 ## Organisation
 
-On travaille en sprints de deux semaines. Le backlog complet est dans [docs/BACKLOG.md](docs/BACKLOG.md), les conventions de nommage dans [docs/CONVENTIONS.md](docs/CONVENTIONS.md).
+On travaille en sprints de deux semaines. Le backlog complet est dans [docs/BACKLOG.md](docs/BACKLOG.md), les conventions de nommage dans [docs/CONVENTIONS.md](docs/CONVENTIONS.md), la configuration de VS Code dans [docs/CONFIGURER_VSCODE.md](docs/CONFIGURER_VSCODE.md).
 
 ## Avertissement
 
