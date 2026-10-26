@@ -197,13 +197,14 @@ def build_decor():
         folder = f"Décor/{zone}"
         label = f"{kind}_{zone}_{index}"
         if kind == "Water":
-            # Eau à ras du sol, entourée d'un petit muret de pierre ; on ne peut pas y entrer.
-            box_on_ground(label, folder, x, y, (depth, width, 0.4), "Water", sink=0.35)
+            # L'eau est creusée dans le relief (CHANNELS du plan) et remplie par la mer :
+            # ici seulement le muret de pierre, ouvert au sud vers le ruisseau.
+            rim = 2.6
+            box_on_ground(f"{label}_Bord_nord", folder, x + depth / 2 + rim, y,
+                          (0.8, width + 2 * rim + 0.8, 0.9), "Stone", sink=0.4)
             for side in (-1, 1):
-                box_on_ground(f"{label}_Bord{side:+d}x", folder, x + side * depth / 2, y,
-                              (0.5, width + 0.5, 0.9), "Stone", sink=0.4)
-                box_on_ground(f"{label}_Bord{side:+d}y", folder, x, y + side * width / 2,
-                              (depth + 0.5, 0.5, 0.9), "Stone", sink=0.4)
+                box_on_ground(f"{label}_Bord{side:+d}", folder, x + rim / 2, y + side * (width / 2 + rim),
+                              (depth + rim, 0.8, 0.9), "Stone", sink=0.4)
         elif kind == "Flowers":
             box_on_ground(label, folder, x, y, (depth, width, 0.5), "Flowers", sink=0.3,
                           collision=False)
@@ -366,25 +367,28 @@ def build_sea():
                              GROUND.origin.z + (layout.SEA_LEVEL - 0.5) * 100)
     size = layout.WORLD_SIZE + 400
     spawn(CUBE, "Mer", "Mer", location, (size, size, 1), "Water", collision=False)
-    # Murs invisibles là où un lieu de la V1 touche l'eau : on ne peut pas encore nager.
+    # Murs invisibles : au bord de l'eau (on ne peut pas encore nager) et à la lisière des
+    # vallées de la V1 (le reste de Kanto n'est pas encore prêt).
     step = 6
-    x0, x1, y0, y1 = v1_bounds(20)
+    x0, x1, y0, y1 = v1_bounds(60)
     count = 0
     x = x0
     while x < x1:
         y = y0
         while y < y1:
             distance, _ = layout.zone_distance(x, y)
-            if distance < 3 and layout.height_at(x, y) < layout.SEA_LEVEL + 1:
+            ground = layout.height_at(x, y)
+            at_sea = 0 < distance < 45 and -1.5 < ground < layout.SEA_LEVEL + 0.3
+            at_edge = 30 < distance < 36.5 and ground >= layout.SEA_LEVEL + 0.3
+            if at_sea or at_edge:
                 count += 1
-                location = GROUND.point(x, y)
-                location.z = GROUND.origin.z + (layout.SEA_LEVEL + 2) * 100
-                wall = spawn(CUBE, f"Mur_Eau_{count:04d}", "Limites", location,
-                             (step, step, 6), "Water")
+                location = GROUND.point(x, y, 3)
+                wall = spawn(CUBE, f"Limite_{count:04d}", "Limites", location,
+                             (step + 1.5, step + 1.5, 10), "Water")
                 wall.set_actor_hidden_in_game(True)
             y += step
         x += step
-    unreal.log(f"{count} murs invisibles au bord de l'eau.")
+    unreal.log(f"{count} murs invisibles (bord de l'eau et lisière de la V1).")
 
 
 def build_signs():

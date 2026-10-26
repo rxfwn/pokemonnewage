@@ -100,8 +100,8 @@ ROUTES = [
     ("Route 2 (nord)", 20, [(298, 216), (297, 204), (297, 172)]),
 ]
 
-# Sol des zones : monte doucement du sud (Bourg Palette, 3 m) au nord (Argenta, 15 m).
-FLOOR_SOUTH, FLOOR_NORTH = 3.0, 15.0
+# Sol des zones : monte doucement du sud (Bourg Palette, 1,2 m) au nord (Argenta, 15 m).
+FLOOR_SOUTH, FLOOR_NORTH = 1.2, 15.0
 _FLOOR_X0 = (MAP_HEIGHT - 540) * MAP_SCALE + MAP_OFFSET_X
 _FLOOR_X1 = (MAP_HEIGHT - 172) * MAP_SCALE + MAP_OFFSET_X
 
@@ -117,9 +117,18 @@ MOUNTAINS = [
     (1090, 380, 60, 110, 0.5),  # collines de l'est
 ]
 
-# Hauteurs (m) : sommets les plus hauts, collines, et pente générale vers l'intérieur.
-MOUNTAIN_HEIGHT = 300.0
-HILL_HEIGHT = 55.0
+# La mer, là où la carte de Let's Go dessine de la terre mais où le jeu d'origine met de l'eau :
+# (nom, ville de référence, décalage x, y du centre en mètres, demi-profondeur x, demi-largeur y).
+SEA_AREAS = [
+    ("Route 21 (mer au sud de Bourg Palette)", "Bourg Palette", -190, -10, 125, 230),
+]
+
+# Eau creusée dans le sol (sous le niveau de la mer, donc remplie par la mer) :
+# (nom, ville de référence, demi-largeur en m, points relatifs en mètres).
+# L'étang de Bourg Palette se jette dans la mer, comme dans Rouge Feu / Vert Feuille.
+_CHANNELS = [
+    ("Étang de Bourg Palette", "Bourg Palette", 5, [(-13, -22), (-37, -22), (-55, -24), (-80, -26)]),
+]
 
 def area_center(name):
     for area_name, u, v, _, _, _ in AREAS:
@@ -169,7 +178,8 @@ _DECOR = [
     # Fleurs devant les maisons.
     ("Bourg Palette", "Flowers", 9, -14, 2, 4),
     ("Bourg Palette", "Flowers", 9, 23, 2, 4),
-    # Étang en bas à gauche, qui file vers la mer.
+    # Étang en bas à gauche, qui file vers la mer (l'eau est creusée dans le relief, voir
+    # CHANNELS) : ici seulement son muret de pierre.
     ("Bourg Palette", "Water", -25, -22, 24, 10),
     # Barrière et panneau en bas, puis le chemin de sable et les fleurs en bas à droite.
     ("Bourg Palette", "Fence", -17, 2, 0.15, 16),
@@ -247,6 +257,10 @@ _SIGNS = [
 ]
 SIGNS = [(name, *(_offset(town, a, b) if town else from_map(a, b))) for name, town, a, b in _SIGNS]
 
+CHANNELS = [(name, half, [_offset(town, dx, dy) for dx, dy in points])
+            for name, town, half, points in _CHANNELS]
+SEA = [(name, *_offset(town, dx, dy), half_x, half_y) for name, town, dx, dy, half_x, half_y in SEA_AREAS]
+
 # Point de départ du joueur : entre les deux maisons, face au nord (la sortie vers la Route 1).
 PLAYER_START = _offset("Bourg Palette", 6, 0)
 
@@ -323,78 +337,54 @@ def find_zone(x, y):
     return name if distance <= 0 else None
 
 
-def ridged_noise(x, y, scale, octaves=5, seed=0):
-    """Bruit en crêtes (0 à 1) : arêtes vives comme de vraies montagnes."""
-    total, amplitude, norm, weight = 0.0, 1.0, 0.0, 1.0
-    for octave in range(octaves):
-        ridge = 1.0 - abs(value_noise(x, y, scale, seed + octave) * 2 - 1)
-        ridge *= ridge * weight
-        weight = min(1.0, ridge * 1.6)
-        total += ridge * amplitude
-        norm += amplitude
-        scale /= 2.0
-        amplitude *= 0.5
-    return total / norm
+# --- Hauteur du sol : lue dans la heightmap ------------------------------------------
+# Le relief est fabriqué une fois par make_heightmap.py (bruit, érosion, vallées) ;
+# Unreal et ce module lisent ensuite le même PNG, donc les objets tombent pile sur le sol.
+
+HEIGHTMAP_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kanto_v1_heightmap.png")
+_HEIGHTS = None
 
 
-def _warp(x, y):
-    """Déforme les coordonnées pour que côtes et montagnes ne soient pas trop régulières."""
-    wx = (fractal_noise(x, y, 400, 3, 31) - 0.5) * 160
-    wy = (fractal_noise(x, y, 400, 3, 32) - 0.5) * 160
-    return x + wx, y + wy
-
-
-def natural_height(x, y, inland):
-    """Relief naturel (sans les lieux de la V1), en mètres, à `inland` m de la mer."""
-    u, v = to_map(x, y)
-    # Part de montagne : massifs nommés + un peu de hasard partout.
-    mountain = 0.0
-    for cu, cv, ru, rv, weight in MOUNTAINS:
-        norm = math.hypot((u - cu) / ru, (v - cv) / rv)
-        # Union douce (pas de max) : pas d'arête droite là où deux massifs se rejoignent.
-        mountain = 1 - (1 - mountain) * (1 - weight * smoothstep(1.0, 0.15, norm))
-    extra = smoothstep(0.55, 0.75, fractal_noise(x, y, 700, 2, 41)) * 0.7
-    mountain = 1 - (1 - mountain) * (1 - extra)
-    mountain *= smoothstep(20, 240, inland)
-
-    ridges = ridged_noise(x, y, 500, 6, 51)
-    peaks = MOUNTAIN_HEIGHT * mountain * (0.25 + 0.75 * ridges) * (0.6 + 0.4 * mountain)
-    hills = HILL_HEIGHT * fractal_noise(x, y, 300, 6, 7) ** 1.2 * smoothstep(0, 150, inland)
-    hills += 6.0 * ridged_noise(x, y, 70, 3, 9)  # petites bosses et ravines
-    plain = 1.5 + min(inland, 600) * 0.012
-    return plain + hills + peaks
+def _load_heights():
+    """Lit kanto_v1_heightmap.png (16 bits, sans filtre de ligne, écrit par make_heightmap.py)."""
+    import array
+    import sys
+    with open(HEIGHTMAP_PATH, "rb") as handle:
+        data = handle.read()
+    position, chunks = 8, []
+    while position < len(data):
+        length, kind = struct.unpack_from(">I4s", data, position)
+        if kind == b"IDAT":
+            chunks.append(data[position + 8:position + 8 + length])
+        position += 12 + length
+    raw = zlib.decompress(b"".join(chunks))
+    stride = 1 + 2 * HEIGHTMAP_SIZE
+    if len(raw) != stride * HEIGHTMAP_SIZE:
+        raise RuntimeError("kanto_v1_heightmap.png n'a pas la taille attendue : relancer make_heightmap.py")
+    rows = []
+    for row in range(HEIGHTMAP_SIZE):
+        if raw[row * stride] != 0:
+            raise RuntimeError("kanto_v1_heightmap.png : format inattendu, relancer make_heightmap.py")
+        rows.append(raw[row * stride + 1:(row + 1) * stride])
+    values = array.array("H", b"".join(rows))
+    if sys.byteorder == "little":
+        values.byteswap()  # le PNG range les nombres poids fort d'abord
+    return values
 
 
 def height_at(x, y):
-    """Hauteur du sol en mètres au point (x, y)."""
-    wx, wy = _warp(x, y)
-    fine, wide, inland = land_at(wx, wy)
-    distance, _ = zone_distance(x, y)
-    if wide <= 0.0 and fine <= 0.0 and distance > 30:
-        return -30.0
-
-    # Lieux de la V1 : sol presque plat, qui monte de Bourg Palette (3 m) à Argenta (15 m).
-    t = max(0.0, min(1.0, (x - _FLOOR_X0) / (_FLOOR_X1 - _FLOOR_X0)))
-    floor = FLOOR_SOUTH + (FLOOR_NORTH - FLOOR_SOUTH) * t
-    ground = floor + (fractal_noise(x, y, 60, 3, 1) - 0.5) * 0.8
-
-    # Côtes : falaises par endroits, plages ailleurs.
-    cliff = smoothstep(0.45, 0.7, fractal_noise(x, y, 600, 3, 61))
-    shore = smoothstep(0.5, 0.56 + 0.44 * (1 - cliff), wide)
-    nature = natural_height(x, y, inland)
-    nature = 0.8 + (nature - 0.8) * shore
-
-    # Autour des lieux : talus de 8 m trop raide pour être gravi, puis le relief naturel.
-    outside = max(0.0, distance)
-    bank = ground + 8.0 * (1 - math.exp(-outside / 2.5))
-    land = bank + (nature - bank) * smoothstep(4, 90, outside)
-    if distance <= 0:
-        land = ground
-
-    # Mer : fond qui descend au large ; la côte ondule grâce au bruit.
-    sea = SEA_LEVEL - 2.0 - 25.0 * (1 - wide)
-    edge = wide + (fractal_noise(x, y, 200, 4, 71) - 0.5) * 0.9
-    coast = smoothstep(0.42, 0.58, edge)
-    coast = max(coast, smoothstep(30, 10, distance))  # les lieux de la V1 restent sur la terre
-    height = sea + (land - sea) * coast
-    return max(-40.0, min(250.0, height))
+    """Hauteur du sol en mètres au point (x, y), lue dans la heightmap (interpolée)."""
+    global _HEIGHTS
+    if _HEIGHTS is None:
+        _HEIGHTS = _load_heights()
+    size = HEIGHTMAP_SIZE
+    # Ligne de l'image = axe y (est), colonne = axe x (nord).
+    column = max(0.0, min(size - 1.001, x / METERS_PER_PIXEL))
+    row = max(0.0, min(size - 1.001, y / METERS_PER_PIXEL))
+    c, r = int(column), int(row)
+    tc, tr = column - c, row - r
+    index = r * size + c
+    a, b = _HEIGHTS[index], _HEIGHTS[index + 1]
+    d, e = _HEIGHTS[index + size], _HEIGHTS[index + size + 1]
+    value = (a * (1 - tc) + b * tc) * (1 - tr) + (d * (1 - tc) + e * tc) * tr
+    return (value - 32768) / 128.0

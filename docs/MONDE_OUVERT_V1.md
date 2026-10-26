@@ -11,7 +11,7 @@ On travaille du grand vers le petit :
 
 - **Les tailles** : un personnage fait 1,80 m, une maison 9 × 11 m et 7 m de haut, une arène 26 × 30 m, les arbres 12 à 20 m. Les bâtiments ont leur vraie taille, ce qui laisse la place à des intérieurs sans chargement plus tard.
 - **La forme de Kanto** : le terrain suit la carte officielle de *Let's Go* (terre et mer extraites de l'image). Tout Kanto est déjà là, entouré de mer : environ 5,5 × 3,9 km sur un terrain de 6 km de côté. Seuls les lieux de la V1 (de Bourg Palette à Argenta) sont jouables pour l'instant, le reste est du relief à détailler plus tard.
-- **Le relief** : fait comme un vrai terrain, avec des crêtes de montagne (bruit « en crêtes »), des collines irrégulières, des falaises par endroits et des plages ailleurs, et des côtes déformées pour ne pas être trop régulières. Le Mont Sélénite, la Route Victoire, le Tunnel Roche et les montagnes derrière Argenta montent jusqu'à environ 250 m. Les routes serpentent et les bords des villes sont arrondis, comme de vraies vallées. Elles sont bordées de talus trop raides pour être escaladés : pas de murs invisibles au milieu des champs.
+- **Le relief** : fabriqué comme un vrai terrain. Des massifs en crêtes (Mont Sélénite, Route Victoire, Tunnel Roche, montagnes derrière Argenta, jusqu'à environ 225 m), des collines, des falaises par endroits et des plages ailleurs, puis une **érosion par la pluie** : des millions de gouttes coulent sur les pentes et creusent vallées et ravines. Les lieux de la V1 sont posés au fond de **larges vallées douces** (pas de tranchées). La mer arrive juste au sud de Bourg Palette, et l'étang du village s'y jette par un petit ruisseau.
 - **La lumière** : ciel physique, soleil d'après-midi, nuages volumétriques et brume légère.
 - **Le sol** : herbe sur le plat, roche sur les pentes raides, sable au bord de la mer.
 
@@ -86,7 +86,7 @@ Le script efface et repose tout à chaque lancement : on peut le relancer après
 2. Vérifier :
    - aller jusqu'à Argenta à pied, puis en courant : est-ce trop long, trop court ?
    - les maisons et l'arène ont une taille crédible à côté du personnage ;
-   - on ne peut pas sortir des routes (talus trop raides) ni tomber à l'eau ;
+   - on ne peut pas sortir de la V1 (murs invisibles à la lisière, environ 30 m après le bord des routes, cachés dans les arbres) ni tomber à l'eau ;
    - on traverse bien les postes de la Forêt de Jade ; le Poste de la Ligue, au bout de la Route 22, est fermé ;
    - la lumière et le ciel rendent bien.
 3. Noter ce qui ne va pas et me l'envoyer (une capture aide beaucoup).
@@ -117,6 +117,6 @@ L'ancienne map `L_PalletTown` ne sert plus : on peut supprimer le dossier `Conte
 
 ## Refaire le relief
 
-Le relief vient de `Tools/Blockout/make_heightmap.py`, qui lit le même plan. Après une modification du plan, le relancer (`python Tools/Blockout/make_heightmap.py`, quelques minutes), puis réimporter le PNG dans le Landscape (mode Paysage > Gérer > Importer) et relancer le script de blockout.
+Le relief vient de `Tools/Blockout/make_heightmap.py`, qui lit le même plan. Unreal relit ensuite le PNG produit pour poser les objets pile sur le sol. Après une modification du plan, le relancer (`pip install numpy numba` la première fois, puis `python Tools/Blockout/make_heightmap.py`, environ 2 minutes), puis réimporter le PNG dans le Landscape (mode Paysage > Gérer > Importer) et relancer le script de blockout.
 
 **Si la taille du terrain change** (par exemple de 2017 à 4033 points quand on a agrandi la carte), l'outil Importer refuse le fichier : supprimer le Landscape dans l'Outliner, puis refaire l'étape 3 (nouveau Landscape, même échelle 150, 150, 100) et l'étape 7 (charger tout le terrain).
