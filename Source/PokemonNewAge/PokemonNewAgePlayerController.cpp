@@ -4,6 +4,7 @@
 #include "PokemonNewAgePlayerController.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
+#include "Camera/PlayerCameraManager.h"
 #include "InputMappingContext.h"
 #include "Blueprint/UserWidget.h"
 #include "PokemonNewAge.h"
@@ -12,6 +13,13 @@
 void APokemonNewAgePlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// keep the camera from going under the ground or straight above the character
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->ViewPitchMin = CameraPitchMin;
+		PlayerCameraManager->ViewPitchMax = CameraPitchMax;
+	}
 
 	// only spawn touch controls on local player controllers
 	if (IsLocalPlayerController() && ShouldUseTouchControls())

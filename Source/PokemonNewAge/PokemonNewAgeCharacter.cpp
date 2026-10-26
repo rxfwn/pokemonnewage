@@ -41,6 +41,10 @@ APokemonNewAgeCharacter::APokemonNewAgeCharacter()
 	CameraBoom->TargetArmLength = 400.0f;
 	CameraBoom->bUsePawnControlRotation = true;
 
+	// Smooth camera follow instead of a rigid one
+	CameraBoom->bEnableCameraLag = true;
+	CameraBoom->CameraLagSpeed = 10.f;
+
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
@@ -56,6 +60,20 @@ void APokemonNewAgeCharacter::BeginPlay()
 
 	// WalkSpeed may have been changed in the Blueprint, so apply it here rather than only in the constructor
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+
+	// Start from the distance set on the CameraBoom, within the allowed range
+	DesiredCameraDistance = FMath::Clamp(CameraBoom->TargetArmLength, MinCameraDistance, MaxCameraDistance);
+	CameraBoom->TargetArmLength = DesiredCameraDistance;
+}
+
+void APokemonNewAgeCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (!FMath::IsNearlyEqual(CameraBoom->TargetArmLength, DesiredCameraDistance))
+	{
+		CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, DesiredCameraDistance, DeltaSeconds, ZoomInterpSpeed);
+	}
 }
 
 void APokemonNewAgeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -80,6 +98,12 @@ void APokemonNewAgeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &APokemonNewAgeCharacter::DoSprintStart);
 			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &APokemonNewAgeCharacter::DoSprintEnd);
 		}
+
+		// Camera zoom
+		if (ZoomAction)
+		{
+			EnhancedInputComponent->BindAction(ZoomAction, ETriggerEvent::Triggered, this, &APokemonNewAgeCharacter::Zoom);
+		}
 	}
 	else
 	{
@@ -103,6 +127,12 @@ void APokemonNewAgeCharacter::Look(const FInputActionValue& Value)
 
 	// route the input
 	DoLook(LookAxisVector.X, LookAxisVector.Y);
+}
+
+void APokemonNewAgeCharacter::Zoom(const FInputActionValue& Value)
+{
+	// input is a float (mouse wheel: +1 forward, -1 backward)
+	DoZoom(Value.Get<float>());
 }
 
 void APokemonNewAgeCharacter::DoMove(float Right, float Forward)
@@ -157,4 +187,10 @@ void APokemonNewAgeCharacter::DoSprintEnd()
 {
 	bIsSprinting = false;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+}
+
+void APokemonNewAgeCharacter::DoZoom(float Amount)
+{
+	// wheel forward brings the camera closer
+	DesiredCameraDistance = FMath::Clamp(DesiredCameraDistance - Amount * ZoomStep, MinCameraDistance, MaxCameraDistance);
 }
