@@ -11,7 +11,7 @@ On travaille du grand vers le petit :
 
 - **Les tailles** : un personnage fait 1,80 m, une maison 9 × 11 m et 7 m de haut, une arène 26 × 30 m, les arbres 12 à 20 m. Les bâtiments ont leur vraie taille, ce qui laisse la place à des intérieurs sans chargement plus tard.
 - **La forme de Kanto** : le terrain suit la carte officielle de *Let's Go* (terre et mer extraites de l'image). Tout Kanto est déjà là, entouré de mer : environ 2,7 × 1,9 km sur un terrain de 3 km de côté. Seuls les lieux de la V1 (de Bourg Palette à Argenta) sont jouables pour l'instant, le reste est du relief à détailler plus tard.
-- **Le relief** : des collines boisées autour des routes, le Mont Sélénite, la Route Victoire, des montagnes derrière Argenta (jusqu'à environ 185 m). Les routes serpentent et les bords des villes sont arrondis, comme de vraies vallées. Elles sont bordées de talus trop raides pour être escaladés : pas de murs invisibles au milieu des champs.
+- **Le relief** : fait comme un vrai terrain, avec des crêtes de montagne (bruit « en crêtes »), des collines irrégulières, des falaises par endroits et des plages ailleurs, et des côtes déformées pour ne pas être trop régulières. Le Mont Sélénite, la Route Victoire, le Tunnel Roche et les montagnes derrière Argenta montent jusqu'à environ 250 m. Les routes serpentent et les bords des villes sont arrondis, comme de vraies vallées. Elles sont bordées de talus trop raides pour être escaladés : pas de murs invisibles au milieu des champs.
 - **La lumière** : ciel physique, soleil d'après-midi, nuages volumétriques et brume légère.
 - **Le sol** : herbe sur le plat, roche sur les pentes raides, sable au bord de la mer.
 
@@ -34,7 +34,7 @@ Vu de dessus, nord en haut. Environ 3 km de côté, la V1 est la bande verte à 
 
 Bourg Palette → Argenta : environ **6 minutes en marchant, 3 minutes en courant**. À ajuster après le test.
 
-Le plan est écrit dans `Tools/Blockout/kanto_v1_layout.py` (lieux repérés en pixels sur la carte de *Let's Go*, bâtiments, chemins, hautes herbes). La forme terre / mer est dans `Tools/Blockout/kanto_terres.bin`. Pour changer quelque chose, on modifie ce fichier, puis on relance le script.
+Le plan est écrit dans `Tools/Blockout/kanto_v1_layout.py` (lieux repérés en pixels sur la carte de *Let's Go*, massifs, hauteurs, bâtiments, chemins, hautes herbes). La forme terre / mer et la distance à la mer sont dans `Tools/Blockout/kanto_terres.bin`. Pour changer quelque chose, on modifie ce fichier, puis on relance le script.
 
 ## Pas à pas (30 minutes)
 
@@ -113,4 +113,4 @@ L'ancienne map `L_PalletTown` ne sert plus : on peut supprimer le dossier `Conte
 
 ## Refaire le relief
 
-Le relief vient de `Tools/Blockout/make_heightmap.py`, qui lit le même plan. Après une modification du plan, le relancer (`python Tools/Blockout/make_heightmap.py`, quelques minutes), puis réimporter le PNG dans le Landscape (mode Paysage > Gérer > Importer) et relancer le script de blockout.
+Le relief vient de `Tools/Blockout/make_heightmap.py`, qui lit le même plan. Après une modification du plan, le relancer (`python Tools/Blockout/make_heightmap.py`, environ une minute), puis réimporter le PNG dans le Landscape (mode Paysage > Gérer > Importer) et relancer le script de blockout.

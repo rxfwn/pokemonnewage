@@ -35,20 +35,32 @@ def write_png(path, width, height, rows, bit_depth, color_type):
         png.write(chunk(b"IEND", b""))
 
 
-def preview_color(height, x, y):
+def _mix(a, b, t):
+    t = max(0.0, min(1.0, t))
+    return tuple(a[i] + (b[i] - a[i]) * t for i in range(3))
+
+
+def preview_color(height, x, y, shade):
+    """Couleur d'un point de l'aperçu, avec un ombrage (lumière venant du nord-ouest)."""
     if height < layout.SEA_LEVEL:
-        depth = min(1.0, -height / 20.0)
-        return (int(70 - 40 * depth), int(130 - 60 * depth), int(190 - 60 * depth))
-    zone = layout.find_zone(x, y)
-    if zone == "Forêt de Jade":
-        return (45, 100, 45)
-    if zone is not None:
-        return (120, 175, 85)
-    if height > 60:
-        shade = min(1.0, (height - 60) / 120.0)
-        return (int(130 + 90 * shade), int(120 + 95 * shade), int(105 + 110 * shade))
-    shade = min(1.0, height / 60.0)
-    return (int(80 + 60 * shade), int(130 - 20 * shade), int(60 + 30 * shade))
+        depth = min(1.0, -height / 25.0)
+        color = _mix((95, 165, 200), (35, 85, 150), depth)
+        shade = 1.0
+    else:
+        zone = layout.find_zone(x, y)
+        if zone == "Forêt de Jade":
+            color = (40, 90, 40)
+        elif zone is not None:
+            color = (150, 185, 95)
+        elif height < 2.5 and layout.land_at(x, y)[2] < 40:
+            color = (215, 200, 150)  # plage
+        elif height < 60:
+            color = _mix((105, 150, 70), (55, 110, 50), height / 60.0)
+        elif height < 140:
+            color = _mix((55, 110, 50), (125, 105, 80), (height - 60) / 80.0)
+        else:
+            color = _mix((125, 105, 80), (210, 205, 200), (height - 140) / 90.0)
+    return tuple(int(max(0, min(255, c * shade))) for c in color)
 
 
 def _row(row):
@@ -76,7 +88,14 @@ def main():
         x = column * step
         pixels = bytearray()
         for row in range(0, size, 2):
-            pixels.extend(preview_color(heights[row][column], x, row * step))
+            h = heights[row][column]
+            # Pente vers le nord (colonne) et vers l'est (ligne), en m par m.
+            north = (heights[row][min(column + 2, size - 1)] - heights[row][max(column - 2, 0)]) / (4 * step)
+            east = (heights[min(row + 2, size - 1)][column] - heights[max(row - 2, 0)][column]) / (4 * step)
+            # Lumière du nord-ouest : éclaire les pentes tournées vers le nord et l'ouest.
+            shade = 1.0 + 1.2 * (east - north) / 1.414
+            shade = max(0.45, min(1.35, shade))
+            pixels.extend(preview_color(h, x, row * step, shade))
         preview_rows.append(bytes(pixels))
     half = (size + 1) // 2
     write_png(os.path.join(HERE, "kanto_v1_preview.png"), half, half, preview_rows, 8, 2)

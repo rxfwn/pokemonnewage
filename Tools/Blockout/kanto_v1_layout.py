@@ -48,14 +48,17 @@ def _load_land():
         data = zlib.decompress(handle.read())
     _, width, height = struct.unpack_from("<4sHH", data)
     size = width * height
-    return width, height, data[8:8 + size], data[8 + size:8 + 2 * size]
+    planes = [data[8 + i * size:8 + (i + 1) * size] for i in range(3)]
+    return (width, height, *planes)
 
 
-_LAND_W, _LAND_H, _LAND_FINE, _LAND_WIDE = _load_land()
+# Trois plans de la taille de la carte : terre précise, terre lissée,
+# distance à la mer (en pixels de la carte, plafonnée à 255).
+_LAND_W, _LAND_H, _LAND_FINE, _LAND_WIDE, _LAND_INLAND = _load_land()
 
 
-def _sample(plane, u, v):
-    """Valeur entre 0 (mer) et 1 (terre), interpolée. Hors de la carte : la mer."""
+def _sample(plane, u, v, scale=255.0):
+    """Valeur interpolée (entre 0 et 1 par défaut). Hors de la carte : la mer."""
     if not (0 <= u < _LAND_W - 1 and 0 <= v < _LAND_H - 1):
         return 0.0
     iu, iv = int(u), int(v)
@@ -63,13 +66,14 @@ def _sample(plane, u, v):
     row, below = iv * _LAND_W, (iv + 1) * _LAND_W
     a, b = plane[row + iu], plane[row + iu + 1]
     c, d = plane[below + iu], plane[below + iu + 1]
-    return (a + (b - a) * tu + (c - a) * tv + (a - b - c + d) * tu * tv) / 255.0
+    return (a + (b - a) * tu + (c - a) * tv + (a - b - c + d) * tu * tv) / scale
 
 
 def land_at(x, y):
-    """(terre précise, terre lissée) : la première dessine la côte, la seconde la pente."""
+    """(terre précise, terre lissée, distance à la mer en mètres) au point (x, y)."""
     u, v = to_map(x, y)
-    return _sample(_LAND_FINE, u, v), _sample(_LAND_WIDE, u, v)
+    return (_sample(_LAND_FINE, u, v), _sample(_LAND_WIDE, u, v),
+            _sample(_LAND_INLAND, u, v, 1.0) * MAP_SCALE)
 
 
 # --- Lieux de la V1 (repérés en pixels sur la carte) ----------------------------------
@@ -95,14 +99,21 @@ FLOOR_SOUTH, FLOOR_NORTH = 3.0, 15.0
 _FLOOR_X0 = (MAP_HEIGHT - 540) * MAP_SCALE + MAP_OFFSET_X
 _FLOOR_X1 = (MAP_HEIGHT - 172) * MAP_SCALE + MAP_OFFSET_X
 
-# Montagnes : (centre u, centre v, rayon en pixels, hauteur max en mètres).
+# Massifs : ellipses (centre u, centre v, demi-largeur u, demi-hauteur v en pixels, poids).
+# Le poids règle la part de montagne (1 = grandes montagnes, 0,5 = moyennes).
+# Leurs bords sont déformés par du bruit : pas de cercles parfaits.
 MOUNTAINS = [
-    (495, 80, 75, 170.0),   # Mont Sélénite
-    (150, 190, 110, 160.0),  # Route Victoire et Plateau Indigo
-    (300, 70, 70, 110.0),   # derrière Argenta
-    (930, 220, 70, 120.0),  # Grotte (Tunnel Roche)
+    (495, 90, 120, 85, 1.0),    # Mont Sélénite
+    (140, 220, 85, 190, 1.0),   # Route Victoire et Plateau Indigo
+    (330, 80, 110, 70, 0.75),   # derrière Argenta
+    (930, 230, 90, 140, 0.85),  # Tunnel Roche
+    (720, 110, 160, 70, 0.6),   # crêtes du nord
+    (1090, 380, 60, 110, 0.5),  # collines de l'est
 ]
 
+# Hauteurs (m) : sommets les plus hauts, collines, et pente générale vers l'intérieur.
+MOUNTAIN_HEIGHT = 300.0
+HILL_HEIGHT = 55.0
 
 def area_center(name):
     for area_name, u, v, _, _ in AREAS:
@@ -271,33 +282,78 @@ def find_zone(x, y):
     return name if distance <= 0 else None
 
 
+def ridged_noise(x, y, scale, octaves=5, seed=0):
+    """Bruit en crêtes (0 à 1) : arêtes vives comme de vraies montagnes."""
+    total, amplitude, norm, weight = 0.0, 1.0, 0.0, 1.0
+    for octave in range(octaves):
+        ridge = 1.0 - abs(value_noise(x, y, scale, seed + octave) * 2 - 1)
+        ridge *= ridge * weight
+        weight = min(1.0, ridge * 1.6)
+        total += ridge * amplitude
+        norm += amplitude
+        scale /= 2.0
+        amplitude *= 0.5
+    return total / norm
+
+
+def _warp(x, y):
+    """Déforme les coordonnées pour que côtes et montagnes ne soient pas trop régulières."""
+    wx = (fractal_noise(x, y, 220, 3, 31) - 0.5) * 90
+    wy = (fractal_noise(x, y, 220, 3, 32) - 0.5) * 90
+    return x + wx, y + wy
+
+
+def natural_height(x, y, inland):
+    """Relief naturel (sans les lieux de la V1), en mètres, à `inland` m de la mer."""
+    u, v = to_map(x, y)
+    # Part de montagne : massifs nommés + un peu de hasard partout.
+    mountain = 0.0
+    for cu, cv, ru, rv, weight in MOUNTAINS:
+        norm = math.hypot((u - cu) / ru, (v - cv) / rv)
+        # Union douce (pas de max) : pas d'arête droite là où deux massifs se rejoignent.
+        mountain = 1 - (1 - mountain) * (1 - weight * smoothstep(1.0, 0.15, norm))
+    extra = smoothstep(0.55, 0.75, fractal_noise(x, y, 380, 2, 41)) * 0.7
+    mountain = 1 - (1 - mountain) * (1 - extra)
+    mountain *= smoothstep(10, 120, inland)
+
+    ridges = ridged_noise(x, y, 300, 5, 51)
+    peaks = MOUNTAIN_HEIGHT * mountain * (0.25 + 0.75 * ridges) * (0.6 + 0.4 * mountain)
+    hills = HILL_HEIGHT * fractal_noise(x, y, 180, 6, 7) ** 1.2 * smoothstep(0, 80, inland)
+    hills += 6.0 * ridged_noise(x, y, 70, 3, 9)  # petites bosses et ravines
+    plain = 1.5 + min(inland, 300) * 0.02
+    return plain + hills + peaks
+
+
 def height_at(x, y):
     """Hauteur du sol en mètres au point (x, y)."""
-    fine, wide = land_at(x, y)
-    if wide <= 0.0 and fine <= 0.0:
-        return -25.0
-
+    wx, wy = _warp(x, y)
+    fine, wide, inland = land_at(wx, wy)
     distance, _ = zone_distance(x, y)
+    if wide <= 0.0 and fine <= 0.0 and distance > 30:
+        return -30.0
+
+    # Lieux de la V1 : sol presque plat, qui monte de Bourg Palette (3 m) à Argenta (15 m).
     t = max(0.0, min(1.0, (x - _FLOOR_X0) / (_FLOOR_X1 - _FLOOR_X0)))
     floor = FLOOR_SOUTH + (FLOOR_NORTH - FLOOR_SOUTH) * t
     ground = floor + (fractal_noise(x, y, 60, 3, 1) - 0.5) * 0.8
 
-    # Hors des lieux : talus de 8 m trop raide pour être gravi, puis collines boisées.
+    # Côtes : falaises par endroits, plages ailleurs.
+    cliff = smoothstep(0.45, 0.7, fractal_noise(x, y, 350, 3, 61))
+    shore = smoothstep(0.5, 0.56 + 0.44 * (1 - cliff), wide)
+    nature = natural_height(x, y, inland)
+    nature = 0.8 + (nature - 0.8) * shore
+
+    # Autour des lieux : talus de 8 m trop raide pour être gravi, puis le relief naturel.
     outside = max(0.0, distance)
-    bank = 8.0 * (1 - math.exp(-outside / 2.5))
-    hills = fractal_noise(x, y, 180, 5, 7) * 30.0 * smoothstep(0, 90, outside)
-    land = ground + bank + hills
+    bank = ground + 8.0 * (1 - math.exp(-outside / 2.5))
+    land = bank + (nature - bank) * smoothstep(4, 90, outside)
+    if distance <= 0:
+        land = ground
 
-    u, v = to_map(x, y)
-    for cu, cv, radius, peak in MOUNTAINS:
-        mask = max(0.0, 1 - math.hypot(u - cu, v - cv) / radius)
-        if mask > 0:
-            ridges = 0.6 + 0.4 * fractal_noise(x, y, 120, 4, 11)
-            land += peak * mask ** 1.5 * ridges * smoothstep(5, 45, outside)
-
-    # Côtes : la terre descend vers la mer, plage douce ou petite falaise.
-    land *= 0.25 + 0.75 * smoothstep(0.35, 0.8, wide)
-    sea = SEA_LEVEL - 2.0 - 18.0 * (1 - wide)
-    coast = smoothstep(0.35, 0.65, fine)
+    # Mer : fond qui descend au large ; la côte ondule grâce au bruit.
+    sea = SEA_LEVEL - 2.0 - 25.0 * (1 - wide)
+    edge = wide + (fractal_noise(x, y, 110, 4, 71) - 0.5) * 0.9
+    coast = smoothstep(0.42, 0.58, edge)
+    coast = max(coast, smoothstep(30, 10, distance))  # les lieux de la V1 restent sur la terre
     height = sea + (land - sea) * coast
-    return max(-40.0, min(240.0, height))
+    return max(-40.0, min(250.0, height))
