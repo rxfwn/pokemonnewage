@@ -15,11 +15,11 @@ La première version recrée une région Pokémon existante (Kanto) en 3D : on e
 
 1. `git lfs install`
 2. `git clone https://github.com/rxfwn/pokemonnewage.git`
-3. Ouvrir le fichier `.uproject` avec Unreal Engine 5 (il sera ajouté au sprint 0).
+3. Ouvrir le fichier `.uproject` avec Unreal Engine 5 (il sera ajouté au sprint 0, voir [docs/CREER_PROJET_UE5.md](docs/CREER_PROJET_UE5.md)).
 
 ## Organisation
 
-On travaille en sprints de deux semaines. Le backlog complet est dans [docs/BACKLOG.md](docs/BACKLOG.md).
+On travaille en sprints de deux semaines. Le backlog complet est dans [docs/BACKLOG.md](docs/BACKLOG.md), les conventions de nommage dans [docs/CONVENTIONS.md](docs/CONVENTIONS.md).
 
 ## Avertissement
 
