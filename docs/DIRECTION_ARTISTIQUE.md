@@ -7,15 +7,16 @@ Périmètre V1 : de Bourg Palette au badge de Pierre. Caméra à la 3e personne,
 
 ## Les cinq règles
 
-1. **Réaliste, mais simplifié.** Matériaux crédibles (bois, tuile, terre, pierre), formes un peu arrondies et moins détaillées que la réalité.
+1. **Réaliste d'abord.** Matières réelles (bois, tuile, terre, pierre, tissu), éclairage de film. On simplifie seulement ce qui gêne la lecture du jeu.
 2. **Couleurs franches.** Saturation un peu au-dessus du réel. L'herbe et les toits se lisent de loin.
 3. **Lumière chaude.** Soleil doré, ombres bleutées et douces, beaucoup de ciel. Ambiance par défaut : un après-midi de vacances, façon Ghibli.
-4. **Pokémon façon Switch.** Modèles lisses comme dans Légendes Arceus ou Écarlate-Violet. Ils restent plus « dessinés » que le décor, c'est voulu.
+4. **Pokémon vivants.** Comme dans le film Détective Pikachu : vraie fourrure, vraies plumes, vraie peau, taille réelle. Silhouette et couleurs d'origine reconnaissables.
 5. **Le jeu d'abord.** Hautes herbes, chemins, portes et dresseurs se repèrent du premier coup d'œil.
 
 ## Références
 
 - Images partagées dans le projet : Bourg Palette en vue joueur (référence principale) et une forêt réaliste comparée à sa version 2002 (référence pour la Forêt de Jade).
+- Détective Pikachu (film, 2019) : la référence pour les Pokémon réalistes.
 - Légendes Pokémon : Arceus (Pokémon dans une nature ouverte), Écarlate et Violet (rendu des Pokémon, villes).
 - Zelda : Tears of the Kingdom (paysage simplifié mais riche, lisibilité des chemins).
 - Mon voisin Totoro (campagne, ciel d'été) et Kiki la petite sorcière (ville lumineuse, piste pour Jadielle).
@@ -59,11 +60,10 @@ Base commune : Lumen, Sky Atmosphere, Volumetric Clouds, exposition fixe (pas d'
 - À éviter : usure et saleté trop poussées, gris neutres et couleurs délavées.
 
 **Pokémon et personnages**
-- Modèles des jeux Switch, repassés dans Blender puis exportés en FBX.
-- Ombrage lisse, légère lumière de contour pour les détacher du décor.
+- Base : modèles des jeux Switch, repassés dans Blender puis retexturés (fourrure, plumes, peau) avant l'export FBX.
+- Humains aux proportions réelles (un ado de 1,60 m), pas des figurines à grosse tête.
 - Taille fidèle au Pokédex (Pikachu 40 cm, Onix 8,8 m).
-- Humains dans le même style que les Pokémon.
-- À éviter : pelage ou plumes ultra-réalistes.
+- À éviter : aspect plastique ou jouet, yeux d'anime, contours cel-shading.
 
 **Lisibilité**
 - Hautes herbes plus foncées et plus hautes que l'herbe normale.
@@ -71,8 +71,21 @@ Base commune : Lumen, Sky Atmosphere, Volumetric Clouds, exposition fixe (pas d'
 - Portes et entrées éclairées ou encadrées de couleur.
 - Une couleur dominante par arène (gris pierre pour Argenta).
 
-## Images d'ambiance à produire
+## Images d'ambiance
 
-Prompts Gemini dans le chat du projet. Les images vont dans le tableau Milanote ou Miro partagé, une colonne par lieu.
+Le 2026-10-26, la direction a été poussée vers le réalisme : les premières images Gemini faisaient trop « jeu Switch », surtout les personnages. Les images sont rangées dans le dossier partagé du projet `ambiance/`.
 
-Bourg Palette (référence trouvée), Bourg Palette de nuit, chambre, salon, labo du Prof. Chen, Route 1, combat sauvage, sas route/ville, Jadielle, arène de Jadielle fermée, Centre Pokémon, Boutique, Forêt de Jade (référence trouvée), Argenta, musée d'Argenta, arène d'Argenta, Mont Sélénite.
+| Scène | Statut |
+|---|---|
+| Combat sauvage | Validée, référence de réalisme |
+| Route 1, chambre, salon, sas route/ville, arène de Jadielle fermée | Validées |
+| Bourg Palette de nuit, Boutique | À retoucher (maisons trop maquette, personnages figurines) |
+| Centre Pokémon, labo du Prof. Chen, musée d'Argenta | À refaire (style anime ou cartoon) |
+| Jadielle, Argenta, arène d'Argenta | À générer |
+| Mont Sélénite | Après la V1 |
+
+### Bloc de style à coller à la fin de chaque prompt
+
+```
+Style: photorealistic cinematic render in Unreal Engine 5, as if this place really existed. Real-world materials with visible detail (wood grain, worn fabric, stone, packed dirt, glass). Natural global illumination, warm late-afternoon sunlight, soft bluish shadows, light haze, subtle film color grading, 35 mm lens. Third-person camera behind the player at shoulder height. The trainer is a real teenager with realistic human proportions (about 1.60 m), real clothes and fabric folds, not a toy or cartoon figure. Pokémon look like real living creatures, as in the movie Detective Pikachu: realistic fur, feathers or skin, real-world scale, but their original silhouette and colors stay recognizable. Slightly saturated, cozy colors. Avoid: anime, cel shading, chibi, big heads, plastic or toy look, Nintendo Switch game style.
+```
