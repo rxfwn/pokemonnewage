@@ -25,6 +25,8 @@ Plugins/**/Intermediate/
 !.vscode/settings.json
 !.vscode/extensions.json
 *.code-workspace
+# Fichier de recherche généré par « Actualiser le projet Visual Studio Code »
+/.ignore
 
 # Divers
 .DS_Store
