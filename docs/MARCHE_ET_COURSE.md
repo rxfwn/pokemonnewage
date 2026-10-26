@@ -21,7 +21,15 @@ Il reste à faire dans l'éditeur : créer l'action de course, lui donner une to
    git checkout claude/project-thread-5j8wl2
    ```
 3. Dans VS Code (workspace `PokemonNewAge.code-workspace`), **Terminal > Exécuter la tâche de build** (Ctrl+Maj+B) et choisir **PokemonNewAgeEditor Win64 Development Build**. Attendre « Succeeded ».
+   - Bien prendre la tâche avec **Editor** dans le nom : la première ligne du terminal doit afficher `Build.bat PokemonNewAgeEditor Win64 Development`. La tâche `PokemonNewAge` (sans Editor) compile le jeu seul et l'éditeur garde l'ancien code.
+   - Ne pas ouvrir Unreal avant la fin du build.
 4. Ouvrir `PokemonNewAge.uproject`.
+
+> **Fenêtre « Extraire les ressources » à l'enregistrement** : les `.uasset` sont verrouillables dans Git LFS, donc en lecture seule. Cliquer sur **Rendre accessible en écriture**. Pour ne plus la voir, une fois pour toutes :
+> ```
+> git config lfs.setlockablereadonly false
+> attrib -R Content\* /S
+> ```
 
 ## 2. Créer l'action « courir »
 
@@ -32,8 +40,8 @@ Il reste à faire dans l'éditeur : créer l'action de course, lui donner une to
 ## 3. Lui donner une touche
 
 1. Ouvrir `Content/Input/IMC_Default`.
-2. À côté de **Mappings**, cliquer sur **+** et choisir `IA_Sprint` dans la nouvelle ligne.
-3. Cliquer sur l'icône clavier puis appuyer sur **Maj gauche** (Left Shift).
+2. Déplier **Default Key Mappings**, puis cliquer sur le **(+)** de la ligne **Mappings**. Déplier **Mappings** : la nouvelle ligne vide est tout en bas, y choisir `IA_Sprint`. (Le message « Impossible d'ajouter un mappage d'action alors qu'il existe un mappage vide » veut dire que la ligne vide existe déjà.)
+3. Déplier la ligne, cliquer sur l'icône clavier puis appuyer sur **Maj gauche** (Left Shift).
 4. Cliquer sur le **+** à droite de `IA_Sprint` pour ajouter une 2e touche : **Gamepad Left Thumbstick Button**.
 5. Enregistrer.
 
@@ -41,8 +49,8 @@ Il reste à faire dans l'éditeur : créer l'action de course, lui donner une to
 
 1. Ouvrir `Content/ThirdPerson/Blueprints/BP_ThirdPersonCharacter`.
 2. Cliquer sur **Class Defaults** (barre du haut).
-3. Dans le panneau Details, catégorie **Input** : régler **Sprint Action** sur `IA_Sprint`.
-4. Catégorie **Movement** : on y voit **Walk Speed** (250) et **Sprint Speed** (500). On pourra les ajuster ici plus tard.
+3. Dans le panneau Détails, chercher `sprint`. Catégorie **Entrée** : régler **Sprint Action** sur `IA_Sprint`.
+4. Catégorie **Mouvement** : on y voit **Walk Speed** (2,5 m/s) et **Sprint Speed** (5,0 m/s). On pourra les ajuster ici plus tard.
 5. **Compile** puis **Save**.
 
 ## 5. Tester
@@ -52,7 +60,7 @@ Il reste à faire dans l'éditeur : créer l'action de course, lui donner une to
 3. Maintenir **Maj** : il **court**. Relâcher : il revient à la marche.
 4. Le saut (Espace) marche toujours.
 
-Si le personnage ne court pas : vérifier l'étape 4 (Sprint Action vide) puis l'étape 3 (touche).
+Si le personnage ne court pas : vérifier l'étape 4 (Sprint Action vide) puis l'étape 3 (touche). Si **Sprint Action** n'existe pas dans le Blueprint, c'est que l'éditeur n'a pas été recompilé : revoir l'étape 1.
 
 ## 6. Enregistrer le travail dans Git
 
