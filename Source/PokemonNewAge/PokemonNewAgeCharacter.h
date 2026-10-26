@@ -65,6 +65,29 @@ protected:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Movement")
 	bool bIsSprinting = false;
 
+	/** Camera Zoom Input Action (mouse wheel, Axis1D) */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* ZoomAction;
+
+	/** Closest the camera can get to the character (cm) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Camera", meta = (ClampMin = 50, Units = "cm"))
+	float MinCameraDistance = 200.f;
+
+	/** Farthest the camera can get from the character (cm) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Camera", meta = (ClampMin = 50, Units = "cm"))
+	float MaxCameraDistance = 800.f;
+
+	/** Distance change for one mouse wheel notch (cm) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Camera", meta = (ClampMin = 0, Units = "cm"))
+	float ZoomStep = 50.f;
+
+	/** How fast the camera reaches the requested distance */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Camera", meta = (ClampMin = 0))
+	float ZoomInterpSpeed = 8.f;
+
+	/** Camera distance requested by the player, reached smoothly in Tick */
+	float DesiredCameraDistance = 400.f;
+
 public:
 
 	/** Constructor */
@@ -72,8 +95,11 @@ public:
 
 protected:
 
-	/** Applies the walk speed once Blueprint defaults are loaded */
+	/** Applies the walk speed and camera distance once Blueprint defaults are loaded */
 	virtual void BeginPlay() override;
+
+	/** Smoothly moves the camera towards the requested distance */
+	virtual void Tick(float DeltaSeconds) override;
 
 	/** Initialize input action bindings */
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -85,6 +111,9 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
+
+	/** Called for camera zoom input */
+	void Zoom(const FInputActionValue& Value);
 
 public:
 
@@ -111,6 +140,10 @@ public:
 	/** Handles sprint released inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoSprintEnd();
+
+	/** Handles camera zoom inputs from either controls or UI interfaces. Positive brings the camera closer */
+	UFUNCTION(BlueprintCallable, Category="Input")
+	virtual void DoZoom(float Amount);
 
 	/** Returns true while the character is running */
 	UFUNCTION(BlueprintPure, Category="Movement")
