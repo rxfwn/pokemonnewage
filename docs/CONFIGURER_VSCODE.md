@@ -15,9 +15,13 @@ Rappel : on écrit le code dans **VS Code**, mais c'est le compilateur de **Visu
 ## 2. Dire à Unreal d'utiliser VS Code
 
 1. Ouvrir le projet : double-clic sur `D:\Dev\pokemonnewage\PokemonNewAge.uproject`.
-2. **Édition > Préférences de l'éditeur > Général > Code source > Éditeur de code source** : choisir **Visual Studio Code**.
-3. Redémarrer Unreal si demandé.
-4. **Outils > Actualiser le projet Visual Studio Code**.
+2. **Modifier > Préférences de l'éditeur**, taper `code` dans la recherche, puis dans **Éditeur de code source** choisir **Visual Studio Code**. S'il n'est pas dans la liste : **Modifier > Plugins**, activer **Visual Studio Code Integration** et redémarrer.
+3. Redémarrer Unreal (l'option suivante n'apparaît souvent qu'après).
+4. **Outils > Actualiser le projet Visual Studio Code**. Si l'option est absente, Unreal fermé, lancer dans PowerShell (adapter le chemin du moteur) :
+
+   ```powershell
+   & "D:\Games\UE_5.8\Engine\Build\BatchFiles\Build.bat" -projectfiles -project="D:\Dev\pokemonnewage\PokemonNewAge.uproject" -game -vscode
+   ```
 
 Unreal crée alors `PokemonNewAge.code-workspace` et des fichiers dans `.vscode/` (`c_cpp_properties.json`, `tasks.json`, `launch.json`…). Ils dépendent de ta machine : Git les ignore, chacun les régénère chez soi.
 
@@ -32,7 +36,8 @@ Unreal crée alors `PokemonNewAge.code-workspace` et des fichiers dans `.vscode/
 
 1. **Fermer Unreal** (sinon Live Coding bloque la compilation).
 2. **Ctrl+Maj+B**, puis choisir la tâche **PokemonNewAgeEditor Win64 Development Build**.
-3. Le terminal doit finir par `Result: Succeeded`.
+   Taper `Editor Win64 Development` pour filtrer la liste : les tâches **Debug** échouent avec la version d'Unreal du Launcher.
+3. Le terminal doit finir par `Result: Succeeded`. La première fois, compter jusqu'à 10 minutes ; les nombreux `warning C4996` viennent du moteur et peuvent être ignorés.
 
 ## 5. Lancer et déboguer
 
@@ -50,5 +55,7 @@ Unreal crée alors `PokemonNewAge.code-workspace` et des fichiers dans `.vscode/
 
 - **Soulignements rouges partout dans le code** : l'indexation n'est pas finie, ou le projet VS Code n'a pas été actualisé (étape 2.4).
 - **Aucune tâche de build proposée** : tu as ouvert le dossier au lieu du fichier `.code-workspace` (étape 3).
+- **« Targets cannot be built in the Debug configuration »** : mauvaise tâche, prendre **PokemonNewAgeEditor Win64 Development Build**.
+- **« Missing PokemonNewAge Modules… rebuild them now? »** à l'ouverture d'Unreal : répondre **Yes** (les binaires ne sont pas dans Git, ils se recompilent).
 - **« Unable to build while Live Coding is active »** : fermer Unreal, ou utiliser Ctrl+Alt+F11 dans Unreal.
 - Pour tout le reste : copier le message d'erreur à Claude.
