@@ -82,7 +82,7 @@ Le 2026-10-26, la direction a été poussée vers le réalisme : les premières 
 | Centre Pokémon | Validée, refaite avec le bloc de style v2 (exemple du bon équilibre) |
 | Bourg Palette de nuit | Validée (v3 : labo blanc avec antenne au bout du chemin, mer derrière) |
 | Boutique | Validée, refaite avec le bloc de style v2 |
-| Labo du Prof. Chen, musée d'Argenta | À refaire (style anime ou cartoon) |
+| Labo du Prof. Chen, musée d'Argenta | Validées, refaites avec le bloc de style v2 |
 | Jadielle, Argenta, arène d'Argenta | À générer |
 | Mont Sélénite | Après la V1 |
 
