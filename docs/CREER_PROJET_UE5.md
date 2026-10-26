@@ -16,12 +16,12 @@ Dans un terminal (PowerShell) :
 
 ```powershell
 git lfs install
-mkdir C:\Dev
-cd C:\Dev
+mkdir D:\Dev
+cd D:\Dev
 git clone https://github.com/rxfwn/pokemonnewage.git
 ```
 
-Éviter un dossier dans OneDrive ou avec des accents dans le chemin.
+Mettre le projet sur le disque qui a le plus de place (ici `D:`). Éviter un dossier dans OneDrive ou avec des accents dans le chemin.
 
 ## 3. Créer le projet
 
@@ -30,24 +30,24 @@ Unreal crée toujours un dossier au nom du projet, donc on le crée à côté pu
 1. Lancer Unreal Engine depuis le Launcher.
 2. Catégorie **Jeux** > modèle **Third Person**.
 3. À droite : **C++** (pas Blueprint), qualité **Maximale**, **Contenu de démarrage** coché, Raytracing décoché pour l'instant.
-4. Emplacement : `C:\Dev\tmp`. Nom du projet : `PokemonNewAge`. Cliquer sur **Créer**.
+4. Emplacement : `D:\Dev\tmp`. Nom du projet : `PokemonNewAge`. Cliquer sur **Créer**.
 5. Attendre la compilation et l'ouverture de l'éditeur, puis **fermer Unreal**.
-6. Déplacer depuis `C:\Dev\tmp\PokemonNewAge\` vers `C:\Dev\pokemonnewage\` :
+6. Déplacer depuis `D:\Dev\tmp\PokemonNewAge\` vers `D:\Dev\pokemonnewage\` :
    - `PokemonNewAge.uproject`
    - les dossiers `Config`, `Content`, `Source`
    - Ne pas copier `Binaries`, `Intermediate`, `Saved`, `DerivedDataCache`, `.vs`, ni le `.sln`.
-7. Supprimer `C:\Dev\tmp`.
+7. Supprimer `D:\Dev\tmp`.
 
 ## 4. Vérifier que le projet s'ouvre depuis le dépôt
 
-1. Clic droit sur `C:\Dev\pokemonnewage\PokemonNewAge.uproject` > **Generate Visual Studio project files**.
+1. Clic droit sur `D:\Dev\pokemonnewage\PokemonNewAge.uproject` > **Generate Visual Studio project files**.
 2. Double-cliquer sur `PokemonNewAge.uproject`. Si Unreal propose de recompiler les modules, répondre **Oui**.
 3. Le niveau de démo Third Person s'ouvre : cliquer sur **Play** pour vérifier qu'on peut marcher.
 4. Pour que VS Code soit l'éditeur de code : **Édition > Préférences de l'éditeur > Code source > Accesseur de code source = Visual Studio Code**, puis **Outils > Actualiser le projet Visual Studio Code**.
 
 ## 5. Committer
 
-Toujours dans `C:\Dev\pokemonnewage` :
+Toujours dans `D:\Dev\pokemonnewage` :
 
 ```powershell
 git checkout -b feature/ue5-project
