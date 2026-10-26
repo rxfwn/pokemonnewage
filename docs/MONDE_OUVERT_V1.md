@@ -10,7 +10,8 @@ On travaille du grand vers le petit :
 ## Ce qui est réaliste dès maintenant
 
 - **Les tailles** : un personnage fait 1,80 m, une maison 9 × 11 m et 7 m de haut, une arène 26 × 30 m, les arbres 12 à 20 m. Les bâtiments ont leur vraie taille, ce qui laisse la place à des intérieurs sans chargement plus tard.
-- **Le relief** : la mer au sud, des collines boisées autour des routes, des montagnes autour d'Argenta (jusqu'à environ 190 m). Les routes sont bordées de talus trop raides pour être escaladés : pas de murs invisibles au milieu des champs.
+- **La forme de Kanto** : le terrain suit la carte officielle de *Let's Go* (terre et mer extraites de l'image). Tout Kanto est déjà là, entouré de mer : environ 2,7 × 1,9 km sur un terrain de 3 km de côté. Seuls les lieux de la V1 (de Bourg Palette à Argenta) sont jouables pour l'instant, le reste est du relief à détailler plus tard.
+- **Le relief** : des collines boisées autour des routes, le Mont Sélénite, la Route Victoire, des montagnes derrière Argenta (jusqu'à environ 185 m). Les routes serpentent et les bords des villes sont arrondis, comme de vraies vallées. Elles sont bordées de talus trop raides pour être escaladés : pas de murs invisibles au milieu des champs.
 - **La lumière** : ciel physique, soleil d'après-midi, nuages volumétriques et brume légère.
 - **Le sol** : herbe sur le plat, roche sur les pentes raides, sable au bord de la mer.
 
@@ -18,7 +19,7 @@ Les couleurs restent des couleurs de blockout : les vrais modèles et textures v
 
 ## Le plan
 
-Vu de dessus, nord en haut. Environ 1,5 km de côté.
+Vu de dessus, nord en haut. Environ 3 km de côté, la V1 est la bande verte à l'ouest.
 
 ![Aperçu du relief](../Tools/Blockout/kanto_v1_preview.png)
 
@@ -33,7 +34,7 @@ Vu de dessus, nord en haut. Environ 1,5 km de côté.
 
 Bourg Palette → Argenta : environ **6 minutes en marchant, 3 minutes en courant**. À ajuster après le test.
 
-Le plan est écrit dans `Tools/Blockout/kanto_v1_layout.py` (zones, bâtiments, chemins, hautes herbes). Pour changer quelque chose, on modifie ce fichier, puis on relance le script.
+Le plan est écrit dans `Tools/Blockout/kanto_v1_layout.py` (lieux repérés en pixels sur la carte de *Let's Go*, bâtiments, chemins, hautes herbes). La forme terre / mer est dans `Tools/Blockout/kanto_terres.bin`. Pour changer quelque chose, on modifie ce fichier, puis on relance le script.
 
 ## Pas à pas (30 minutes)
 
@@ -60,16 +61,16 @@ Le plan est écrit dans `Tools/Blockout/kanto_v1_layout.py` (zones, bâtiments, 
 3. **Fichier de heightmap** : `D:\Dev\pokemonnewage\Tools\Blockout\kanto_v1_heightmap.png`.
 4. Régler :
    - **Emplacement** : 0, 0, 0 ;
-   - **Échelle** : **150, 150, 100**. C'est important : 150 fait 1,5 m entre deux points, donc un terrain de 1,5 km ;
+   - **Échelle** : **150, 150, 100**. C'est important : 150 fait 1,5 m entre deux points, donc un terrain de 3 km (2017 points de côté) ;
    - laisser la taille des sections proposée par Unreal (elle se règle d'après le fichier).
-5. Cliquer sur **Importer**. Le relief apparaît (gris quadrillé pour l'instant, le script lui donne une couleur).
+5. Cliquer sur **Importer**. Le relief apparaît (gris quadrillé pour l'instant, le script lui donne une couleur). L'import peut prendre une minute.
 6. Revenir en **mode Sélection** (Maj+1) et **enregistrer** (Ctrl+S).
 
 ### 4. Lancer le script
 
 1. **Outils > Exécuter un script Python…**
 2. Choisir `D:\Dev\pokemonnewage\Tools\Blockout\blockout_kanto_v1.py`.
-3. Patienter **2 à 3 minutes** : une barre de progression s'affiche. Le script pose environ 2 300 objets (dont un millier d'arbres), rangés dans le dossier **Kanto_Blockout** de l'Outliner, puis enregistre tout.
+3. Patienter **2 à 3 minutes** : une barre de progression s'affiche. Le script pose environ 2 400 objets (dont un millier d'arbres), rangés dans le dossier **Kanto_Blockout** de l'Outliner, puis enregistre tout.
 
 Le script efface et repose tout à chaque lancement : on peut le relancer après une modification du plan.
 
@@ -79,7 +80,7 @@ Le script efface et repose tout à chaque lancement : on peut le relancer après
 2. Vérifier :
    - aller jusqu'à Argenta à pied, puis en courant : est-ce trop long, trop court ?
    - les maisons et l'arène ont une taille crédible à côté du personnage ;
-   - on ne peut pas sortir des routes (talus trop raides) ni aller dans la mer ;
+   - on ne peut pas sortir des routes (talus trop raides) ni tomber à l'eau ;
    - on traverse bien les postes de la Forêt de Jade ; le Poste de la Ligue, au bout de la Route 22, est fermé ;
    - la lumière et le ciel rendent bien.
 3. Noter ce qui ne va pas et me l'envoyer (une capture aide beaucoup).
@@ -110,4 +111,4 @@ L'ancienne map `L_PalletTown` ne sert plus : on peut supprimer le dossier `Conte
 
 ## Refaire le relief
 
-Le relief vient de `Tools/Blockout/make_heightmap.py`, qui lit le même plan. Après une modification du plan, le relancer (`python Tools/Blockout/make_heightmap.py`, environ 30 secondes), puis réimporter le PNG dans le Landscape (mode Paysage > Gérer > Importer) et relancer le script de blockout.
+Le relief vient de `Tools/Blockout/make_heightmap.py`, qui lit le même plan. Après une modification du plan, le relancer (`python Tools/Blockout/make_heightmap.py`, quelques minutes), puis réimporter le PNG dans le Landscape (mode Paysage > Gérer > Importer) et relancer le script de blockout.

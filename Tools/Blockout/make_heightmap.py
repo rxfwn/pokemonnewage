@@ -1,13 +1,15 @@
-"""Fabrique le relief de la V1 (SCRUM-62) à partir de kanto_v1_layout.py.
+"""Fabrique le relief de Kanto (SCRUM-62) à partir de kanto_v1_layout.py.
 
 Sortie :
 - kanto_v1_heightmap.png : heightmap 16 bits en niveaux de gris, à importer dans le Landscape ;
 - kanto_v1_preview.png : aperçu en couleurs (nord en haut) pour vérifier le plan.
 
-Lancement : python Tools/Blockout/make_heightmap.py (Python 3, sans bibliothèque à installer).
+Lancement : python Tools/Blockout/make_heightmap.py (Python 3, sans bibliothèque à installer,
+quelques minutes : le calcul est réparti sur tous les cœurs du processeur).
 Valeur 32768 = altitude 0 ; 128 unités = 1 m avec l'échelle Z de 100 du Landscape.
 """
 
+import multiprocessing
 import os
 import struct
 import sys
@@ -49,16 +51,18 @@ def preview_color(height, x, y):
     return (int(80 + 60 * shade), int(130 - 20 * shade), int(60 + 30 * shade))
 
 
+def _row(row):
+    size, step = layout.HEIGHTMAP_SIZE, layout.METERS_PER_PIXEL
+    y = row * step
+    return [layout.height_at(column * step, y) for column in range(size)]
+
+
 def main():
     size = layout.HEIGHTMAP_SIZE
     step = layout.METERS_PER_PIXEL
-    heights = []
     # Ligne r de l'image = axe Y du Landscape (est), colonne c = axe X (nord).
-    for row in range(size):
-        y = row * step
-        heights.append([layout.height_at(column * step, y) for column in range(size)])
-        if row % 100 == 0:
-            print(f"relief : {row}/{size}")
+    with multiprocessing.Pool() as pool:
+        heights = pool.map(_row, range(size), chunksize=16)
 
     rows16 = []
     for line in heights:
@@ -66,15 +70,16 @@ def main():
         rows16.append(struct.pack(f">{size}H", *values))
     write_png(os.path.join(HERE, "kanto_v1_heightmap.png"), size, size, rows16, 16, 0)
 
-    # Aperçu : nord en haut, est à droite (on tourne le repère du Landscape).
+    # Aperçu : nord en haut, est à droite (on tourne le repère du Landscape), un point sur deux.
     preview_rows = []
-    for column in reversed(range(size)):
+    for column in reversed(range(0, size, 2)):
         x = column * step
         pixels = bytearray()
-        for row in range(size):
+        for row in range(0, size, 2):
             pixels.extend(preview_color(heights[row][column], x, row * step))
         preview_rows.append(bytes(pixels))
-    write_png(os.path.join(HERE, "kanto_v1_preview.png"), size, size, preview_rows, 8, 2)
+    half = (size + 1) // 2
+    write_png(os.path.join(HERE, "kanto_v1_preview.png"), half, half, preview_rows, 8, 2)
 
     flat = [h for line in heights for h in line]
     print(f"Altitude min {min(flat):.1f} m, max {max(flat):.1f} m")

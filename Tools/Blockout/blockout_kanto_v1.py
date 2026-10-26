@@ -231,58 +231,83 @@ def tree(index, x, y, rng):
     spawn(CONE, f"Arbre_{index:04d}_Feuillage", "Arbres", leaves, (width, width, height), "Leaves")
 
 
+def v1_bounds(margin):
+    """Rectangle (x0, x1, y0, y1) en mètres qui contient tous les lieux de la V1."""
+    us = [u + s * ru for _, u, _, ru, _ in layout.AREAS for s in (-1, 1)]
+    vs = [v + s * rv for _, _, v, _, rv in layout.AREAS for s in (-1, 1)]
+    for _, _, points in layout.ROUTES:
+        us += [u for u, _ in points]
+        vs += [v for _, v in points]
+    xs = [layout.from_map(u, v)[0] for u in (min(us), max(us)) for v in (min(vs), max(vs))]
+    ys = [layout.from_map(u, v)[1] for u in (min(us), max(us)) for v in (min(vs), max(vs))]
+    return min(xs) - margin, max(xs) + margin, min(ys) - margin, max(ys) + margin
+
+
 def build_trees():
     rng = random.Random(151)
     index = 0
+    x0, x1, y0, y1 = v1_bounds(60)
     # Forêt de Jade : dense, sauf le long du chemin.
-    _, x0, x1, y0, y1 = [z for z in layout.ZONES if z[0] == "Forêt de Jade"][0][:5]
-    x = x0 + 4
+    step = 9
+    x = x0
     while x < x1:
-        y = y0 + 4
+        y = y0
         while y < y1:
             px, py = x + rng.uniform(-3, 3), y + rng.uniform(-3, 3)
-            if not near_path(px, py, 6) and not near_building(px, py, 4):
+            if (layout.find_zone(px, py) == "Forêt de Jade"
+                    and not near_path(px, py, 6) and not near_building(px, py, 4)):
                 index += 1
                 tree(index, px, py, rng)
-            y += 9
-        x += 9
+            y += step
+        x += step
     # Bordures : une ceinture d'arbres sur les talus autour des routes et des villes.
     step = 14
-    for gx in range(0, int(layout.WORLD_SIZE), step):
-        for gy in range(0, int(layout.WORLD_SIZE), step):
-            px, py = gx + rng.uniform(-5, 5), gy + rng.uniform(-5, 5)
-            if layout.find_zone(px, py) is not None:
-                continue
-            distance = min(
-                math.hypot(max(z[1] - px, 0, px - z[2]), max(z[3] - py, 0, py - z[4]))
-                for z in layout.ZONES)
+    x = x0
+    while x < x1:
+        y = y0
+        while y < y1:
+            px, py = x + rng.uniform(-5, 5), y + rng.uniform(-5, 5)
+            distance, _ = layout.zone_distance(px, py)
             if 4 < distance < 45 and layout.height_at(px, py) > layout.SEA_LEVEL + 1:
                 index += 1
                 tree(index, px, py, rng)
+            y += step
+        x += step
     unreal.log(f"{index} arbres posés.")
 
 
 def build_sea():
-    # Une grande plaque d'eau au niveau de la mer, traversable (la vraie eau viendra plus tard).
-    location = unreal.Vector(GROUND.origin.x - 25 * 100,
-                             GROUND.origin.y + layout.WORLD_SIZE / 2 * 100,
+    # Une grande plaque d'eau au niveau de la mer sous toute la carte, traversable
+    # (la vraie eau viendra plus tard).
+    half = layout.WORLD_SIZE / 2
+    location = unreal.Vector(GROUND.origin.x + half * 100, GROUND.origin.y + half * 100,
                              GROUND.origin.z + (layout.SEA_LEVEL - 0.5) * 100)
-    spawn(CUBE, "Mer", "Mer", location, (400, layout.WORLD_SIZE + 400, 1), "Water", collision=False)
-    # Mur invisible le long de la plage : on ne peut pas encore nager.
-    for y in range(600, 900, 20):
-        x = layout.coast_x(y + 10) + 3
-        wall = spawn(CUBE, f"Mur_Plage_{y}", "Limites", GROUND.point(x, y + 10, 2),
-                     (1, 21, 6), "Water")
-        wall.set_actor_hidden_in_game(True)
+    size = layout.WORLD_SIZE + 400
+    spawn(CUBE, "Mer", "Mer", location, (size, size, 1), "Water", collision=False)
+    # Murs invisibles là où un lieu de la V1 touche l'eau : on ne peut pas encore nager.
+    step = 6
+    x0, x1, y0, y1 = v1_bounds(20)
+    count = 0
+    x = x0
+    while x < x1:
+        y = y0
+        while y < y1:
+            distance, _ = layout.zone_distance(x, y)
+            if distance < 3 and layout.height_at(x, y) < layout.SEA_LEVEL + 1:
+                count += 1
+                location = GROUND.point(x, y)
+                location.z = GROUND.origin.z + (layout.SEA_LEVEL + 2) * 100
+                wall = spawn(CUBE, f"Mur_Eau_{count:04d}", "Limites", location,
+                             (step, step, 6), "Water")
+                wall.set_actor_hidden_in_game(True)
+            y += step
+        x += step
+    unreal.log(f"{count} murs invisibles au bord de l'eau.")
 
 
 def build_signs():
     """Nom de chaque lieu en grand à son entrée (deux faces, lisible des deux côtés)."""
-    for name, x0, x1, y0, y1 in (zone[:5] for zone in layout.ZONES):
-        if name == "Route 22":
-            x, y = (x0 + x1) / 2 + 8, y1 - 6
-        else:
-            x, y = x0 + 6, (y0 + y1) / 2 + 8
+    for name, x, y in layout.SIGNS:
         for yaw in (0, 180):
             sign = actors.spawn_actor_from_class(
                 unreal.TextRenderActor, GROUND.point(x, y, 3.5), unreal.Rotator(yaw=yaw))
