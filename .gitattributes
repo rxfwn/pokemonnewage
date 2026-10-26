@@ -31,3 +31,6 @@
 *.ini text
 *.json text
 *.md text
+
+# Images générées par les scripts d'outils (petites, hors LFS)
+Tools/**/*.png -filter -diff -merge binary
