@@ -64,7 +64,9 @@ Le plan est écrit dans `Tools/Blockout/kanto_v1_layout.py` (lieux repérés en 
    - **Échelle** : **150, 150, 100**. C'est important : 150 fait 1,5 m entre deux points, donc un terrain de 3 km (2017 points de côté) ;
    - laisser la taille des sections proposée par Unreal (elle se règle d'après le fichier).
 5. Cliquer sur **Importer**. Le relief apparaît (gris quadrillé pour l'instant, le script lui donne une couleur). L'import peut prendre une minute.
-6. Revenir en **mode Sélection** (Maj+1) et **enregistrer** (Ctrl+S).
+6. Revenir en **mode Sélection** (Maj+1).
+7. **Charger le terrain** : avec le World Partition, il est découpé en morceaux qui ne sont pas chargés tout de suite (l'Outliner affiche par exemple « 263 acteurs (7 chargés) » et la vue reste noire). Ouvrir **Fenêtre > World Partition > World Partition Editor**, sélectionner toute la carte par un clic-glisser, puis **clic droit > Load Region From Selection**.
+8. **Enregistrer** (Ctrl+S). La vue reste sombre tant que le script n'a pas posé la lumière ; **Alt+3** (mode non éclairé) permet de voir le relief en attendant, **Alt+4** revient au mode normal.
 
 ### 4. Lancer le script
 
