@@ -81,7 +81,7 @@ Le 2026-10-26, la direction a été poussée vers le réalisme : les premières 
 | Route 1, chambre, salon, sas route/ville, arène de Jadielle fermée | Validées |
 | Centre Pokémon | Validée, refaite avec le bloc de style v2 (exemple du bon équilibre) |
 | Bourg Palette de nuit | Validée (v3 : labo blanc avec antenne au bout du chemin, mer derrière) |
-| Boutique | À retoucher (personnages figurines) |
+| Boutique | Validée, refaite avec le bloc de style v2 |
 | Labo du Prof. Chen, musée d'Argenta | À refaire (style anime ou cartoon) |
 | Jadielle, Argenta, arène d'Argenta | À générer |
 | Mont Sélénite | Après la V1 |
