@@ -10,8 +10,10 @@ On travaille du grand vers le petit :
 ## Ce qui est réaliste dès maintenant
 
 - **Les tailles** : un personnage fait 1,80 m, une maison 9 × 11 m et 7 m de haut, une arène 26 × 30 m, les arbres 12 à 20 m. Les bâtiments ont leur vraie taille, ce qui laisse la place à des intérieurs sans chargement plus tard.
-- **La forme de Kanto** : le terrain suit la carte officielle de *Let's Go* (terre et mer extraites de l'image). Tout Kanto est déjà là, entouré de mer : environ 5,5 × 3,9 km sur un terrain de 6 km de côté. Seuls les lieux de la V1 (de Bourg Palette à Argenta) sont jouables pour l'instant, le reste est du relief à détailler plus tard.
-- **Le relief** : fabriqué comme un vrai terrain. Des massifs en crêtes (Mont Sélénite, Route Victoire, Tunnel Roche, montagnes derrière Argenta, jusqu'à environ 225 m), des collines, des falaises par endroits et des plages ailleurs, puis une **érosion par la pluie** : des millions de gouttes coulent sur les pentes et creusent vallées et ravines. Les lieux de la V1 sont posés au fond de **larges vallées douces** (pas de tranchées). La mer arrive juste au sud de Bourg Palette, et l'étang du village s'y jette par un petit ruisseau.
+- **La forme de Kanto** : le terrain est décalqué sur la carte complète de *Rouge Feu / Vert Feuille* (routes, villes, mer, lacs, extraits de l'image par `make_frlg_mask.py`), la côte extérieure suit celle de *Let's Go*. Tout Kanto est là, entouré de mer : environ 5,3 × 5,2 km sur un terrain de 6 km de côté. Seuls les lieux de la V1 (de Bourg Palette à Argenta) sont jouables pour l'instant.
+- **Les routes sont obligatoires** : hors des routes, le relief bloque (falaise de 25 à 40 m au bord, puis des flancs raides et des chaînes de montagnes en crêtes). On ne coupe pas à travers les montagnes comme dans *Breath of the Wild* : on suit les vallées, les cols et les plateaux, comme dans les jeux.
+- **Des villes en hauteur** : chaque ville a son altitude, les routes montent et descendent entre elles. Bourg Palette 22 m, Jadielle 48 m, Argenta sur un plateau à 140 m, le Plateau Indigo à 330 m, Lavanville à 115 m, Carmin sur Mer et Parmanie au bord de l'eau. Les villes de la V1 sont en **terrasses** (2 ou 3 niveaux reliés par des rampes).
+- **Le relief** : massifs en crêtes (Route Victoire, Mont Sélénite, Tunnel Roche…, jusqu'à 500 m), côtes variées (plages, falaises, caps, baies), lacs en hauteur, puis une **érosion par la pluie** qui creuse vallées et ravines. Pas de mer à Bourg Palette : la côte la plus proche est à plus de 300 m au sud.
 - **La lumière** : ciel physique, soleil d'après-midi, nuages volumétriques et brume légère.
 - **Le sol** : herbe sur le plat, roche sur les pentes raides, sable au bord de la mer.
 
@@ -19,9 +21,11 @@ Les couleurs restent des couleurs de blockout : les vrais modèles et textures v
 
 ## Le plan
 
-Vu de dessus, nord en haut. Environ 6 km de côté, la V1 est la bande verte à l'ouest.
+Vu de dessus, nord en haut. Environ 6 km de côté, la V1 est la vallée à l'ouest (Bourg Palette en bas, Argenta en haut).
 
 ![Aperçu du relief](../Tools/Blockout/kanto_v1_preview.png)
+
+La heightmap elle-même en gris (noir = fond de la mer, blanc = sommets) : `Tools/Blockout/kanto_v1_heightmap_apercu.png`.
 
 | Lieu | Taille | Distance depuis Bourg Palette |
 |---|---|---|
@@ -32,13 +36,13 @@ Vu de dessus, nord en haut. Environ 6 km de côté, la V1 est la bande verte à 
 | Route 2 (sud) puis Forêt de Jade (415 × 370 m) puis Route 2 (nord) | | |
 | Argenta | 175 × 150 m | environ 1,7 km |
 
-Bourg Palette → Argenta : environ **12 à 15 minutes en marchant, 6 à 7 minutes en courant**. Les villes ont leur taille réelle ; ce sont les routes qui donnent la durée du trajet. Pour allonger ou raccourcir, on change `MAP_SCALE` dans le plan.
+Bourg Palette → Argenta : environ **12 à 15 minutes en marchant, 6 à 7 minutes en courant**. Les villes ont leur taille réelle ; ce sont les routes qui donnent la durée du trajet. Pour allonger ou raccourcir, on change `CELL` (mètres par case de la carte FRLG) dans le plan.
 
 ### Bourg Palette
 
 Le plan suit celui de Rouge Feu / Vert Feuille : la maison du joueur (toit rouge) en haut à gauche, celle du rival (toit bleu) en haut à droite, le labo du Prof. Chen en bas à droite, un parterre de fleurs avec sa barrière à gauche, l'étang en bas à gauche, une barrière et un panneau en bas, le tout entouré d'un mur d'arbres avec la sortie de la Route 1 au nord.
 
-Le plan est écrit dans `Tools/Blockout/kanto_v1_layout.py` (lieux repérés en pixels sur la carte de *Let's Go*, massifs, hauteurs, bâtiments, chemins, hautes herbes). La forme terre / mer et la distance à la mer sont dans `Tools/Blockout/kanto_terres.bin`. Pour changer quelque chose, on modifie ce fichier, puis on relance le script.
+Le plan est écrit dans `Tools/Blockout/kanto_v1_layout.py` (villes et cols repérés en cases de la carte FRLG avec leur altitude, massifs, terrasses, bâtiments, chemins, hautes herbes). Le décalque de la carte FRLG est dans `kanto_frlg.bin`, la côte de *Let's Go* dans `kanto_terres.bin`. Pour changer quelque chose, on modifie ce fichier, puis on relance le script.
 
 ## Pas à pas (30 minutes)
 
@@ -65,7 +69,7 @@ Le plan est écrit dans `Tools/Blockout/kanto_v1_layout.py` (lieux repérés en 
 3. **Fichier de heightmap** : `D:\Dev\pokemonnewage\Tools\Blockout\kanto_v1_heightmap.png`.
 4. Régler :
    - **Emplacement** : 0, 0, 0 ;
-   - **Échelle** : **150, 150, 100**. C'est important : 150 fait 1,5 m entre deux points, donc un terrain de 6 km (4033 points de côté) ;
+   - **Échelle** : **150, 150, 200**. C'est important : 150 fait 1,5 m entre deux points, donc un terrain de 6 km (4033 points de côté), et 200 permet des montagnes jusqu'à 500 m ;
    - laisser la taille des sections proposée par Unreal (elle se règle d'après le fichier).
 5. Cliquer sur **Importer**. Le relief apparaît (gris quadrillé pour l'instant, le script lui donne une couleur). L'import peut prendre une minute.
 6. Revenir en **mode Sélection** (Maj+1).
@@ -86,7 +90,7 @@ Le script efface et repose tout à chaque lancement : on peut le relancer après
 2. Vérifier :
    - aller jusqu'à Argenta à pied, puis en courant : est-ce trop long, trop court ?
    - les maisons et l'arène ont une taille crédible à côté du personnage ;
-   - on ne peut pas sortir de la V1 (murs invisibles à la lisière, environ 30 m après le bord des routes, cachés dans les arbres) ni tomber à l'eau ;
+   - on ne peut pas sortir des routes : les falaises et les pentes bloquent. Des murs invisibles restent seulement au bord de l'eau et là où les routes quittent la V1 ;
    - on traverse bien les postes de la Forêt de Jade ; le Poste de la Ligue, au bout de la Route 22, est fermé ;
    - la lumière et le ciel rendent bien.
 3. Noter ce qui ne va pas et me l'envoyer (une capture aide beaucoup).
@@ -110,13 +114,17 @@ L'ancienne map `L_PalletTown` ne sert plus : on peut supprimer le dossier `Conte
 
 - **Pas de modèle « Empty Open World »** : créer un niveau **Basic**, l'enregistrer en `L_Kanto`, puis **Outils > Convertir le niveau** et cocher le World Partition.
 - **« Pas de Landscape »** dans le journal : l'étape 3 n'a pas été faite, ou le Landscape est dans une autre map.
-- **« Échelle du Landscape inattendue »** : l'échelle de l'étape 3 n'était pas 150, 150, 100. Supprimer le Landscape et le réimporter.
+- **« Échelle du Landscape inattendue »** : l'échelle de l'étape 3 n'était pas 150, 150, 200. Supprimer le Landscape et le réimporter.
 - **Le sol reste gris quadrillé** : sélectionner le Landscape, panneau Détails, **Landscape Material** : choisir `M_Kanto_Sol` (dans `Content/World/Kanto/Blockout`).
 - **Un nom de lieu s'affiche à l'envers** : chaque panneau a deux faces, une seule est à l'endroit selon le côté d'où on regarde.
 - **Le script ne fait rien** : **Fenêtre > Journal de sortie**, chercher les lignes `LogPython`, et m'envoyer le message.
 
 ## Refaire le relief
 
-Le relief vient de `Tools/Blockout/make_heightmap.py`, qui lit le même plan. Unreal relit ensuite le PNG produit pour poser les objets pile sur le sol. Après une modification du plan, le relancer (`pip install numpy numba` la première fois, puis `python Tools/Blockout/make_heightmap.py`, environ 2 minutes), puis réimporter le PNG dans le Landscape (mode Paysage > Gérer > Importer) et relancer le script de blockout.
+Le relief vient de `Tools/Blockout/make_heightmap.py`, qui lit le même plan. Unreal relit ensuite le PNG produit pour poser les objets pile sur le sol. Après une modification du plan, le relancer (`pip install numpy numba` la première fois, puis `python Tools/Blockout/make_heightmap.py`, environ 4 minutes), puis réimporter le PNG dans le Landscape (mode Paysage > Gérer > Importer) et relancer le script de blockout.
 
-**Si la taille du terrain change** (par exemple de 2017 à 4033 points quand on a agrandi la carte), l'outil Importer refuse le fichier : supprimer le Landscape dans l'Outliner, puis refaire l'étape 3 (nouveau Landscape, même échelle 150, 150, 100) et l'étape 7 (charger tout le terrain).
+**Si la taille du terrain change** (par exemple de 2017 à 4033 points quand on a agrandi la carte), l'outil Importer refuse le fichier : supprimer le Landscape dans l'Outliner, puis refaire l'étape 3 (nouveau Landscape, échelle 150, 150, 200) et l'étape 7 (charger tout le terrain).
+
+**Passage à la version FRLG (octobre 2026)** : l'échelle en hauteur passe de 100 à 200. Il faut donc **supprimer l'ancien Landscape** et refaire l'étape 3 avec 150, 150, 200, puis l'étape 7 et le script.
+
+Le décalque de la carte FRLG se refait avec `python Tools/Blockout/make_frlg_mask.py carte_frlg.png` (`pip install numpy pillow`), à partir de l'image complète de Kanto (tuiles assemblées sur fond en damier). Il produit `kanto_frlg.bin` et un aperçu `kanto_frlg_apercu.png`.

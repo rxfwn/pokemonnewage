@@ -1,22 +1,31 @@
-"""Fabrique le relief de Kanto (SCRUM-62) à partir de kanto_v1_layout.py.
+"""Fabrique le relief de Kanto (SCRUM-62) : un vrai terrain 3D organisé autour des routes.
 
 Sortie :
-- kanto_v1_heightmap.png : heightmap 16 bits en niveaux de gris, à importer dans le Landscape.
-  Unreal (blockout_kanto_v1.py) relit ce même fichier pour poser les objets sur le sol ;
-- kanto_v1_preview.png : aperçu en couleurs et ombré (nord en haut) pour vérifier le plan.
+- kanto_v1_heightmap.png : heightmap 16 bits en niveaux de gris, à importer dans le Landscape
+  (échelle 150, 150, 200). Unreal (blockout_kanto_v1.py) relit ce fichier pour poser les objets ;
+- kanto_couloirs.bin : distance au bord des routes (pour les arbres de lisière dans Unreal) ;
+- kanto_lacs.json : lacs et rivières en hauteur (Unreal y pose une surface d'eau) ;
+- kanto_v1_preview.png : aperçu en couleurs et ombré ; kanto_v1_heightmap_apercu.png : la
+  heightmap en gris contrastés, plus facile à lire. Nord en haut.
 
-Lancement : pip install numpy numba, puis python Tools/Blockout/make_heightmap.py
-(quelques minutes). Valeur 32768 = altitude 0 ; 128 unités = 1 m avec l'échelle Z de 100.
+Lancement : pip install numpy numba, puis python Tools/Blockout/make_heightmap.py (2 à 3 minutes).
 
-Étapes, comme pour un vrai terrain :
-1. la forme de Kanto (terre / mer) vient de la carte de Let's Go, avec des côtes déformées ;
-2. le relief de base : massifs en crêtes, collines, plaines, falaises et plages ;
-3. l'érosion par la pluie, en deux passes (grandes vallées, puis ravines) : des milliers de
-   gouttes coulent sur la pente, creusent et redéposent la terre ;
-4. les lieux de la V1 sont posés au fond de larges vallées douces (sol plat dans les villes,
-   légères ondulations sur les routes), puis l'eau est creusée (étang, ruisseau, mer).
+Méthode, du plus grand au plus petit :
+1. Le réseau des routes et des villes vient de Rouge Feu / Vert Feuille (kanto_frlg.bin) ;
+   tout le reste est soit la mer (silhouette de Let's Go), soit du relief qu'on ne peut pas
+   traverser : on suit les routes, les cols et les tunnels.
+2. Chaque ville a son altitude (port au niveau de la mer, ville de pierre sur un plateau,
+   Plateau Indigo tout en haut) ; les routes montent et descendent entre elles en passant
+   par des points de passage (collines, cols), en suivant le chemin, pas à vol d'oiseau.
+3. Hors des routes : une falaise de 25 à 40 m, puis des chaînes de montagnes en crêtes qui
+   grandissent avec la distance (les grands massifs de Kanto sont les plus hauts).
+4. Côtes : falaises par endroits, plages ailleurs ; lacs et rivières à leur altitude.
+5. Érosion par la pluie, en deux passes (vallées puis ravines), seulement dans les montagnes :
+   les routes et les falaises qui les bordent restent intactes.
+6. Les villes de la V1 sont posées en terrasses, avec des rampes sur l'axe principal.
 """
 
+import json
 import os
 import struct
 import sys
@@ -32,13 +41,18 @@ import kanto_v1_layout as layout  # noqa: E402
 HERE = os.path.dirname(os.path.abspath(__file__))
 SIZE = layout.HEIGHTMAP_SIZE
 STEP = layout.METERS_PER_PIXEL
-COARSE = 4  # la grande érosion se fait sur une grille 4 fois plus large (6 m)
+CELL = layout.CELL
+COLS, ROWS = layout.FRLG_COLS, layout.FRLG_ROWS
+SEED = 151
 
 # Réglages du relief (mètres).
-MOUNTAIN_HEIGHT = 260.0
-HILL_HEIGHT = 45.0
-VALLEY_WIDTH = 200.0  # distance sur laquelle le relief remonte autour des lieux de la V1
-SEED = 151
+CLIFF_HEIGHT = 26.0     # falaise au bord des routes (+ jusqu'à 14 m selon l'endroit)
+MASSIF_BASE = 110.0     # hauteur des reliefs ordinaires loin des routes
+MASSIF_PEAK = 165.0     # en plus, au cœur des grands massifs
+WARP = 260.0            # déformation des bords des routes et des côtes (pas de rectangles)
+V1_CLEARANCE = 75.0     # largeur garantie autour des chemins de la V1
+ROUTE_HILLS = 34.0      # collines au fond des routes larges (pentes douces)
+PAD = 60                # cases ajoutées autour de la carte FRLG (la côte y suit Let's Go)
 
 
 # --- Bruits (numpy) ------------------------------------------------------------------
@@ -109,7 +123,7 @@ def fbm(x, y, scale, octaves, seed, gain=0.5):
 
 
 def ridged(x, y, scale, octaves, seed):
-    """Bruit en crêtes (0 à 1) : arêtes vives comme de vraies montagnes."""
+    """Bruit en crêtes (0 à 1) : arêtes vives et vallées, comme de vraies chaînes de montagnes."""
     total, amplitude, norm, weight = 0.0, 1.0, 0.0, 1.0
     for octave in range(octaves):
         ridge = 1.0 - np.abs(perlin(x, y, scale, seed + octave * 13))
@@ -127,82 +141,75 @@ def smoothstep(edge0, edge1, value):
     return t * t * (3 - 2 * t)
 
 
-# --- Forme de Kanto -----------------------------------------------------------------
+# --- Grille de la carte FRLG (numba) ------------------------------------------------------
 
-def _land_planes():
-    planes = [np.frombuffer(p, np.uint8).reshape(layout._LAND_H, layout._LAND_W).astype(np.float32)
-              for p in (layout._LAND_FINE, layout._LAND_WIDE, layout._LAND_INLAND)]
-    return planes[0] / 255.0, planes[1] / 255.0, planes[2] * layout.MAP_SCALE
-
-
-def sample(plane, u, v):
-    """Lecture interpolée d'un plan de la carte ; 0 hors de la carte (la mer)."""
-    h, w = plane.shape
-    inside = (u >= 0) & (u < w - 1) & (v >= 0) & (v < h - 1)
-    uc, vc = np.clip(u, 0, w - 1.001), np.clip(v, 0, h - 1.001)
-    iu, iv = uc.astype(np.int64), vc.astype(np.int64)
-    tu, tv = uc - iu, vc - iv
-    a, b = plane[iv, iu], plane[iv, iu + 1]
-    c, d = plane[iv + 1, iu], plane[iv + 1, iu + 1]
-    value = (a * (1 - tu) + b * tu) * (1 - tv) + (c * (1 - tu) + d * tu) * tv
-    return np.where(inside, value, 0.0)
-
-
-def to_map(x, y):
-    return (y - layout.MAP_OFFSET_Y) / layout.MAP_SCALE, layout.MAP_HEIGHT - (x - layout.MAP_OFFSET_X) / layout.MAP_SCALE
-
-
-def _warped(x, y):
-    """Coordonnées déformées : côtes et massifs moins réguliers."""
-    wx = x + fbm(x, y, 700, 3, SEED + 1) * 140
-    wy = y + fbm(x, y, 700, 3, SEED + 2) * 140
-    return to_map(wx, wy)
-
-
-def coast_and_sea(x, y, wide_v):
-    """(part de terre entre 0 et 1, profondeur de la mer) : la côte ondule grâce au bruit."""
-    sea = layout.SEA_LEVEL - 2.0 - 28.0 * (1 - wide_v)
-    edge = wide_v + fbm(x, y, 300, 4, SEED + 7) * 0.45
-    coast = smoothstep(0.42, 0.58, edge)
-    for _, sx, sy, half_x, half_y in layout.SEA:
-        norm = np.hypot((x - sx) / half_x, (y - sy) / half_y)
-        outside = smoothstep(0.8, 1.15, norm + fbm(x, y, 120, 3, SEED + 8) * 0.12)
-        coast *= outside
-        sea = np.minimum(sea, -2.0 - 14.0 * (1 - outside))
-    return coast, sea
+@njit(cache=True)
+def geodesic(passable, seeds_r, seeds_c, values):
+    """Distance (en cases) en restant dans `passable`, depuis des points de départ, et la
+    valeur du départ le plus proche. Balayages en chanfrein répétés jusqu'à stabilité."""
+    rows, cols = passable.shape
+    dist = np.full((rows, cols), 1e9)
+    value = np.zeros((rows, cols))
+    for i in range(len(seeds_r)):
+        dist[seeds_r[i], seeds_c[i]] = 0.0
+        value[seeds_r[i], seeds_c[i]] = values[i]
+    diag = 1.41421356
+    changed = True
+    while changed:
+        changed = False
+        for r in range(rows):
+            for c in range(cols):
+                if not passable[r, c]:
+                    continue
+                for dr, dc, w in ((-1, -1, diag), (-1, 0, 1.0), (-1, 1, diag), (0, -1, 1.0)):
+                    rr, cc = r + dr, c + dc
+                    if 0 <= rr < rows and 0 <= cc < cols and passable[rr, cc] and dist[rr, cc] + w < dist[r, c]:
+                        dist[r, c] = dist[rr, cc] + w
+                        value[r, c] = value[rr, cc]
+                        changed = True
+        for r in range(rows - 1, -1, -1):
+            for c in range(cols - 1, -1, -1):
+                if not passable[r, c]:
+                    continue
+                for dr, dc, w in ((1, 1, diag), (1, 0, 1.0), (1, -1, diag), (0, 1, 1.0)):
+                    rr, cc = r + dr, c + dc
+                    if 0 <= rr < rows and 0 <= cc < cols and passable[rr, cc] and dist[rr, cc] + w < dist[r, c]:
+                        dist[r, c] = dist[rr, cc] + w
+                        value[r, c] = value[rr, cc]
+                        changed = True
+    return dist, value
 
 
-def base_terrain(x, y, planes):
-    """Relief naturel avant érosion (mètres), sur des grilles x (nord), y (est)."""
-    fine, wide, inland = planes
-    u, v = _warped(x, y)
-    wide_v = sample(wide, u, v)
-    inland_v = sample(inland, u, v)
-
-    # Part de montagne : massifs de la carte, union douce, et un peu de hasard partout.
-    mountain = np.zeros_like(x)
-    for cu, cv, ru, rv, weight in layout.MOUNTAINS:
-        norm = np.hypot((u - cu) / ru, (v - cv) / rv)
-        mountain = 1 - (1 - mountain) * (1 - weight * smoothstep(1.0, 0.15, norm))
-    extra = smoothstep(0.15, 0.45, fbm(x, y, 1200, 2, SEED + 3)) * 0.6
-    mountain = 1 - (1 - mountain) * (1 - extra)
-    mountain *= smoothstep(20, 260, inland_v)
-
-    peaks = MOUNTAIN_HEIGHT * mountain * (0.2 + 0.8 * ridged(x, y, 650, 6, SEED + 4)) * (0.55 + 0.45 * mountain)
-    hills = HILL_HEIGHT * (0.5 + 0.5 * fbm(x, y, 420, 6, SEED + 5)) ** 1.4 * smoothstep(0, 180, inland_v)
-    plain = 1.0 + np.minimum(inland_v, 600) * 0.012
-    land = plain + hills + peaks
-
-    # Côtes : falaises par endroits, plages ailleurs.
-    cliff = smoothstep(0.1, 0.45, fbm(x, y, 900, 3, SEED + 6))
-    shore = smoothstep(0.5, 0.56 + 0.44 * (1 - cliff), wide_v)
-    land = 0.6 + (land - 0.6) * shore
-
-    coast, sea = coast_and_sea(x, y, wide_v)
-    return sea + (land - sea) * coast
+def distance_from(mask):
+    """Distance (en cases) de chaque case à la plus proche case de `mask`, et sa position."""
+    rr, cc = np.nonzero(mask)
+    dist, _ = geodesic(np.ones(mask.shape, np.bool_), rr.astype(np.int64), cc.astype(np.int64),
+                       np.zeros(len(rr)))
+    return dist
 
 
-# --- Érosion par gouttes de pluie (numba) ------------------------------------------
+def spread_values(mask, values):
+    """Pour chaque case, la valeur de la case de `mask` la plus proche."""
+    rr, cc = np.nonzero(mask)
+    _, value = geodesic(np.ones(mask.shape, np.bool_), rr.astype(np.int64), cc.astype(np.int64),
+                        values[rr, cc].astype(np.float64))
+    return value
+
+
+def masked_blur(field, mask, passes):
+    """Moyenne 3 × 3 répétée, seulement entre cases de `mask` : adoucit les pentes des routes."""
+    field = field.copy()
+    weight = mask.astype(np.float64)
+    for _ in range(passes):
+        total = np.zeros_like(field)
+        count = np.zeros_like(field)
+        for dr in (-1, 0, 1):
+            for dc in (-1, 0, 1):
+                total += np.roll(np.roll(field * weight, dr, 0), dc, 1)
+                count += np.roll(np.roll(weight, dr, 0), dc, 1)
+        field = np.where(mask, total / np.maximum(count, 1e-9), field)
+    return field
+
 
 @njit(cache=True)
 def erode(h, drops, seed, max_steps, radius, inertia, capacity, min_slope,
@@ -277,84 +284,203 @@ def erode(h, drops, seed, max_steps, radius, inertia, capacity, min_slope,
     return h
 
 
-def keep_land(before, after):
-    """L'érosion ne doit pas faire entrer la mer dans les terres : les fonds de vallée
-    s'arrêtent un peu au-dessus de l'eau, comme des plaines de rivière."""
-    floor = np.minimum(before, 0.5 + 0.02 * np.maximum(before, 0))
-    return np.where(before > 0.3, np.maximum(after, floor), after)
+# --- Étape 1 : la carte, case par case ---------------------------------------------------
+
+def load_frlg():
+    """La grille FRLG, entourée de PAD cases vides (indices décalés de PAD)."""
+    with open(os.path.join(HERE, "kanto_frlg.bin"), "rb") as handle:
+        data = zlib.decompress(handle.read())
+    _, cols, rows = struct.unpack_from("<4sHH", data)
+    grid = np.frombuffer(data[8:], np.uint8).reshape(rows, cols)
+    return np.pad(grid, PAD)
 
 
-# --- Lieux de la V1 (copie numpy de kanto_v1_layout.zone_distance) ------------------
+def letsgo_land(columns, rows):
+    """Terre (0 à 1) d'après la carte de Let's Go, pour des cases de la carte FRLG."""
+    (a, b, c), (d, e, f) = layout.LETSGO_FROM_FRLG
+    u = a * columns + b * rows + c
+    v = d * columns + e * rows + f
+    plane = np.frombuffer(layout._LAND_WIDE, np.uint8).reshape(layout._LAND_H, layout._LAND_W) / 255.0
+    return sample(plane, u, v)
 
-def zone_fields(x, y):
-    """(distance au lieu le plus proche en m, indice du lieu) ; négative à l'intérieur."""
-    u, v = to_map(x, y)
-    wobble = (fractal_noise(x, y, 60, 3, 21) - 0.5) * 2
-    names = []
+
+def sample(plane, u, v, outside=0.0):
+    """Lecture interpolée d'une grille (u = colonne, v = ligne) ; `outside` hors de la grille."""
+    h, w = plane.shape
+    inside = (u >= 0) & (u <= w - 1) & (v >= 0) & (v <= h - 1)
+    uc, vc = np.clip(u, 0, w - 1.001), np.clip(v, 0, h - 1.001)
+    iu, iv = uc.astype(np.int64), vc.astype(np.int64)
+    tu, tv = uc - iu, vc - iv
+    a, b = plane[iv, iu], plane[iv, iu + 1]
+    c, d = plane[iv + 1, iu], plane[iv + 1, iu + 1]
+    value = (a * (1 - tu) + b * tu) * (1 - tv) + (c * (1 - tu) + d * tu) * tv
+    return np.where(inside, value, outside)
+
+
+def cell_fields():
+    """Champs calculés sur la grille FRLG : altitude des routes, distances, mer, lacs."""
+    grid = load_frlg().copy()
+    # Piste cyclable : les bandes d'eau qui la longent sur la carte deviennent du sol.
+    strip = grid[PAD + 250:PAD + 575, PAD + 255:PAD + 320]
+    strip[strip >= 2] = 1
+    walk = grid == 1
+    lake = grid == 3
+    # Fines bandes de terre le long des routes maritimes (bords de tuiles) : la mer.
+    thin = walk & (distance_from(~walk) <= 3) & (distance_from(grid == 2) <= 4)
+    grid[thin] = 2
+    walk &= ~thin
+    rows_i, cols_i = np.mgrid[0:grid.shape[0], 0:grid.shape[1]].astype(np.float64) - PAD
+    land_lg = letsgo_land(cols_i, rows_i)
+
+    # Lacs que Let's Go met dans la mer : la mer.
+    lake_sea = lake & (land_lg < 0.5)
+    lake &= ~lake_sea
+    ground = walk | lake  # là où l'on marche (les lacs prennent l'altitude de la route)
+
+    # Hors des routes : la mer si Let's Go en met, sauf tout près des routes (une falaise).
+    near_ground = distance_from(ground) <= 8
+    sea = (grid == 2) | lake_sea | ((grid == 0) & (land_lg < 0.5) & ~near_ground)
+
+    # Altitude des routes : interpolation le long des chemins entre villes et points de passage.
+    controls = layout.TOWNS + layout.ROUTE_POINTS
+    gr, gc = np.nonzero(ground)
+    total = np.zeros(grid.shape)
+    weights = np.zeros(grid.shape)
+    for name, column, row, altitude in controls:
+        column, row = column + PAD, row + PAD
+        nearest = np.argmin((gc - column) ** 2 + (gr - row) ** 2)  # point sur une route
+        dist, _ = geodesic(ground, np.array([gr[nearest]]), np.array([gc[nearest]]), np.zeros(1))
+        w = np.where(ground, 1.0 / (dist + 3.0) ** 3, 0.0)
+        total += w * altitude
+        weights += w
+    altitude = np.where(ground, total / np.maximum(weights, 1e-12), 0.0)
+    altitude = masked_blur(altitude, ground, 12)
+    # Hors des routes : l'altitude des routes voisines, lissée (sans marche entre deux routes).
+    altitude = spread_values(ground, altitude)
+    altitude = masked_blur(altitude, ~ground, 60)
+
+    # Distances signées en cases : bord des routes (+ sur la route) et côte (+ sur la terre).
+    corridor = np.where(ground, distance_from(~ground), -distance_from(ground))
+    corridor = masked_blur(corridor, np.ones(grid.shape, bool), 12)  # coins arrondis
+    coast = np.where(sea, -distance_from(~sea), distance_from(sea))
+    lake_sd = np.where(lake, distance_from(~lake), -distance_from(lake))
+    return grid, ground, lake, altitude, corridor, coast, lake_sd
+
+
+# --- Étape 2 : le relief à pleine résolution -------------------------------------------
+
+def v1_path_distance(x, y):
+    """Distance en mètres au plus proche chemin ou lieu de la V1."""
     best = np.full(x.shape, 1e9)
-    best_index = np.zeros(x.shape, np.int32)
-    for name, cu, cv, half_east, half_north, shape in layout.AREAS:
-        cx, cy = layout.from_map(cu, cv)
-        a, b = np.abs(y - cy) / half_east, np.abs(x - cx) / half_north
-        norm = (a ** shape + b ** shape) ** (1.0 / shape)
-        distance = (norm - 1 - wobble * 0.12) * min(half_east, half_north)
-        better = distance < best
-        best = np.where(better, distance, best)
-        best_index = np.where(better, len(names), best_index)
-        names.append(name)
-    for name, half_width, points in layout.ROUTES:
-        segment = np.full(x.shape, 1e9)
-        for (au, av), (bu, bv) in zip(points, points[1:]):
-            du, dv = bu - au, bv - av
-            t = np.clip(((u - au) * du + (v - av) * dv) / (du * du + dv * dv), 0, 1)
-            segment = np.minimum(segment, np.hypot(u - (au + du * t), v - (av + dv * t)))
-        distance = segment * layout.MAP_SCALE - half_width * (1 + wobble * 0.3)
-        better = distance < best
-        best = np.where(better, distance, best)
-        best_index = np.where(better, len(names), best_index)
-        names.append(name)
-    return best, best_index, names
-
-
-def polyline_distance(x, y, points):
-    best = np.full(x.shape, 1e9)
-    for (ax, ay), (bx, by) in zip(points, points[1:]):
-        dx, dy = bx - ax, by - ay
-        t = np.clip(((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy), 0, 1)
-        best = np.minimum(best, np.hypot(x - (ax + dx * t), y - (ay + dy * t)))
+    for _, points in layout.PATHS + [("forêt", layout.FOREST_PATH)]:
+        for (ax, ay), (bx, by) in zip(points, points[1:]):
+            dx, dy = bx - ax, by - ay
+            t = np.clip(((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy), 0, 1)
+            best = np.minimum(best, np.hypot(x - (ax + dx * t), y - (ay + dy * t)))
+    for name, column, row, half_east, half_north, _ in layout.AREAS:
+        cx, cy = layout.from_frlg(column, row)
+        if name == "Forêt de Jade":
+            continue
+        box = np.maximum(np.abs(x - cx) - half_north, np.abs(y - cy) - half_east)
+        best = np.minimum(best, np.maximum(box, 0) - 40)
     return best
 
 
-def place_v1(height, x, y):
-    """Pose les lieux de la V1 au fond de vallées douces, puis creuse l'eau."""
-    distance, index, names = zone_fields(x, y)
-    t = np.clip((x - layout._FLOOR_X0) / (layout._FLOOR_X1 - layout._FLOOR_X0), 0, 1)
-    floor = layout.FLOOR_SOUTH + (layout.FLOOR_NORTH - layout.FLOOR_SOUTH) * t
-    # Ondulations du sol : presque rien en ville, un peu sur les routes, davantage en forêt.
-    bumps = np.full(x.shape, 0.6)
-    for i, name in enumerate(names):
-        if name in ("Bourg Palette", "Jadielle", "Argenta"):
-            bumps = np.where(index == i, 0.15, bumps)
-        elif name == "Forêt de Jade":
-            bumps = np.where(index == i, 2.0, bumps)
-    ground = floor + fbm(x, y, 90, 4, SEED + 20) * bumps
-
-    outside = np.maximum(distance, 0.0)
-    # Plus haut que la vallée : le relief remonte lentement ; plus bas (côte) : plage plus courte.
-    rise = smoothstep(0, VALLEY_WIDTH, outside) ** 1.3
-    fall = smoothstep(0, 45, outside)
-    blend = np.where(height > ground, rise, fall)
-    result = ground + (height - ground) * blend
-    result = np.where(distance <= 0, ground, result)
-
-    for _, half, points in layout.CHANNELS:
-        d = polyline_distance(x, y, points) - half
-        bed = -1.2  # sous le niveau de la mer : l'eau apparaît toute seule
-        result = np.where(d < 2.5, np.minimum(result, bed + (result - bed) * smoothstep(-0.5, 2.5, d)), result)
-    return result
+def massif_field(x, y):
+    """Part de montagne (0 à 1) : grands massifs de Kanto + un peu de hasard partout."""
+    wx = x + fbm(x, y, 900, 3, SEED + 1) * 200
+    wy = y + fbm(x, y, 900, 3, SEED + 2) * 200
+    column, row = layout.to_frlg(wx, wy)
+    mountain = np.zeros_like(x)
+    for _, mc, mr, radius, weight in layout.MASSIFS:
+        d = np.hypot(column - mc, row - mr) / radius
+        mountain = 1 - (1 - mountain) * (1 - weight * smoothstep(1.0, 0.1, d))
+    extra = smoothstep(-0.1, 0.5, fbm(x, y, 1400, 2, SEED + 3)) * 0.6
+    return 1 - (1 - mountain) * (1 - extra)
 
 
-# --- Images ---------------------------------------------------------------------------
+def relief(x, y, fields):
+    """Hauteur avant érosion, et deux aides : poids d'érosion et hauteur minimale (falaises)."""
+    _, _, _, altitude_c, corridor_c, coast_c, lake_c = fields
+    # Coordonnées déformées : bords des routes et côtes sinueux, pas les marches de la carte.
+    wx = x + fbm(x, y, 900, 3, SEED + 4) * WARP + fbm(x, y, 180, 3, SEED + 5) * WARP * 0.3
+    wy = y + fbm(x, y, 900, 3, SEED + 6) * WARP + fbm(x, y, 180, 3, SEED + 7) * WARP * 0.3
+    column, row = layout.to_frlg(wx, wy)
+    column, row = column + PAD, row + PAD
+    altitude = sample(altitude_c, column, row, 0.0)
+    corridor = sample(corridor_c, column, row, -60.0) * CELL + fbm(x, y, 160, 4, SEED + 10) * 25
+    # La V1 reste praticable malgré la déformation : couloir garanti autour de ses chemins.
+    corridor = np.maximum(corridor, V1_CLEARANCE - v1_path_distance(x, y))
+    coast = sample(coast_c, column, row, -60.0) * CELL + fbm(x, y, 260, 4, SEED + 11) * 40
+    # Pas de mer autour de Bourg Palette : la côte la plus proche reste à plus de 300 m.
+    pallet_x, pallet_y = layout.from_frlg(144, 540)
+    coast = np.maximum(coast, 380 - np.hypot(x - pallet_x, y - pallet_y))
+    lake = sample(lake_c, column, row, -60.0) * CELL + fbm(x, y, 60, 3, SEED + 12) * 4
+
+    inside = np.maximum(corridor, 0.0)
+    outside = np.maximum(-corridor, 0.0)
+    # Fond des routes : collines douces dans les routes larges, petites bosses partout.
+    floor = (altitude + fbm(x, y, 480, 4, SEED + 13) * ROUTE_HILLS * smoothstep(15, 150, inside)
+             + fbm(x, y, 70, 3, SEED + 14) * 1.0)
+    # Hors des routes : falaise, puis montagnes en crêtes qui grandissent avec la distance.
+    cliff_height = CLIFF_HEIGHT + 14 * (0.5 + 0.5 * fbm(x, y, 300, 2, SEED + 15))
+    # Flancs de montagne : très raides au pied (on ne grimpe pas), puis des crêtes.
+    mountain = massif_field(x, y)
+    flank = 35 + 140 * smoothstep(-0.3, 0.5, fbm(x, y, 420, 3, SEED + 16))
+    rise = (1 - np.exp(-outside / flank)) ** 0.6
+    peaks = (MASSIF_BASE + MASSIF_PEAK * mountain) * (0.25 + 0.75 * ridged(x, y, 520, 6, SEED + 17))
+    cliff = cliff_height * smoothstep(0, 18, outside)
+    land = np.where(corridor >= 0, floor, altitude + np.maximum(cliff, (cliff_height + peaks) * rise))
+
+    # Côtes : falaises par endroits, plages ailleurs.
+    cliffs = smoothstep(-0.2, 0.3, fbm(x, y, 900, 3, SEED + 18))
+    shore = smoothstep(0, 12 + 70 * (1 - cliffs), np.maximum(coast, 0))
+    land = 0.6 + (land - 0.6) * shore
+    seabed = -3.0 - 32.0 * smoothstep(0, 350, -coast)
+    height = seabed + (land - seabed) * smoothstep(-4, 4, coast)
+
+    # Lacs et rivières en hauteur : creusés de 2,5 m sous la route.
+    water = smoothstep(-2, 3, lake)
+    height = height + (np.minimum(height, altitude - 2.5) - height) * water
+
+    erosion = smoothstep(25, 90, outside) * smoothstep(0, 40, coast)
+    lowest = np.where((outside > 25) & (coast > 60), altitude + cliff_height * 0.9, -1e9)  # la falaise reste
+    return height, erosion, lowest, corridor, water > 0.5
+
+
+# --- Étape 3 : les villes de la V1 en terrasses -------------------------------------------
+
+def town_terraces(height, x, y):
+    altitudes = {name: altitude for name, _, _, altitude in layout.TOWNS}
+    wobble = (fractal_noise(x, y, 60, 3, 21) - 0.5) * 2
+    for name, column, row, half_east, half_north, shape in layout.AREAS:
+        cx, cy = layout.from_frlg(column, row)
+        dx, dy = x - cx, y - cy
+        norm = ((np.abs(dy) / half_east) ** shape + (np.abs(dx) / half_north) ** shape) ** (1.0 / shape)
+        distance = (norm - 1 - wobble * 0.12) * min(half_east, half_north)
+        if name == "Forêt de Jade":
+            # Sous-bois vallonné : petits vallons et ravins.
+            inside = smoothstep(10, -30, distance)
+            height = height + (fbm(x, y, 90, 4, SEED + 40) * 4.0 - 1.0) * inside
+            continue
+        stepped = np.zeros_like(x)
+        ramp = np.zeros_like(x)
+        for boundary, rise in layout.TERRACES.get(name, []):
+            stepped += rise * smoothstep(boundary - 0.6, boundary + 0.6, dx)
+            ramp += rise * np.clip((dx - (boundary - 8)) / 16, 0, 1)
+        on_ramp = smoothstep(layout.RAMP_HALF_WIDTH + 2, layout.RAMP_HALF_WIDTH - 1, np.abs(dy))
+        level = stepped + (ramp - stepped) * on_ramp
+        ground = altitudes[name] + level + fbm(x, y, 50, 3, SEED + 41) * 0.15
+        blend = smoothstep(0, 35, distance)
+        height = ground + (height - ground) * blend
+    for px, py, depth, width in layout.PONDS:
+        inside = (smoothstep(depth / 2, depth / 2 - 0.8, np.abs(x - px))
+                  * smoothstep(width / 2, width / 2 - 0.8, np.abs(y - py)))
+        height = height - 2.0 * inside
+    return height
+
+
+# --- Images et fichiers ---------------------------------------------------------------------
 
 def write_png(path, width, height, rows, bit_depth, color_type):
     """PNG sans filtre de ligne (kanto_v1_layout.height_at sait le relire)."""
@@ -373,49 +499,85 @@ def write_png(path, width, height, rows, bit_depth, color_type):
         png.write(chunk(b"IEND", b""))
 
 
-def preview(height, path):
-    """Aperçu nord en haut, un point sur quatre, coloré et ombré (soleil au nord-ouest)."""
-    h = height[::4, ::4]  # [ligne = est, colonne = nord]
+def north_up(image):
+    """[ligne = est, colonne = nord] -> image nord en haut, est à droite."""
+    return np.transpose(image, (1, 0, 2) if image.ndim == 3 else (1, 0))[::-1]
+
+
+def previews(height, corridor):
+    h = height[::4, ::4]
     spacing = STEP * 4
     d_north = np.gradient(h, spacing, axis=1)
     d_east = np.gradient(h, spacing, axis=0)
     slope = np.hypot(d_north, d_east)
-    shade = np.clip(1.0 + 1.6 * (d_east - d_north) / 1.414, 0.45, 1.4)
+    shade = np.clip(1.0 + 1.4 * (d_east - d_north) / 1.414, 0.4, 1.4)
 
     def mix(a, b, t):
         t = np.clip(t, 0, 1)[..., None]
         return np.array(a) * (1 - t) + np.array(b) * t
 
-    color = mix((105, 150, 70), (50, 100, 45), h / 70.0)               # prairies puis forêts
-    color = np.where((h > 90)[..., None], mix((50, 100, 45), (120, 105, 85), (h - 90) / 80), color)
-    color = np.where((slope > 0.7)[..., None], mix(color, (125, 112, 98), (slope - 0.7) * 2), color)
-    color = np.where((h > 190)[..., None], mix((120, 105, 85), (215, 210, 205), (h - 190) / 50), color)
-    # Sable : bas et à moins de ~40 m de la mer.
+    color = mix((115, 160, 75), (55, 105, 50), h / 120.0)               # prairies puis forêts
+    color = np.where((h > 150)[..., None], mix((55, 105, 50), (125, 110, 90), (h - 150) / 120), color)
+    color = np.where((slope > 0.8)[..., None], mix(color, (130, 118, 104), (slope - 0.8) * 1.5), color)
+    color = np.where((h > 300)[..., None], mix((125, 110, 90), (225, 222, 218), (h - 300) / 120), color)
+    route = corridor[::4, ::4] > 0
+    color = np.where(route[..., None], mix(color, (205, 200, 140), 0.15), color)
     near_sea = h < layout.SEA_LEVEL
-    for _ in range(7):
+    for _ in range(6):
         near_sea = (near_sea | np.roll(near_sea, 1, 0) | np.roll(near_sea, -1, 0)
                     | np.roll(near_sea, 1, 1) | np.roll(near_sea, -1, 1))
     color = np.where(((h < 2.5) & near_sea)[..., None], np.array((215, 200, 150)), color)
     color = color * shade[..., None]
-    sea = mix((95, 165, 200), (35, 85, 150), -h / 25.0)
+    sea = mix((95, 165, 200), (35, 85, 150), -h / 30.0)
     color = np.where((h < layout.SEA_LEVEL)[..., None], sea, color)
+    image = north_up(np.clip(color, 0, 255).astype(np.uint8))
+    write_png(os.path.join(HERE, "kanto_v1_preview.png"), image.shape[1], image.shape[0],
+              [r.tobytes() for r in image], 8, 2)
 
-    # Lieux de la V1 en plus clair, pour s'y retrouver.
-    rows_m = np.arange(h.shape[0])[:, None] * spacing
-    cols_m = np.arange(h.shape[1])[None, :] * spacing
-    distance, _, _ = zone_fields(np.broadcast_to(cols_m, h.shape), np.broadcast_to(rows_m, h.shape))
-    color = np.where((distance <= 0)[..., None] & (h >= 0)[..., None], mix(color, (215, 225, 160), 0.35), color)
-
-    image = np.clip(color, 0, 255).astype(np.uint8)
-    image = np.transpose(image, (1, 0, 2))[::-1]  # nord en haut
-    write_png(path, image.shape[1], image.shape[0], [r.tobytes() for r in image], 8, 2)
+    # Heightmap en gris contrastés (noir = fond de la mer, blanc = sommets).
+    grey = np.clip((h + 40) / (h.max() + 40), 0, 1) ** 0.7 * 255
+    image = north_up(grey.astype(np.uint8))
+    write_png(os.path.join(HERE, "kanto_v1_heightmap_apercu.png"), image.shape[1], image.shape[0],
+              [r.tobytes() for r in image], 8, 0)
 
 
-# --- Programme --------------------------------------------------------------------------
+def export_lakes(lake_mask, height):
+    """Lacs en hauteur pour Unreal : rectangle en mètres et niveau de l'eau.
+    Lus sur le relief final (grille de 6 m), donc à leur place après la déformation."""
+    from collections import deque
+    spacing = STEP * 4
+    lakes, seen = [], np.zeros(lake_mask.shape, bool)
+    for r0, c0 in zip(*np.nonzero(lake_mask)):
+        if seen[r0, c0]:
+            continue
+        seen[r0, c0] = True
+        queue, cells = deque([(r0, c0)]), []
+        while queue:
+            r, c = queue.popleft()
+            cells.append((r, c))
+            for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                rr, cc = r + dr, c + dc
+                if (0 <= rr < lake_mask.shape[0] and 0 <= cc < lake_mask.shape[1]
+                        and lake_mask[rr, cc] and not seen[rr, cc]):
+                    seen[rr, cc] = True
+                    queue.append((rr, cc))
+        if len(cells) < 6:
+            continue
+        rs, cs = np.array(cells).T  # ligne = est (y), colonne = nord (x)
+        bottom = height[rs, cs]
+        if np.percentile(bottom, 90) - np.percentile(bottom, 10) > 3.0:
+            continue  # rivière en pente : une seule plaque d'eau déborderait
+        level = float(np.median(bottom)) + 1.9
+        lakes.append({"x0": round((cs.min() - 0.5) * spacing, 1), "x1": round((cs.max() + 0.5) * spacing, 1),
+                      "y0": round((rs.min() - 0.5) * spacing, 1), "y1": round((rs.max() + 0.5) * spacing, 1),
+                      "niveau": round(level, 2), "cases": len(cells)})
+    with open(layout.LAKES_PATH, "w", encoding="utf-8") as handle:
+        json.dump(lakes, handle, ensure_ascii=False, indent=1)
+    return len(lakes)
 
-def grid(count, spacing, rows=None):
+
+def grid_xy(rows, count=SIZE, spacing=STEP):
     """Grilles x (nord, par colonne) et y (est, par ligne) en mètres."""
-    rows = range(count) if rows is None else rows
     y = np.asarray(rows, np.float64)[:, None] * spacing
     x = np.arange(count, dtype=np.float64)[None, :] * spacing
     return np.broadcast_to(x, (len(y), count)), np.broadcast_to(y, (len(y), count))
@@ -423,56 +585,56 @@ def grid(count, spacing, rows=None):
 
 def main():
     start = time.time()
-    planes = _land_planes()
+    fields = cell_fields()
+    print(f"Carte et altitudes des routes : {time.time() - start:.0f} s")
 
-    # 1. Relief de base sur la grille large (6 m), puis grande érosion : les vallées.
-    coarse_count = (SIZE - 1) // COARSE + 1
-    coarse_step = STEP * COARSE
-    x, y = grid(coarse_count, coarse_step)
-    coarse = base_terrain(x, y, planes)
-    print(f"Relief de base : {time.time() - start:.0f} s")
-    scaled = (coarse / coarse_step).astype(np.float64)
-    erode(scaled, 700_000, SEED, 80, 3, 0.05, 4.0, 0.01, 0.3, 0.25, 0.012, 4.0, 0.6)
-    coarse = keep_land(coarse, scaled * coarse_step)
-    print(f"Grande érosion : {time.time() - start:.0f} s")
-
-    # 2. Pleine résolution (1,5 m) : agrandissement, détails, puis petite érosion (ravines).
-    height = np.empty((SIZE, SIZE), np.float64)
+    height = np.empty((SIZE, SIZE))
+    erosion = np.empty((SIZE, SIZE), np.float32)
+    lowest = np.empty((SIZE, SIZE), np.float32)
+    corridor = np.empty((SIZE, SIZE), np.float32)
+    wet = np.empty((SIZE, SIZE), bool)
     for row0 in range(0, SIZE, 256):
-        rows = range(row0, min(SIZE, row0 + 256))
-        x, y = grid(SIZE, STEP, rows)
-        cr = np.clip(y / coarse_step, 0, coarse_count - 1.001)
-        cc = np.clip(x / coarse_step, 0, coarse_count - 1.001)
-        ir, ic = cr.astype(np.int64), cc.astype(np.int64)
-        tr, tc = cr - ir, cc - ic
-        h = ((coarse[ir, ic] * (1 - tc) + coarse[ir, ic + 1] * tc) * (1 - tr)
-             + (coarse[ir + 1, ic] * (1 - tc) + coarse[ir + 1, ic + 1] * tc) * tr)
-        # La côte est recalculée à pleine résolution : pas d'escaliers de la grille large.
-        u, v = _warped(x, y)
-        coast, sea = coast_and_sea(x, y, sample(planes[1], u, v))
-        h = sea + (np.maximum(h, 0.6) - sea) * coast
-        rough = smoothstep(1, 40, h)  # pas de détail sous la mer ni sur les plages
-        detail = fbm(x, y, 60, 5, SEED + 30) * (1.2 + h * 0.02) + ridged(x, y, 140, 3, SEED + 31) * h * 0.04
-        height[row0:row0 + len(rows)] = h + detail * rough
-    print(f"Détails : {time.time() - start:.0f} s")
+        part = slice(row0, min(SIZE, row0 + 256))
+        x, y = grid_xy(range(part.start, part.stop))
+        height[part], erosion[part], lowest[part], corridor[part], wet[part] = relief(x, y, fields)
+    print(f"Relief : {time.time() - start:.0f} s")
+
+    # Grande érosion sur une grille 4 fois plus large (les vallées), puis petite (les ravines).
+    coarse = height[::4, ::4].copy()
+    scaled = coarse / (STEP * 4)
+    erode(scaled, 900_000, SEED, 80, 3, 0.05, 4.0, 0.01, 0.3, 0.25, 0.012, 4.0, 0.6)
+    delta = scaled * STEP * 4 - coarse
+    count = coarse.shape[0]
+    for row0 in range(0, SIZE, 256):
+        part = slice(row0, min(SIZE, row0 + 256))
+        x, y = grid_xy(range(part.start, part.stop))
+        d = sample(delta, x / (STEP * 4), y / (STEP * 4), 0.0)
+        height[part] += d * erosion[part]
+    height = np.maximum(height, lowest)
     scaled = height / STEP
-    erode(scaled, 6_000_000, SEED + 1, 48, 2, 0.1, 4.0, 0.01, 0.25, 0.3, 0.02, 4.0, 0.4)
-    height = keep_land(height, scaled * STEP)
-    print(f"Petite érosion : {time.time() - start:.0f} s")
+    erode(scaled, 5_000_000, SEED + 1, 48, 2, 0.1, 4.0, 0.01, 0.25, 0.3, 0.02, 4.0, 0.4)
+    height += (scaled * STEP - height) * erosion
+    height = np.maximum(height, lowest)
+    print(f"Érosion : {time.time() - start:.0f} s ({count} × {count} puis {SIZE} × {SIZE})")
 
-    # 3. Lieux de la V1 et eau.
     for row0 in range(0, SIZE, 256):
-        rows = range(row0, min(SIZE, row0 + 256))
-        x, y = grid(SIZE, STEP, rows)
-        height[row0:row0 + len(rows)] = place_v1(height[row0:row0 + len(rows)], x, y)
-    height = np.clip(height, -40.0, 250.0)
-    print(f"Lieux de la V1 : {time.time() - start:.0f} s")
+        part = slice(row0, min(SIZE, row0 + 256))
+        x, y = grid_xy(range(part.start, part.stop))
+        height[part] = town_terraces(height[part], x, y)
+    limit = 32767 / layout.HEIGHT_UNITS_PER_METER
+    height = np.clip(height, -40.0, limit)
 
     # Ligne r de l'image = axe Y du Landscape (est), colonne c = axe X (nord).
-    values = np.clip(np.round(32768 + height * 128), 0, 65535).astype(">u2")
-    write_png(os.path.join(HERE, "kanto_v1_heightmap.png"), SIZE, SIZE, [r.tobytes() for r in values], 16, 0)
-    preview(height, os.path.join(HERE, "kanto_v1_preview.png"))
-    print(f"Altitude min {height.min():.1f} m, max {height.max():.1f} m ({time.time() - start:.0f} s)")
+    values = np.clip(np.round(32768 + height * layout.HEIGHT_UNITS_PER_METER), 0, 65535).astype(">u2")
+    write_png(layout.HEIGHTMAP_PATH, SIZE, SIZE, [r.tobytes() for r in values], 16, 0)
+    step = int(layout.CORRIDOR_STEP / STEP)
+    sd = np.clip(np.round(corridor[::step, ::step]), -127, 127).astype(np.int8)
+    with open(layout.CORRIDORS_PATH, "wb") as handle:
+        handle.write(zlib.compress(struct.pack("<4sH", b"CORR", sd.shape[0]) + sd.tobytes(), 9))
+    lakes = export_lakes(wet[::4, ::4], height[::4, ::4])
+    previews(height, corridor)
+    print(f"Altitude min {height.min():.1f} m, max {height.max():.1f} m ; {lakes} lacs "
+          f"({time.time() - start:.0f} s)")
 
 
 if __name__ == "__main__":

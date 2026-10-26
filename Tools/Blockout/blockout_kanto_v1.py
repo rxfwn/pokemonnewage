@@ -12,6 +12,7 @@ Le plan vient de kanto_v1_layout.py (même dossier) : on modifie le plan là, pa
 """
 
 import importlib
+import json
 import math
 import os
 import random
@@ -103,11 +104,12 @@ class Ground:
         scale = landscape.get_actor_scale3d()
         self.origin = origin
         self.scale_xy = scale.x / 100.0 / layout.METERS_PER_PIXEL
-        self.scale_z = scale.z / 100.0
+        self.scale_z = scale.z / layout.LANDSCAPE_SCALE_Z
         if abs(self.scale_xy - 1) > 0.01 or abs(self.scale_z - 1) > 0.01:
             unreal.log_warning(
                 f"Échelle du Landscape inattendue ({scale.x}, {scale.y}, {scale.z}) : "
-                f"il faut {layout.METERS_PER_PIXEL * 100:.0f}, {layout.METERS_PER_PIXEL * 100:.0f}, 100.")
+                f"il faut {layout.METERS_PER_PIXEL * 100:.0f}, {layout.METERS_PER_PIXEL * 100:.0f}, "
+                f"{layout.LANDSCAPE_SCALE_Z:.0f}.")
 
     def point(self, x, y, z_offset=0.0):
         """Point au sol (x, y en mètres) + décalage vertical en mètres, en centimètres."""
@@ -197,9 +199,15 @@ def build_decor():
         folder = f"Décor/{zone}"
         label = f"{kind}_{zone}_{index}"
         if kind == "Water":
-            # L'eau est creusée dans le relief (CHANNELS du plan) et remplie par la mer :
-            # ici seulement le muret de pierre, ouvert au sud vers le ruisseau.
+            # L'étang est creusé dans le relief : une plaque d'eau et un muret de pierre.
             rim = 2.6
+            level = GROUND.lowest(x, y, depth + 2 * rim, width + 2 * rim) / GROUND.scale_z - 0.5
+            water = GROUND.point(x, y)
+            water.z = GROUND.origin.z + (level * GROUND.scale_z - 0.05) * 100
+            spawn(CUBE, f"{label}_Eau", folder, water, (depth + 0.5, width + 0.5, 0.1), "Water",
+                  collision=False)
+            box_on_ground(f"{label}_Bord_sud", folder, x - depth / 2 - rim, y,
+                          (0.8, width + 2 * rim + 0.8, 0.9), "Stone", sink=0.4)
             box_on_ground(f"{label}_Bord_nord", folder, x + depth / 2 + rim, y,
                           (0.8, width + 2 * rim + 0.8, 0.9), "Stone", sink=0.4)
             for side in (-1, 1):
@@ -312,15 +320,14 @@ def tree(index, x, y, rng):
 def v1_bounds(margin):
     """Rectangle (x0, x1, y0, y1) en mètres qui contient tous les lieux de la V1."""
     xs, ys = [], []
-    for _, u, v, half_east, half_north, _ in layout.AREAS:
-        cx, cy = layout.from_map(u, v)
+    for _, column, row, half_east, half_north, _ in layout.AREAS:
+        cx, cy = layout.from_frlg(column, row)
         xs += [cx - half_north, cx + half_north]
         ys += [cy - half_east, cy + half_east]
-    for _, half_width, points in layout.ROUTES:
-        for u, v in points:
-            px, py = layout.from_map(u, v)
-            xs += [px - half_width, px + half_width]
-            ys += [py - half_width, py + half_width]
+    for _, points in layout.PATHS:
+        for px, py in points:
+            xs.append(px)
+            ys.append(py)
     return min(xs) - margin, max(xs) + margin, min(ys) - margin, max(ys) + margin
 
 
@@ -342,15 +349,16 @@ def build_trees():
                 tree(index, px, py, rng)
             y += step
         x += step
-    # Bordures : une ceinture d'arbres sur les talus autour des routes et des villes.
+    # Bordures : une ceinture d'arbres au pied des pentes, le long des routes et des villes.
     step = 14
     x = x0
     while x < x1:
         y = y0
         while y < y1:
             px, py = x + rng.uniform(-5, 5), y + rng.uniform(-5, 5)
-            distance, _ = layout.zone_distance(px, py)
-            if (4 < distance < 45 and layout.height_at(px, py) > layout.SEA_LEVEL + 1
+            depth = layout.corridor_depth(px, py)
+            if (-40 < depth < -3 and layout.height_at(px, py) > layout.SEA_LEVEL + 1
+                    and layout.v1_distance(px, py) < 150
                     and not any(abs(px - wx) < 5 and abs(py - wy) < 5 for wx, wy in WALL_TREES)):
                 index += 1
                 tree(index, px, py, rng)
@@ -367,19 +375,23 @@ def build_sea():
                              GROUND.origin.z + (layout.SEA_LEVEL - 0.5) * 100)
     size = layout.WORLD_SIZE + 400
     spawn(CUBE, "Mer", "Mer", location, (size, size, 1), "Water", collision=False)
-    # Murs invisibles : au bord de l'eau (on ne peut pas encore nager) et à la lisière des
-    # vallées de la V1 (le reste de Kanto n'est pas encore prêt).
+    # Murs invisibles : au bord de l'eau (on ne peut pas encore nager) et là où les routes
+    # quittent la V1 (le reste de Kanto n'est pas encore prêt). Ailleurs, le relief bloque.
     step = 6
-    x0, x1, y0, y1 = v1_bounds(60)
+    x0, x1, y0, y1 = v1_bounds(150)
     count = 0
     x = x0
     while x < x1:
         y = y0
         while y < y1:
-            distance, _ = layout.zone_distance(x, y)
+            distance = layout.v1_distance(x, y)
+            if distance > 130:
+                y += step
+                continue
             ground = layout.height_at(x, y)
-            at_sea = 0 < distance < 45 and -1.5 < ground < layout.SEA_LEVEL + 0.3
-            at_edge = 30 < distance < 36.5 and ground >= layout.SEA_LEVEL + 0.3
+            on_route = layout.corridor_depth(x, y) > -6
+            at_sea = on_route and -1.5 < ground < layout.SEA_LEVEL + 0.3
+            at_edge = on_route and 120 < distance < 126.5 and ground >= layout.SEA_LEVEL + 0.3
             if at_sea or at_edge:
                 count += 1
                 location = GROUND.point(x, y, 3)
@@ -388,7 +400,25 @@ def build_sea():
                 wall.set_actor_hidden_in_game(True)
             y += step
         x += step
-    unreal.log(f"{count} murs invisibles (bord de l'eau et lisière de la V1).")
+    unreal.log(f"{count} murs invisibles (bord de l'eau et sorties de la V1).")
+    build_lakes(x0, x1, y0, y1)
+
+
+def build_lakes(x0, x1, y0, y1):
+    """Lacs et rivières en hauteur (kanto_lacs.json) : une plaque d'eau à leur niveau."""
+    with open(layout.LAKES_PATH, encoding="utf-8") as handle:
+        lakes = json.load(handle)
+    count = 0
+    for lake in lakes:
+        if lake["x1"] < x0 or lake["x0"] > x1 or lake["y1"] < y0 or lake["y0"] > y1:
+            continue
+        count += 1
+        cx, cy = (lake["x0"] + lake["x1"]) / 2, (lake["y0"] + lake["y1"]) / 2
+        location = GROUND.point(cx, cy)
+        location.z = GROUND.origin.z + lake["niveau"] * GROUND.scale_z * 100
+        spawn(CUBE, f"Lac_{count:02d}", "Lacs", location,
+              (lake["x1"] - lake["x0"], lake["y1"] - lake["y0"], 0.1), "Water", collision=False)
+    unreal.log(f"{count} lacs posés.")
 
 
 def build_signs():
