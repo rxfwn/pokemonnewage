@@ -79,8 +79,9 @@ Le 2026-10-26, la direction a été poussée vers le réalisme : les premières 
 |---|---|
 | Combat sauvage | Validée, référence de réalisme |
 | Route 1, chambre, salon, sas route/ville, arène de Jadielle fermée | Validées |
+| Centre Pokémon | Validée, refaite avec le bloc de style v2 (exemple du bon équilibre) |
 | Bourg Palette de nuit, Boutique | À retoucher (maisons trop maquette, personnages figurines) |
-| Centre Pokémon, labo du Prof. Chen, musée d'Argenta | À refaire (style anime ou cartoon) |
+| Labo du Prof. Chen, musée d'Argenta | À refaire (style anime ou cartoon) |
 | Jadielle, Argenta, arène d'Argenta | À générer |
 | Mont Sélénite | Après la V1 |
 
