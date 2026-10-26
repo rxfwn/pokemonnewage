@@ -85,7 +85,7 @@ Le 2026-10-26, la direction a été poussée vers le réalisme : les premières 
 | Labo du Prof. Chen, musée d'Argenta | Validées, refaites avec le bloc de style v2 |
 | Jadielle | Validée (v2, à taille réelle : préciser « true human scale, no miniature, no tilt-shift » dans le prompt) |
 | Argenta | Validée |
-| Arène d'Argenta | À générer |
+| Arène d'Argenta | Validée |
 | Mont Sélénite | Après la V1 |
 
 ### Harmoniser les images
