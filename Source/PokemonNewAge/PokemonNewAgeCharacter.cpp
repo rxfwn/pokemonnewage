@@ -30,7 +30,7 @@ APokemonNewAgeCharacter::APokemonNewAgeCharacter()
 	// instead of recompiling to adjust them
 	GetCharacterMovement()->JumpZVelocity = 500.f;
 	GetCharacterMovement()->AirControl = 0.35f;
-	GetCharacterMovement()->MaxWalkSpeed = 500.f;
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
@@ -50,6 +50,14 @@ APokemonNewAgeCharacter::APokemonNewAgeCharacter()
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 }
 
+void APokemonNewAgeCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// WalkSpeed may have been changed in the Blueprint, so apply it here rather than only in the constructor
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+}
+
 void APokemonNewAgeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	// Set up action bindings
@@ -65,6 +73,13 @@ void APokemonNewAgeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APokemonNewAgeCharacter::Look);
+
+		// Sprinting (hold)
+		if (SprintAction)
+		{
+			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &APokemonNewAgeCharacter::DoSprintStart);
+			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &APokemonNewAgeCharacter::DoSprintEnd);
+		}
 	}
 	else
 	{
@@ -130,4 +145,16 @@ void APokemonNewAgeCharacter::DoJumpEnd()
 {
 	// signal the character to stop jumping
 	StopJumping();
+}
+
+void APokemonNewAgeCharacter::DoSprintStart()
+{
+	bIsSprinting = true;
+	GetCharacterMovement()->MaxWalkSpeed = SprintSpeed;
+}
+
+void APokemonNewAgeCharacter::DoSprintEnd()
+{
+	bIsSprinting = false;
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }

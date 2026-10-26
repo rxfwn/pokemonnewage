@@ -49,12 +49,31 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MouseLookAction;
 
+	/** Sprint Input Action (hold to run) */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* SprintAction;
+
+	/** Max speed while walking, matches the mannequin walk animation (cm/s) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Movement", meta = (ClampMin = 0, Units = "cm/s"))
+	float WalkSpeed = 250.f;
+
+	/** Max speed while running, matches the mannequin jog animation (cm/s) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Movement", meta = (ClampMin = 0, Units = "cm/s"))
+	float SprintSpeed = 500.f;
+
+	/** True while the sprint input is held */
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category="Movement")
+	bool bIsSprinting = false;
+
 public:
 
 	/** Constructor */
 	APokemonNewAgeCharacter();	
 
 protected:
+
+	/** Applies the walk speed once Blueprint defaults are loaded */
+	virtual void BeginPlay() override;
 
 	/** Initialize input action bindings */
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -84,6 +103,18 @@ public:
 	/** Handles jump pressed inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
+
+	/** Handles sprint pressed inputs from either controls or UI interfaces */
+	UFUNCTION(BlueprintCallable, Category="Input")
+	virtual void DoSprintStart();
+
+	/** Handles sprint released inputs from either controls or UI interfaces */
+	UFUNCTION(BlueprintCallable, Category="Input")
+	virtual void DoSprintEnd();
+
+	/** Returns true while the character is running */
+	UFUNCTION(BlueprintPure, Category="Movement")
+	bool IsSprinting() const { return bIsSprinting; }
 
 public:
 
