@@ -27,7 +27,7 @@ Tout se règle dans les Blueprints sans recompiler.
 
 ## 2. Créer l'action « zoom »
 
-1. Content Browser : `Content/Input/Actions`.
+1. Content Browser (Ctrl+Espace ou « Tiroir à contenu ») : `Content/Input/Actions`.
 2. Clic droit > **Input > Input Action**, nommer `IA_Zoom`.
 3. L'ouvrir et régler **Value Type** sur **Axis1D (float)**. Enregistrer.
 
@@ -35,7 +35,7 @@ Tout se règle dans les Blueprints sans recompiler.
 
 1. Ouvrir `Content/Input/IMC_Default`.
 2. Déplier **Default Key Mappings**, cliquer sur le **(+)** de **Mappings**, déplier **Mappings** et choisir `IA_Zoom` sur la ligne vide tout en bas.
-3. Déplier la ligne, cliquer sur la case de touche et choisir **Mouse Wheel Axis** (taper `wheel` pour filtrer). On ne peut pas « appuyer » sur la molette pour la choisir, il faut passer par la liste.
+3. Déplier la ligne, cliquer sur la case de touche et choisir **Mouse Wheel Axis** (en français « Axe de la molette de la souris » ; taper `wheel` ou `molette` pour filtrer, pas « Molette vers le haut / bas »). On ne peut pas « appuyer » sur la molette pour la choisir, il faut passer par la liste.
 4. Enregistrer.
 
 ## 4. Brancher l'action sur le personnage
