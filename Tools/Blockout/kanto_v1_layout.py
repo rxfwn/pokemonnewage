@@ -184,6 +184,46 @@ _BUILDINGS = [
 ]
 BUILDINGS = [(zone, name, *_offset(zone, dx, dy), *rest) for zone, name, dx, dy, *rest in _BUILDINGS]
 
+# Intérieurs (SCRUM-25) : on entre sans chargement. Chaque bâtiment est creux, avec une
+# porte au sud, un sol, un plafond à CEILINGS mètres et ces meubles de blockout :
+# (nom, centre x, centre y, profondeur x, largeur y, hauteur, couleur), en mètres depuis le
+# centre du bâtiment (x = nord, la porte est au sud). Le nom du bâtiment sert de clé.
+INTERIORS = {
+    "Maison du joueur": [
+        ("Table", 0.0, -1.0, 1.4, 2.0, 0.75, "Wood"),
+        ("Télé", 3.7, -3.2, 0.6, 1.4, 1.1, "Stone"),
+        ("Cuisine", 3.8, -0.2, 0.7, 2.4, 0.95, "Fence"),
+        ("Escalier", 2.4, 4.4, 3.2, 1.2, 2.9, "Wood"),
+    ],
+    "Maison du rival": [
+        ("Table", 0.0, 0.0, 1.4, 2.0, 0.75, "Wood"),
+        ("Bibliothèque", 3.9, -3.0, 0.5, 2.0, 2.0, "Wood"),
+        ("Plante", 3.6, 4.4, 0.6, 0.6, 1.2, "Leaves"),
+    ],
+    "Labo du Prof. Chen": [
+        ("Table des Poké Balls", 2.5, 0.0, 1.0, 2.4, 0.95, "Mart"),
+        ("Bibliothèque ouest", 4.9, -6.0, 0.5, 5.0, 2.4, "Wood"),
+        ("Bibliothèque est", 4.9, 6.0, 0.5, 5.0, 2.4, "Wood"),
+        ("Machine", 0.5, -8.4, 1.5, 1.0, 1.8, "Stone"),
+        ("Bureau", -2.0, 6.0, 1.2, 2.4, 0.8, "Wood"),
+    ],
+    "Centre Pokémon": [
+        ("Comptoir", 4.0, 0.0, 1.0, 6.0, 1.1, "Center"),
+        ("Banquette", -5.0, -8.0, 1.0, 3.0, 0.5, "Wood"),
+    ],
+    "Boutique": [
+        ("Comptoir", -3.0, -4.0, 3.0, 1.0, 1.1, "Mart"),
+        ("Rayons", 3.0, 3.0, 1.0, 6.0, 1.8, "Wood"),
+    ],
+}
+# Hauteur sous plafond par style de toit (une maison a un étage au-dessus, pas encore fait).
+CEILINGS = {"pignon": 3.0, "plat": 4.5}
+# Bâtiments dont la porte reste fermée à clé (pas encore prévus dans la V1).
+LOCKED = {"Arène (fermée)"}
+DOOR_WIDTH = 1.4
+DOOR_HEIGHT = 2.4
+WALL_THICKNESS = 0.3
+
 # Décor des villes : (zone, type, centre x, centre y, profondeur x, largeur y).
 # Types : Water (étang : creusé dans le relief, muret et eau posés par Unreal), Flowers
 # (parterre), Fence (barrière blanche), Sign (panneau), Mailbox (boîte aux lettres), Sand.

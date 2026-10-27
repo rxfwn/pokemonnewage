@@ -10,6 +10,7 @@
 class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
+class UInputMappingContext;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -88,6 +89,21 @@ protected:
 	/** Camera distance requested by the player, reached smoothly in Tick */
 	float DesiredCameraDistance = 400.f;
 
+	/** Plafond de distance de la caméra imposé par un intérieur (0 = aucun) */
+	float CameraDistanceLimit = 0.f;
+
+	/** Touche d'action (E) : portes, PNJ... Créée par le code si elle n'est pas réglée dans le Blueprint */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* InteractAction;
+
+	/** Portée de la touche d'action, devant le personnage (cm) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Interaction", meta = (ClampMin = 10, Units = "cm"))
+	float InteractRadius = 150.f;
+
+	/** Contexte créé par le code pour la touche d'action par défaut (E / bouton gauche de la manette) */
+	UPROPERTY(Transient)
+	UInputMappingContext* DefaultInteractContext;
+
 public:
 
 	/** Constructor */
@@ -114,6 +130,9 @@ protected:
 
 	/** Called for camera zoom input */
 	void Zoom(const FInputActionValue& Value);
+
+	/** Crée l'action et la touche E si InteractAction n'est pas réglée dans le Blueprint */
+	void SetupDefaultInteractInput();
 
 public:
 
@@ -144,6 +163,18 @@ public:
 	/** Handles camera zoom inputs from either controls or UI interfaces. Positive brings the camera closer */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoZoom(float Amount);
+
+	/** Interagit avec la chose la plus proche devant le personnage (porte, PNJ...) */
+	UFUNCTION(BlueprintCallable, Category="Interaction")
+	virtual void DoInteract();
+
+	/** Rapproche la caméra à au plus cette distance (cm), par exemple dans un bâtiment */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	void SetCameraDistanceLimit(float MaxDistance) { CameraDistanceLimit = MaxDistance; }
+
+	/** Rend au joueur sa distance de caméra habituelle */
+	UFUNCTION(BlueprintCallable, Category="Camera")
+	void ClearCameraDistanceLimit() { CameraDistanceLimit = 0.f; }
 
 	/** Returns true while the character is running */
 	UFUNCTION(BlueprintPure, Category="Movement")

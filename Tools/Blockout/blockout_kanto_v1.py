@@ -118,6 +118,12 @@ class Ground:
                              self.origin.y + y * 100 * self.scale_xy,
                              self.origin.z + z * 100)
 
+    def highest(self, x, y, size_x, size_y):
+        """Hauteur la plus haute sous une emprise, pour qu'un sol ne soit pas traversé."""
+        samples = [layout.height_at(x + dx * size_x / 2, y + dy * size_y / 2)
+                   for dx in (-1, 0, 1) for dy in (-1, 0, 1)]
+        return max(samples) * self.scale_z
+
     def lowest(self, x, y, size_x, size_y):
         """Hauteur la plus basse sous une emprise, pour qu'un bâtiment ne flotte pas."""
         samples = [layout.height_at(x + dx * size_x / 2, y + dy * size_y / 2)
@@ -169,12 +175,85 @@ def build_paths():
                               (length / pieces + 1.0, width, 0.6), "Dirt", sink=0.55, yaw=yaw)
 
 
+def box_at(label, folder, x, y, bottom, size, color, collision=True):
+    """Pavé dont le bas est à l'altitude « bottom » (mètres, comme GROUND.lowest)."""
+    sx, sy, sz = size
+    location = GROUND.point(x, y)
+    location.z = GROUND.origin.z + (bottom + sz / 2) * 100
+    return spawn(CUBE, label, folder, location, (sx, sy, sz), color, collision=collision)
+
+
+def spawn_class(path, label, folder, location, rotation=None):
+    """Acteur d'une classe C++ du jeu (porte, volume d'intérieur). None si le code n'est pas
+    compilé : le blockout reste utilisable, sans portes animées."""
+    cls = unreal.load_class(None, path)
+    if cls is None:
+        return None
+    actor = actors.spawn_actor_from_class(cls, location, rotation or unreal.Rotator())
+    actor.set_actor_label(label)
+    actor.set_folder_path(f"{ROOT}/{folder}")
+    actor.set_editor_property("is_spatially_loaded", False)
+    return actor
+
+
+def place_door_and_interior(name, folder, x, y, depth, width, floor, ceiling):
+    """Porte (pivot au milieu du bas du passage, axe X vers le sud) et volume d'intérieur
+    (caméra rapprochée). False si les classes C++ ne sont pas compilées."""
+    t = layout.WALL_THICKNESS
+    door_location = GROUND.point(x - depth / 2 + t / 2, y)
+    door_location.z = GROUND.origin.z + floor * 100
+    door = spawn_class("/Script/PokemonNewAge.Door", f"{name}_Porte", folder, door_location,
+                       unreal.Rotator(yaw=180))
+    if door is None:
+        return False
+    # La taille du passage par défaut (1,4 × 2,4 m) est celle du blockout : seul le verrou change.
+    door.set_editor_property("locked", name in layout.LOCKED)
+    for component in door.get_components_by_class(unreal.StaticMeshComponent):
+        component.set_material(0, material("Door"))
+
+    inside = GROUND.point(x, y)
+    inside.z = GROUND.origin.z + (floor + ceiling) / 2 * 100
+    volume = spawn_class("/Script/PokemonNewAge.InteriorVolume", f"{name}_Intérieur", folder, inside)
+    if volume is not None:
+        # Le volume est mis à l'échelle (la boîte de base fait 8 × 8 × 3 m).
+        volume.set_actor_scale3d(unreal.Vector((depth - 2 * t) / 8.0, (width - 2 * t) / 8.0,
+                                               (ceiling - floor) / 3.0))
+    return True
+
+
 def build_buildings():
+    """Bâtiments creux (SCRUM-25) : murs, porte au sud, sol, plafond, toit et meubles.
+    On y entre à pied, sans chargement."""
+    t = layout.WALL_THICKNESS
+    missing_code = False
     for zone, name, x, y, depth, width, height, wall, roof_color, style in layout.BUILDINGS:
-        folder = f"Bâtiments/{zone}"
-        box_on_ground(f"{name}", folder, x, y, (depth, width, height), wall)
+        folder = f"Bâtiments/{zone}/{name}"
+        base = GROUND.lowest(x, y, depth, width) - 0.5
+        floor = GROUND.highest(x, y, depth, width) + 0.15
+        top = floor + height
+        ceiling = floor + min(layout.CEILINGS[style], height - 1.0)
+        door_w, door_h = layout.DOOR_WIDTH, layout.DOOR_HEIGHT
+        front, back = x - depth / 2 + t / 2, x + depth / 2 - t / 2
+
+        # Murs : nord, ouest, est, et le mur sud en deux morceaux autour de la porte + linteau.
+        box_at(f"{name}_Mur_nord", folder, back, y, base, (t, width, top - base), wall)
+        for side, label in ((-1, "ouest"), (1, "est")):
+            box_at(f"{name}_Mur_{label}", folder, x, y + side * (width / 2 - t / 2), base,
+                   (depth, t, top - base), wall)
+            piece = width / 2 - door_w / 2
+            box_at(f"{name}_Mur_sud_{label}", folder, front, y + side * (door_w / 2 + piece / 2), base,
+                   (t, piece, top - base), wall)
+        box_at(f"{name}_Linteau", folder, front, y, floor + door_h, (t, door_w, top - floor - door_h), wall)
+        # Seuil sous la porte (le sol peut être un peu plus haut que le terrain devant).
+        box_at(f"{name}_Seuil", folder, front - 0.6, y, base, (1.5, door_w + 0.6, floor - base), "Stone")
+
+        # Sol et plafond.
+        box_at(f"{name}_Sol", folder, x, y, base, (depth - 2 * t, width - 2 * t, floor - base), "Wood")
+        box_at(f"{name}_Plafond", folder, x, y, ceiling, (depth - 2 * t, width - 2 * t, 0.25), "House")
+
+        # Toit.
         roof = GROUND.point(x, y)
-        roof.z = GROUND.origin.z + (GROUND.lowest(x, y, depth, width) + height) * 100
+        roof.z = GROUND.origin.z + top * 100
         if style == "pignon":
             # Toit à deux pans qui déborde : un cube tourné de 45° dont seule la moitié haute dépasse.
             side = (width + 1.6) / math.sqrt(2)
@@ -184,13 +263,28 @@ def build_buildings():
             # Toit plat qui déborde un peu.
             roof.z += 25
             spawn(CUBE, f"{name}_Toit", folder, roof, (depth + 1.0, width + 1.0, 0.5), roof_color)
-        # Porte au sud et fenêtres, comme dans le jeu d'origine.
-        front = x - depth / 2 - 0.1
-        box_on_ground(f"{name}_Porte", folder, front, y, (0.3, 1.6, 2.4), "Door")
+
+        # Fenêtres de part et d'autre de la porte, comme dans le jeu d'origine.
         for side in (-1, 1):
-            window = GROUND.point(front, y + side * width / 4)
-            window.z = GROUND.origin.z + (GROUND.lowest(x, y, depth, width) + 1.9) * 100
-            spawn(CUBE, f"{name}_Fenêtre{side:+d}", folder, window, (0.3, 2.0, 1.2), "Mart")
+            window = GROUND.point(x - depth / 2 - 0.05, y + side * width / 4)
+            window.z = GROUND.origin.z + (floor + 1.9) * 100
+            spawn(CUBE, f"{name}_Fenêtre{side:+d}", folder, window, (0.15, 2.0, 1.2), "Mart",
+                  collision=False)
+
+        # Meubles.
+        for label, dx, dy, fx, fy, fz, color in layout.INTERIORS.get(name, []):
+            box_at(f"{name}_{label}", folder, x + dx, y + dy, floor, (fx, fy, fz), color)
+
+        # Porte animée (C++ ADoor) et volume d'intérieur (C++ AInteriorVolume). Une erreur ici
+        # ne doit jamais arrêter le blockout : on la signale et on continue.
+        try:
+            missing_code |= not place_door_and_interior(name, folder, x, y, depth, width, floor, ceiling)
+        except Exception as error:
+            unreal.log_warning(f"{name} : porte ou intérieur non posé ({error}).")
+    if missing_code:
+        unreal.log_warning("Classes Door / InteriorVolume introuvables : compiler le code C++ "
+                           "(PokemonNewAgeEditor Win64 Development Build) puis relancer le script. "
+                           "Les bâtiments sont posés, mais sans portes.")
 
 
 def build_decor():

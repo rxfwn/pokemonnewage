@@ -7,9 +7,14 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Controller.h"
+#include "GameFramework/PlayerController.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "InputAction.h"
+#include "InputMappingContext.h"
+#include "Engine/OverlapResult.h"
+#include "Core/Interactable.h"
 #include "PokemonNewAge.h"
 
 APokemonNewAgeCharacter::APokemonNewAgeCharacter()
@@ -70,9 +75,11 @@ void APokemonNewAgeCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (!FMath::IsNearlyEqual(CameraBoom->TargetArmLength, DesiredCameraDistance))
+	// Dans un bâtiment, la caméra ne dépasse pas la limite de l'intérieur
+	const float TargetDistance = CameraDistanceLimit > 0.f ? FMath::Min(DesiredCameraDistance, CameraDistanceLimit) : DesiredCameraDistance;
+	if (!FMath::IsNearlyEqual(CameraBoom->TargetArmLength, TargetDistance))
 	{
-		CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, DesiredCameraDistance, DeltaSeconds, ZoomInterpSpeed);
+		CameraBoom->TargetArmLength = FMath::FInterpTo(CameraBoom->TargetArmLength, TargetDistance, DeltaSeconds, ZoomInterpSpeed);
 	}
 }
 
@@ -104,10 +111,37 @@ void APokemonNewAgeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 		{
 			EnhancedInputComponent->BindAction(ZoomAction, ETriggerEvent::Triggered, this, &APokemonNewAgeCharacter::Zoom);
 		}
+
+		// Interaction (portes, PNJ...)
+		SetupDefaultInteractInput();
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APokemonNewAgeCharacter::DoInteract);
 	}
 	else
 	{
 		UE_LOG(LogPokemonNewAge, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
+	}
+}
+
+void APokemonNewAgeCharacter::SetupDefaultInteractInput()
+{
+	if (InteractAction)
+	{
+		return;
+	}
+
+	// Pas d'IA_Interact réglé dans le Blueprint : on crée l'action et sa touche ici,
+	// pour que ça marche sans rien configurer dans l'éditeur
+	InteractAction = NewObject<UInputAction>(this, TEXT("IA_Interact_Default"));
+	DefaultInteractContext = NewObject<UInputMappingContext>(this, TEXT("IMC_Interact_Default"));
+	DefaultInteractContext->MapKey(InteractAction, EKeys::E);
+	DefaultInteractContext->MapKey(InteractAction, EKeys::Gamepad_FaceButton_Left);
+
+	if (const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			Subsystem->AddMappingContext(DefaultInteractContext, 1);
+		}
 	}
 }
 
@@ -187,6 +221,38 @@ void APokemonNewAgeCharacter::DoSprintEnd()
 {
 	bIsSprinting = false;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+}
+
+void APokemonNewAgeCharacter::DoInteract()
+{
+	// Cherche dans une sphère un peu devant le personnage
+	const FVector Center = GetActorLocation() + GetActorForwardVector() * InteractRadius * 0.5f;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(Interact), false, this);
+	TArray<FOverlapResult> Overlaps;
+	GetWorld()->OverlapMultiByObjectType(Overlaps, Center, FQuat::Identity,
+		FCollisionObjectQueryParams(FCollisionObjectQueryParams::AllObjects), FCollisionShape::MakeSphere(InteractRadius), Params);
+
+	// Garde la chose interactive la plus proche
+	AActor* Best = nullptr;
+	float BestDistance = TNumericLimits<float>::Max();
+	for (const FOverlapResult& Overlap : Overlaps)
+	{
+		AActor* Actor = Overlap.GetActor();
+		if (Actor && Actor->Implements<UInteractable>())
+		{
+			const float Distance = FVector::DistSquared(Actor->GetActorLocation(), GetActorLocation());
+			if (Distance < BestDistance)
+			{
+				Best = Actor;
+				BestDistance = Distance;
+			}
+		}
+	}
+
+	if (Best)
+	{
+		IInteractable::Execute_Interact(Best, this);
+	}
 }
 
 void APokemonNewAgeCharacter::DoZoom(float Amount)
