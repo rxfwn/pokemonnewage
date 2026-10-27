@@ -201,7 +201,10 @@ def build_decor():
         if kind == "Water":
             # L'étang est creusé dans le relief : une plaque d'eau et un muret de pierre.
             rim = 2.6
-            level = GROUND.lowest(x, y, depth + 2 * rim, width + 2 * rim) / GROUND.scale_z - 0.5
+            # Niveau de l'eau : 40 cm sous le sol autour de l'étang (pas sous le fond creusé).
+            ring = [layout.height_at(x + i * (depth / 2 + rim), y + j * (width / 2 + rim))
+                    for i in (-1, 0, 1) for j in (-1, 0, 1) if i or j]
+            level = min(ring) - 0.4
             water = GROUND.point(x, y)
             water.z = GROUND.origin.z + (level * GROUND.scale_z - 0.05) * 100
             spawn(CUBE, f"{label}_Eau", folder, water, (depth + 0.5, width + 0.5, 0.1), "Water",
