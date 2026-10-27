@@ -15,6 +15,7 @@ Repère du monde : x = nord, y = est, en mètres. Le coin (0, 0) est le coin du 
 Vraies tailles : un personnage fait 1,80 m.
 """
 
+import json
 import math
 import os
 import struct
@@ -137,7 +138,22 @@ AREAS = [
     ("Jadielle", 144, 400, 92, 87, 4),
     ("Forêt de Jade", 144, 280, 140, 380, 2),
     ("Argenta", 144, 160, 87, 74, 4),
+    # Le reste de Kanto : centre et cadre de chaque ville relevés sur la carte FRLG (cases),
+    # ramenés à TOWN_SCALE mètres par case (voir plus bas).
+    ("Azuria", 578, 116, 96, 60, 4),
+    ("Céladopole", 420, 280, 145, 89, 4),
+    ("Safrania", 576, 281, 102, 92, 4),
+    ("Carmin sur Mer", 580, 428, 80, 61, 4),
+    ("Lavanville", 790, 272, 55, 69, 4),
+    ("Parmanie", 433, 634, 112, 78, 4),
+    ("Cramois'Île", 148, 773, 50, 41, 4),
+    ("Plateau Indigo", 25, 29, 42, 28, 4),
 ]
+
+# Dans les villes, la carte FRLG est ramenée à TOWN_SCALE mètres par case (au lieu de CELL
+# sur les routes) : les bâtiments, à leur vraie taille, gardent leur place relative du jeu
+# sans que la ville fasse 600 m de large.
+TOWN_SCALE = 2.5
 
 # Terrasses des villes : (limite x en mètres depuis le centre, hauteur de la marche en m).
 # Le niveau le plus bas accueille la route d'arrivée, le plus haut l'arène ou le monument.
@@ -183,6 +199,116 @@ _BUILDINGS = [
     ("Argenta", "Maison", -35, 65, 10, 11, 7, "House", "RoofBrown", "pignon"),
 ]
 BUILDINGS = [(zone, name, *_offset(zone, dx, dy), *rest) for zone, name, dx, dy, *rest in _BUILDINGS]
+
+# Types de bâtiments du reste de Kanto : (profondeur x, largeur y, hauteur, mur, toit, style).
+BUILDING_TYPES = {
+    "Maison": (9, 11, 6.5, "House", None, "pignon"),      # toit de couleur variée
+    "Centre": (18, 22, 8, "House", "Center", "plat"),
+    "Boutique": (14, 16, 7, "House", "Mart", "plat"),
+    "Commerce": (12, 14, 7, "House", "RoofBrown", "plat"),
+    "Arène": (26, 30, 11, "Gym", "RoofGrey", "plat"),
+    "Grand Magasin": (30, 40, 28, "Lab", "RoofGrey", "plat"),
+    "Résidence": (20, 24, 18, "House", "RoofBrown", "plat"),
+    "Tour Sylphe": (36, 36, 60, "Lab", "RoofGrey", "plat"),
+    "Tour": (18, 18, 40, "Gym", "RoofBrown", "plat"),
+    "Casino": (22, 30, 10, "House", "RoofRed", "plat"),
+    "Dojo": (20, 24, 9, "House", "RoofBrown", "pignon"),
+    "Manoir": (24, 26, 12, "Gym", "RoofBrown", "plat"),
+    "Labo": (16, 24, 8, "Lab", "RoofGrey", "plat"),
+    "Ligue": (30, 50, 18, "Lab", "RoofRed", "plat"),
+    "Centrale": (24, 40, 12, "Gym", "RoofGrey", "plat"),
+}
+HOUSE_ROOFS = ["RoofRed", "RoofBlue", "RoofGreen", "RoofBrown"]
+
+# Bâtiments du reste de Kanto, relevés sur la carte FRLG : (zone, nom, colonne, ligne, type).
+# Dans une ville (zone = nom d'une ville des AREAS), la position est ramenée à TOWN_SCALE
+# autour du centre de la ville ; ailleurs (sur une route), c'est la vraie case de la carte.
+_FRLG_BUILDINGS = [
+    ("Azuria", "Centre Pokémon", 571, 111, "Centre"),
+    ("Azuria", "Arène d'Azuria", 590, 116, "Arène"),
+    ("Azuria", "Boutique", 576, 131, "Boutique"),
+    ("Azuria", "Magasin de vélos", 561, 129, "Commerce"),
+    ("Azuria", "Maison", 553, 111, "Maison"),
+    ("Azuria", "Maison", 553, 97, "Maison"),
+    ("Azuria", "Maison", 594, 97, "Maison"),
+    ("Azuria", "Maison cambriolée", 610, 96, "Maison"),
+    ("Azuria", "Maison", 589, 131, "Maison"),
+    ("Céladopole", "Grand Magasin", 386, 262, "Grand Magasin"),
+    ("Céladopole", "Résidence Céladon", 368, 255, "Résidence"),
+    ("Céladopole", "Centre Pokémon", 457, 261, "Centre"),
+    ("Céladopole", "Casino", 437, 291, "Casino"),
+    ("Céladopole", "Échange de lots", 455, 291, "Commerce"),
+    ("Céladopole", "Arène de Céladopole", 378, 302, "Arène"),
+    ("Céladopole", "Restaurant", 468, 276, "Commerce"),
+    ("Céladopole", "Hôtel", 420, 291, "Commerce"),
+    ("Céladopole", "Maison", 420, 255, "Maison"),
+    ("Céladopole", "Maison", 440, 256, "Maison"),
+    ("Safrania", "Sylphe SARL", 576, 273, "Tour Sylphe"),
+    ("Safrania", "Centre Pokémon", 552, 301, "Centre"),
+    ("Safrania", "Boutique", 601, 265, "Boutique"),
+    ("Safrania", "Dojo", 590, 250, "Dojo"),
+    ("Safrania", "Arène de Safrania", 606, 250, "Arène"),
+    ("Safrania", "Maison de M. Psy", 548, 284, "Maison"),
+    ("Safrania", "Maison", 548, 255, "Maison"),
+    ("Safrania", "Maison", 548, 270, "Maison"),
+    ("Safrania", "Maison", 605, 284, "Maison"),
+    ("Safrania", "Maison", 560, 312, "Maison"),
+    ("Safrania", "Maison", 595, 312, "Maison"),
+    ("Carmin sur Mer", "Centre Pokémon", 561, 410, "Centre"),
+    ("Carmin sur Mer", "Boutique", 586, 432, "Boutique"),
+    ("Carmin sur Mer", "Fan-club Pokémon", 553, 432, "Commerce"),
+    ("Carmin sur Mer", "Arène de Carmin", 600, 445, "Arène"),
+    ("Carmin sur Mer", "Gare maritime", 575, 448, "Commerce"),
+    ("Carmin sur Mer", "Maison", 582, 412, "Maison"),
+    ("Carmin sur Mer", "Maison", 565, 440, "Maison"),
+    ("Lavanville", "Tour Pokémon", 803, 255, "Tour"),
+    ("Lavanville", "Centre Pokémon", 781, 268, "Centre"),
+    ("Lavanville", "Boutique", 797, 289, "Boutique"),
+    ("Lavanville", "Maison du Nommeur", 785, 280, "Maison"),
+    ("Lavanville", "Maison", 783, 294, "Maison"),
+    ("Parmanie", "Zone Safari (entrée)", 432, 612, "Commerce"),
+    ("Parmanie", "Centre Pokémon", 437, 659, "Centre"),
+    ("Parmanie", "Boutique", 410, 659, "Boutique"),
+    ("Parmanie", "Arène de Parmanie", 395, 655, "Arène"),
+    ("Parmanie", "Maison du Gardien", 430, 630, "Maison"),
+    ("Parmanie", "Maison", 403, 615, "Maison"),
+    ("Parmanie", "Maison", 458, 615, "Maison"),
+    ("Parmanie", "Maison", 403, 637, "Maison"),
+    ("Parmanie", "Maison", 462, 632, "Maison"),
+    ("Parmanie", "Maison", 470, 655, "Maison"),
+    ("Cramois'Île", "Manoir Pokémon", 136, 763, "Manoir"),
+    ("Cramois'Île", "Labo Pokémon", 138, 778, "Labo"),
+    ("Cramois'Île", "Arène de Cramois'Île", 158, 778, "Arène"),
+    ("Cramois'Île", "Centre Pokémon", 160, 764, "Centre"),
+    ("Plateau Indigo", "Ligue Pokémon", 25, 24, "Ligue"),
+    # Sur les routes.
+    ("Route 4", "Centre Pokémon du Mont Sélénite", 322, 152, "Centre"),
+    ("Route 10", "Centre Pokémon du Tunnel Roche", 772, 140, "Centre"),
+    ("Route 10", "Centrale", 800, 190, "Centrale"),
+    ("Route 5", "Pension", 562, 190, "Maison"),
+    ("Route 25", "Maison de Léo", 735, 22, "Maison"),
+]
+
+
+def _frlg_position(zone, column, row):
+    """Case FRLG -> mètres : ramenée à TOWN_SCALE dans une ville, vraie case sur une route."""
+    for name, c0, r0, *_ in AREAS:
+        if name == zone:
+            cx, cy = from_frlg(c0, r0)
+            return cx - (row - r0) * TOWN_SCALE, cy + (column - c0) * TOWN_SCALE
+    return from_frlg(column, row)
+
+
+def _frlg_buildings():
+    result = []
+    for index, (zone, name, column, row, kind) in enumerate(_FRLG_BUILDINGS):
+        depth, width, height, wall, roof, style = BUILDING_TYPES[kind]
+        roof = roof or HOUSE_ROOFS[index % len(HOUSE_ROOFS)]
+        result.append((zone, name, *_frlg_position(zone, column, row), depth, width, height, wall, roof, style))
+    return result
+
+
+BUILDINGS += _frlg_buildings()
 
 # Intérieurs (SCRUM-25) : on entre sans chargement. Chaque bâtiment est creux, avec une
 # porte au sud, un sol, un plafond à CEILINGS mètres et ces meubles de blockout :
@@ -247,6 +373,7 @@ _DECOR = [
     ("Bourg Palette", "Flowers", -28, 19, 3, 8),
 ]
 DECOR = [(zone, kind, *_offset(zone, dx, dy), depth, width) for zone, kind, dx, dy, depth, width in _DECOR]
+DECOR += [("Céladopole", "Water", *_frlg_position("Céladopole", 399, 285), 20, 15)]
 PONDS = [(x, y, depth, width) for _, kind, x, y, depth, width in DECOR if kind == "Water"]
 
 # Murs d'arbres serrés autour des villes : (zone, demi-profondeur x, demi-largeur y,
@@ -260,7 +387,27 @@ TREE_WALLS = [
 GATES = [
     ("Poste de la Forêt (sud)", *from_frlg(144, 338), "x"),
     ("Poste de la Forêt (nord)", *from_frlg(144, 222), "x"),
-    ("Poste de la Ligue (fermé)", *from_frlg(36, 404), "y"),
+    ("Poste de la Ligue", *from_frlg(36, 404), "y"),
+    # Les quatre postes autour de Safrania.
+    ("Poste de la Route 5", *from_frlg(577, 236), "x"),
+    ("Poste de la Route 6", *from_frlg(576, 326), "x"),
+    ("Poste de la Route 7", *from_frlg(526, 281), "y"),
+    ("Poste de la Route 8", *from_frlg(626, 281), "y"),
+]
+
+# Entrées de grottes : (nom, colonne, ligne, orientation de l'ouverture en degrés,
+# 0 = vers le nord, 90 = vers l'est). Un porche sombre posé contre la pente.
+CAVES = [
+    ("Mont Sélénite (entrée)", 352, 148, 270),
+    ("Mont Sélénite (sortie)", 330, 112, 90),
+    ("Tunnel Roche (nord)", 776, 152, 0),
+    ("Tunnel Roche (sud)", 782, 228, 180),
+    ("Route Victoire (bas)", 24, 122, 180),
+    ("Route Victoire (haut)", 24, 92, 0),
+    ("Grotte Taupiqueur (ouest)", 160, 196, 90),
+    ("Grotte Taupiqueur (est)", 622, 436, 270),
+    ("Caverne Azurée", 548, 94, 90),
+    ("Îles Écume", 300, 778, 0),
 ]
 
 # Chemins de terre, en cases de la carte FRLG.
@@ -273,6 +420,28 @@ _PATHS = [
     ("Chemin Route 2", [(144, 387), (146, 365), (144, 338)]),
     ("Chemin Route 2 nord", [(144, 222), (142, 200), (144, 171)]),
     ("Chemin Argenta", [(144, 171), (144, 150)]),
+    # Le reste de Kanto (cases FRLG, au milieu des routes).
+    ("Chemin Route 3", [(190, 160), (230, 166), (270, 156), (300, 160), (330, 152), (352, 148)]),
+    ("Chemin Route 4", [(330, 112), (380, 116), (430, 112), (480, 116), (540, 116)]),
+    ("Chemin Route 24", [(578, 92), (570, 70), (566, 45), (570, 18)]),
+    ("Chemin Route 25", [(570, 18), (620, 15), (680, 16), (735, 20)]),
+    ("Chemin Route 5", [(578, 140), (578, 190), (577, 244)]),
+    ("Chemin Route 6", [(576, 318), (576, 360), (578, 403)]),
+    ("Chemin Route 7", [(535, 281), (505, 283), (478, 281)]),
+    ("Chemin Route 8", [(617, 281), (680, 281), (740, 283), (768, 276)]),
+    ("Chemin Route 9", [(617, 110), (660, 112), (720, 110), (775, 112)]),
+    ("Chemin Route 10", [(775, 112), (776, 152), (782, 228), (790, 245)]),
+    ("Chemin Route 11", [(612, 428), (650, 438), (700, 438), (760, 440)]),
+    ("Chemin Route 12", [(790, 300), (792, 360), (790, 440), (788, 540)]),
+    ("Chemin Route 13", [(788, 545), (740, 555), (680, 552), (640, 556)]),
+    ("Chemin Route 14", [(640, 556), (636, 600), (632, 635)]),
+    ("Chemin Route 15", [(632, 638), (560, 642), (478, 640)]),
+    ("Chemin Route 16", [(362, 278), (320, 276), (290, 282)]),
+    ("Piste cyclable", [(290, 282), (290, 400), (290, 520), (290, 640)]),
+    ("Chemin Route 18", [(290, 640), (340, 642), (388, 640)]),
+    ("Chemin Route 19", [(433, 665), (432, 700)]),
+    ("Chemin Route 23", [(36, 404), (24, 380), (24, 300), (22, 200), (24, 122)]),
+    ("Chemin du Plateau Indigo", [(24, 92), (24, 60), (25, 40)]),
 ]
 PATHS = [(name, [from_frlg(c, r) for c, r in points]) for name, points in _PATHS]
 
@@ -290,19 +459,24 @@ def _forest_path():
 
 FOREST_PATH = _forest_path()
 
-# Hautes herbes : (zone, colonne, ligne, profondeur x en m, largeur y en m).
-_TALL_GRASS = [
-    ("Route 1", 135, 505, 37, 33),
-    ("Route 1", 154, 478, 45, 27),
-    ("Route 1", 136, 448, 33, 37),
-    ("Route 22", 95, 398, 33, 45),
-    ("Route 22", 62, 410, 37, 37),
-    ("Route 2 (sud)", 152, 362, 33, 22),
-    ("Forêt de Jade", 128, 305, 45, 45),
-    ("Forêt de Jade", 162, 262, 45, 45),
-    ("Forêt de Jade", 136, 238, 33, 45),
-]
-TALL_GRASS = [(zone, *from_frlg(c, r), depth, width) for zone, c, r, depth, width in _TALL_GRASS]
+# Hautes herbes : relevées automatiquement sur la carte FRLG par make_frlg_mask.py
+# (kanto_herbes.json, rectangles en cases : colonne, ligne, largeur, hauteur).
+# On garde celles des routes, pas les taches trouvées par erreur dans les villes.
+def _tall_grass():
+    with open(os.path.join(HERE, "kanto_herbes.json"), encoding="utf-8") as handle:
+        rectangles = json.load(handle)
+    result = []
+    for column, row, wide, high in rectangles:
+        x, y = from_frlg(column + wide / 2, row + high / 2)
+        if any(abs(x - from_frlg(c, r)[0]) < (high * CELL / 2 + hn + 20)
+               and abs(y - from_frlg(c, r)[1]) < (wide * CELL / 2 + he + 20)
+               for name, c, r, he, hn, _ in AREAS if name != "Forêt de Jade"):
+            continue
+        result.append(("Herbes", x, y, high * CELL, wide * CELL))
+    return result
+
+
+TALL_GRASS = _tall_grass()
 
 # Panneaux à l'entrée de chaque lieu : (nom, ville de référence, décalage x, y en mètres)
 # ou (nom, None, colonne, ligne de la carte FRLG).
@@ -315,6 +489,9 @@ _SIGNS = [
     ("Forêt de Jade", None, 146, 342),
     ("Argenta", "Argenta", -82, 8),
 ]
+# Le reste de Kanto : un panneau au sud de chaque ville.
+_SIGNS += [(name, name, -hn - 6, 8) for name, _, _, _, hn, _ in AREAS
+           if name not in ("Bourg Palette", "Jadielle", "Argenta", "Forêt de Jade")]
 SIGNS = [(name, *(_offset(town, a, b) if town else from_frlg(a, b))) for name, town, a, b in _SIGNS]
 
 # Point de départ du joueur : entre les deux maisons, face au nord (la sortie vers la Route 1).

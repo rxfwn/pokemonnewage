@@ -52,6 +52,13 @@ MASSIF_PEAK = 165.0     # en plus, au cœur des grands massifs
 WARP = 260.0            # déformation des bords des routes et des côtes (pas de rectangles)
 V1_CLEARANCE = 75.0     # largeur garantie autour des chemins de la V1
 ROUTE_HILLS = 34.0      # collines au fond des routes larges (pentes douces)
+GROUND_NOISE_LARGE = 0.8  # bosses d'environ 30 m (± 40 cm)
+GROUND_NOISE_SMALL = 0.4  # petites bosses d'environ 9 m (± 20 cm)
+PATH_MAX_SLOPE = 0.15     # pente maximale d'un chemin (15 %)
+PATH_MIN_ALTITUDE = 1.5   # un chemin ne passe jamais sous l'eau (ponts et jetées en blockout)
+PATH_FLAT = 4.0           # demi-largeur à plat autour du chemin (m)
+PATH_FALLOFF = 22.0       # le terrain rejoint le chemin en pente douce jusqu'à cette distance
+PAD_FALLOFF = 18.0        # bord des plateformes sous les bâtiments hors des villes
 PAD = 60                # cases ajoutées autour de la carte FRLG (la côte y suit Let's Go)
 
 
@@ -480,6 +487,87 @@ def town_terraces(height, x, y):
     return height
 
 
+# --- Étape 4 : chemins praticables et plateformes des bâtiments hors des villes ------------
+
+def _window(height, x0, x1, y0, y1):
+    """Morceau de la grille (lignes = y, colonnes = x) qui couvre le rectangle en mètres."""
+    r0, r1 = max(0, int(y0 / STEP)), min(SIZE, int(y1 / STEP) + 2)
+    c0, c1 = max(0, int(x0 / STEP)), min(SIZE, int(x1 / STEP) + 2)
+    rows, cols = np.mgrid[r0:r1, c0:c1]
+    return (slice(r0, r1), slice(c0, c1)), cols * STEP, rows * STEP
+
+
+def _height_along(height, xs, ys):
+    return sample(height, xs / STEP, ys / STEP, 0.0)
+
+
+def _in_towns(x, y, margin):
+    inside = np.zeros(x.shape, bool)
+    for name, column, row, half_east, half_north, _ in layout.AREAS:
+        if name == "Forêt de Jade":
+            continue
+        cx, cy = layout.from_frlg(column, row)
+        inside |= (np.abs(x - cx) < half_north + margin) & (np.abs(y - cy) < half_east + margin)
+    return inside
+
+
+def carve_paths(height):
+    """Le chemin suit un profil sans à-coups (pente limitée, jamais sous l'eau), et le
+    terrain le rejoint en pente douce de part et d'autre. Pas dans les villes (déjà à plat)."""
+    base = height.copy()
+    best = np.zeros(height.shape, np.float32)  # poids du chemin le plus proche déjà appliqué
+    for name, points in layout.PATHS:
+        starts, xs, ys = [], [], []
+        for (ax, ay), (bx, by) in zip(points, points[1:]):
+            count = max(1, int(np.hypot(bx - ax, by - ay) / STEP))
+            t = np.arange(count) / count
+            starts.append((sum(len(part) for part in xs), count))
+            xs.append(ax + (bx - ax) * t)
+            ys.append(ay + (by - ay) * t)
+        xs = np.concatenate(xs + [[points[-1][0]]])
+        ys = np.concatenate(ys + [[points[-1][1]]])
+        profile = _height_along(base, xs, ys)
+        window = max(1, int(30 / STEP))
+        smooth = np.convolve(np.pad(profile, window, mode="edge"), np.ones(window) / window, "same")
+        profile = np.maximum(smooth[window:-window], PATH_MIN_ALTITUDE)
+        rise = PATH_MAX_SLOPE * STEP
+        for i in range(1, len(profile)):
+            profile[i] = min(max(profile[i], profile[i - 1] - rise), profile[i - 1] + rise)
+        for i in range(len(profile) - 2, -1, -1):
+            profile[i] = min(max(profile[i], profile[i + 1] - rise), profile[i + 1] + rise)
+
+        for ((ax, ay), (bx, by)), (first, count) in zip(zip(points, points[1:]), starts):
+            reach = PATH_FALLOFF + 2
+            part, x, y = _window(height, min(ax, bx) - reach, max(ax, bx) + reach,
+                                 min(ay, by) - reach, max(ay, by) + reach)
+            dx, dy = bx - ax, by - ay
+            t = np.clip(((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy), 0, 1)
+            distance = np.hypot(x - (ax + dx * t), y - (ay + dy * t))
+            target = profile[first + np.rint(t * count).astype(int)]
+            weight = smoothstep(PATH_FALLOFF, PATH_FLAT, distance) * ~_in_towns(x, y, 5)
+            better = weight > best[part]
+            carved = base[part] + (target - base[part]) * weight
+            height[part] = np.where(better, carved, height[part])
+            best[part] = np.where(better, weight, best[part])
+
+
+def building_pads(height):
+    """Plateforme plate sous les bâtiments et les postes (sinon pente ou mer), sauf dans les
+    villes en terrasses."""
+    # Les villes en terrasses (V1) ont déjà leurs niveaux : on n'y touche pas.
+    sites = [(x, y, depth, width) for zone, _, x, y, depth, width, *_ in layout.BUILDINGS
+             if zone not in layout.TERRACES]
+    sites += [(x, y, 12.0, 12.0) for _, x, y, _ in layout.GATES]
+    for x0, y0, depth, width in sites:
+        reach = max(depth, width) / 2 + PAD_FALLOFF + 4
+        part, x, y = _window(height, x0 - reach, x0 + reach, y0 - reach, y0 + reach)
+        under = height[part][(np.abs(x - x0) < depth / 2) & (np.abs(y - y0) < width / 2)]
+        level = max(float(np.median(under)), PATH_MIN_ALTITUDE)
+        box = np.maximum(np.abs(x - x0) - depth / 2 - 3, np.abs(y - y0) - width / 2 - 3)
+        weight = smoothstep(PAD_FALLOFF, 0, box)
+        height[part] = height[part] + (level - height[part]) * weight
+
+
 # --- Images et fichiers ---------------------------------------------------------------------
 
 def write_png(path, width, height, rows, bit_depth, color_type):
@@ -620,7 +708,16 @@ def main():
     for row0 in range(0, SIZE, 256):
         part = slice(row0, min(SIZE, row0 + 256))
         x, y = grid_xy(range(part.start, part.stop))
+        # Léger bruit au sol (quelques dizaines de cm) pour casser le côté lisse.
+        # Pas dans l'eau ; les villes sont remises à plat juste après par town_terraces.
+        bumps = (fbm(x, y, 30, 3, SEED + 50) * GROUND_NOISE_LARGE
+                 + fbm(x, y, 9, 2, SEED + 51) * GROUND_NOISE_SMALL)
+        dry = smoothstep(0.5, 3.0, height[part]) * ~wet[part]
+        height[part] += bumps * dry
         height[part] = town_terraces(height[part], x, y)
+    carve_paths(height)
+    building_pads(height)
+    print(f"Villes, chemins et plateformes : {time.time() - start:.0f} s")
     limit = 32767 / layout.HEIGHT_UNITS_PER_METER
     height = np.clip(height, -40.0, limit)
 
