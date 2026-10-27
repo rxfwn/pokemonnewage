@@ -13,7 +13,7 @@ Le modèle d'origine n'est pas utilisable tel quel dans Unreal : toutes les expr
 - os renommés comme le mannequin d'Unreal (`root`, `pelvis`, `thigh_l`, `spine_01`, `upperarm_r`, `hand_l`, `head`…), ce qui permet à Unreal de reprendre **seul** les animations de marche, course, saut et repos du modèle Third Person ;
 - 4 matériaux (`Body`, `Skin`, `Hair`, `Eye`) et leurs textures déjà prêtes au format Unreal : `_D` couleur, `_N` normal map, `_ORM` (occlusion, rugosité, métal).
 
-Le résultat est dans les fichiers du projet : **`personnage/Dresseur_UE.zip`** (et un aperçu, `personnage/dresseur_apercu.png`). Pas besoin de Blender pour la suite.
+Le résultat est dans les fichiers du projet : **`personnage/Dresseur_UE_v2.zip`** (et un aperçu, `personnage/dresseur_apercu.png`). Pas besoin de Blender pour la suite.
 
 > Les `.fbx` et les textures ne vont **pas** dans Git pour l'instant : depuis le cloud, Claude ne peut pas pousser de fichiers LFS. Les `.uasset` créés par l'import, eux, se committent normalement depuis le PC (étape 8).
 
@@ -25,7 +25,7 @@ La taille se règle avec `TARGET_HEIGHT_M` en haut du script.
 
 ## 1. Récupérer les fichiers
 
-1. Télécharger `personnage/Dresseur_UE.zip` depuis les fichiers du projet.
+1. Télécharger `personnage/Dresseur_UE_v2.zip` depuis les fichiers du projet.
 2. Le dézipper **en dehors** du dossier du jeu, par exemple dans `D:\Assets\`. On obtient `D:\Assets\Dresseur\SK_Trainer.fbx` et `D:\Assets\Dresseur\Textures\`.
 3. Récupérer la branche du ticket. Unreal fermé, dans un terminal sur `D:\Dev\pokemonnewage` :
    ```
@@ -90,6 +90,7 @@ Unreal sait transférer des animations d'un squelette à un autre. Comme les os 
 5. Dans la liste, sélectionner `ABP_Unarmed` **et** toutes les animations (`MM_Idle`, `BS_Idle_Walk_Run`, celles de `Walk`, `Jog`, `Jump`…). Cocher l'option d'**export des assets de retargeting**.
 6. **Export Animations**, dossier `Content/Characters/Trainer/Anims`. Suffixe proposé : `_Trainer`.
 7. On obtient notamment `ABP_Unarmed_Trainer`, les animations retargetées, et un `IK_…`/`RTG_…` générés. Renommer l'AnimBP `ABP_Trainer`.
+8. Ouvrir l'AnimBP, **AnimGraph** : sur le nœud **Control Rig** (juste avant Output Pose), mettre **Alpha** à `0`. Ce Control Rig a été écrit pour le squelette exact du mannequin et tord les jambes du Dresseur (jambes « en grenouille »). Les 11 avertissements « Hierarchy discrepancy » qui restent à la compilation sont alors sans effet. Compile, Save.
 
 **Si les bras restent écartés** pendant la marche : c'est la différence de pose de départ (le Dresseur est en T, Manny en A). Ouvrir le `RTG_…` exporté, en haut à gauche passer en mode **Edit Retarget Pose** sur la cible, clic droit sur la racine > **Auto Align All Bones** (ou baisser les deux `upperarm` d'environ 45° à la main), enregistrer, puis refaire les étapes 2 à 6 avec ce retargeter au lieu de l'automatique.
 

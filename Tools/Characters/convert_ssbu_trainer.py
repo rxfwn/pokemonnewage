@@ -261,6 +261,17 @@ def main():
             mod.object = arm
     arm.name = "Armature"  # Unreal ignore un nœud racine nommé « Armature » : la racine sera « root ».
 
+    # Unreal compte en centimètres. Sans ça, Blender écrit les os en mètres sous un nœud
+    # « Armature » agrandi 100 fois : le mesh s'affiche bien, mais les animations retargetées
+    # remettent des translations en centimètres et le personnage change de taille selon l'animation.
+    bpy.context.scene.unit_settings.scale_length = 0.01
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in (arm, body):
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = arm
+    arm.matrix_world = Matrix.Scale(100, 4) @ arm.matrix_world
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+
     fbx = os.path.join(out_dir, f"SK_{prefix}.fbx")
     bpy.ops.export_scene.fbx(
         filepath=fbx,
