@@ -1,11 +1,12 @@
-"""Blockout du monde ouvert de la V1, de Bourg Palette à Argenta (SCRUM-62).
+"""Blockout du monde ouvert : tout Kanto (SCRUM-62, puis blockout de tout Kanto).
 
 À lancer dans l'éditeur Unreal, avec la map L_Kanto ouverte et le Landscape déjà importé
 (voir docs/MONDE_OUVERT_V1.md) : Outils > Exécuter un script Python... > choisir ce fichier.
 
 Pose sur le relief : les chemins, les bâtiments à leur vraie taille, les postes de passage,
-les hautes herbes, les arbres, la mer, les panneaux de chaque lieu, le point de départ,
+les hautes herbes, les entrées de grottes, la mer, les panneaux de chaque lieu, le point de départ,
 la lumière réaliste (ciel, soleil, nuages, brume) et un matériau simple pour le sol.
+Pas d'arbres : ils rallongeaient le chargement pour rien, le décor viendra avec le biome.
 Relançable sans risque : il efface d'abord tout ce qu'il a posé (dossier « Kanto_Blockout »).
 
 Le plan vient de kanto_v1_layout.py (même dossier) : on modifie le plan là, pas ici.
@@ -15,7 +16,6 @@ import importlib
 import json
 import math
 import os
-import random
 import sys
 
 import unreal
@@ -46,8 +46,8 @@ COLORS = {
     "Gate": "#B9A88F",
     "Door": "#4A3528",
     "TallGrass": "#4E8F2A",
-    "Trunk": "#6B4A2F",
     "Leaves": "#2F5E24",
+    "Cave": "#1C1916",
     "Water": "#2F6E9E",
     "Flowers": "#E58FB0",
     "Fence": "#F2F0EA",
@@ -58,8 +58,6 @@ COLORS = {
 
 actors = unreal.get_editor_subsystem(unreal.EditorActorSubsystem)
 CUBE = unreal.load_asset("/Engine/BasicShapes/Cube")
-CYLINDER = unreal.load_asset("/Engine/BasicShapes/Cylinder")
-CONE = unreal.load_asset("/Engine/BasicShapes/Cone")
 BASE_MATERIAL = unreal.load_asset("/Engine/BasicShapes/BasicShapeMaterial")
 mel = unreal.MaterialEditingLibrary
 
@@ -165,7 +163,9 @@ def build_paths():
     for name, points in layout.PATHS + [("Chemin Forêt de Jade", layout.FOREST_PATH)]:
         for index, ((x0, y0), (x1, y1)) in enumerate(zip(points, points[1:])):
             length = math.hypot(x1 - x0, y1 - y0)
-            pieces = max(1, int(length // 6))
+            # Morceaux de 12 m au plus (moins d'acteurs), plus courts dans les pentes.
+            climb = abs(layout.height_at(x1, y1) - layout.height_at(x0, y0))
+            pieces = max(1, int(length // 12), int(climb / 0.4))
             yaw = math.degrees(math.atan2(y1 - y0, x1 - x0))
             for piece in range(pieces):
                 t = (piece + 0.5) / pieces
@@ -326,40 +326,6 @@ def build_decor():
                           collision=False)
 
 
-WALL_TREES = []
-
-
-def build_tree_walls(rng, index):
-    """Rangées d'arbres serrées autour des villes, avec des ouvertures pour les sorties."""
-    for zone, half_x, half_y, openings in layout.TREE_WALLS:
-        cx, cy = layout.area_center(zone)
-        for row, offset in enumerate((0.0, 4.0)):
-            hx, hy = half_x + offset, half_y + offset
-            sides = {
-                "N": [(cx + hx, cy + t) for t in _steps(-hy, hy, 4.0, row)],
-                "S": [(cx - hx, cy + t) for t in _steps(-hy, hy, 4.0, row)],
-                "O": [(cx + t, cy - hy) for t in _steps(-hx, hx, 4.0, row)],
-                "E": [(cx + t, cy + hy) for t in _steps(-hx, hx, 4.0, row)],
-            }
-            for side, points in sides.items():
-                for px, py in points:
-                    along = py - cy if side in "NS" else px - cx
-                    if any(o_side == side and start <= along <= end for o_side, start, end in openings):
-                        continue
-                    index += 1
-                    tree(index, px + rng.uniform(-0.6, 0.6), py + rng.uniform(-0.6, 0.6), rng)
-                    WALL_TREES.append((px, py))
-    return index
-
-
-def _steps(start, end, spacing, row):
-    """Positions régulières de start à end ; la 2e rangée est décalée d'un demi-pas."""
-    t = start + (spacing / 2 if row else 0.0)
-    while t <= end:
-        yield t
-        t += spacing
-
-
 def build_gates():
     for name, x, y, axis in layout.GATES:
         folder = f"Postes/{name}"
@@ -384,84 +350,55 @@ def build_tall_grass():
                       "TallGrass", sink=0.4, collision=False)
 
 
-def near_path(x, y, margin):
-    for _, points in layout.PATHS + [("forêt", layout.FOREST_PATH)]:
-        for (x0, y0), (x1, y1) in zip(points, points[1:]):
-            dx, dy = x1 - x0, y1 - y0
-            t = max(0.0, min(1.0, ((x - x0) * dx + (y - y0) * dy) / (dx * dx + dy * dy)))
-            if math.hypot(x - (x0 + dx * t), y - (y0 + dy * t)) < margin:
-                return True
-    return False
+def cave_spot(x, y, angle):
+    """Pied de pente le plus proche du point de la carte FRLG : le porche s'y adosse,
+    l'ouverture tournée vers le bas. Sur l'eau (Îles Écume), on cherche d'abord la terre."""
+    directions = [i * 22.5 for i in range(16)]
+    if layout.height_at(x, y) < layout.SEA_LEVEL + 1.5:
+        for distance in range(5, 300, 5):
+            land = [(x + math.cos(math.radians(a)) * distance, y + math.sin(math.radians(a)) * distance)
+                    for a in directions]
+            land = [p for p in land if layout.height_at(*p) > layout.SEA_LEVEL + 1.5]
+            if land:
+                x, y = land[0]
+                break
+    base = layout.height_at(x, y)
+    best = None
+    for a in directions:
+        for distance in range(4, 124, 4):
+            px = x + math.cos(math.radians(a)) * distance
+            py = y + math.sin(math.radians(a)) * distance
+            if layout.height_at(px, py) > base + 5:
+                if best is None or distance < best[0]:
+                    best = (distance, a)
+                break
+    if best is None:
+        return x, y, angle
+    distance, a = best
+    foot = max(0, distance - 6)
+    return (x + math.cos(math.radians(a)) * foot, y + math.sin(math.radians(a)) * foot,
+            (a + 180) % 360)
 
 
-def near_building(x, y, margin):
-    for _, _, bx, by, depth, width, *_ in layout.BUILDINGS:
-        if abs(x - bx) < depth / 2 + margin and abs(y - by) < width / 2 + margin:
-            return True
-    for _, gx, gy, _ in layout.GATES:
-        if abs(x - gx) < 8 + margin and abs(y - gy) < 8 + margin:
-            return True
-    return False
-
-
-def tree(index, x, y, rng):
-    height = rng.uniform(12, 20)
-    width = height * rng.uniform(0.32, 0.42)
-    base = GROUND.point(x, y)
-    trunk = unreal.Vector(base.x, base.y, base.z + 150)
-    spawn(CYLINDER, f"Arbre_{index:04d}_Tronc", "Arbres", trunk, (0.5, 0.5, 4.0), "Trunk")
-    leaves = unreal.Vector(base.x, base.y, base.z + (2.5 + height / 2) * 100)
-    spawn(CONE, f"Arbre_{index:04d}_Feuillage", "Arbres", leaves, (width, width, height), "Leaves")
-
-
-def v1_bounds(margin):
-    """Rectangle (x0, x1, y0, y1) en mètres qui contient tous les lieux de la V1."""
-    xs, ys = [], []
-    for _, column, row, half_east, half_north, _ in layout.AREAS:
-        cx, cy = layout.from_frlg(column, row)
-        xs += [cx - half_north, cx + half_north]
-        ys += [cy - half_east, cy + half_east]
-    for _, points in layout.PATHS:
-        for px, py in points:
-            xs.append(px)
-            ys.append(py)
-    return min(xs) - margin, max(xs) + margin, min(ys) - margin, max(ys) + margin
-
-
-def build_trees():
-    rng = random.Random(151)
-    index = 0
-    x0, x1, y0, y1 = v1_bounds(60)
-    index = build_tree_walls(rng, index)
-    # Forêt de Jade : dense, sauf le long du chemin.
-    step = 9
-    x = x0
-    while x < x1:
-        y = y0
-        while y < y1:
-            px, py = x + rng.uniform(-3, 3), y + rng.uniform(-3, 3)
-            if (layout.find_zone(px, py) == "Forêt de Jade"
-                    and not near_path(px, py, 6) and not near_building(px, py, 4)):
-                index += 1
-                tree(index, px, py, rng)
-            y += step
-        x += step
-    # Bordures : une ceinture d'arbres au pied des pentes, le long des routes et des villes.
-    step = 14
-    x = x0
-    while x < x1:
-        y = y0
-        while y < y1:
-            px, py = x + rng.uniform(-5, 5), y + rng.uniform(-5, 5)
-            depth = layout.corridor_depth(px, py)
-            if (-40 < depth < -3 and layout.height_at(px, py) > layout.SEA_LEVEL + 1
-                    and layout.v1_distance(px, py) < 150
-                    and not any(abs(px - wx) < 5 and abs(py - wy) < 5 for wx, wy in WALL_TREES)):
-                index += 1
-                tree(index, px, py, rng)
-            y += step
-        x += step
-    unreal.log(f"{index} arbres posés.")
+def build_caves():
+    """Entrées de grottes : un porche sombre (deux piliers, un linteau, un fond noir) posé
+    au pied de la pente, l'ouverture tournée vers la route. L'intérieur viendra plus tard."""
+    for name, column, row, angle in layout.CAVES:
+        x, y, angle = cave_spot(*layout.from_frlg(column, row), angle)
+        folder = f"Grottes/{name}"
+        forward = (math.cos(math.radians(angle)), math.sin(math.radians(angle)))
+        side = (-forward[1], forward[0])
+        bottom = GROUND.lowest(x, y, 8, 8) - 0.5
+        for sign in (-1, 1):
+            px, py = x + side[0] * 3.5 * sign, y + side[1] * 3.5 * sign
+            pillar = box_at(f"{name}_Pilier{sign:+d}", folder, px, py, bottom, (3, 2, 7), "Stone")
+            pillar.set_actor_rotation(unreal.Rotator(yaw=angle), False)
+        lintel = box_at(f"{name}_Linteau", folder, x, y, bottom + 6, (3, 9, 2), "Stone")
+        lintel.set_actor_rotation(unreal.Rotator(yaw=angle), False)
+        back = box_at(f"{name}_Fond", folder, x - forward[0] * 3, y - forward[1] * 3, bottom,
+                      (4, 6, 6.5), "Cave", collision=True)
+        back.set_actor_rotation(unreal.Rotator(yaw=angle), False)
+    unreal.log(f"{len(layout.CAVES)} entrées de grottes posées.")
 
 
 def build_sea():
@@ -472,43 +409,42 @@ def build_sea():
                              GROUND.origin.z + (layout.SEA_LEVEL - 0.5) * 100)
     size = layout.WORLD_SIZE + 400
     spawn(CUBE, "Mer", "Mer", location, (size, size, 1), "Water", collision=False)
-    # Murs invisibles : au bord de l'eau (on ne peut pas encore nager) et là où les routes
-    # quittent la V1 (le reste de Kanto n'est pas encore prêt). Ailleurs, le relief bloque.
+    # Murs invisibles au bord de l'eau, sur les routes (on ne peut pas encore nager).
+    # Ailleurs, le relief bloque. Les cases voisines d'une même ligne forment un seul mur,
+    # pour garder peu d'acteurs et un chargement rapide.
     step = 6
-    x0, x1, y0, y1 = v1_bounds(150)
     count = 0
-    x = x0
-    while x < x1:
-        y = y0
-        while y < y1:
-            distance = layout.v1_distance(x, y)
-            if distance > 130:
-                y += step
-                continue
-            ground = layout.height_at(x, y)
-            on_route = layout.corridor_depth(x, y) > -6
-            at_sea = on_route and -1.5 < ground < layout.SEA_LEVEL + 0.3
-            at_edge = on_route and 120 < distance < 126.5 and ground >= layout.SEA_LEVEL + 0.3
-            if at_sea or at_edge:
+    x = 0.0
+    while x < layout.WORLD_SIZE:
+        run = None
+        y = 0.0
+        while y <= layout.WORLD_SIZE + step:
+            ground = layout.height_at(x, y) if y <= layout.WORLD_SIZE else 99.0
+            at_sea = (-1.5 < ground < layout.SEA_LEVEL + 0.3
+                      and layout.corridor_depth(x, y) > -6)
+            if at_sea and run is None:
+                run = y
+            elif not at_sea and run is not None:
                 count += 1
-                location = GROUND.point(x, y, 3)
+                length = y - run
+                location = GROUND.point(x, run + length / 2 - step / 2, 3)
+                location.z = GROUND.origin.z + (layout.SEA_LEVEL + 3) * 100
                 wall = spawn(CUBE, f"Limite_{count:04d}", "Limites", location,
-                             (step + 1.5, step + 1.5, 10), "Water")
+                             (step + 1.5, length + 1.5, 10), "Water")
                 wall.set_actor_hidden_in_game(True)
+                run = None
             y += step
         x += step
-    unreal.log(f"{count} murs invisibles (bord de l'eau et sorties de la V1).")
-    build_lakes(x0, x1, y0, y1)
+    unreal.log(f"{count} murs invisibles au bord de l'eau.")
+    build_lakes()
 
 
-def build_lakes(x0, x1, y0, y1):
+def build_lakes():
     """Lacs et rivières en hauteur (kanto_lacs.json) : une plaque d'eau à leur niveau."""
     with open(layout.LAKES_PATH, encoding="utf-8") as handle:
         lakes = json.load(handle)
     count = 0
     for lake in lakes:
-        if lake["x1"] < x0 or lake["x0"] > x1 or lake["y1"] < y0 or lake["y0"] > y1:
-            continue
         count += 1
         cx, cy = (lake["x0"] + lake["x1"]) / 2, (lake["y0"] + lake["y1"]) / 2
         location = GROUND.point(cx, cy)
@@ -659,7 +595,7 @@ def main():
         return
     GROUND = Ground(landscapes[0])
 
-    with unreal.ScopedSlowTask(10, "Blockout de Kanto (V1)") as task:
+    with unreal.ScopedSlowTask(10, "Blockout de Kanto") as task:
         task.make_dialog(True)
         steps = [
             ("Nettoyage", clear_previous_blockout),
@@ -670,7 +606,7 @@ def main():
             ("Décor des villes", build_decor),
             ("Postes", build_gates),
             ("Hautes herbes", build_tall_grass),
-            ("Arbres", build_trees),
+            ("Grottes", build_caves),
             ("Panneaux et départ", lambda: (build_signs(), place_player_start())),
         ]
         for label, step in steps:
@@ -684,7 +620,7 @@ def main():
                            "dans Landscape Material, panneau Détails du Landscape.")
 
     unreal.EditorLoadingAndSavingUtils.save_dirty_packages(True, True)
-    unreal.log("Blockout de Kanto (V1) posé et enregistré.")
+    unreal.log("Blockout de Kanto posé et enregistré.")
 
 
 main()
