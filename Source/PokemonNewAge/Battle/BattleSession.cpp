@@ -81,7 +81,7 @@ namespace
 		}
 	}
 
-	constexpr int32 PlayerSide = 0;
+	constexpr int32 PlayerSideIndex = 0;
 	int32 Other(int32 Side) { return 1 - Side; }
 }
 
@@ -541,13 +541,13 @@ void UBattleSession::Finish(EBattleOutcome Outcome)
 	}
 
 	Result.Outcome = Outcome;
-	FBattleSide& Player = Sides[PlayerSide];
+	FBattleSide& Player = Sides[PlayerSideIndex];
 
 	if (Outcome == EBattleOutcome::Won && BattleType == EBattleType::Trainer)
 	{
 		const FTrainerRow* Trainer = Database->FindTrainer(Sides[1].TrainerId);
 		Result.MoneyDelta = Trainer ? Trainer->PrizeMoney : 0;
-		FBattleEvent Event = MakeEvent(EBattleEventType::MoneyWon, PlayerSide);
+		FBattleEvent Event = MakeEvent(EBattleEventType::MoneyWon, PlayerSideIndex);
 		Event.Amount = Result.MoneyDelta;
 		Emit(Event);
 	}
@@ -560,7 +560,7 @@ void UBattleSession::Finish(EBattleOutcome Outcome)
 		}
 		const int32 Lost = UBattleRules::GetMoneyLost(Player.BadgeCount, HighestLevel, Player.Money);
 		Result.MoneyDelta = -Lost;
-		FBattleEvent Event = MakeEvent(EBattleEventType::MoneyLost, PlayerSide);
+		FBattleEvent Event = MakeEvent(EBattleEventType::MoneyLost, PlayerSideIndex);
 		Event.Amount = Lost;
 		Emit(Event);
 	}
@@ -1507,9 +1507,9 @@ void UBattleSession::OnFainted(int32 Side)
 	if (!Sides[Side].HasPokemonLeft() && PendingOutcome == EBattleOutcome::None)
 	{
 		// Si les deux tombent en même temps (Destruction), le joueur perd
-		PendingOutcome = Side == PlayerSide || !Sides[PlayerSide].HasPokemonLeft() ? EBattleOutcome::Lost : EBattleOutcome::Won;
+		PendingOutcome = Side == PlayerSideIndex || !Sides[PlayerSideIndex].HasPokemonLeft() ? EBattleOutcome::Lost : EBattleOutcome::Won;
 	}
-	else if (!Sides[PlayerSide].HasPokemonLeft())
+	else if (!Sides[PlayerSideIndex].HasPokemonLeft())
 	{
 		PendingOutcome = EBattleOutcome::Lost;
 	}
