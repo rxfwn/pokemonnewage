@@ -1,0 +1,6694 @@
+[
+ {
+  "Name": "Bulbasaur",
+  "NationalDex": 1,
+  "DisplayName": "Bulbizarre",
+  "Genus": "Pokémon Graine",
+  "PokedexEntry": "Il peut survivre plusieurs jours sans manger grâce aux nutriments contenus dans le bulbe sur son dos.",
+  "Type1": "Grass",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 45,
+   "Attack": 49,
+   "Defense": 49,
+   "SpecialAttack": 65,
+   "SpecialDefense": 65,
+   "Speed": 45
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 1,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Overgrow"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 64,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 0.7,
+  "WeightKg": 6.9,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Ivysaur",
+    "Trigger": "Level",
+    "MinLevel": 16,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Ivysaur",
+  "NationalDex": 2,
+  "DisplayName": "Herbizarre",
+  "Genus": "Pokémon Graine",
+  "PokedexEntry": "En emmagasinant de l’énergie, son bulbe grossit. Un arôme en émane quand il s’apprête à éclore.",
+  "Type1": "Grass",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 60,
+   "Attack": 62,
+   "Defense": 63,
+   "SpecialAttack": 80,
+   "SpecialDefense": 80,
+   "Speed": 60
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 1,
+   "SpecialDefense": 1,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Overgrow"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 142,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 1.0,
+  "WeightKg": 13.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Venusaur",
+    "Trigger": "Level",
+    "MinLevel": 32,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Venusaur",
+  "NationalDex": 3,
+  "DisplayName": "Florizarre",
+  "Genus": "Pokémon Graine",
+  "PokedexEntry": "Les pétales de sa fleur dorsale absorbent les rayons du soleil pour les convertir en énergie.",
+  "Type1": "Grass",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 80,
+   "Attack": 82,
+   "Defense": 83,
+   "SpecialAttack": 100,
+   "SpecialDefense": 100,
+   "Speed": 80
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 2,
+   "SpecialDefense": 1,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Overgrow"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 236,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 2.0,
+  "WeightKg": 100.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Charmander",
+  "NationalDex": 4,
+  "DisplayName": "Salamèche",
+  "Genus": "Pokémon Lézard",
+  "PokedexEntry": "La flammèche au bout de sa queue émet un crépitement audible seulement dans les endroits calmes.",
+  "Type1": "Fire",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 39,
+   "Attack": 52,
+   "Defense": 43,
+   "SpecialAttack": 60,
+   "SpecialDefense": 50,
+   "Speed": 65
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "Blaze"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 62,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 0.6,
+  "WeightKg": 8.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Charmeleon",
+    "Trigger": "Level",
+    "MinLevel": 16,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Charmeleon",
+  "NationalDex": 5,
+  "DisplayName": "Reptincel",
+  "Genus": "Pokémon Flamme",
+  "PokedexEntry": "Exalté quand il affronte des adversaires puissants, ce Pokémon en vient parfois à cracher des flammes bleutées.",
+  "Type1": "Fire",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 58,
+   "Attack": 64,
+   "Defense": 58,
+   "SpecialAttack": 80,
+   "SpecialDefense": 65,
+   "Speed": 80
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 1,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "Blaze"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 142,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 1.1,
+  "WeightKg": 19.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Charizard",
+    "Trigger": "Level",
+    "MinLevel": 36,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Charizard",
+  "NationalDex": 6,
+  "DisplayName": "Dracaufeu",
+  "Genus": "Pokémon Flamme",
+  "PokedexEntry": "Quand il crache son souffle brûlant, la flamme au bout de sa queue s’embrase.",
+  "Type1": "Fire",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 78,
+   "Attack": 84,
+   "Defense": 78,
+   "SpecialAttack": 109,
+   "SpecialDefense": 85,
+   "Speed": 100
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 3,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Blaze"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 240,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 1.7,
+  "WeightKg": 90.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Squirtle",
+  "NationalDex": 7,
+  "DisplayName": "Carapuce",
+  "Genus": "Pokémon Minitortue",
+  "PokedexEntry": "Caché sous les flots, il crache un jet d’eau sur sa proie et se réfugie à l’intérieur de sa carapace en cas de danger.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 44,
+   "Attack": 48,
+   "Defense": 65,
+   "SpecialAttack": 50,
+   "SpecialDefense": 64,
+   "Speed": 43
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 1,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Torrent"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 63,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 0.5,
+  "WeightKg": 9.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Wartortle",
+    "Trigger": "Level",
+    "MinLevel": 16,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Wartortle",
+  "NationalDex": 8,
+  "DisplayName": "Carabaffe",
+  "Genus": "Pokémon Tortue",
+  "PokedexEntry": "Quand on lui tapote la tête, il se cache dans sa carapace, mais son corps ne peut pas y tenir en entier.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 59,
+   "Attack": 63,
+   "Defense": 80,
+   "SpecialAttack": 65,
+   "SpecialDefense": 80,
+   "Speed": 58
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 1,
+   "SpecialAttack": 0,
+   "SpecialDefense": 1,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Torrent"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 142,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 1.0,
+  "WeightKg": 22.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Blastoise",
+    "Trigger": "Level",
+    "MinLevel": 36,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Blastoise",
+  "NationalDex": 9,
+  "DisplayName": "Tortank",
+  "Genus": "Pokémon Carapace",
+  "PokedexEntry": "Une fois sa cible dans sa ligne de mire, il projette des jets d’eau plus puissants qu’une lance à incendie.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 79,
+   "Attack": 83,
+   "Defense": 100,
+   "SpecialAttack": 85,
+   "SpecialDefense": 105,
+   "Speed": 78
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 3,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Torrent"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 239,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 1.6,
+  "WeightKg": 85.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Caterpie",
+  "NationalDex": 10,
+  "DisplayName": "Chenipan",
+  "Genus": "Pokémon Ver",
+  "PokedexEntry": "Quand on touche l’appendice sur son front, il sécrète une odeur nauséabonde pour se protéger.",
+  "Type1": "Bug",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 45,
+   "Attack": 30,
+   "Defense": 35,
+   "SpecialAttack": 20,
+   "SpecialDefense": 20,
+   "Speed": 45
+  },
+  "EVYield": {
+   "HP": 1,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "ShieldDust"
+  ],
+  "CatchRate": 255,
+  "BaseExperience": 39,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.3,
+  "WeightKg": 2.9,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Metapod",
+    "Trigger": "Level",
+    "MinLevel": 7,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Metapod",
+  "NationalDex": 11,
+  "DisplayName": "Chrysacier",
+  "Genus": "Pokémon Cocon",
+  "PokedexEntry": "Il renforce sa carapace pour se protéger, mais un coup puissant peut l’en déloger.",
+  "Type1": "Bug",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 50,
+   "Attack": 20,
+   "Defense": 55,
+   "SpecialAttack": 25,
+   "SpecialDefense": 25,
+   "Speed": 30
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 2,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "ShedSkin"
+  ],
+  "CatchRate": 120,
+  "BaseExperience": 72,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.7,
+  "WeightKg": 9.9,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Butterfree",
+    "Trigger": "Level",
+    "MinLevel": 10,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Butterfree",
+  "NationalDex": 12,
+  "DisplayName": "Papilusion",
+  "Genus": "Pokémon Papillon",
+  "PokedexEntry": "Ses ailes sont enduites d’une poudre toxique imperméable lui permettant de voler sous la pluie.",
+  "Type1": "Bug",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 60,
+   "Attack": 45,
+   "Defense": 50,
+   "SpecialAttack": 90,
+   "SpecialDefense": 80,
+   "Speed": 70
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 2,
+   "SpecialDefense": 1,
+   "Speed": 0
+  },
+  "Abilities": [
+   "CompoundEyes"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 178,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.1,
+  "WeightKg": 32.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": []
+ },
+ {
+  "Name": "Weedle",
+  "NationalDex": 13,
+  "DisplayName": "Aspicot",
+  "Genus": "Pokémon Insectopic",
+  "PokedexEntry": "L’aiguillon sur son front est très pointu. Il se cache dans les bois et les hautes herbes, où il se gave de feuilles.",
+  "Type1": "Bug",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 40,
+   "Attack": 35,
+   "Defense": 30,
+   "SpecialAttack": 20,
+   "SpecialDefense": 20,
+   "Speed": 50
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "ShieldDust"
+  ],
+  "CatchRate": 255,
+  "BaseExperience": 39,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.3,
+  "WeightKg": 3.2,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Kakuna",
+    "Trigger": "Level",
+    "MinLevel": 7,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Kakuna",
+  "NationalDex": 14,
+  "DisplayName": "Coconfort",
+  "Genus": "Pokémon Cocon",
+  "PokedexEntry": "Il peut à peine bouger. Quand il est menacé, il sort parfois son aiguillon pour empoisonner ses ennemis.",
+  "Type1": "Bug",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 45,
+   "Attack": 25,
+   "Defense": 50,
+   "SpecialAttack": 25,
+   "SpecialDefense": 25,
+   "Speed": 35
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 2,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "ShedSkin"
+  ],
+  "CatchRate": 120,
+  "BaseExperience": 72,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.6,
+  "WeightKg": 10.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Beedrill",
+    "Trigger": "Level",
+    "MinLevel": 10,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Beedrill",
+  "NationalDex": 15,
+  "DisplayName": "Dardargnan",
+  "Genus": "Pokémon Guêpoison",
+  "PokedexEntry": "Il se sert de ses trois aiguillons empoisonnés situés sur les pattes avant et l’abdomen pour attaquer sans relâche ses adversaires.",
+  "Type1": "Bug",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 90,
+   "Defense": 40,
+   "SpecialAttack": 45,
+   "SpecialDefense": 80,
+   "Speed": 75
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 1,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Swarm"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 178,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.0,
+  "WeightKg": 29.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": []
+ },
+ {
+  "Name": "Pidgey",
+  "NationalDex": 16,
+  "DisplayName": "Roucool",
+  "Genus": "Pokémon Minoiseau",
+  "PokedexEntry": "De nature très docile, il préfère projeter du sable pour se défendre plutôt que contre-attaquer.",
+  "Type1": "Normal",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 40,
+   "Attack": 45,
+   "Defense": 40,
+   "SpecialAttack": 35,
+   "SpecialDefense": 35,
+   "Speed": 56
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "KeenEye"
+  ],
+  "CatchRate": 255,
+  "BaseExperience": 50,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.3,
+  "WeightKg": 1.8,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Pidgeotto",
+    "Trigger": "Level",
+    "MinLevel": 18,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Pidgeotto",
+  "NationalDex": 17,
+  "DisplayName": "Roucoups",
+  "Genus": "Pokémon Oiseau",
+  "PokedexEntry": "Ce Pokémon est très endurant. Il survole en permanence son territoire pour chasser.",
+  "Type1": "Normal",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 63,
+   "Attack": 60,
+   "Defense": 55,
+   "SpecialAttack": 50,
+   "SpecialDefense": 50,
+   "Speed": 71
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 2
+  },
+  "Abilities": [
+   "KeenEye"
+  ],
+  "CatchRate": 120,
+  "BaseExperience": 122,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.1,
+  "WeightKg": 30.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Pidgeot",
+    "Trigger": "Level",
+    "MinLevel": 36,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Pidgeot",
+  "NationalDex": 18,
+  "DisplayName": "Roucarnage",
+  "Genus": "Pokémon Oiseau",
+  "PokedexEntry": "Ce Pokémon vole à Mach 2 quand il chasse. Ses grandes serres sont des armes redoutables.",
+  "Type1": "Normal",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 83,
+   "Attack": 80,
+   "Defense": 75,
+   "SpecialAttack": 70,
+   "SpecialDefense": 70,
+   "Speed": 101
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 3
+  },
+  "Abilities": [
+   "KeenEye"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 216,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.5,
+  "WeightKg": 39.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Rattata",
+  "NationalDex": 19,
+  "DisplayName": "Rattata",
+  "Genus": "Pokémon Souris",
+  "PokedexEntry": "Il peut ronger n’importe quoi avec ses deux dents. Quand on en voit un, il y en a certainement 40 dans le coin.",
+  "Type1": "Normal",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 30,
+   "Attack": 56,
+   "Defense": 35,
+   "SpecialAttack": 25,
+   "SpecialDefense": 35,
+   "Speed": 72
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "RunAway",
+   "Guts"
+  ],
+  "CatchRate": 255,
+  "BaseExperience": 51,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.3,
+  "WeightKg": 3.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Raticate",
+    "Trigger": "Level",
+    "MinLevel": 20,
+    "Item": "None"
+   },
+   {
+    "Species": "Raticate",
+    "Trigger": "Level",
+    "MinLevel": 20,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Raticate",
+  "NationalDex": 20,
+  "DisplayName": "Rattatac",
+  "Genus": "Pokémon Souris",
+  "PokedexEntry": "Ses pattes arrière sont palmées. Il peut donc poursuivre sa proie dans les cours d’eau et les rivières.",
+  "Type1": "Normal",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 55,
+   "Attack": 81,
+   "Defense": 60,
+   "SpecialAttack": 50,
+   "SpecialDefense": 70,
+   "Speed": 97
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 2
+  },
+  "Abilities": [
+   "RunAway",
+   "Guts"
+  ],
+  "CatchRate": 127,
+  "BaseExperience": 145,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.7,
+  "WeightKg": 18.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Spearow",
+  "NationalDex": 21,
+  "DisplayName": "Piafabec",
+  "Genus": "Pokémon Minoiseau",
+  "PokedexEntry": "Il est incapable de voler à haute altitude. Il se déplace très vite pour protéger son territoire.",
+  "Type1": "Normal",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 40,
+   "Attack": 60,
+   "Defense": 30,
+   "SpecialAttack": 31,
+   "SpecialDefense": 31,
+   "Speed": 70
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "KeenEye"
+  ],
+  "CatchRate": 255,
+  "BaseExperience": 52,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.3,
+  "WeightKg": 2.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Fearow",
+    "Trigger": "Level",
+    "MinLevel": 20,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Fearow",
+  "NationalDex": 22,
+  "DisplayName": "Rapasdepic",
+  "Genus": "Pokémon Bec-Oiseau",
+  "PokedexEntry": "Un Pokémon très ancien. S’il perçoit un danger, il fuit instantanément à haute altitude.",
+  "Type1": "Normal",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 90,
+   "Defense": 65,
+   "SpecialAttack": 61,
+   "SpecialDefense": 61,
+   "Speed": 100
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 2
+  },
+  "Abilities": [
+   "KeenEye"
+  ],
+  "CatchRate": 90,
+  "BaseExperience": 155,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.2,
+  "WeightKg": 38.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Ekans",
+  "NationalDex": 23,
+  "DisplayName": "Abo",
+  "Genus": "Pokémon Serpent",
+  "PokedexEntry": "Plus il est âgé, plus son corps est long. La nuit, il s’enroule autour de branches d’arbres pour se reposer.",
+  "Type1": "Poison",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 35,
+   "Attack": 60,
+   "Defense": 44,
+   "SpecialAttack": 40,
+   "SpecialDefense": 54,
+   "Speed": 55
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 1,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Intimidate",
+   "ShedSkin"
+  ],
+  "CatchRate": 255,
+  "BaseExperience": 58,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 2.0,
+  "WeightKg": 6.9,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Arbok",
+    "Trigger": "Level",
+    "MinLevel": 22,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Arbok",
+  "NationalDex": 24,
+  "DisplayName": "Arbok",
+  "Genus": "Pokémon Cobra",
+  "PokedexEntry": "Des études ont révélé que les marques effrayantes de son corps pouvaient former six motifs différents.",
+  "Type1": "Poison",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 60,
+   "Attack": 95,
+   "Defense": 69,
+   "SpecialAttack": 65,
+   "SpecialDefense": 79,
+   "Speed": 80
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Intimidate",
+   "ShedSkin"
+  ],
+  "CatchRate": 90,
+  "BaseExperience": 157,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 3.5,
+  "WeightKg": 65.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Pikachu",
+  "NationalDex": 25,
+  "DisplayName": "Pikachu",
+  "Genus": "Pokémon Souris",
+  "PokedexEntry": "Ce Pokémon des bois accumule de l’électricité dans les poches de ses joues. Il ne faut pas les toucher sous peine de recevoir une décharge.",
+  "Type1": "Electric",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 35,
+   "Attack": 55,
+   "Defense": 40,
+   "SpecialAttack": 50,
+   "SpecialDefense": 50,
+   "Speed": 90
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 2
+  },
+  "Abilities": [
+   "Static"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 112,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.4,
+  "WeightKg": 6.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Raichu",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "ThunderStone"
+   },
+   {
+    "Species": "Raichu",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "ThunderStone"
+   }
+  ]
+ },
+ {
+  "Name": "Raichu",
+  "NationalDex": 26,
+  "DisplayName": "Raichu",
+  "Genus": "Pokémon Souris",
+  "PokedexEntry": "Il devient agressif quand il emmagasine de l’électricité. Il brille alors dans le noir.",
+  "Type1": "Electric",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 60,
+   "Attack": 90,
+   "Defense": 55,
+   "SpecialAttack": 90,
+   "SpecialDefense": 80,
+   "Speed": 110
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 3
+  },
+  "Abilities": [
+   "Static"
+  ],
+  "CatchRate": 75,
+  "BaseExperience": 218,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.8,
+  "WeightKg": 30.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Sandshrew",
+  "NationalDex": 27,
+  "DisplayName": "Sabelette",
+  "Genus": "Pokémon Souris",
+  "PokedexEntry": "Son corps est sec. Quand la nuit déploie ses ailes de fraîcheur, son épiderme se couvre de rosée.",
+  "Type1": "Ground",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 50,
+   "Attack": 75,
+   "Defense": 85,
+   "SpecialAttack": 20,
+   "SpecialDefense": 30,
+   "Speed": 40
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 1,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "SandVeil"
+  ],
+  "CatchRate": 255,
+  "BaseExperience": 60,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.6,
+  "WeightKg": 12.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Sandslash",
+    "Trigger": "Level",
+    "MinLevel": 22,
+    "Item": "None"
+   },
+   {
+    "Species": "Sandslash",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "IceStone"
+   }
+  ]
+ },
+ {
+  "Name": "Sandslash",
+  "NationalDex": 28,
+  "DisplayName": "Sablaireau",
+  "Genus": "Pokémon Souris",
+  "PokedexEntry": "Ses griffes sont redoutables. Si l’une d’elles se casse en combat, elle repousse en un jour.",
+  "Type1": "Ground",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 75,
+   "Attack": 100,
+   "Defense": 110,
+   "SpecialAttack": 45,
+   "SpecialDefense": 55,
+   "Speed": 65
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 2,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "SandVeil"
+  ],
+  "CatchRate": 90,
+  "BaseExperience": 158,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.0,
+  "WeightKg": 29.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "NidoranF",
+  "NationalDex": 29,
+  "DisplayName": "Nidoran♀",
+  "Genus": "Pokémon Vénépic",
+  "PokedexEntry": "Un Pokémon paisible qui n’aime pas se battre. Sa petite corne est empoisonnée.",
+  "Type1": "Poison",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 55,
+   "Attack": 47,
+   "Defense": 52,
+   "SpecialAttack": 40,
+   "SpecialDefense": 40,
+   "Speed": 41
+  },
+  "EVYield": {
+   "HP": 1,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "PoisonPoint"
+  ],
+  "CatchRate": 235,
+  "BaseExperience": 55,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 1.0,
+  "HeightM": 0.4,
+  "WeightKg": 7.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Nidorina",
+    "Trigger": "Level",
+    "MinLevel": 16,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Nidorina",
+  "NationalDex": 30,
+  "DisplayName": "Nidorina",
+  "Genus": "Pokémon Vénépic",
+  "PokedexEntry": "Quand ce Pokémon s’abrite au fond de son terrier, ses cornes se rétractent. C’est signe qu’il est détendu.",
+  "Type1": "Poison",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 70,
+   "Attack": 62,
+   "Defense": 67,
+   "SpecialAttack": 55,
+   "SpecialDefense": 55,
+   "Speed": 56
+  },
+  "EVYield": {
+   "HP": 2,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "PoisonPoint"
+  ],
+  "CatchRate": 120,
+  "BaseExperience": 128,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 1.0,
+  "HeightM": 0.8,
+  "WeightKg": 20.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Nidoqueen",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "MoonStone"
+   }
+  ]
+ },
+ {
+  "Name": "Nidoqueen",
+  "NationalDex": 31,
+  "DisplayName": "Nidoqueen",
+  "Genus": "Pokémon Perceur",
+  "PokedexEntry": "Son corps musclé est recouvert de dures écailles. On dit qu’elles peuvent repousser.",
+  "Type1": "Poison",
+  "Type2": "Ground",
+  "BaseStats": {
+   "HP": 90,
+   "Attack": 92,
+   "Defense": 87,
+   "SpecialAttack": 75,
+   "SpecialDefense": 85,
+   "Speed": 76
+  },
+  "EVYield": {
+   "HP": 3,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "PoisonPoint"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 227,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 1.0,
+  "HeightM": 1.3,
+  "WeightKg": 60.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "NidoranM",
+  "NationalDex": 32,
+  "DisplayName": "Nidoran♂",
+  "Genus": "Pokémon Vénépic",
+  "PokedexEntry": "Ses grandes oreilles sont toujours dressées et à l’affût de ce qu’il se passe alentour. S’il est menacé, il se défend avec ses dards venimeux.",
+  "Type1": "Poison",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 46,
+   "Attack": 57,
+   "Defense": 40,
+   "SpecialAttack": 40,
+   "SpecialDefense": 40,
+   "Speed": 50
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 1,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "PoisonPoint"
+  ],
+  "CatchRate": 235,
+  "BaseExperience": 55,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.0,
+  "HeightM": 0.5,
+  "WeightKg": 9.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Nidorino",
+    "Trigger": "Level",
+    "MinLevel": 16,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Nidorino",
+  "NationalDex": 33,
+  "DisplayName": "Nidorino",
+  "Genus": "Pokémon Vénépic",
+  "PokedexEntry": "Sa corne est venimeuse. Si elle perce un ennemi, elle lui injecte un poison violent.",
+  "Type1": "Poison",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 61,
+   "Attack": 72,
+   "Defense": 57,
+   "SpecialAttack": 55,
+   "SpecialDefense": 55,
+   "Speed": 65
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "PoisonPoint"
+  ],
+  "CatchRate": 120,
+  "BaseExperience": 128,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.0,
+  "HeightM": 0.9,
+  "WeightKg": 19.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Nidoking",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "MoonStone"
+   }
+  ]
+ },
+ {
+  "Name": "Nidoking",
+  "NationalDex": 34,
+  "DisplayName": "Nidoking",
+  "Genus": "Pokémon Perceur",
+  "PokedexEntry": "Ses charges sont dévastatrices grâce à sa peau d’acier. Sa corne perce même le diamant.",
+  "Type1": "Poison",
+  "Type2": "Ground",
+  "BaseStats": {
+   "HP": 81,
+   "Attack": 102,
+   "Defense": 77,
+   "SpecialAttack": 85,
+   "SpecialDefense": 75,
+   "Speed": 85
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 3,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "PoisonPoint"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 227,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.0,
+  "HeightM": 1.4,
+  "WeightKg": 62.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Clefairy",
+  "NationalDex": 35,
+  "DisplayName": "Mélofée",
+  "Genus": "Pokémon Fée",
+  "PokedexEntry": "Adoré pour son aspect mignon et joyeux, on le suppose rare, car on en voit très peu de spécimens.",
+  "Type1": "Fairy",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 70,
+   "Attack": 45,
+   "Defense": 48,
+   "SpecialAttack": 60,
+   "SpecialDefense": 65,
+   "Speed": 35
+  },
+  "EVYield": {
+   "HP": 2,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "CuteCharm"
+  ],
+  "CatchRate": 150,
+  "BaseExperience": 113,
+  "BaseFriendship": 140,
+  "GrowthRate": "Fast",
+  "bGenderless": false,
+  "FemaleChance": 0.75,
+  "HeightM": 0.6,
+  "WeightKg": 7.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Clefable",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "MoonStone"
+   }
+  ]
+ },
+ {
+  "Name": "Clefable",
+  "NationalDex": 36,
+  "DisplayName": "Mélodelfe",
+  "Genus": "Pokémon Fée",
+  "PokedexEntry": "Ce Pokémon à l’aspect féérique semble très attaché à son habitat et ne se montre que rarement.",
+  "Type1": "Fairy",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 95,
+   "Attack": 70,
+   "Defense": 73,
+   "SpecialAttack": 95,
+   "SpecialDefense": 90,
+   "Speed": 60
+  },
+  "EVYield": {
+   "HP": 3,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "CuteCharm"
+  ],
+  "CatchRate": 25,
+  "BaseExperience": 217,
+  "BaseFriendship": 140,
+  "GrowthRate": "Fast",
+  "bGenderless": false,
+  "FemaleChance": 0.75,
+  "HeightM": 1.3,
+  "WeightKg": 40.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Vulpix",
+  "NationalDex": 37,
+  "DisplayName": "Goupix",
+  "Genus": "Pokémon Renard",
+  "PokedexEntry": "Sa fourrure et sa queue sont magnifiques. Cette dernière se divise lors de la croissance.",
+  "Type1": "Fire",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 38,
+   "Attack": 41,
+   "Defense": 40,
+   "SpecialAttack": 50,
+   "SpecialDefense": 65,
+   "Speed": 65
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "FlashFire"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 60,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.75,
+  "HeightM": 0.6,
+  "WeightKg": 9.9,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Ninetales",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "FireStone"
+   },
+   {
+    "Species": "Ninetales",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "IceStone"
+   }
+  ]
+ },
+ {
+  "Name": "Ninetales",
+  "NationalDex": 38,
+  "DisplayName": "Feunard",
+  "Genus": "Pokémon Renard",
+  "PokedexEntry": "Selon la légende, neuf sages se sont unis et incarnés dans ce Pokémon mystique.",
+  "Type1": "Fire",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 73,
+   "Attack": 76,
+   "Defense": 75,
+   "SpecialAttack": 81,
+   "SpecialDefense": 100,
+   "Speed": 100
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 1,
+   "Speed": 1
+  },
+  "Abilities": [
+   "FlashFire"
+  ],
+  "CatchRate": 75,
+  "BaseExperience": 177,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.75,
+  "HeightM": 1.1,
+  "WeightKg": 19.9,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Jigglypuff",
+  "NationalDex": 39,
+  "DisplayName": "Rondoudou",
+  "Genus": "Pokémon Bouboule",
+  "PokedexEntry": "Il déstabilise ses adversaires grâce à son regard, puis chante une berceuse pour les endormir.",
+  "Type1": "Normal",
+  "Type2": "Fairy",
+  "BaseStats": {
+   "HP": 115,
+   "Attack": 45,
+   "Defense": 20,
+   "SpecialAttack": 45,
+   "SpecialDefense": 25,
+   "Speed": 20
+  },
+  "EVYield": {
+   "HP": 2,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "CuteCharm"
+  ],
+  "CatchRate": 170,
+  "BaseExperience": 95,
+  "BaseFriendship": 70,
+  "GrowthRate": "Fast",
+  "bGenderless": false,
+  "FemaleChance": 0.75,
+  "HeightM": 0.5,
+  "WeightKg": 5.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Wigglytuff",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "MoonStone"
+   }
+  ]
+ },
+ {
+  "Name": "Wigglytuff",
+  "NationalDex": 40,
+  "DisplayName": "Grodoudou",
+  "Genus": "Pokémon Bouboule",
+  "PokedexEntry": "Son corps est malléable. En aspirant de l’air, il se gonfle jusqu’à atteindre des proportions gigantesques.",
+  "Type1": "Normal",
+  "Type2": "Fairy",
+  "BaseStats": {
+   "HP": 140,
+   "Attack": 70,
+   "Defense": 45,
+   "SpecialAttack": 85,
+   "SpecialDefense": 50,
+   "Speed": 45
+  },
+  "EVYield": {
+   "HP": 3,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "CuteCharm"
+  ],
+  "CatchRate": 50,
+  "BaseExperience": 196,
+  "BaseFriendship": 70,
+  "GrowthRate": "Fast",
+  "bGenderless": false,
+  "FemaleChance": 0.75,
+  "HeightM": 1.0,
+  "WeightKg": 12.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Zubat",
+  "NationalDex": 41,
+  "DisplayName": "Nosferapti",
+  "Genus": "Pokémon Chovsouris",
+  "PokedexEntry": "Il émet des ultrasons pour se diriger et éviter les obstacles sur son trajet.",
+  "Type1": "Poison",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 40,
+   "Attack": 45,
+   "Defense": 35,
+   "SpecialAttack": 30,
+   "SpecialDefense": 40,
+   "Speed": 55
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "InnerFocus"
+  ],
+  "CatchRate": 255,
+  "BaseExperience": 49,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.8,
+  "WeightKg": 7.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Golbat",
+    "Trigger": "Level",
+    "MinLevel": 22,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Golbat",
+  "NationalDex": 42,
+  "DisplayName": "Nosferalto",
+  "Genus": "Pokémon Chovsouris",
+  "PokedexEntry": "Il s’approche furtivement et attaque sans crier gare. Ses crocs acérés lui servent à sucer le sang.",
+  "Type1": "Poison",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 75,
+   "Attack": 80,
+   "Defense": 70,
+   "SpecialAttack": 65,
+   "SpecialDefense": 75,
+   "Speed": 90
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 2
+  },
+  "Abilities": [
+   "InnerFocus"
+  ],
+  "CatchRate": 90,
+  "BaseExperience": 159,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.6,
+  "WeightKg": 55.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Oddish",
+  "NationalDex": 43,
+  "DisplayName": "Mystherbe",
+  "Genus": "Pokémon Racine",
+  "PokedexEntry": "On le confond souvent avec de l’herbe. Si on essaie de le soulever du sol, il pousse un cri terrifiant.",
+  "Type1": "Grass",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 45,
+   "Attack": 50,
+   "Defense": 55,
+   "SpecialAttack": 75,
+   "SpecialDefense": 65,
+   "Speed": 30
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 1,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Chlorophyll"
+  ],
+  "CatchRate": 255,
+  "BaseExperience": 64,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.5,
+  "WeightKg": 5.4,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Gloom",
+    "Trigger": "Level",
+    "MinLevel": 21,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Gloom",
+  "NationalDex": 44,
+  "DisplayName": "Ortide",
+  "Genus": "Pokémon Racine",
+  "PokedexEntry": "Il sent très mauvais, mais une personne sur mille aime l’odeur de son corps nauséabond.",
+  "Type1": "Grass",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 60,
+   "Attack": 65,
+   "Defense": 70,
+   "SpecialAttack": 85,
+   "SpecialDefense": 75,
+   "Speed": 40
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 2,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Chlorophyll"
+  ],
+  "CatchRate": 120,
+  "BaseExperience": 138,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.8,
+  "WeightKg": 8.6,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Vileplume",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "LeafStone"
+   }
+  ]
+ },
+ {
+  "Name": "Vileplume",
+  "NationalDex": 45,
+  "DisplayName": "Rafflesia",
+  "Genus": "Pokémon Fleur",
+  "PokedexEntry": "Il fait un bruit terrible quand il secoue ses pétales pour disperser son pollen empoisonné.",
+  "Type1": "Grass",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 75,
+   "Attack": 80,
+   "Defense": 85,
+   "SpecialAttack": 110,
+   "SpecialDefense": 90,
+   "Speed": 50
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 3,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Chlorophyll"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 221,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.2,
+  "WeightKg": 18.6,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Paras",
+  "NationalDex": 46,
+  "DisplayName": "Paras",
+  "Genus": "Pokémon Champignon",
+  "PokedexEntry": "Il s’enfouit pour ronger des racines, mais ce sont les champignons sur son dos qui absorbent presque tous les nutriments.",
+  "Type1": "Bug",
+  "Type2": "Grass",
+  "BaseStats": {
+   "HP": 35,
+   "Attack": 70,
+   "Defense": 55,
+   "SpecialAttack": 45,
+   "SpecialDefense": 55,
+   "Speed": 25
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 1,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "EffectSpore"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 57,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.3,
+  "WeightKg": 5.4,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Parasect",
+    "Trigger": "Level",
+    "MinLevel": 24,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Parasect",
+  "NationalDex": 47,
+  "DisplayName": "Parasect",
+  "Genus": "Pokémon Champignon",
+  "PokedexEntry": "À force de voir son énergie aspirée, il semblerait que ce ne soit plus l’insecte qui réfléchisse, mais le champignon sur son dos.",
+  "Type1": "Bug",
+  "Type2": "Grass",
+  "BaseStats": {
+   "HP": 60,
+   "Attack": 95,
+   "Defense": 80,
+   "SpecialAttack": 60,
+   "SpecialDefense": 80,
+   "Speed": 30
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 1,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "EffectSpore"
+  ],
+  "CatchRate": 75,
+  "BaseExperience": 142,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.0,
+  "WeightKg": 29.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Venonat",
+  "NationalDex": 48,
+  "DisplayName": "Mimitoss",
+  "Genus": "Pokémon Vermine",
+  "PokedexEntry": "Ses grands yeux lui servent de radar. En pleine lumière, on peut y distinguer des facettes.",
+  "Type1": "Bug",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 60,
+   "Attack": 55,
+   "Defense": 50,
+   "SpecialAttack": 40,
+   "SpecialDefense": 55,
+   "Speed": 45
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 1,
+   "Speed": 0
+  },
+  "Abilities": [
+   "CompoundEyes"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 61,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.0,
+  "WeightKg": 30.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Venomoth",
+    "Trigger": "Level",
+    "MinLevel": 31,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Venomoth",
+  "NationalDex": 49,
+  "DisplayName": "Aéromite",
+  "Genus": "Pokémon Papipoison",
+  "PokedexEntry": "Les écailles de ses ailes sont presque impossibles à retirer lorsqu’elles se collent à la peau, et elles libèrent un poison violent au contact.",
+  "Type1": "Bug",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 70,
+   "Attack": 65,
+   "Defense": 60,
+   "SpecialAttack": 90,
+   "SpecialDefense": 75,
+   "Speed": 90
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 1,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "ShieldDust"
+  ],
+  "CatchRate": 75,
+  "BaseExperience": 158,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.5,
+  "WeightKg": 12.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Diglett",
+  "NationalDex": 50,
+  "DisplayName": "Taupiqueur",
+  "Genus": "Pokémon Taupe",
+  "PokedexEntry": "Il aime les lieux sombres. Il passe la majeure partie de son temps sous terre mais il remonte souvent dans les cavernes.",
+  "Type1": "Ground",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 10,
+   "Attack": 55,
+   "Defense": 25,
+   "SpecialAttack": 35,
+   "SpecialDefense": 45,
+   "Speed": 95
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "SandVeil",
+   "ArenaTrap"
+  ],
+  "CatchRate": 255,
+  "BaseExperience": 53,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.2,
+  "WeightKg": 0.8,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Dugtrio",
+    "Trigger": "Level",
+    "MinLevel": 26,
+    "Item": "None"
+   },
+   {
+    "Species": "Dugtrio",
+    "Trigger": "Level",
+    "MinLevel": 26,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Dugtrio",
+  "NationalDex": 51,
+  "DisplayName": "Triopikeur",
+  "Genus": "Pokémon Taupe",
+  "PokedexEntry": "À trois, ils peuvent creuser jusqu’à 100 km de profondeur. On les dit responsables des tremblements de terre.",
+  "Type1": "Ground",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 35,
+   "Attack": 100,
+   "Defense": 50,
+   "SpecialAttack": 50,
+   "SpecialDefense": 70,
+   "Speed": 120
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 2
+  },
+  "Abilities": [
+   "SandVeil",
+   "ArenaTrap"
+  ],
+  "CatchRate": 50,
+  "BaseExperience": 149,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.7,
+  "WeightKg": 33.3,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Meowth",
+  "NationalDex": 52,
+  "DisplayName": "Miaouss",
+  "Genus": "Pokémon Chadégout",
+  "PokedexEntry": "Il est surtout actif la nuit. Il aime ramasser les objets ronds et brillants.",
+  "Type1": "Normal",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 40,
+   "Attack": 45,
+   "Defense": 35,
+   "SpecialAttack": 40,
+   "SpecialDefense": 40,
+   "Speed": 90
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "Pickup"
+  ],
+  "CatchRate": 255,
+  "BaseExperience": 58,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.4,
+  "WeightKg": 4.2,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Persian",
+    "Trigger": "Level",
+    "MinLevel": 28,
+    "Item": "None"
+   },
+   {
+    "Species": "Persian",
+    "Trigger": "Level",
+    "MinLevel": 0,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Persian",
+  "NationalDex": 53,
+  "DisplayName": "Persian",
+  "Genus": "Pokémon Chadeville",
+  "PokedexEntry": "La pierre sur son front brille de mille feux. Sa démarche est souple et majestueuse.",
+  "Type1": "Normal",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 70,
+   "Defense": 60,
+   "SpecialAttack": 65,
+   "SpecialDefense": 65,
+   "Speed": 115
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 2
+  },
+  "Abilities": [
+   "Limber"
+  ],
+  "CatchRate": 90,
+  "BaseExperience": 154,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.0,
+  "WeightKg": 32.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Psyduck",
+  "NationalDex": 54,
+  "DisplayName": "Psykokwak",
+  "Genus": "Pokémon Canard",
+  "PokedexEntry": "Il est toujours en proie à des maux de tête. On ignore s’il contrôle ses pouvoirs psychiques.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 50,
+   "Attack": 52,
+   "Defense": 48,
+   "SpecialAttack": 65,
+   "SpecialDefense": 50,
+   "Speed": 55
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 1,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Damp",
+   "CloudNine"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 64,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.8,
+  "WeightKg": 19.6,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Golduck",
+    "Trigger": "Level",
+    "MinLevel": 33,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Golduck",
+  "NationalDex": 55,
+  "DisplayName": "Akwakwak",
+  "Genus": "Pokémon Canard",
+  "PokedexEntry": "Ses membres longs et fins se terminent par des nageoires qui lui permettent de nager élégamment.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 80,
+   "Attack": 82,
+   "Defense": 78,
+   "SpecialAttack": 95,
+   "SpecialDefense": 80,
+   "Speed": 85
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 2,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Damp",
+   "CloudNine"
+  ],
+  "CatchRate": 75,
+  "BaseExperience": 175,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.7,
+  "WeightKg": 76.6,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Mankey",
+  "NationalDex": 56,
+  "DisplayName": "Férosinge",
+  "Genus": "Pokémon Porsinge",
+  "PokedexEntry": "Agile et rapide, ce Pokémon vit dans les arbres. Il s’énerve facilement et s’attaque à tout ce qui bouge quand il est en colère.",
+  "Type1": "Fighting",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 40,
+   "Attack": 80,
+   "Defense": 35,
+   "SpecialAttack": 35,
+   "SpecialDefense": 45,
+   "Speed": 70
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 1,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "VitalSpirit"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 61,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.5,
+  "WeightKg": 28.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Primeape",
+    "Trigger": "Level",
+    "MinLevel": 28,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Primeape",
+  "NationalDex": 57,
+  "DisplayName": "Colossinge",
+  "Genus": "Pokémon Porsinge",
+  "PokedexEntry": "Sa fureur prend fin quand il n’a plus personne à frapper. Il est difficile d’en être témoin.",
+  "Type1": "Fighting",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 105,
+   "Defense": 60,
+   "SpecialAttack": 60,
+   "SpecialDefense": 70,
+   "Speed": 95
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "VitalSpirit"
+  ],
+  "CatchRate": 75,
+  "BaseExperience": 159,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.0,
+  "WeightKg": 32.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Growlithe",
+  "NationalDex": 58,
+  "DisplayName": "Caninos",
+  "Genus": "Pokémon Chiot",
+  "PokedexEntry": "Ce Pokémon est de nature amicale, mais il devient hargneux quand son territoire est menacé.",
+  "Type1": "Fire",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 55,
+   "Attack": 70,
+   "Defense": 45,
+   "SpecialAttack": 70,
+   "SpecialDefense": 50,
+   "Speed": 60
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 1,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Intimidate",
+   "FlashFire"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 70,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.25,
+  "HeightM": 0.7,
+  "WeightKg": 19.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Arcanine",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "FireStone"
+   },
+   {
+    "Species": "Arcanine",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "FireStone"
+   }
+  ]
+ },
+ {
+  "Name": "Arcanine",
+  "NationalDex": 59,
+  "DisplayName": "Arcanin",
+  "Genus": "Pokémon Légendaire",
+  "PokedexEntry": "Un Pokémon légendaire en Extrême-Orient. Il est admiré pour la grâce et la beauté de sa course.",
+  "Type1": "Fire",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 90,
+   "Attack": 110,
+   "Defense": 80,
+   "SpecialAttack": 100,
+   "SpecialDefense": 80,
+   "Speed": 95
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Intimidate",
+   "FlashFire"
+  ],
+  "CatchRate": 75,
+  "BaseExperience": 194,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.25,
+  "HeightM": 1.9,
+  "WeightKg": 155.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Poliwag",
+  "NationalDex": 60,
+  "DisplayName": "Ptitard",
+  "Genus": "Pokémon Têtard",
+  "PokedexEntry": "Le sens de la spirale sur son ventre diffère selon son origine. Il préfère la nage à la marche.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 40,
+   "Attack": 50,
+   "Defense": 40,
+   "SpecialAttack": 40,
+   "SpecialDefense": 40,
+   "Speed": 90
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "WaterAbsorb",
+   "Damp"
+  ],
+  "CatchRate": 255,
+  "BaseExperience": 60,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.6,
+  "WeightKg": 12.4,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Poliwhirl",
+    "Trigger": "Level",
+    "MinLevel": 25,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Poliwhirl",
+  "NationalDex": 61,
+  "DisplayName": "Têtarte",
+  "Genus": "Pokémon Têtard",
+  "PokedexEntry": "S’il se fait attaquer, il se sert de sa spirale pour endormir ses ennemis. Il peut ainsi s’enfuir.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 65,
+   "Defense": 65,
+   "SpecialAttack": 50,
+   "SpecialDefense": 50,
+   "Speed": 90
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 2
+  },
+  "Abilities": [
+   "WaterAbsorb",
+   "Damp"
+  ],
+  "CatchRate": 120,
+  "BaseExperience": 135,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.0,
+  "WeightKg": 20.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Poliwrath",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "WaterStone"
+   }
+  ]
+ },
+ {
+  "Name": "Poliwrath",
+  "NationalDex": 62,
+  "DisplayName": "Tartard",
+  "Genus": "Pokémon Têtard",
+  "PokedexEntry": "Son corps très musclé lui permet de nager plus rapidement qu’un champion de natation.",
+  "Type1": "Water",
+  "Type2": "Fighting",
+  "BaseStats": {
+   "HP": 90,
+   "Attack": 95,
+   "Defense": 95,
+   "SpecialAttack": 70,
+   "SpecialDefense": 90,
+   "Speed": 70
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 3,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "WaterAbsorb",
+   "Damp"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 230,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.3,
+  "WeightKg": 54.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Abra",
+  "NationalDex": 63,
+  "DisplayName": "Abra",
+  "Genus": "Pokémon Psy",
+  "PokedexEntry": "Il dort 18 heures par jour. En cas de danger, il se téléporte vers un lieu sûr, même s’il est assoupi.",
+  "Type1": "Psychic",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 25,
+   "Attack": 20,
+   "Defense": 15,
+   "SpecialAttack": 105,
+   "SpecialDefense": 55,
+   "Speed": 90
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 1,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Synchronize",
+   "InnerFocus"
+  ],
+  "CatchRate": 200,
+  "BaseExperience": 62,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.25,
+  "HeightM": 0.9,
+  "WeightKg": 19.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Kadabra",
+    "Trigger": "Level",
+    "MinLevel": 16,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Kadabra",
+  "NationalDex": 64,
+  "DisplayName": "Kadabra",
+  "Genus": "Pokémon Psy",
+  "PokedexEntry": "Sa présence cause des évènements étranges, comme des horloges tournant à l’envers.",
+  "Type1": "Psychic",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 40,
+   "Attack": 35,
+   "Defense": 30,
+   "SpecialAttack": 120,
+   "SpecialDefense": 70,
+   "Speed": 105
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 2,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Synchronize",
+   "InnerFocus"
+  ],
+  "CatchRate": 100,
+  "BaseExperience": 140,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.25,
+  "HeightM": 1.3,
+  "WeightKg": 56.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Alakazam",
+    "Trigger": "Trade",
+    "MinLevel": 0,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Alakazam",
+  "NationalDex": 65,
+  "DisplayName": "Alakazam",
+  "Genus": "Pokémon Psy",
+  "PokedexEntry": "Ce Pokémon est très intelligent. Sa mémoire infaillible lui permet de retenir tout ce qu’il apprend.",
+  "Type1": "Psychic",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 55,
+   "Attack": 50,
+   "Defense": 45,
+   "SpecialAttack": 135,
+   "SpecialDefense": 95,
+   "Speed": 120
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 3,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Synchronize",
+   "InnerFocus"
+  ],
+  "CatchRate": 50,
+  "BaseExperience": 225,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.25,
+  "HeightM": 1.5,
+  "WeightKg": 48.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Machop",
+  "NationalDex": 66,
+  "DisplayName": "Machoc",
+  "Genus": "Pokémon Colosse",
+  "PokedexEntry": "Très puissant malgré sa petite taille, il est passé maître en plusieurs types d’arts martiaux.",
+  "Type1": "Fighting",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 70,
+   "Attack": 80,
+   "Defense": 50,
+   "SpecialAttack": 35,
+   "SpecialDefense": 35,
+   "Speed": 35
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 1,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Guts"
+  ],
+  "CatchRate": 180,
+  "BaseExperience": 61,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.25,
+  "HeightM": 0.8,
+  "WeightKg": 19.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Machoke",
+    "Trigger": "Level",
+    "MinLevel": 28,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Machoke",
+  "NationalDex": 67,
+  "DisplayName": "Machopeur",
+  "Genus": "Pokémon Colosse",
+  "PokedexEntry": "Sa ceinture sert à retenir son énergie. Sans elle, il serait incontrôlable.",
+  "Type1": "Fighting",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 80,
+   "Attack": 100,
+   "Defense": 70,
+   "SpecialAttack": 50,
+   "SpecialDefense": 60,
+   "Speed": 45
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Guts"
+  ],
+  "CatchRate": 90,
+  "BaseExperience": 142,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.25,
+  "HeightM": 1.5,
+  "WeightKg": 70.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Machamp",
+    "Trigger": "Trade",
+    "MinLevel": 0,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Machamp",
+  "NationalDex": 68,
+  "DisplayName": "Mackogneur",
+  "Genus": "Pokémon Colosse",
+  "PokedexEntry": "Il peut bouger une montagne d’un bras, alors rien ne lui résiste quand il utilise les quatre en même temps.",
+  "Type1": "Fighting",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 90,
+   "Attack": 130,
+   "Defense": 80,
+   "SpecialAttack": 65,
+   "SpecialDefense": 85,
+   "Speed": 55
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 3,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Guts"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 227,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.25,
+  "HeightM": 1.6,
+  "WeightKg": 130.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Bellsprout",
+  "NationalDex": 69,
+  "DisplayName": "Chétiflor",
+  "Genus": "Pokémon Fleur",
+  "PokedexEntry": "Il préfère les endroits chauds et humides. Il capture les Pokémon Insecte avec ses lianes pour les dévorer.",
+  "Type1": "Grass",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 50,
+   "Attack": 75,
+   "Defense": 35,
+   "SpecialAttack": 70,
+   "SpecialDefense": 30,
+   "Speed": 40
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 1,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Chlorophyll"
+  ],
+  "CatchRate": 255,
+  "BaseExperience": 60,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.7,
+  "WeightKg": 4.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Weepinbell",
+    "Trigger": "Level",
+    "MinLevel": 21,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Weepinbell",
+  "NationalDex": 70,
+  "DisplayName": "Boustiflor",
+  "Genus": "Pokémon Carnivore",
+  "PokedexEntry": "Quand il a faim, il avale tout ce qui bouge, puis achève ses proies avec de l’acide.",
+  "Type1": "Grass",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 90,
+   "Defense": 50,
+   "SpecialAttack": 85,
+   "SpecialDefense": 45,
+   "Speed": 55
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Chlorophyll"
+  ],
+  "CatchRate": 120,
+  "BaseExperience": 137,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.0,
+  "WeightKg": 6.4,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Victreebel",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "LeafStone"
+   }
+  ]
+ },
+ {
+  "Name": "Victreebel",
+  "NationalDex": 71,
+  "DisplayName": "Empiflor",
+  "Genus": "Pokémon Carnivore",
+  "PokedexEntry": "Il attire ses proies avec une odeur de miel et les avale tout entières. Il les digère en un jour seulement, les os y compris.",
+  "Type1": "Grass",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 80,
+   "Attack": 105,
+   "Defense": 65,
+   "SpecialAttack": 100,
+   "SpecialDefense": 70,
+   "Speed": 70
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 3,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Chlorophyll"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 221,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.7,
+  "WeightKg": 15.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Tentacool",
+  "NationalDex": 72,
+  "DisplayName": "Tentacool",
+  "Genus": "Pokémon Mollusque",
+  "PokedexEntry": "Certains échouent sur la plage et sèchent sur le sable. Poussez-les dans l’eau pour les ranimer.",
+  "Type1": "Water",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 40,
+   "Attack": 40,
+   "Defense": 35,
+   "SpecialAttack": 50,
+   "SpecialDefense": 100,
+   "Speed": 70
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 1,
+   "Speed": 0
+  },
+  "Abilities": [
+   "ClearBody",
+   "LiquidOoze"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 67,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.9,
+  "WeightKg": 45.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Tentacruel",
+    "Trigger": "Level",
+    "MinLevel": 30,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Tentacruel",
+  "NationalDex": 73,
+  "DisplayName": "Tentacruel",
+  "Genus": "Pokémon Mollusque",
+  "PokedexEntry": "Ses 80 tentacules peuvent s’allonger et se rétracter à volonté. Il les utilise pour enserrer sa proie et l’affaiblir avec une toxine.",
+  "Type1": "Water",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 80,
+   "Attack": 70,
+   "Defense": 65,
+   "SpecialAttack": 80,
+   "SpecialDefense": 120,
+   "Speed": 100
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 2,
+   "Speed": 0
+  },
+  "Abilities": [
+   "ClearBody",
+   "LiquidOoze"
+  ],
+  "CatchRate": 60,
+  "BaseExperience": 180,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.6,
+  "WeightKg": 55.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Geodude",
+  "NationalDex": 74,
+  "DisplayName": "Racaillou",
+  "Genus": "Pokémon Roche",
+  "PokedexEntry": "On en trouve près des sentiers de montagne. Si vous marchez dessus par inadvertance, ils s’énervent et attaquent.",
+  "Type1": "Rock",
+  "Type2": "Ground",
+  "BaseStats": {
+   "HP": 40,
+   "Attack": 80,
+   "Defense": 100,
+   "SpecialAttack": 30,
+   "SpecialDefense": 30,
+   "Speed": 20
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 1,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "RockHead",
+   "Sturdy"
+  ],
+  "CatchRate": 255,
+  "BaseExperience": 60,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.4,
+  "WeightKg": 20.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": [
+   {
+    "Species": "Graveler",
+    "Trigger": "Level",
+    "MinLevel": 25,
+    "Item": "None"
+   },
+   {
+    "Species": "Graveler",
+    "Trigger": "Level",
+    "MinLevel": 25,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Graveler",
+  "NationalDex": 75,
+  "DisplayName": "Gravalanch",
+  "Genus": "Pokémon Roche",
+  "PokedexEntry": "Il dévale les sentiers de montagne et traverse les obstacles en les pulvérisant.",
+  "Type1": "Rock",
+  "Type2": "Ground",
+  "BaseStats": {
+   "HP": 55,
+   "Attack": 95,
+   "Defense": 115,
+   "SpecialAttack": 45,
+   "SpecialDefense": 45,
+   "Speed": 35
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 2,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "RockHead",
+   "Sturdy"
+  ],
+  "CatchRate": 120,
+  "BaseExperience": 137,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.0,
+  "WeightKg": 105.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Golem",
+    "Trigger": "Trade",
+    "MinLevel": 0,
+    "Item": "None"
+   },
+   {
+    "Species": "Golem",
+    "Trigger": "Trade",
+    "MinLevel": 0,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Golem",
+  "NationalDex": 76,
+  "DisplayName": "Grolem",
+  "Genus": "Pokémon Titanesque",
+  "PokedexEntry": "Juste après la mue, son corps est blanc et tendre. Au contact de l’air, sa peau se solidifie et forme une armure.",
+  "Type1": "Rock",
+  "Type2": "Ground",
+  "BaseStats": {
+   "HP": 80,
+   "Attack": 120,
+   "Defense": 130,
+   "SpecialAttack": 55,
+   "SpecialDefense": 65,
+   "Speed": 45
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 3,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "RockHead",
+   "Sturdy"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 223,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.4,
+  "WeightKg": 300.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Ponyta",
+  "NationalDex": 77,
+  "DisplayName": "Ponyta",
+  "Genus": "Pokémon Cheval Feu",
+  "PokedexEntry": "Il est capable de sauter très haut. Ses sabots et ses jambes peuvent amortir l’impact de l’atterrissage.",
+  "Type1": "Fire",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 50,
+   "Attack": 85,
+   "Defense": 55,
+   "SpecialAttack": 65,
+   "SpecialDefense": 65,
+   "Speed": 90
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "RunAway",
+   "FlashFire"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 82,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.0,
+  "WeightKg": 30.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Rapidash",
+    "Trigger": "Level",
+    "MinLevel": 40,
+    "Item": "None"
+   },
+   {
+    "Species": "Rapidash",
+    "Trigger": "Level",
+    "MinLevel": 40,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Rapidash",
+  "NationalDex": 78,
+  "DisplayName": "Galopa",
+  "Genus": "Pokémon Cheval Feu",
+  "PokedexEntry": "Il aime la course. Il poursuit tout ce qui va plus vite que lui. Question d’honneur.",
+  "Type1": "Fire",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 100,
+   "Defense": 70,
+   "SpecialAttack": 80,
+   "SpecialDefense": 80,
+   "Speed": 105
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 2
+  },
+  "Abilities": [
+   "RunAway",
+   "FlashFire"
+  ],
+  "CatchRate": 60,
+  "BaseExperience": 175,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.7,
+  "WeightKg": 95.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Slowpoke",
+  "NationalDex": 79,
+  "DisplayName": "Ramoloss",
+  "Genus": "Pokémon Crétin",
+  "PokedexEntry": "Lent et stupide, il aime se la couler douce sans se soucier du temps qui passe.",
+  "Type1": "Water",
+  "Type2": "Psychic",
+  "BaseStats": {
+   "HP": 90,
+   "Attack": 65,
+   "Defense": 65,
+   "SpecialAttack": 40,
+   "SpecialDefense": 40,
+   "Speed": 15
+  },
+  "EVYield": {
+   "HP": 1,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Oblivious",
+   "OwnTempo"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 63,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.2,
+  "WeightKg": 36.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Slowbro",
+    "Trigger": "Level",
+    "MinLevel": 37,
+    "Item": "None"
+   },
+   {
+    "Species": "Slowbro",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "GalaricaCuff"
+   }
+  ]
+ },
+ {
+  "Name": "Slowbro",
+  "NationalDex": 80,
+  "DisplayName": "Flagadoss",
+  "Genus": "Pokémon Symbiose",
+  "PokedexEntry": "Il mène une vie tranquille en bord de mer. Si le Kokiyas accroché à sa queue s’en va, il redevient un Ramoloss.",
+  "Type1": "Water",
+  "Type2": "Psychic",
+  "BaseStats": {
+   "HP": 95,
+   "Attack": 75,
+   "Defense": 110,
+   "SpecialAttack": 100,
+   "SpecialDefense": 80,
+   "Speed": 30
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 2,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Oblivious",
+   "OwnTempo"
+  ],
+  "CatchRate": 75,
+  "BaseExperience": 172,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.6,
+  "WeightKg": 78.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Magnemite",
+  "NationalDex": 81,
+  "DisplayName": "Magnéti",
+  "Genus": "Pokémon Magnétique",
+  "PokedexEntry": "Sa nature défie les lois de la gravité. Il flotte grâce à un champ électromagnétique.",
+  "Type1": "Electric",
+  "Type2": "Steel",
+  "BaseStats": {
+   "HP": 25,
+   "Attack": 35,
+   "Defense": 70,
+   "SpecialAttack": 95,
+   "SpecialDefense": 55,
+   "Speed": 45
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 1,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "MagnetPull",
+   "Sturdy"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 65,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": true,
+  "FemaleChance": 0.0,
+  "HeightM": 0.3,
+  "WeightKg": 6.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Magneton",
+    "Trigger": "Level",
+    "MinLevel": 30,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Magneton",
+  "NationalDex": 82,
+  "DisplayName": "Magnéton",
+  "Genus": "Pokémon Magnétique",
+  "PokedexEntry": "Il émet un signal radio étrange. Sa présence augmente la température de 2 ºC dans un rayon de 1 000 m.",
+  "Type1": "Electric",
+  "Type2": "Steel",
+  "BaseStats": {
+   "HP": 50,
+   "Attack": 60,
+   "Defense": 95,
+   "SpecialAttack": 120,
+   "SpecialDefense": 70,
+   "Speed": 70
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 2,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "MagnetPull",
+   "Sturdy"
+  ],
+  "CatchRate": 60,
+  "BaseExperience": 163,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": true,
+  "FemaleChance": 0.0,
+  "HeightM": 1.0,
+  "WeightKg": 60.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Farfetchd",
+  "NationalDex": 83,
+  "DisplayName": "Canarticho",
+  "Genus": "Pokémon Canard Fou",
+  "PokedexEntry": "Il vit là où poussent des tiges. Ces endroits sont rares, ce qui pourrait faire penser que cette espèce de Pokémon est en voie d’extinction.",
+  "Type1": "Normal",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 52,
+   "Attack": 90,
+   "Defense": 55,
+   "SpecialAttack": 58,
+   "SpecialDefense": 62,
+   "Speed": 60
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 1,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "KeenEye",
+   "InnerFocus"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 132,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.8,
+  "WeightKg": 15.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Doduo",
+  "NationalDex": 84,
+  "DisplayName": "Doduo",
+  "Genus": "Pokémon Duoiseau",
+  "PokedexEntry": "Ses petites ailes ne lui permettent pas de voler, mais grâce à ses puissantes pattes, il peut courir très rapidement.",
+  "Type1": "Normal",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 35,
+   "Attack": 85,
+   "Defense": 45,
+   "SpecialAttack": 35,
+   "SpecialDefense": 35,
+   "Speed": 75
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 1,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "RunAway",
+   "EarlyBird"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 62,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.4,
+  "WeightKg": 39.2,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Dodrio",
+    "Trigger": "Level",
+    "MinLevel": 31,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Dodrio",
+  "NationalDex": 85,
+  "DisplayName": "Dodrio",
+  "Genus": "Pokémon Trioiseau",
+  "PokedexEntry": "Quand une des têtes de Doduo se divise, il devient un Dodrio capable de courir à 60 km/h.",
+  "Type1": "Normal",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 60,
+   "Attack": 110,
+   "Defense": 70,
+   "SpecialAttack": 60,
+   "SpecialDefense": 60,
+   "Speed": 110
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "RunAway",
+   "EarlyBird"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 165,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.8,
+  "WeightKg": 85.2,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Seel",
+  "NationalDex": 86,
+  "DisplayName": "Otaria",
+  "Genus": "Pokémon Otarie",
+  "PokedexEntry": "Il est à l’aise dans les endroits gelés. Il nage avec plaisir dans de l’eau à -10 ºC.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 45,
+   "Defense": 55,
+   "SpecialAttack": 45,
+   "SpecialDefense": 70,
+   "Speed": 45
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 1,
+   "Speed": 0
+  },
+  "Abilities": [
+   "ThickFat"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 65,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.1,
+  "WeightKg": 90.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Dewgong",
+    "Trigger": "Level",
+    "MinLevel": 34,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Dewgong",
+  "NationalDex": 87,
+  "DisplayName": "Lamantine",
+  "Genus": "Pokémon Otarie",
+  "PokedexEntry": "Son corps entier est aussi blanc que la neige. Il résiste bien au froid et peut même nager au milieu des icebergs.",
+  "Type1": "Water",
+  "Type2": "Ice",
+  "BaseStats": {
+   "HP": 90,
+   "Attack": 70,
+   "Defense": 80,
+   "SpecialAttack": 70,
+   "SpecialDefense": 95,
+   "Speed": 70
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 2,
+   "Speed": 0
+  },
+  "Abilities": [
+   "ThickFat"
+  ],
+  "CatchRate": 75,
+  "BaseExperience": 166,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.7,
+  "WeightKg": 120.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Grimer",
+  "NationalDex": 88,
+  "DisplayName": "Tadmorv",
+  "Genus": "Pokémon Dégueu",
+  "PokedexEntry": "Ce tas de fange sent si mauvais qu’il est impossible de le toucher. Plus rien ne pousse dans son sillage putride.",
+  "Type1": "Poison",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 80,
+   "Attack": 80,
+   "Defense": 50,
+   "SpecialAttack": 40,
+   "SpecialDefense": 50,
+   "Speed": 25
+  },
+  "EVYield": {
+   "HP": 1,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Stench",
+   "StickyHold"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 65,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.9,
+  "WeightKg": 30.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Muk",
+    "Trigger": "Level",
+    "MinLevel": 38,
+    "Item": "None"
+   },
+   {
+    "Species": "Muk",
+    "Trigger": "Level",
+    "MinLevel": 38,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Muk",
+  "NationalDex": 89,
+  "DisplayName": "Grotadmorv",
+  "Genus": "Pokémon Dégueu",
+  "PokedexEntry": "Son odeur immonde provoque des évanouissements. Son odorat s’est atrophié à cause de sa propre puanteur.",
+  "Type1": "Poison",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 105,
+   "Attack": 105,
+   "Defense": 75,
+   "SpecialAttack": 65,
+   "SpecialDefense": 100,
+   "Speed": 50
+  },
+  "EVYield": {
+   "HP": 1,
+   "Attack": 1,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Stench",
+   "StickyHold"
+  ],
+  "CatchRate": 75,
+  "BaseExperience": 175,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.2,
+  "WeightKg": 30.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Shellder",
+  "NationalDex": 90,
+  "DisplayName": "Kokiyas",
+  "Genus": "Pokémon Bivalve",
+  "PokedexEntry": "Sa coquille le protège de toute attaque. Si elle s’ouvre, son corps fragile devient vulnérable.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 30,
+   "Attack": 65,
+   "Defense": 100,
+   "SpecialAttack": 45,
+   "SpecialDefense": 25,
+   "Speed": 40
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 1,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "ShellArmor"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 61,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.3,
+  "WeightKg": 4.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Cloyster",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "WaterStone"
+   }
+  ]
+ },
+ {
+  "Name": "Cloyster",
+  "NationalDex": 91,
+  "DisplayName": "Crustabri",
+  "Genus": "Pokémon Bivalve",
+  "PokedexEntry": "Sa coquille, plus dure que le diamant, le protège. Elle peut aussi envoyer de redoutables volées de dards.",
+  "Type1": "Water",
+  "Type2": "Ice",
+  "BaseStats": {
+   "HP": 50,
+   "Attack": 95,
+   "Defense": 180,
+   "SpecialAttack": 85,
+   "SpecialDefense": 45,
+   "Speed": 70
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 2,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "ShellArmor"
+  ],
+  "CatchRate": 60,
+  "BaseExperience": 184,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.5,
+  "WeightKg": 132.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Gastly",
+  "NationalDex": 92,
+  "DisplayName": "Fantominus",
+  "Genus": "Pokémon Gaz",
+  "PokedexEntry": "On en trouve dans les maisons en ruine. Composé de gaz, il ne possède pas de forme définie.",
+  "Type1": "Ghost",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 30,
+   "Attack": 35,
+   "Defense": 30,
+   "SpecialAttack": 100,
+   "SpecialDefense": 35,
+   "Speed": 80
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 1,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Levitate"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 62,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.3,
+  "WeightKg": 0.1,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Haunter",
+    "Trigger": "Level",
+    "MinLevel": 25,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Haunter",
+  "NationalDex": 93,
+  "DisplayName": "Spectrum",
+  "Genus": "Pokémon Gaz",
+  "PokedexEntry": "Il lèche ses ennemis pour voler leur énergie vitale. Ceux-ci sont alors pris de tremblements jusqu’à ce que mort s’ensuive.",
+  "Type1": "Ghost",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 45,
+   "Attack": 50,
+   "Defense": 45,
+   "SpecialAttack": 115,
+   "SpecialDefense": 55,
+   "Speed": 95
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 2,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Levitate"
+  ],
+  "CatchRate": 90,
+  "BaseExperience": 142,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.6,
+  "WeightKg": 0.1,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Gengar",
+    "Trigger": "Trade",
+    "MinLevel": 0,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Gengar",
+  "NationalDex": 94,
+  "DisplayName": "Ectoplasma",
+  "Genus": "Pokémon Ombre",
+  "PokedexEntry": "Si vous êtes pris de frissons soudains, c’est qu’un Ectoplasma rôde dans les parages. Il pourrait peut-être même vous lancer une malédiction.",
+  "Type1": "Ghost",
+  "Type2": "Poison",
+  "BaseStats": {
+   "HP": 60,
+   "Attack": 65,
+   "Defense": 60,
+   "SpecialAttack": 130,
+   "SpecialDefense": 75,
+   "Speed": 110
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 3,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Levitate"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 225,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.5,
+  "WeightKg": 40.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Onix",
+  "NationalDex": 95,
+  "DisplayName": "Onix",
+  "Genus": "Pokémon Serpenroc",
+  "PokedexEntry": "Il creuse la terre à toute allure en quête de nourriture. Ses tunnels servent de maison aux Taupiqueur.",
+  "Type1": "Rock",
+  "Type2": "Ground",
+  "BaseStats": {
+   "HP": 35,
+   "Attack": 45,
+   "Defense": 160,
+   "SpecialAttack": 30,
+   "SpecialDefense": 45,
+   "Speed": 70
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 1,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "RockHead",
+   "Sturdy"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 77,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 8.8,
+  "WeightKg": 210.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": true,
+  "Evolutions": []
+ },
+ {
+  "Name": "Drowzee",
+  "NationalDex": 96,
+  "DisplayName": "Soporifik",
+  "Genus": "Pokémon Hypnose",
+  "PokedexEntry": "Si vous dormez tout le temps près de lui, il partagera parfois avec vous les rêves qu’il a dévorés par le passé.",
+  "Type1": "Psychic",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 60,
+   "Attack": 48,
+   "Defense": 45,
+   "SpecialAttack": 43,
+   "SpecialDefense": 90,
+   "Speed": 42
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 1,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Insomnia"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 66,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.0,
+  "WeightKg": 32.4,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Hypno",
+    "Trigger": "Level",
+    "MinLevel": 26,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Hypno",
+  "NationalDex": 97,
+  "DisplayName": "Hypnomade",
+  "Genus": "Pokémon Hypnose",
+  "PokedexEntry": "Évitez son regard quand vous en croisez un, ou il pourrait essayer de vous hypnotiser avec son pendule.",
+  "Type1": "Psychic",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 85,
+   "Attack": 73,
+   "Defense": 70,
+   "SpecialAttack": 73,
+   "SpecialDefense": 115,
+   "Speed": 67
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 2,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Insomnia"
+  ],
+  "CatchRate": 75,
+  "BaseExperience": 169,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.6,
+  "WeightKg": 75.6,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Krabby",
+  "NationalDex": 98,
+  "DisplayName": "Krabby",
+  "Genus": "Pokémon Doux Crabe",
+  "PokedexEntry": "Ses pinces sont des armes puissantes. Il peut arriver qu’elles se brisent durant un combat, mais elles repoussent vite.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 30,
+   "Attack": 105,
+   "Defense": 90,
+   "SpecialAttack": 25,
+   "SpecialDefense": 25,
+   "Speed": 50
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 1,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "HyperCutter",
+   "ShellArmor"
+  ],
+  "CatchRate": 225,
+  "BaseExperience": 65,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.4,
+  "WeightKg": 6.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Kingler",
+    "Trigger": "Level",
+    "MinLevel": 28,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Kingler",
+  "NationalDex": 99,
+  "DisplayName": "Krabboss",
+  "Genus": "Pokémon Pince",
+  "PokedexEntry": "Sa grosse pince, dure comme de l’acier, est d’une puissance incommensurable, mais elle est trop lourde.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 55,
+   "Attack": 130,
+   "Defense": 115,
+   "SpecialAttack": 50,
+   "SpecialDefense": 50,
+   "Speed": 75
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "HyperCutter",
+   "ShellArmor"
+  ],
+  "CatchRate": 60,
+  "BaseExperience": 166,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.3,
+  "WeightKg": 60.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Voltorb",
+  "NationalDex": 100,
+  "DisplayName": "Voltorbe",
+  "Genus": "Pokémon Balle",
+  "PokedexEntry": "On dit qu’il se déguise en Poké Ball. Il s’autodétruit à la moindre stimulation.",
+  "Type1": "Electric",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 40,
+   "Attack": 30,
+   "Defense": 50,
+   "SpecialAttack": 55,
+   "SpecialDefense": 55,
+   "Speed": 100
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "Soundproof",
+   "Static"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 66,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": true,
+  "FemaleChance": 0.0,
+  "HeightM": 0.5,
+  "WeightKg": 10.4,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Electrode",
+    "Trigger": "Level",
+    "MinLevel": 30,
+    "Item": "None"
+   },
+   {
+    "Species": "Electrode",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "LeafStone"
+   }
+  ]
+ },
+ {
+  "Name": "Electrode",
+  "NationalDex": 101,
+  "DisplayName": "Électrode",
+  "Genus": "Pokémon Balle",
+  "PokedexEntry": "Il stocke de l’énergie électrique dans son corps, ce qui le rend instable et explosif.",
+  "Type1": "Electric",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 60,
+   "Attack": 50,
+   "Defense": 70,
+   "SpecialAttack": 80,
+   "SpecialDefense": 80,
+   "Speed": 150
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 2
+  },
+  "Abilities": [
+   "Soundproof",
+   "Static"
+  ],
+  "CatchRate": 60,
+  "BaseExperience": 172,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": true,
+  "FemaleChance": 0.0,
+  "HeightM": 1.2,
+  "WeightKg": 66.6,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Exeggcute",
+  "NationalDex": 102,
+  "DisplayName": "Noeunoeuf",
+  "Genus": "Pokémon Œuf",
+  "PokedexEntry": "Ses têtes sont attirées les unes vers les autres et pivotent. Il en faut six pour qu’il maintienne son équilibre.",
+  "Type1": "Grass",
+  "Type2": "Psychic",
+  "BaseStats": {
+   "HP": 60,
+   "Attack": 40,
+   "Defense": 80,
+   "SpecialAttack": 60,
+   "SpecialDefense": 45,
+   "Speed": 40
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 1,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Chlorophyll"
+  ],
+  "CatchRate": 90,
+  "BaseExperience": 65,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.4,
+  "WeightKg": 2.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Exeggutor",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "LeafStone"
+   },
+   {
+    "Species": "Exeggutor",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "LeafStone"
+   }
+  ]
+ },
+ {
+  "Name": "Exeggutor",
+  "NationalDex": 103,
+  "DisplayName": "Noadkoko",
+  "Genus": "Pokémon Fruitpalme",
+  "PokedexEntry": "Si son cri est aussi bruyant, c’est parce que chacune de ses trois têtes dit ce qu’elle pense.",
+  "Type1": "Grass",
+  "Type2": "Psychic",
+  "BaseStats": {
+   "HP": 95,
+   "Attack": 95,
+   "Defense": 85,
+   "SpecialAttack": 125,
+   "SpecialDefense": 75,
+   "Speed": 55
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 2,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Chlorophyll"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 186,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 2.0,
+  "WeightKg": 120.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Cubone",
+  "NationalDex": 104,
+  "DisplayName": "Osselait",
+  "Genus": "Pokémon Solitaire",
+  "PokedexEntry": "Il porte le crâne de sa défunte mère. Ses pleurs résonnent dans son casque en une triste mélodie.",
+  "Type1": "Ground",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 50,
+   "Attack": 50,
+   "Defense": 95,
+   "SpecialAttack": 40,
+   "SpecialDefense": 50,
+   "Speed": 35
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 1,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "RockHead",
+   "LightningRod"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 64,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.4,
+  "WeightKg": 6.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Marowak",
+    "Trigger": "Level",
+    "MinLevel": 28,
+    "Item": "None"
+   },
+   {
+    "Species": "Marowak",
+    "Trigger": "Level",
+    "MinLevel": 28,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Marowak",
+  "NationalDex": 105,
+  "DisplayName": "Ossatueur",
+  "Genus": "Pokémon Gard’Os",
+  "PokedexEntry": "Ce Pokémon, autrefois si petit et si faible, est devenu très féroce. Il se bat habilement, armé de son os.",
+  "Type1": "Ground",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 60,
+   "Attack": 80,
+   "Defense": 110,
+   "SpecialAttack": 50,
+   "SpecialDefense": 80,
+   "Speed": 45
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 2,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "RockHead",
+   "LightningRod"
+  ],
+  "CatchRate": 75,
+  "BaseExperience": 149,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.0,
+  "WeightKg": 45.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Hitmonlee",
+  "NationalDex": 106,
+  "DisplayName": "Kicklee",
+  "Genus": "Pokémon Latteur",
+  "PokedexEntry": "Ses pieds deviennent durs comme le diamant quand il donne des coups, pulvérisant ainsi ses adversaires.",
+  "Type1": "Fighting",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 50,
+   "Attack": 120,
+   "Defense": 53,
+   "SpecialAttack": 35,
+   "SpecialDefense": 110,
+   "Speed": 87
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Limber"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 159,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.0,
+  "HeightM": 1.5,
+  "WeightKg": 49.8,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Hitmonchan",
+  "NationalDex": 107,
+  "DisplayName": "Tygnon",
+  "Genus": "Pokémon Puncheur",
+  "PokedexEntry": "Ses coups de poing rotatifs sont si puissants qu’ils peuvent percer le béton comme une foreuse.",
+  "Type1": "Fighting",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 50,
+   "Attack": 105,
+   "Defense": 79,
+   "SpecialAttack": 35,
+   "SpecialDefense": 110,
+   "Speed": 76
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 2,
+   "Speed": 0
+  },
+  "Abilities": [
+   "KeenEye"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 159,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.0,
+  "HeightM": 1.4,
+  "WeightKg": 50.2,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Lickitung",
+  "NationalDex": 108,
+  "DisplayName": "Excelangue",
+  "Genus": "Pokémon Lécheur",
+  "PokedexEntry": "Sa langue mesure 2 m et elle est plus agile que ses pattes. Son contact provoque la paralysie.",
+  "Type1": "Normal",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 90,
+   "Attack": 55,
+   "Defense": 75,
+   "SpecialAttack": 60,
+   "SpecialDefense": 75,
+   "Speed": 30
+  },
+  "EVYield": {
+   "HP": 2,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "OwnTempo",
+   "Oblivious"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 77,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.2,
+  "WeightKg": 65.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Koffing",
+  "NationalDex": 109,
+  "DisplayName": "Smogo",
+  "Genus": "Pokémon Gaz Mortel",
+  "PokedexEntry": "Les gaz que renferme son corps deviennent instables lorsqu’il se trouve dans un endroit chaud. Prenez garde, il pourrait exploser !",
+  "Type1": "Poison",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 40,
+   "Attack": 65,
+   "Defense": 95,
+   "SpecialAttack": 60,
+   "SpecialDefense": 45,
+   "Speed": 35
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 1,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Levitate"
+  ],
+  "CatchRate": 190,
+  "BaseExperience": 68,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.6,
+  "WeightKg": 1.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Weezing",
+    "Trigger": "Level",
+    "MinLevel": 35,
+    "Item": "None"
+   },
+   {
+    "Species": "Weezing",
+    "Trigger": "Level",
+    "MinLevel": 35,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Weezing",
+  "NationalDex": 110,
+  "DisplayName": "Smogogo",
+  "Genus": "Pokémon Gaz Mortel",
+  "PokedexEntry": "Ce Pokémon se nourrit des gaz toxiques, des germes et de la poussière qu’il trouve dans les tas d’ordures.",
+  "Type1": "Poison",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 90,
+   "Defense": 120,
+   "SpecialAttack": 85,
+   "SpecialDefense": 70,
+   "Speed": 60
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 2,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Levitate"
+  ],
+  "CatchRate": 60,
+  "BaseExperience": 172,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.2,
+  "WeightKg": 9.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Rhyhorn",
+  "NationalDex": 111,
+  "DisplayName": "Rhinocorne",
+  "Genus": "Pokémon Piquant",
+  "PokedexEntry": "Un Pokémon obstiné. S’il se met à charger, il s’arrête uniquement quand il s’endort.",
+  "Type1": "Ground",
+  "Type2": "Rock",
+  "BaseStats": {
+   "HP": 80,
+   "Attack": 85,
+   "Defense": 95,
+   "SpecialAttack": 30,
+   "SpecialDefense": 30,
+   "Speed": 25
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 1,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "LightningRod",
+   "RockHead"
+  ],
+  "CatchRate": 120,
+  "BaseExperience": 69,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.0,
+  "WeightKg": 115.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Rhydon",
+    "Trigger": "Level",
+    "MinLevel": 42,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Rhydon",
+  "NationalDex": 112,
+  "DisplayName": "Rhinoféros",
+  "Genus": "Pokémon Perceur",
+  "PokedexEntry": "L’évolution a permis à ce Pokémon de développer son intelligence et de se tenir debout. Son épiderme résiste à la lave.",
+  "Type1": "Ground",
+  "Type2": "Rock",
+  "BaseStats": {
+   "HP": 105,
+   "Attack": 130,
+   "Defense": 120,
+   "SpecialAttack": 45,
+   "SpecialDefense": 45,
+   "Speed": 40
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "LightningRod",
+   "RockHead"
+  ],
+  "CatchRate": 60,
+  "BaseExperience": 170,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.9,
+  "WeightKg": 120.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Chansey",
+  "NationalDex": 113,
+  "DisplayName": "Leveinard",
+  "Genus": "Pokémon Œuf",
+  "PokedexEntry": "D’un naturel gentil et aimable, il partage ses œufs nourrissants avec les blessés.",
+  "Type1": "Normal",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 250,
+   "Attack": 5,
+   "Defense": 5,
+   "SpecialAttack": 35,
+   "SpecialDefense": 105,
+   "Speed": 50
+  },
+  "EVYield": {
+   "HP": 2,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "NaturalCure",
+   "SereneGrace"
+  ],
+  "CatchRate": 30,
+  "BaseExperience": 395,
+  "BaseFriendship": 140,
+  "GrowthRate": "Fast",
+  "bGenderless": false,
+  "FemaleChance": 1.0,
+  "HeightM": 1.1,
+  "WeightKg": 34.6,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Tangela",
+  "NationalDex": 114,
+  "DisplayName": "Saquedeneu",
+  "Genus": "Pokémon Vigne",
+  "PokedexEntry": "Son corps est masqué par une masse épaisse de lianes bleues qui poussent en permanence.",
+  "Type1": "Grass",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 55,
+   "Defense": 115,
+   "SpecialAttack": 100,
+   "SpecialDefense": 40,
+   "Speed": 60
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 1,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Chlorophyll"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 87,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.0,
+  "WeightKg": 35.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Kangaskhan",
+  "NationalDex": 115,
+  "DisplayName": "Kangourex",
+  "Genus": "Pokémon Maternel",
+  "PokedexEntry": "Ce Pokémon élève son petit dans sa poche ventrale. Il est prêt à combattre n’importe quel ennemi pour le protéger.",
+  "Type1": "Normal",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 105,
+   "Attack": 95,
+   "Defense": 80,
+   "SpecialAttack": 40,
+   "SpecialDefense": 80,
+   "Speed": 90
+  },
+  "EVYield": {
+   "HP": 2,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "EarlyBird"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 172,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 1.0,
+  "HeightM": 2.2,
+  "WeightKg": 80.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Horsea",
+  "NationalDex": 116,
+  "DisplayName": "Hypotrempe",
+  "Genus": "Pokémon Dragon",
+  "PokedexEntry": "Lorsqu’il est menacé, ce Pokémon crache une encre spéciale ou de l’eau pour se défendre.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 30,
+   "Attack": 40,
+   "Defense": 70,
+   "SpecialAttack": 70,
+   "SpecialDefense": 25,
+   "Speed": 60
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 1,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "SwiftSwim"
+  ],
+  "CatchRate": 225,
+  "BaseExperience": 59,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.4,
+  "WeightKg": 8.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Seadra",
+    "Trigger": "Level",
+    "MinLevel": 32,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Seadra",
+  "NationalDex": 117,
+  "DisplayName": "Hypocéan",
+  "Genus": "Pokémon Dragon",
+  "PokedexEntry": "Le contact de ses nageoires dorsales engourdit. Il ancre sa queue au corail quand il dort pour éviter que le courant ne l’emporte.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 55,
+   "Attack": 65,
+   "Defense": 95,
+   "SpecialAttack": 95,
+   "SpecialDefense": 45,
+   "Speed": 85
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 1,
+   "SpecialAttack": 1,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "PoisonPoint"
+  ],
+  "CatchRate": 75,
+  "BaseExperience": 154,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.2,
+  "WeightKg": 25.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Goldeen",
+  "NationalDex": 118,
+  "DisplayName": "Poissirène",
+  "Genus": "Pokémon Poisson",
+  "PokedexEntry": "Quand vient la saison de ponte des Poissirène, on peut en voir de larges groupes remonter les rivières et les cascades.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 45,
+   "Attack": 67,
+   "Defense": 60,
+   "SpecialAttack": 35,
+   "SpecialDefense": 50,
+   "Speed": 63
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 1,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "SwiftSwim",
+   "WaterVeil"
+  ],
+  "CatchRate": 225,
+  "BaseExperience": 64,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.6,
+  "WeightKg": 15.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Seaking",
+    "Trigger": "Level",
+    "MinLevel": 33,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Seaking",
+  "NationalDex": 119,
+  "DisplayName": "Poissoroy",
+  "Genus": "Pokémon Poisson",
+  "PokedexEntry": "Le mâle utilise la corne située sur son front pour creuser un nid dans les rochers au fond des rivières.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 80,
+   "Attack": 92,
+   "Defense": 65,
+   "SpecialAttack": 65,
+   "SpecialDefense": 80,
+   "Speed": 68
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "SwiftSwim",
+   "WaterVeil"
+  ],
+  "CatchRate": 60,
+  "BaseExperience": 158,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.3,
+  "WeightKg": 39.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Staryu",
+  "NationalDex": 120,
+  "DisplayName": "Stari",
+  "Genus": "Pokémon Étoile",
+  "PokedexEntry": "Même découpé en mille morceaux, il peut régénérer les parties de son corps tant que sa partie centrale reste indemne.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 30,
+   "Attack": 45,
+   "Defense": 55,
+   "SpecialAttack": 70,
+   "SpecialDefense": 55,
+   "Speed": 85
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "Illuminate",
+   "NaturalCure"
+  ],
+  "CatchRate": 225,
+  "BaseExperience": 68,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": true,
+  "FemaleChance": 0.0,
+  "HeightM": 0.8,
+  "WeightKg": 34.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Starmie",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "WaterStone"
+   }
+  ]
+ },
+ {
+  "Name": "Starmie",
+  "NationalDex": 121,
+  "DisplayName": "Staross",
+  "Genus": "Pokémon Mystérieux",
+  "PokedexEntry": "On dit que si le centre de son corps, appelé le cœur, brille de sept couleurs, c’est parce qu’il est en train de communiquer.",
+  "Type1": "Water",
+  "Type2": "Psychic",
+  "BaseStats": {
+   "HP": 60,
+   "Attack": 75,
+   "Defense": 85,
+   "SpecialAttack": 100,
+   "SpecialDefense": 85,
+   "Speed": 115
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 2
+  },
+  "Abilities": [
+   "Illuminate",
+   "NaturalCure"
+  ],
+  "CatchRate": 60,
+  "BaseExperience": 182,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": true,
+  "FemaleChance": 0.0,
+  "HeightM": 1.1,
+  "WeightKg": 80.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "MrMime",
+  "NationalDex": 122,
+  "DisplayName": "M. Mime",
+  "Genus": "Pokémon Bloqueur",
+  "PokedexEntry": "Ce Pokémon très doué pour le mime s’entraîne sans cesse. Il arrive à faire croire que quelque chose d’inexistant est réel.",
+  "Type1": "Psychic",
+  "Type2": "Fairy",
+  "BaseStats": {
+   "HP": 40,
+   "Attack": 45,
+   "Defense": 65,
+   "SpecialAttack": 100,
+   "SpecialDefense": 120,
+   "Speed": 90
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 2,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Soundproof"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 161,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.3,
+  "WeightKg": 54.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Scyther",
+  "NationalDex": 123,
+  "DisplayName": "Insécateur",
+  "Genus": "Pokémon Mante",
+  "PokedexEntry": "Bondissant hors de l’herbe comme un ninja, il lacère sa proie de ses griffes acérées.",
+  "Type1": "Bug",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 70,
+   "Attack": 110,
+   "Defense": 80,
+   "SpecialAttack": 55,
+   "SpecialDefense": 80,
+   "Speed": 105
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 1,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Swarm"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 100,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.5,
+  "WeightKg": 56.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Jynx",
+  "NationalDex": 124,
+  "DisplayName": "Lippoutou",
+  "Genus": "Pokémon Humanoïde",
+  "PokedexEntry": "Ce Pokémon bouge en rythme comme s’il dansait. Il ondule même du popotin quand il marche.",
+  "Type1": "Ice",
+  "Type2": "Psychic",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 50,
+   "Defense": 35,
+   "SpecialAttack": 115,
+   "SpecialDefense": 95,
+   "Speed": 95
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 2,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Oblivious"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 159,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 1.0,
+  "HeightM": 1.4,
+  "WeightKg": 40.6,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Electabuzz",
+  "NationalDex": 125,
+  "DisplayName": "Élektek",
+  "Genus": "Pokémon Électrique",
+  "PokedexEntry": "Il provoque de grosses pannes de courant en se nourrissant de l’électricité des centrales.",
+  "Type1": "Electric",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 83,
+   "Defense": 57,
+   "SpecialAttack": 95,
+   "SpecialDefense": 85,
+   "Speed": 105
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 2
+  },
+  "Abilities": [
+   "Static"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 172,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.25,
+  "HeightM": 1.1,
+  "WeightKg": 30.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Magmar",
+  "NationalDex": 126,
+  "DisplayName": "Magmar",
+  "Genus": "Pokémon Crache-Feu",
+  "PokedexEntry": "Né dans le cratère d’un volcan, son corps est recouvert de flammes. Il ressemble ainsi à une boule de feu.",
+  "Type1": "Fire",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 95,
+   "Defense": 57,
+   "SpecialAttack": 100,
+   "SpecialDefense": 85,
+   "Speed": 93
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 2,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "FlameBody"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 173,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.25,
+  "HeightM": 1.3,
+  "WeightKg": 44.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Pinsir",
+  "NationalDex": 127,
+  "DisplayName": "Scarabrute",
+  "Genus": "Pokémon Scarabée",
+  "PokedexEntry": "Il enserre sa proie de sa puissante pince. Il ne peut pas se déplacer dans le froid, donc on le trouve dans les milieux chauds.",
+  "Type1": "Bug",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 125,
+   "Defense": 100,
+   "SpecialAttack": 55,
+   "SpecialDefense": 70,
+   "Speed": 85
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "HyperCutter"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 175,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.5,
+  "WeightKg": 55.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Tauros",
+  "NationalDex": 128,
+  "DisplayName": "Tauros",
+  "Genus": "Pokémon Buffle",
+  "PokedexEntry": "Ce Pokémon brutal est très endurant. Rien n’arrête sa charge tant qu’il n’a pas pulvérisé sa cible.",
+  "Type1": "Normal",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 75,
+   "Attack": 100,
+   "Defense": 95,
+   "SpecialAttack": 40,
+   "SpecialDefense": 70,
+   "Speed": 110
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 1,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "Intimidate"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 172,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.0,
+  "HeightM": 1.4,
+  "WeightKg": 88.4,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Magikarp",
+  "NationalDex": 129,
+  "DisplayName": "Magicarpe",
+  "Genus": "Pokémon Poisson",
+  "PokedexEntry": "Célèbre pour son inutilité, on en trouve beaucoup dans les océans, les étangs, les rivières et même les flaques d’eau.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 20,
+   "Attack": 10,
+   "Defense": 55,
+   "SpecialAttack": 15,
+   "SpecialDefense": 20,
+   "Speed": 80
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 1
+  },
+  "Abilities": [
+   "SwiftSwim"
+  ],
+  "CatchRate": 255,
+  "BaseExperience": 40,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 0.9,
+  "WeightKg": 10.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Gyarados",
+    "Trigger": "Level",
+    "MinLevel": 20,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Gyarados",
+  "NationalDex": 130,
+  "DisplayName": "Léviator",
+  "Genus": "Pokémon Terrifiant",
+  "PokedexEntry": "Brutal et dangereux, il est connu pour avoir rasé des villes entières par le passé.",
+  "Type1": "Water",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 95,
+   "Attack": 125,
+   "Defense": 79,
+   "SpecialAttack": 60,
+   "SpecialDefense": 100,
+   "Speed": 81
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Intimidate"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 189,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 6.5,
+  "WeightKg": 235.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Lapras",
+  "NationalDex": 131,
+  "DisplayName": "Lokhlass",
+  "Genus": "Pokémon Transport",
+  "PokedexEntry": "Ce gentil Pokémon comprend le langage humain. Il parcourt les mers en transportant des gens sur son dos.",
+  "Type1": "Water",
+  "Type2": "Ice",
+  "BaseStats": {
+   "HP": 130,
+   "Attack": 85,
+   "Defense": 80,
+   "SpecialAttack": 85,
+   "SpecialDefense": 95,
+   "Speed": 60
+  },
+  "EVYield": {
+   "HP": 2,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "WaterAbsorb",
+   "ShellArmor"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 187,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 2.5,
+  "WeightKg": 220.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Ditto",
+  "NationalDex": 132,
+  "DisplayName": "Métamorph",
+  "Genus": "Pokémon Morphing",
+  "PokedexEntry": "Quand il repère un ennemi, il adapte son corps pour en faire une copie presque parfaite de celui de son adversaire.",
+  "Type1": "Normal",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 48,
+   "Attack": 48,
+   "Defense": 48,
+   "SpecialAttack": 48,
+   "SpecialDefense": 48,
+   "Speed": 48
+  },
+  "EVYield": {
+   "HP": 1,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Limber"
+  ],
+  "CatchRate": 35,
+  "BaseExperience": 101,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": true,
+  "FemaleChance": 0.0,
+  "HeightM": 0.3,
+  "WeightKg": 4.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Eevee",
+  "NationalDex": 133,
+  "DisplayName": "Évoli",
+  "Genus": "Pokémon Évolutif",
+  "PokedexEntry": "Il peut évoluer de diverses façons. Son ADN est la clé pour percer le secret de l’évolution.",
+  "Type1": "Normal",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 55,
+   "Attack": 55,
+   "Defense": 50,
+   "SpecialAttack": 45,
+   "SpecialDefense": 65,
+   "Speed": 55
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 1,
+   "Speed": 0
+  },
+  "Abilities": [
+   "RunAway"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 65,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 0.3,
+  "WeightKg": 6.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Vaporeon",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "WaterStone"
+   },
+   {
+    "Species": "Jolteon",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "ThunderStone"
+   },
+   {
+    "Species": "Flareon",
+    "Trigger": "Item",
+    "MinLevel": 0,
+    "Item": "FireStone"
+   }
+  ]
+ },
+ {
+  "Name": "Vaporeon",
+  "NationalDex": 134,
+  "DisplayName": "Aquali",
+  "Genus": "Pokémon Bulleur",
+  "PokedexEntry": "Sa structure moléculaire est semblable à celle de l’eau. Il est invisible en milieu aquatique.",
+  "Type1": "Water",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 130,
+   "Attack": 65,
+   "Defense": 60,
+   "SpecialAttack": 110,
+   "SpecialDefense": 95,
+   "Speed": 65
+  },
+  "EVYield": {
+   "HP": 2,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "WaterAbsorb"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 184,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 1.0,
+  "WeightKg": 29.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Jolteon",
+  "NationalDex": 135,
+  "DisplayName": "Voltali",
+  "Genus": "Pokémon Orage",
+  "PokedexEntry": "Un Pokémon très sensible et lunatique. Il se charge en électricité chaque fois que son humeur change.",
+  "Type1": "Electric",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 65,
+   "Defense": 60,
+   "SpecialAttack": 110,
+   "SpecialDefense": 95,
+   "Speed": 130
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 2
+  },
+  "Abilities": [
+   "VoltAbsorb"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 184,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 0.8,
+  "WeightKg": 24.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Flareon",
+  "NationalDex": 136,
+  "DisplayName": "Pyroli",
+  "Genus": "Pokémon Flamme",
+  "PokedexEntry": "La poche de feu à l’intérieur de son corps transforme l’air qu’il inspire en flammes à 1 700 ºC qu’il recrache par la bouche.",
+  "Type1": "Fire",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 130,
+   "Defense": 60,
+   "SpecialAttack": 95,
+   "SpecialDefense": 110,
+   "Speed": 65
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "FlashFire"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 184,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 0.9,
+  "WeightKg": 25.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Porygon",
+  "NationalDex": 137,
+  "DisplayName": "Porygon",
+  "Genus": "Pokémon Virtuel",
+  "PokedexEntry": "Ce Pokémon est censé être le seul à pouvoir voler jusque dans l’espace, mais pour l’instant, aucun Porygon n’y est jamais parvenu.",
+  "Type1": "Normal",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 65,
+   "Attack": 60,
+   "Defense": 70,
+   "SpecialAttack": 85,
+   "SpecialDefense": 75,
+   "Speed": 40
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 1,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Trace"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 79,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": true,
+  "FemaleChance": 0.0,
+  "HeightM": 0.8,
+  "WeightKg": 36.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Omanyte",
+  "NationalDex": 138,
+  "DisplayName": "Amonita",
+  "Genus": "Pokémon Spirale",
+  "PokedexEntry": "Un ancien Pokémon reconstitué à partir d’un fossile. Il nageait dans les mers antiques grâce à ses dix tentacules.",
+  "Type1": "Rock",
+  "Type2": "Water",
+  "BaseStats": {
+   "HP": 35,
+   "Attack": 40,
+   "Defense": 100,
+   "SpecialAttack": 90,
+   "SpecialDefense": 55,
+   "Speed": 35
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 1,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "SwiftSwim",
+   "ShellArmor"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 71,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 0.4,
+  "WeightKg": 7.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Omastar",
+    "Trigger": "Level",
+    "MinLevel": 40,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Omastar",
+  "NationalDex": 139,
+  "DisplayName": "Amonistar",
+  "Genus": "Pokémon Spirale",
+  "PokedexEntry": "Sa bouche est formée de crocs aiguisés. Il aurait disparu car sa coquille, trop grosse, l’empêchait de se déplacer facilement.",
+  "Type1": "Rock",
+  "Type2": "Water",
+  "BaseStats": {
+   "HP": 70,
+   "Attack": 60,
+   "Defense": 125,
+   "SpecialAttack": 115,
+   "SpecialDefense": 70,
+   "Speed": 55
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 2,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "SwiftSwim",
+   "ShellArmor"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 173,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 1.0,
+  "WeightKg": 35.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Kabuto",
+  "NationalDex": 140,
+  "DisplayName": "Kabuto",
+  "Genus": "Pokémon Carapace",
+  "PokedexEntry": "Un Pokémon reconstitué à partir d’un fossile. Il utilise les yeux situés sur son dos pour regarder alentour quand il se cache au fond de l’eau.",
+  "Type1": "Rock",
+  "Type2": "Water",
+  "BaseStats": {
+   "HP": 30,
+   "Attack": 80,
+   "Defense": 90,
+   "SpecialAttack": 55,
+   "SpecialDefense": 45,
+   "Speed": 55
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 1,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "SwiftSwim",
+   "BattleArmor"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 71,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 0.5,
+  "WeightKg": 11.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Kabutops",
+    "Trigger": "Level",
+    "MinLevel": 40,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Kabutops",
+  "NationalDex": 141,
+  "DisplayName": "Kabutops",
+  "Genus": "Pokémon Carapace",
+  "PokedexEntry": "Ce Pokémon au corps fin est très bon nageur. Il lacère sa proie de ses longues griffes pour en absorber les fluides corporels.",
+  "Type1": "Rock",
+  "Type2": "Water",
+  "BaseStats": {
+   "HP": 60,
+   "Attack": 115,
+   "Defense": 105,
+   "SpecialAttack": 65,
+   "SpecialDefense": 70,
+   "Speed": 80
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "SwiftSwim",
+   "BattleArmor"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 173,
+  "BaseFriendship": 70,
+  "GrowthRate": "MediumFast",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 1.3,
+  "WeightKg": 40.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Aerodactyl",
+  "NationalDex": 142,
+  "DisplayName": "Ptéra",
+  "Genus": "Pokémon Fossile",
+  "PokedexEntry": "Un Pokémon féroce disparu il y a longtemps. Il a été reconstitué à partir d’ADN fossilisé dans de l’ambre.",
+  "Type1": "Rock",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 80,
+   "Attack": 105,
+   "Defense": 65,
+   "SpecialAttack": 60,
+   "SpecialDefense": 75,
+   "Speed": 130
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 2
+  },
+  "Abilities": [
+   "RockHead",
+   "Pressure"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 180,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 1.8,
+  "WeightKg": 59.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Snorlax",
+  "NationalDex": 143,
+  "DisplayName": "Ronflex",
+  "Genus": "Pokémon Pionceur",
+  "PokedexEntry": "Il peut tout manger, même de la nourriture avariée. Il n’a jamais mal au ventre.",
+  "Type1": "Normal",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 160,
+   "Attack": 110,
+   "Defense": 65,
+   "SpecialAttack": 65,
+   "SpecialDefense": 110,
+   "Speed": 30
+  },
+  "EVYield": {
+   "HP": 2,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Immunity",
+   "ThickFat"
+  ],
+  "CatchRate": 25,
+  "BaseExperience": 189,
+  "BaseFriendship": 70,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.125,
+  "HeightM": 2.1,
+  "WeightKg": 460.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Articuno",
+  "NationalDex": 144,
+  "DisplayName": "Artikodin",
+  "Genus": "Pokémon Glaciaire",
+  "PokedexEntry": "Un Pokémon oiseau légendaire. L’hiver, il glace la vapeur d’eau contenue dans l’air pour faire de la neige.",
+  "Type1": "Ice",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 90,
+   "Attack": 85,
+   "Defense": 100,
+   "SpecialAttack": 95,
+   "SpecialDefense": 125,
+   "Speed": 85
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 3,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Pressure"
+  ],
+  "CatchRate": 3,
+  "BaseExperience": 261,
+  "BaseFriendship": 35,
+  "GrowthRate": "Slow",
+  "bGenderless": true,
+  "FemaleChance": 0.0,
+  "HeightM": 1.7,
+  "WeightKg": 55.4,
+  "bIsLegendary": true,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Zapdos",
+  "NationalDex": 145,
+  "DisplayName": "Électhor",
+  "Genus": "Pokémon Électrique",
+  "PokedexEntry": "Ce Pokémon oiseau légendaire apparaît quand le ciel s’assombrit et que la foudre ne cesse de tomber.",
+  "Type1": "Electric",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 90,
+   "Attack": 90,
+   "Defense": 85,
+   "SpecialAttack": 125,
+   "SpecialDefense": 90,
+   "Speed": 100
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 3,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Pressure"
+  ],
+  "CatchRate": 3,
+  "BaseExperience": 261,
+  "BaseFriendship": 35,
+  "GrowthRate": "Slow",
+  "bGenderless": true,
+  "FemaleChance": 0.0,
+  "HeightM": 1.6,
+  "WeightKg": 52.6,
+  "bIsLegendary": true,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Moltres",
+  "NationalDex": 146,
+  "DisplayName": "Sulfura",
+  "Genus": "Pokémon Flamme",
+  "PokedexEntry": "Quand ce Pokémon oiseau légendaire agite ses ailes de feu, même la nuit noire s’embrase et rougeoie.",
+  "Type1": "Fire",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 90,
+   "Attack": 100,
+   "Defense": 90,
+   "SpecialAttack": 125,
+   "SpecialDefense": 85,
+   "Speed": 90
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 3,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Pressure"
+  ],
+  "CatchRate": 3,
+  "BaseExperience": 261,
+  "BaseFriendship": 35,
+  "GrowthRate": "Slow",
+  "bGenderless": true,
+  "FemaleChance": 0.0,
+  "HeightM": 2.0,
+  "WeightKg": 60.0,
+  "bIsLegendary": true,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Dratini",
+  "NationalDex": 147,
+  "DisplayName": "Minidraco",
+  "Genus": "Pokémon Dragon",
+  "PokedexEntry": "L’existence de ce Pokémon mythique n’a été confirmée que récemment par un pêcheur.",
+  "Type1": "Dragon",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 41,
+   "Attack": 64,
+   "Defense": 45,
+   "SpecialAttack": 50,
+   "SpecialDefense": 50,
+   "Speed": 50
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 1,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "ShedSkin"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 60,
+  "BaseFriendship": 35,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 1.8,
+  "WeightKg": 3.3,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Dragonair",
+    "Trigger": "Level",
+    "MinLevel": 30,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Dragonair",
+  "NationalDex": 148,
+  "DisplayName": "Draco",
+  "Genus": "Pokémon Dragon",
+  "PokedexEntry": "Selon des témoins, son corps est baigné d’une étrange aura lui donnant un air mystique.",
+  "Type1": "Dragon",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 61,
+   "Attack": 84,
+   "Defense": 65,
+   "SpecialAttack": 70,
+   "SpecialDefense": 70,
+   "Speed": 70
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 2,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "ShedSkin"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 147,
+  "BaseFriendship": 35,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 4.0,
+  "WeightKg": 16.5,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": [
+   {
+    "Species": "Dragonite",
+    "Trigger": "Level",
+    "MinLevel": 55,
+    "Item": "None"
+   }
+  ]
+ },
+ {
+  "Name": "Dragonite",
+  "NationalDex": 149,
+  "DisplayName": "Dracolosse",
+  "Genus": "Pokémon Dragon",
+  "PokedexEntry": "On raconte que ce Pokémon vit quelque part dans la mer et qu’il peut voler. Rien n’est moins sûr.",
+  "Type1": "Dragon",
+  "Type2": "Flying",
+  "BaseStats": {
+   "HP": 91,
+   "Attack": 134,
+   "Defense": 95,
+   "SpecialAttack": 100,
+   "SpecialDefense": 100,
+   "Speed": 80
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 3,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "InnerFocus"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 270,
+  "BaseFriendship": 35,
+  "GrowthRate": "Slow",
+  "bGenderless": false,
+  "FemaleChance": 0.5,
+  "HeightM": 2.2,
+  "WeightKg": 210.0,
+  "bIsLegendary": false,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Mewtwo",
+  "NationalDex": 150,
+  "DisplayName": "Mewtwo",
+  "Genus": "Pokémon Génétique",
+  "PokedexEntry": "Son ADN est presque le même que celui de Mew, mais sa taille et son caractère sont très différents.",
+  "Type1": "Psychic",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 106,
+   "Attack": 110,
+   "Defense": 90,
+   "SpecialAttack": 154,
+   "SpecialDefense": 90,
+   "Speed": 130
+  },
+  "EVYield": {
+   "HP": 0,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 3,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Pressure"
+  ],
+  "CatchRate": 3,
+  "BaseExperience": 306,
+  "BaseFriendship": 0,
+  "GrowthRate": "Slow",
+  "bGenderless": true,
+  "FemaleChance": 0.0,
+  "HeightM": 2.0,
+  "WeightKg": 122.0,
+  "bIsLegendary": true,
+  "bIsMythical": false,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ },
+ {
+  "Name": "Mew",
+  "NationalDex": 151,
+  "DisplayName": "Mew",
+  "Genus": "Pokémon Nouveau",
+  "PokedexEntry": "À l’aide d’un microscope, on peut distinguer le pelage extrêmement court, fin et délicat de ce Pokémon.",
+  "Type1": "Psychic",
+  "Type2": "None",
+  "BaseStats": {
+   "HP": 100,
+   "Attack": 100,
+   "Defense": 100,
+   "SpecialAttack": 100,
+   "SpecialDefense": 100,
+   "Speed": 100
+  },
+  "EVYield": {
+   "HP": 3,
+   "Attack": 0,
+   "Defense": 0,
+   "SpecialAttack": 0,
+   "SpecialDefense": 0,
+   "Speed": 0
+  },
+  "Abilities": [
+   "Synchronize"
+  ],
+  "CatchRate": 45,
+  "BaseExperience": 270,
+  "BaseFriendship": 100,
+  "GrowthRate": "MediumSlow",
+  "bGenderless": true,
+  "FemaleChance": 0.0,
+  "HeightM": 0.4,
+  "WeightKg": 4.0,
+  "bIsLegendary": false,
+  "bIsMythical": true,
+  "bAvailableInV1": false,
+  "Evolutions": []
+ }
+]

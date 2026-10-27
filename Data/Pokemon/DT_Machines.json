@@ -1,0 +1,287 @@
+[
+ {
+  "Name": "TM01",
+  "Move": "FocusPunch",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM02",
+  "Move": "DragonClaw",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM03",
+  "Move": "WaterPulse",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM04",
+  "Move": "CalmMind",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM05",
+  "Move": "Roar",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM06",
+  "Move": "Toxic",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM07",
+  "Move": "Hail",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM08",
+  "Move": "BulkUp",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM09",
+  "Move": "BulletSeed",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM10",
+  "Move": "HiddenPower",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM11",
+  "Move": "SunnyDay",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM12",
+  "Move": "Taunt",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM13",
+  "Move": "IceBeam",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM14",
+  "Move": "Blizzard",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM15",
+  "Move": "HyperBeam",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM16",
+  "Move": "LightScreen",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM17",
+  "Move": "Protect",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM18",
+  "Move": "RainDance",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM19",
+  "Move": "GigaDrain",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM20",
+  "Move": "Safeguard",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM21",
+  "Move": "Frustration",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM22",
+  "Move": "SolarBeam",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM23",
+  "Move": "IronTail",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM24",
+  "Move": "Thunderbolt",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM25",
+  "Move": "Thunder",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM26",
+  "Move": "Earthquake",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM27",
+  "Move": "Return",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM28",
+  "Move": "Dig",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM29",
+  "Move": "Psychic",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM30",
+  "Move": "ShadowBall",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM31",
+  "Move": "BrickBreak",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM32",
+  "Move": "DoubleTeam",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM33",
+  "Move": "Reflect",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM34",
+  "Move": "ShockWave",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM35",
+  "Move": "Flamethrower",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM36",
+  "Move": "SludgeBomb",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM37",
+  "Move": "Sandstorm",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM38",
+  "Move": "FireBlast",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM39",
+  "Move": "RockTomb",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM40",
+  "Move": "AerialAce",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM41",
+  "Move": "Torment",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM42",
+  "Move": "Facade",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM43",
+  "Move": "SecretPower",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM44",
+  "Move": "Rest",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM45",
+  "Move": "Attract",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM46",
+  "Move": "Thief",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM47",
+  "Move": "SteelWing",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM48",
+  "Move": "SkillSwap",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM49",
+  "Move": "Snatch",
+  "bIsHM": false
+ },
+ {
+  "Name": "TM50",
+  "Move": "Overheat",
+  "bIsHM": false
+ },
+ {
+  "Name": "HM01",
+  "Move": "Cut",
+  "bIsHM": true
+ },
+ {
+  "Name": "HM02",
+  "Move": "Fly",
+  "bIsHM": true
+ },
+ {
+  "Name": "HM03",
+  "Move": "Surf",
+  "bIsHM": true
+ },
+ {
+  "Name": "HM04",
+  "Move": "Strength",
+  "bIsHM": true
+ },
+ {
+  "Name": "HM05",
+  "Move": "Flash",
+  "bIsHM": true
+ },
+ {
+  "Name": "HM06",
+  "Move": "RockSmash",
+  "bIsHM": true
+ },
+ {
+  "Name": "HM07",
+  "Move": "Waterfall",
+  "bIsHM": true
+ }
+]

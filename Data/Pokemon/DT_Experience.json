@@ -1,0 +1,902 @@
+[
+ {
+  "Name": "1",
+  "Slow": 0,
+  "MediumFast": 0,
+  "Fast": 0,
+  "MediumSlow": 0,
+  "Erratic": 0,
+  "Fluctuating": 0
+ },
+ {
+  "Name": "2",
+  "Slow": 10,
+  "MediumFast": 8,
+  "Fast": 6,
+  "MediumSlow": 9,
+  "Erratic": 15,
+  "Fluctuating": 4
+ },
+ {
+  "Name": "3",
+  "Slow": 33,
+  "MediumFast": 27,
+  "Fast": 21,
+  "MediumSlow": 57,
+  "Erratic": 52,
+  "Fluctuating": 13
+ },
+ {
+  "Name": "4",
+  "Slow": 80,
+  "MediumFast": 64,
+  "Fast": 51,
+  "MediumSlow": 96,
+  "Erratic": 122,
+  "Fluctuating": 32
+ },
+ {
+  "Name": "5",
+  "Slow": 156,
+  "MediumFast": 125,
+  "Fast": 100,
+  "MediumSlow": 135,
+  "Erratic": 237,
+  "Fluctuating": 65
+ },
+ {
+  "Name": "6",
+  "Slow": 270,
+  "MediumFast": 216,
+  "Fast": 172,
+  "MediumSlow": 179,
+  "Erratic": 406,
+  "Fluctuating": 112
+ },
+ {
+  "Name": "7",
+  "Slow": 428,
+  "MediumFast": 343,
+  "Fast": 274,
+  "MediumSlow": 236,
+  "Erratic": 637,
+  "Fluctuating": 178
+ },
+ {
+  "Name": "8",
+  "Slow": 640,
+  "MediumFast": 512,
+  "Fast": 409,
+  "MediumSlow": 314,
+  "Erratic": 942,
+  "Fluctuating": 276
+ },
+ {
+  "Name": "9",
+  "Slow": 911,
+  "MediumFast": 729,
+  "Fast": 583,
+  "MediumSlow": 419,
+  "Erratic": 1326,
+  "Fluctuating": 393
+ },
+ {
+  "Name": "10",
+  "Slow": 1250,
+  "MediumFast": 1000,
+  "Fast": 800,
+  "MediumSlow": 560,
+  "Erratic": 1800,
+  "Fluctuating": 540
+ },
+ {
+  "Name": "11",
+  "Slow": 1663,
+  "MediumFast": 1331,
+  "Fast": 1064,
+  "MediumSlow": 742,
+  "Erratic": 2369,
+  "Fluctuating": 745
+ },
+ {
+  "Name": "12",
+  "Slow": 2160,
+  "MediumFast": 1728,
+  "Fast": 1382,
+  "MediumSlow": 973,
+  "Erratic": 3041,
+  "Fluctuating": 967
+ },
+ {
+  "Name": "13",
+  "Slow": 2746,
+  "MediumFast": 2197,
+  "Fast": 1757,
+  "MediumSlow": 1261,
+  "Erratic": 3822,
+  "Fluctuating": 1230
+ },
+ {
+  "Name": "14",
+  "Slow": 3430,
+  "MediumFast": 2744,
+  "Fast": 2195,
+  "MediumSlow": 1612,
+  "Erratic": 4719,
+  "Fluctuating": 1591
+ },
+ {
+  "Name": "15",
+  "Slow": 4218,
+  "MediumFast": 3375,
+  "Fast": 2700,
+  "MediumSlow": 2035,
+  "Erratic": 5737,
+  "Fluctuating": 1957
+ },
+ {
+  "Name": "16",
+  "Slow": 5120,
+  "MediumFast": 4096,
+  "Fast": 3276,
+  "MediumSlow": 2535,
+  "Erratic": 6881,
+  "Fluctuating": 2457
+ },
+ {
+  "Name": "17",
+  "Slow": 6141,
+  "MediumFast": 4913,
+  "Fast": 3930,
+  "MediumSlow": 3120,
+  "Erratic": 8155,
+  "Fluctuating": 3046
+ },
+ {
+  "Name": "18",
+  "Slow": 7290,
+  "MediumFast": 5832,
+  "Fast": 4665,
+  "MediumSlow": 3798,
+  "Erratic": 9564,
+  "Fluctuating": 3732
+ },
+ {
+  "Name": "19",
+  "Slow": 8573,
+  "MediumFast": 6859,
+  "Fast": 5487,
+  "MediumSlow": 4575,
+  "Erratic": 11111,
+  "Fluctuating": 4526
+ },
+ {
+  "Name": "20",
+  "Slow": 10000,
+  "MediumFast": 8000,
+  "Fast": 6400,
+  "MediumSlow": 5460,
+  "Erratic": 12800,
+  "Fluctuating": 5440
+ },
+ {
+  "Name": "21",
+  "Slow": 11576,
+  "MediumFast": 9261,
+  "Fast": 7408,
+  "MediumSlow": 6458,
+  "Erratic": 14632,
+  "Fluctuating": 6482
+ },
+ {
+  "Name": "22",
+  "Slow": 13310,
+  "MediumFast": 10648,
+  "Fast": 8518,
+  "MediumSlow": 7577,
+  "Erratic": 16610,
+  "Fluctuating": 7666
+ },
+ {
+  "Name": "23",
+  "Slow": 15208,
+  "MediumFast": 12167,
+  "Fast": 9733,
+  "MediumSlow": 8825,
+  "Erratic": 18737,
+  "Fluctuating": 9003
+ },
+ {
+  "Name": "24",
+  "Slow": 17280,
+  "MediumFast": 13824,
+  "Fast": 11059,
+  "MediumSlow": 10208,
+  "Erratic": 21012,
+  "Fluctuating": 10506
+ },
+ {
+  "Name": "25",
+  "Slow": 19531,
+  "MediumFast": 15625,
+  "Fast": 12500,
+  "MediumSlow": 11735,
+  "Erratic": 23437,
+  "Fluctuating": 12187
+ },
+ {
+  "Name": "26",
+  "Slow": 21970,
+  "MediumFast": 17576,
+  "Fast": 14060,
+  "MediumSlow": 13411,
+  "Erratic": 26012,
+  "Fluctuating": 14060
+ },
+ {
+  "Name": "27",
+  "Slow": 24603,
+  "MediumFast": 19683,
+  "Fast": 15746,
+  "MediumSlow": 15244,
+  "Erratic": 28737,
+  "Fluctuating": 16140
+ },
+ {
+  "Name": "28",
+  "Slow": 27440,
+  "MediumFast": 21952,
+  "Fast": 17561,
+  "MediumSlow": 17242,
+  "Erratic": 31610,
+  "Fluctuating": 18439
+ },
+ {
+  "Name": "29",
+  "Slow": 30486,
+  "MediumFast": 24389,
+  "Fast": 19511,
+  "MediumSlow": 19411,
+  "Erratic": 34632,
+  "Fluctuating": 20974
+ },
+ {
+  "Name": "30",
+  "Slow": 33750,
+  "MediumFast": 27000,
+  "Fast": 21600,
+  "MediumSlow": 21760,
+  "Erratic": 37800,
+  "Fluctuating": 23760
+ },
+ {
+  "Name": "31",
+  "Slow": 37238,
+  "MediumFast": 29791,
+  "Fast": 23832,
+  "MediumSlow": 24294,
+  "Erratic": 41111,
+  "Fluctuating": 26811
+ },
+ {
+  "Name": "32",
+  "Slow": 40960,
+  "MediumFast": 32768,
+  "Fast": 26214,
+  "MediumSlow": 27021,
+  "Erratic": 44564,
+  "Fluctuating": 30146
+ },
+ {
+  "Name": "33",
+  "Slow": 44921,
+  "MediumFast": 35937,
+  "Fast": 28749,
+  "MediumSlow": 29949,
+  "Erratic": 48155,
+  "Fluctuating": 33780
+ },
+ {
+  "Name": "34",
+  "Slow": 49130,
+  "MediumFast": 39304,
+  "Fast": 31443,
+  "MediumSlow": 33084,
+  "Erratic": 51881,
+  "Fluctuating": 37731
+ },
+ {
+  "Name": "35",
+  "Slow": 53593,
+  "MediumFast": 42875,
+  "Fast": 34300,
+  "MediumSlow": 36435,
+  "Erratic": 55737,
+  "Fluctuating": 42017
+ },
+ {
+  "Name": "36",
+  "Slow": 58320,
+  "MediumFast": 46656,
+  "Fast": 37324,
+  "MediumSlow": 40007,
+  "Erratic": 59719,
+  "Fluctuating": 46656
+ },
+ {
+  "Name": "37",
+  "Slow": 63316,
+  "MediumFast": 50653,
+  "Fast": 40522,
+  "MediumSlow": 43808,
+  "Erratic": 63822,
+  "Fluctuating": 50653
+ },
+ {
+  "Name": "38",
+  "Slow": 68590,
+  "MediumFast": 54872,
+  "Fast": 43897,
+  "MediumSlow": 47846,
+  "Erratic": 68041,
+  "Fluctuating": 55969
+ },
+ {
+  "Name": "39",
+  "Slow": 74148,
+  "MediumFast": 59319,
+  "Fast": 47455,
+  "MediumSlow": 52127,
+  "Erratic": 72369,
+  "Fluctuating": 60505
+ },
+ {
+  "Name": "40",
+  "Slow": 80000,
+  "MediumFast": 64000,
+  "Fast": 51200,
+  "MediumSlow": 56660,
+  "Erratic": 76800,
+  "Fluctuating": 66560
+ },
+ {
+  "Name": "41",
+  "Slow": 86151,
+  "MediumFast": 68921,
+  "Fast": 55136,
+  "MediumSlow": 61450,
+  "Erratic": 81326,
+  "Fluctuating": 71677
+ },
+ {
+  "Name": "42",
+  "Slow": 92610,
+  "MediumFast": 74088,
+  "Fast": 59270,
+  "MediumSlow": 66505,
+  "Erratic": 85942,
+  "Fluctuating": 78533
+ },
+ {
+  "Name": "43",
+  "Slow": 99383,
+  "MediumFast": 79507,
+  "Fast": 63605,
+  "MediumSlow": 71833,
+  "Erratic": 90637,
+  "Fluctuating": 84277
+ },
+ {
+  "Name": "44",
+  "Slow": 106480,
+  "MediumFast": 85184,
+  "Fast": 68147,
+  "MediumSlow": 77440,
+  "Erratic": 95406,
+  "Fluctuating": 91998
+ },
+ {
+  "Name": "45",
+  "Slow": 113906,
+  "MediumFast": 91125,
+  "Fast": 72900,
+  "MediumSlow": 83335,
+  "Erratic": 100237,
+  "Fluctuating": 98415
+ },
+ {
+  "Name": "46",
+  "Slow": 121670,
+  "MediumFast": 97336,
+  "Fast": 77868,
+  "MediumSlow": 89523,
+  "Erratic": 105122,
+  "Fluctuating": 107069
+ },
+ {
+  "Name": "47",
+  "Slow": 129778,
+  "MediumFast": 103823,
+  "Fast": 83058,
+  "MediumSlow": 96012,
+  "Erratic": 110052,
+  "Fluctuating": 114205
+ },
+ {
+  "Name": "48",
+  "Slow": 138240,
+  "MediumFast": 110592,
+  "Fast": 88473,
+  "MediumSlow": 102810,
+  "Erratic": 115015,
+  "Fluctuating": 123863
+ },
+ {
+  "Name": "49",
+  "Slow": 147061,
+  "MediumFast": 117649,
+  "Fast": 94119,
+  "MediumSlow": 109923,
+  "Erratic": 120001,
+  "Fluctuating": 131766
+ },
+ {
+  "Name": "50",
+  "Slow": 156250,
+  "MediumFast": 125000,
+  "Fast": 100000,
+  "MediumSlow": 117360,
+  "Erratic": 125000,
+  "Fluctuating": 142500
+ },
+ {
+  "Name": "51",
+  "Slow": 165813,
+  "MediumFast": 132651,
+  "Fast": 106120,
+  "MediumSlow": 125126,
+  "Erratic": 131324,
+  "Fluctuating": 151222
+ },
+ {
+  "Name": "52",
+  "Slow": 175760,
+  "MediumFast": 140608,
+  "Fast": 112486,
+  "MediumSlow": 133229,
+  "Erratic": 137795,
+  "Fluctuating": 163105
+ },
+ {
+  "Name": "53",
+  "Slow": 186096,
+  "MediumFast": 148877,
+  "Fast": 119101,
+  "MediumSlow": 141677,
+  "Erratic": 144410,
+  "Fluctuating": 172697
+ },
+ {
+  "Name": "54",
+  "Slow": 196830,
+  "MediumFast": 157464,
+  "Fast": 125971,
+  "MediumSlow": 150476,
+  "Erratic": 151165,
+  "Fluctuating": 185807
+ },
+ {
+  "Name": "55",
+  "Slow": 207968,
+  "MediumFast": 166375,
+  "Fast": 133100,
+  "MediumSlow": 159635,
+  "Erratic": 158056,
+  "Fluctuating": 196322
+ },
+ {
+  "Name": "56",
+  "Slow": 219520,
+  "MediumFast": 175616,
+  "Fast": 140492,
+  "MediumSlow": 169159,
+  "Erratic": 165079,
+  "Fluctuating": 210739
+ },
+ {
+  "Name": "57",
+  "Slow": 231491,
+  "MediumFast": 185193,
+  "Fast": 148154,
+  "MediumSlow": 179056,
+  "Erratic": 172229,
+  "Fluctuating": 222231
+ },
+ {
+  "Name": "58",
+  "Slow": 243890,
+  "MediumFast": 195112,
+  "Fast": 156089,
+  "MediumSlow": 189334,
+  "Erratic": 179503,
+  "Fluctuating": 238036
+ },
+ {
+  "Name": "59",
+  "Slow": 256723,
+  "MediumFast": 205379,
+  "Fast": 164303,
+  "MediumSlow": 199999,
+  "Erratic": 186894,
+  "Fluctuating": 250562
+ },
+ {
+  "Name": "60",
+  "Slow": 270000,
+  "MediumFast": 216000,
+  "Fast": 172800,
+  "MediumSlow": 211060,
+  "Erratic": 194400,
+  "Fluctuating": 267840
+ },
+ {
+  "Name": "61",
+  "Slow": 283726,
+  "MediumFast": 226981,
+  "Fast": 181584,
+  "MediumSlow": 222522,
+  "Erratic": 202013,
+  "Fluctuating": 281456
+ },
+ {
+  "Name": "62",
+  "Slow": 297910,
+  "MediumFast": 238328,
+  "Fast": 190662,
+  "MediumSlow": 234393,
+  "Erratic": 209728,
+  "Fluctuating": 300293
+ },
+ {
+  "Name": "63",
+  "Slow": 312558,
+  "MediumFast": 250047,
+  "Fast": 200037,
+  "MediumSlow": 246681,
+  "Erratic": 217540,
+  "Fluctuating": 315059
+ },
+ {
+  "Name": "64",
+  "Slow": 327680,
+  "MediumFast": 262144,
+  "Fast": 209715,
+  "MediumSlow": 259392,
+  "Erratic": 225443,
+  "Fluctuating": 335544
+ },
+ {
+  "Name": "65",
+  "Slow": 343281,
+  "MediumFast": 274625,
+  "Fast": 219700,
+  "MediumSlow": 272535,
+  "Erratic": 233431,
+  "Fluctuating": 351520
+ },
+ {
+  "Name": "66",
+  "Slow": 359370,
+  "MediumFast": 287496,
+  "Fast": 229996,
+  "MediumSlow": 286115,
+  "Erratic": 241496,
+  "Fluctuating": 373744
+ },
+ {
+  "Name": "67",
+  "Slow": 375953,
+  "MediumFast": 300763,
+  "Fast": 240610,
+  "MediumSlow": 300140,
+  "Erratic": 249633,
+  "Fluctuating": 390991
+ },
+ {
+  "Name": "68",
+  "Slow": 393040,
+  "MediumFast": 314432,
+  "Fast": 251545,
+  "MediumSlow": 314618,
+  "Erratic": 257834,
+  "Fluctuating": 415050
+ },
+ {
+  "Name": "69",
+  "Slow": 410636,
+  "MediumFast": 328509,
+  "Fast": 262807,
+  "MediumSlow": 329555,
+  "Erratic": 267406,
+  "Fluctuating": 433631
+ },
+ {
+  "Name": "70",
+  "Slow": 428750,
+  "MediumFast": 343000,
+  "Fast": 274400,
+  "MediumSlow": 344960,
+  "Erratic": 276458,
+  "Fluctuating": 459620
+ },
+ {
+  "Name": "71",
+  "Slow": 447388,
+  "MediumFast": 357911,
+  "Fast": 286328,
+  "MediumSlow": 360838,
+  "Erratic": 286328,
+  "Fluctuating": 479600
+ },
+ {
+  "Name": "72",
+  "Slow": 466560,
+  "MediumFast": 373248,
+  "Fast": 298598,
+  "MediumSlow": 377197,
+  "Erratic": 296358,
+  "Fluctuating": 507617
+ },
+ {
+  "Name": "73",
+  "Slow": 486271,
+  "MediumFast": 389017,
+  "Fast": 311213,
+  "MediumSlow": 394045,
+  "Erratic": 305767,
+  "Fluctuating": 529063
+ },
+ {
+  "Name": "74",
+  "Slow": 506530,
+  "MediumFast": 405224,
+  "Fast": 324179,
+  "MediumSlow": 411388,
+  "Erratic": 316074,
+  "Fluctuating": 559209
+ },
+ {
+  "Name": "75",
+  "Slow": 527343,
+  "MediumFast": 421875,
+  "Fast": 337500,
+  "MediumSlow": 429235,
+  "Erratic": 326531,
+  "Fluctuating": 582187
+ },
+ {
+  "Name": "76",
+  "Slow": 548720,
+  "MediumFast": 438976,
+  "Fast": 351180,
+  "MediumSlow": 447591,
+  "Erratic": 336255,
+  "Fluctuating": 614566
+ },
+ {
+  "Name": "77",
+  "Slow": 570666,
+  "MediumFast": 456533,
+  "Fast": 365226,
+  "MediumSlow": 466464,
+  "Erratic": 346965,
+  "Fluctuating": 639146
+ },
+ {
+  "Name": "78",
+  "Slow": 593190,
+  "MediumFast": 474552,
+  "Fast": 379641,
+  "MediumSlow": 485862,
+  "Erratic": 357812,
+  "Fluctuating": 673863
+ },
+ {
+  "Name": "79",
+  "Slow": 616298,
+  "MediumFast": 493039,
+  "Fast": 394431,
+  "MediumSlow": 505791,
+  "Erratic": 367807,
+  "Fluctuating": 700115
+ },
+ {
+  "Name": "80",
+  "Slow": 640000,
+  "MediumFast": 512000,
+  "Fast": 409600,
+  "MediumSlow": 526260,
+  "Erratic": 378880,
+  "Fluctuating": 737280
+ },
+ {
+  "Name": "81",
+  "Slow": 664301,
+  "MediumFast": 531441,
+  "Fast": 425152,
+  "MediumSlow": 547274,
+  "Erratic": 390077,
+  "Fluctuating": 765275
+ },
+ {
+  "Name": "82",
+  "Slow": 689210,
+  "MediumFast": 551368,
+  "Fast": 441094,
+  "MediumSlow": 568841,
+  "Erratic": 400293,
+  "Fluctuating": 804997
+ },
+ {
+  "Name": "83",
+  "Slow": 714733,
+  "MediumFast": 571787,
+  "Fast": 457429,
+  "MediumSlow": 590969,
+  "Erratic": 411686,
+  "Fluctuating": 834809
+ },
+ {
+  "Name": "84",
+  "Slow": 740880,
+  "MediumFast": 592704,
+  "Fast": 474163,
+  "MediumSlow": 613664,
+  "Erratic": 423190,
+  "Fluctuating": 877201
+ },
+ {
+  "Name": "85",
+  "Slow": 767656,
+  "MediumFast": 614125,
+  "Fast": 491300,
+  "MediumSlow": 636935,
+  "Erratic": 433572,
+  "Fluctuating": 908905
+ },
+ {
+  "Name": "86",
+  "Slow": 795070,
+  "MediumFast": 636056,
+  "Fast": 508844,
+  "MediumSlow": 660787,
+  "Erratic": 445239,
+  "Fluctuating": 954084
+ },
+ {
+  "Name": "87",
+  "Slow": 823128,
+  "MediumFast": 658503,
+  "Fast": 526802,
+  "MediumSlow": 685228,
+  "Erratic": 457001,
+  "Fluctuating": 987754
+ },
+ {
+  "Name": "88",
+  "Slow": 851840,
+  "MediumFast": 681472,
+  "Fast": 545177,
+  "MediumSlow": 710266,
+  "Erratic": 467489,
+  "Fluctuating": 1035837
+ },
+ {
+  "Name": "89",
+  "Slow": 881211,
+  "MediumFast": 704969,
+  "Fast": 563975,
+  "MediumSlow": 735907,
+  "Erratic": 479378,
+  "Fluctuating": 1071552
+ },
+ {
+  "Name": "90",
+  "Slow": 911250,
+  "MediumFast": 729000,
+  "Fast": 583200,
+  "MediumSlow": 762160,
+  "Erratic": 491346,
+  "Fluctuating": 1122660
+ },
+ {
+  "Name": "91",
+  "Slow": 941963,
+  "MediumFast": 753571,
+  "Fast": 602856,
+  "MediumSlow": 789030,
+  "Erratic": 501878,
+  "Fluctuating": 1160499
+ },
+ {
+  "Name": "92",
+  "Slow": 973360,
+  "MediumFast": 778688,
+  "Fast": 622950,
+  "MediumSlow": 816525,
+  "Erratic": 513934,
+  "Fluctuating": 1214753
+ },
+ {
+  "Name": "93",
+  "Slow": 1005446,
+  "MediumFast": 804357,
+  "Fast": 643485,
+  "MediumSlow": 844653,
+  "Erratic": 526049,
+  "Fluctuating": 1254796
+ },
+ {
+  "Name": "94",
+  "Slow": 1038230,
+  "MediumFast": 830584,
+  "Fast": 664467,
+  "MediumSlow": 873420,
+  "Erratic": 536557,
+  "Fluctuating": 1312322
+ },
+ {
+  "Name": "95",
+  "Slow": 1071718,
+  "MediumFast": 857375,
+  "Fast": 685900,
+  "MediumSlow": 902835,
+  "Erratic": 548720,
+  "Fluctuating": 1354652
+ },
+ {
+  "Name": "96",
+  "Slow": 1105920,
+  "MediumFast": 884736,
+  "Fast": 707788,
+  "MediumSlow": 932903,
+  "Erratic": 560922,
+  "Fluctuating": 1415577
+ },
+ {
+  "Name": "97",
+  "Slow": 1140841,
+  "MediumFast": 912673,
+  "Fast": 730138,
+  "MediumSlow": 963632,
+  "Erratic": 571333,
+  "Fluctuating": 1460276
+ },
+ {
+  "Name": "98",
+  "Slow": 1176490,
+  "MediumFast": 941192,
+  "Fast": 752953,
+  "MediumSlow": 995030,
+  "Erratic": 583539,
+  "Fluctuating": 1524731
+ },
+ {
+  "Name": "99",
+  "Slow": 1212873,
+  "MediumFast": 970299,
+  "Fast": 776239,
+  "MediumSlow": 1027103,
+  "Erratic": 591882,
+  "Fluctuating": 1571884
+ },
+ {
+  "Name": "100",
+  "Slow": 1250000,
+  "MediumFast": 1000000,
+  "Fast": 800000,
+  "MediumSlow": 1059860,
+  "Erratic": 600000,
+  "Fluctuating": 1640000
+ }
+]
