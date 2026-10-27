@@ -196,6 +196,31 @@ def spawn_class(path, label, folder, location, rotation=None):
     return actor
 
 
+def place_door_and_interior(name, folder, x, y, depth, width, floor, ceiling):
+    """Porte (pivot au milieu du bas du passage, axe X vers le sud) et volume d'intérieur
+    (caméra rapprochée). False si les classes C++ ne sont pas compilées."""
+    t = layout.WALL_THICKNESS
+    door_location = GROUND.point(x - depth / 2 + t / 2, y)
+    door_location.z = GROUND.origin.z + floor * 100
+    door = spawn_class("/Script/PokemonNewAge.Door", f"{name}_Porte", folder, door_location,
+                       unreal.Rotator(yaw=180))
+    if door is None:
+        return False
+    # La taille du passage par défaut (1,4 × 2,4 m) est celle du blockout : seul le verrou change.
+    door.set_editor_property("locked", name in layout.LOCKED)
+    for component in door.get_components_by_class(unreal.StaticMeshComponent):
+        component.set_material(0, material("Door"))
+
+    inside = GROUND.point(x, y)
+    inside.z = GROUND.origin.z + (floor + ceiling) / 2 * 100
+    volume = spawn_class("/Script/PokemonNewAge.InteriorVolume", f"{name}_Intérieur", folder, inside)
+    if volume is not None:
+        # Le volume est mis à l'échelle (la boîte de base fait 8 × 8 × 3 m).
+        volume.set_actor_scale3d(unreal.Vector((depth - 2 * t) / 8.0, (width - 2 * t) / 8.0,
+                                               (ceiling - floor) / 3.0))
+    return True
+
+
 def build_buildings():
     """Bâtiments creux (SCRUM-25) : murs, porte au sud, sol, plafond, toit et meubles.
     On y entre à pied, sans chargement."""
@@ -250,29 +275,12 @@ def build_buildings():
         for label, dx, dy, fx, fy, fz, color in layout.INTERIORS.get(name, []):
             box_at(f"{name}_{label}", folder, x + dx, y + dy, floor, (fx, fy, fz), color)
 
-        # Porte animée (C++ ADoor) : pivot au milieu du bas du passage, axe X vers le sud.
-        door_location = GROUND.point(x - depth / 2 + t / 2, y)
-        door_location.z = GROUND.origin.z + floor * 100
-        door = spawn_class("/Script/PokemonNewAge.Door", f"{name}_Porte", folder, door_location,
-                           unreal.Rotator(yaw=180))
-        if door is None:
-            missing_code = True
-            continue
-        door.set_editor_property("door_width", door_w * 100 - 10)
-        door.set_editor_property("door_height", door_h * 100 - 5)
-        door.set_editor_property("locked", name in layout.LOCKED)
-        door.rerun_construction_scripts()
-        for component in door.get_components_by_class(unreal.StaticMeshComponent):
-            component.set_material(0, material("Door"))
-
-        # Volume d'intérieur (C++ AInteriorVolume) : caméra rapprochée tant qu'on est dedans.
-        inside = GROUND.point(x, y)
-        inside.z = GROUND.origin.z + (floor + ceiling) / 2 * 100
-        volume = spawn_class("/Script/PokemonNewAge.InteriorVolume", f"{name}_Intérieur", folder, inside)
-        if volume is not None:
-            box = volume.get_component_by_class(unreal.BoxComponent)
-            box.set_box_extent(unreal.Vector((depth / 2 - t) * 100, (width / 2 - t) * 100,
-                                             (ceiling - floor) / 2 * 100))
+        # Porte animée (C++ ADoor) et volume d'intérieur (C++ AInteriorVolume). Une erreur ici
+        # ne doit jamais arrêter le blockout : on la signale et on continue.
+        try:
+            missing_code |= not place_door_and_interior(name, folder, x, y, depth, width, floor, ceiling)
+        except Exception as error:
+            unreal.log_warning(f"{name} : porte ou intérieur non posé ({error}).")
     if missing_code:
         unreal.log_warning("Classes Door / InteriorVolume introuvables : compiler le code C++ "
                            "(PokemonNewAgeEditor Win64 Development Build) puis relancer le script. "
