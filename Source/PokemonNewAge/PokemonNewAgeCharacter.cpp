@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "PokemonNewAgeCharacter.h"
+#include "PokemonNewAgePlayerController.h"
 #include "Engine/LocalPlayer.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -193,6 +194,13 @@ void APokemonNewAgeCharacter::DoLook(float Yaw, float Pitch)
 {
 	if (GetController() != nullptr)
 	{
+		// Sensibilité et sens de la caméra réglés dans Options (menu Pokédex)
+		if (const APokemonNewAgePlayerController* PlayerController = Cast<APokemonNewAgePlayerController>(GetController()))
+		{
+			Yaw *= PlayerController->CameraSensitivity;
+			Pitch *= PlayerController->CameraSensitivity * (PlayerController->bInvertCameraY ? -1.f : 1.f);
+		}
+
 		// add yaw and pitch input to controller
 		AddControllerYawInput(Yaw);
 		AddControllerPitchInput(Pitch);

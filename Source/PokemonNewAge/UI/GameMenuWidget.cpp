@@ -9,6 +9,7 @@
 #include "Components/VerticalBoxSlot.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "PokemonNewAgePlayerController.h"
+#include "UI/Pokedex/PokedexScreenWidget.h"
 
 #define LOCTEXT_NAMESPACE "GameMenu"
 
@@ -19,6 +20,7 @@ TSharedRef<SWidget> UGameMenuWidget::RebuildWidget()
 		// Fond assombri sur tout l'écran, panneau à droite comme dans les jeux
 		UOverlay* Root = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("Root"));
 		WidgetTree->RootWidget = Root;
+		RootOverlay = Root;
 
 		UBorder* Dim = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Dim"));
 		Dim->SetBrushColor(FLinearColor(0.f, 0.f, 0.f, 0.35f));
@@ -33,16 +35,17 @@ TSharedRef<SWidget> UGameMenuWidget::RebuildWidget()
 		PanelSlot->SetHorizontalAlignment(HAlign_Right);
 		PanelSlot->SetVerticalAlignment(VAlign_Center);
 		PanelSlot->SetPadding(FMargin(0.f, 0.f, 60.f, 0.f));
+		ListPanel = Panel;
 
 		UVerticalBox* List = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("List"));
 		Panel->SetContent(List);
 
-		AddEntry(List, LOCTEXT("Pokedex", "Pokédex"), false);
-		AddEntry(List, LOCTEXT("Pokemon", "Pokémon"), false);
-		AddEntry(List, LOCTEXT("Bag", "Sac"), false);
-		AddEntry(List, LOCTEXT("Trainer", "Dresseur"), false);
-		AddEntry(List, LOCTEXT("Save", "Sauvegarder"), false);
-		AddEntry(List, LOCTEXT("Options", "Options"), false);
+		AddEntry(List, LOCTEXT("Pokedex", "Pokédex"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnPokedexClicked);
+		AddEntry(List, LOCTEXT("Pokemon", "Pokémon"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnPokemonClicked);
+		AddEntry(List, LOCTEXT("Bag", "Sac"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnBagClicked);
+		AddEntry(List, LOCTEXT("Trainer", "Dresseur"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTrainerClicked);
+		AddEntry(List, LOCTEXT("Save", "Sauvegarder"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnSaveClicked);
+		AddEntry(List, LOCTEXT("Options", "Options"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnOptionsClicked);
 		ResumeButton = AddEntry(List, LOCTEXT("Resume", "Reprendre"), true);
 		ResumeButton->OnClicked.AddDynamic(this, &UGameMenuWidget::OnResumeClicked);
 		UButton* QuitButton = AddEntry(List, LOCTEXT("Quit", "Quitter"), true);
@@ -104,6 +107,40 @@ void UGameMenuWidget::OnResumeClicked()
 void UGameMenuWidget::OnQuitClicked()
 {
 	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, false);
+}
+
+void UGameMenuWidget::OnPokedexClicked() { OpenScreen(EPokedexMenu::Pokedex); }
+void UGameMenuWidget::OnPokemonClicked() { OpenScreen(EPokedexMenu::Pokemon); }
+void UGameMenuWidget::OnBagClicked() { OpenScreen(EPokedexMenu::Bag); }
+void UGameMenuWidget::OnTrainerClicked() { OpenScreen(EPokedexMenu::Trainer); }
+void UGameMenuWidget::OnSaveClicked() { OpenScreen(EPokedexMenu::Save); }
+void UGameMenuWidget::OnOptionsClicked() { OpenScreen(EPokedexMenu::Options); }
+
+void UGameMenuWidget::OpenScreen(EPokedexMenu Menu)
+{
+	if (!Screen)
+	{
+		Screen = CreateWidget<UPokedexScreenWidget>(GetOwningPlayer(), UPokedexScreenWidget::StaticClass());
+		Screen->bStandalone = true;
+		Screen->OnRequestClose.AddUObject(this, &UGameMenuWidget::CloseScreen);
+		UOverlaySlot* ScreenSlot = RootOverlay->AddChildToOverlay(Screen);
+		ScreenSlot->SetHorizontalAlignment(HAlign_Center);
+		ScreenSlot->SetVerticalAlignment(VAlign_Center);
+	}
+	Screen->SetVisibility(ESlateVisibility::Visible);
+	ListPanel->SetVisibility(ESlateVisibility::Collapsed);
+	Screen->OpenMenu(Menu);
+	Screen->SetKeyboardFocus();
+}
+
+void UGameMenuWidget::CloseScreen()
+{
+	if (Screen)
+	{
+		Screen->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	ListPanel->SetVisibility(ESlateVisibility::Visible);
+	FocusDefaultEntry();
 }
 
 void UGameMenuWidget::CloseMenu()

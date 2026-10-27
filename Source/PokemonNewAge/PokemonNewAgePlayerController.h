@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Core/PokemonSaveGame.h"
+#include "Battle/BattleTypes.h"
 #include "PokemonNewAgePlayerController.generated.h"
 
 class UInputMappingContext;
@@ -11,6 +13,8 @@ class UUserWidget;
 class UInputAction;
 class UGameMenuWidget;
 class UBattleComponent;
+class UBattleHUDWidget;
+class APokedexDevice;
 
 /**
  *  Basic PlayerController class for a third person game
@@ -67,6 +71,42 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UGameMenuWidget> GameMenu;
 
+	/** Le menu est le Pokédex 3D (SCRUM-64). Sans DA_PokedexModel, le menu à plat prend le relais */
+	UPROPERTY(EditAnywhere, Category="UI")
+	bool bUsePokedex3D = true;
+
+	/** Classe du Pokédex 3D (un Blueprint enfant de PokedexDevice pour régler lumières, flou...) */
+	UPROPERTY(EditAnywhere, Category="UI")
+	TSubclassOf<APokedexDevice> PokedexDeviceClass;
+
+	/** Pokédex 3D ouvert, sinon nul */
+	UPROPERTY(Transient)
+	TObjectPtr<APokedexDevice> PokedexDevice;
+
+	/** Écran de combat (SCRUM-36), un Widget Blueprint enfant de BattleHUDWidget pour l'habiller */
+	UPROPERTY(EditAnywhere, Category="UI")
+	TSubclassOf<UBattleHUDWidget> BattleHUDClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBattleHUDWidget> BattleHUD;
+
+	/** Charge la sauvegarde au lancement s'il y en a une (SCRUM-52) */
+	UPROPERTY(EditAnywhere, Category="Save")
+	bool bLoadSaveOnStart = true;
+
+	/** Serveur : position chargée à donner au personnage dès qu'il existe */
+	bool bHasPendingTransform = false;
+	FVector PendingLocation = FVector::ZeroVector;
+	FRotator PendingRotation = FRotator::ZeroRotator;
+
+	/** Serveur : place le personnage à la position sauvegardée */
+	void ApplyPendingTransform();
+
+	virtual void OnPossess(APawn* InPawn) override;
+
+	UFUNCTION()
+	void HandleBattleStarted(const FBattleSnapshot& Snapshot);
+
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
 
@@ -98,7 +138,42 @@ public:
 
 	/** Vrai si le menu en jeu est ouvert */
 	UFUNCTION(BlueprintPure, Category="UI")
-	bool IsGameMenuOpen() const { return GameMenu != nullptr; }
+	bool IsGameMenuOpen() const { return GameMenu != nullptr || PokedexDevice != nullptr; }
+
+	/** Appelé par le Pokédex 3D à la fin de son animation de fermeture */
+	void OnPokedexClosed(APokedexDevice* Device);
+
+	/** Appelé par l'écran de combat quand il se retire */
+	void OnBattleHUDClosed();
+
+	/** Réglages du joueur (Options) : volume, sensibilité et sens de la caméra */
+	void ApplyGameOptions();
+
+	/** Lus par le personnage pour la caméra */
+	float CameraSensitivity = 1.f;
+	bool bInvertCameraY = false;
+
+	// ------------------------------------------------ Demandes au serveur depuis les menus (SCRUM-68)
+
+	/** Menu Pokémon > Déplacer */
+	UFUNCTION(Server, Reliable)
+	void ServerSwapPartyPokemon(int32 IndexA, int32 IndexB);
+
+	/** Sac > objet de soin hors combat */
+	UFUNCTION(Server, Reliable)
+	void ServerUseFieldItem(FName Item, int32 PartyIndex);
+
+	/** Au lancement : la sauvegarde du joueur (lue sur son PC) est remise dans son PlayerState */
+	UFUNCTION(Server, Reliable)
+	void ServerLoadSave(const FPlayerSaveData& Data);
+
+	/** Sauvegarde tout de suite (console) */
+	UFUNCTION(Exec)
+	void Sauvegarder();
+
+	/** Efface la sauvegarde : le prochain lancement repart de zéro (console) */
+	UFUNCTION(Exec)
+	void NouvellePartie();
 
 	// Commandes de test du combat, à taper dans la console (touche ²) tant que l'UI n'existe pas.
 	// Voir docs/COMBAT.md. Les numéros commencent à 1 comme à l'écran.

@@ -10,6 +10,12 @@
 #include "EnhancedInputComponent.h"
 #include "InputAction.h"
 #include "UI/GameMenuWidget.h"
+#include "UI/Battle/BattleHUDWidget.h"
+#include "UI/Pokedex/PokedexDevice.h"
+#include "UI/Pokedex/PokedexWidgets.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "TimerManager.h"
 #include "Battle/BattleComponent.h"
 #include "Battle/BattleSubsystem.h"
 #include "Core/PokemonPlayerState.h"
@@ -23,6 +29,7 @@
 APokemonNewAgePlayerController::APokemonNewAgePlayerController()
 {
 	BattleComponent = CreateDefaultSubobject<UBattleComponent>(TEXT("BattleComponent"));
+	PokedexDeviceClass = APokedexDevice::StaticClass();
 }
 
 void APokemonNewAgePlayerController::BeginPlay()
@@ -53,6 +60,24 @@ void APokemonNewAgePlayerController::BeginPlay()
 
 		}
 
+	}
+
+	if (IsLocalPlayerController())
+	{
+		ApplyGameOptions();
+
+		// Écran de combat : il apparaît à chaque début de combat
+		BattleComponent->OnBattleStarted.AddDynamic(this, &APokemonNewAgePlayerController::HandleBattleStarted);
+
+		// Reprendre la partie sauvegardée sur ce PC (SCRUM-52)
+		if (bLoadSaveOnStart)
+		{
+			if (const UPokemonSaveGame* Save = UPokemonSaveLibrary::LoadSaveGame())
+			{
+				ServerLoadSave(Save->Player);
+				UE_LOG(LogPokemonNewAge, Log, TEXT("Sauvegarde chargee (%s)"), *Save->SavedAt.ToString());
+			}
+		}
 	}
 }
 
@@ -116,9 +141,38 @@ void APokemonNewAgePlayerController::ToggleGameMenu()
 
 void APokemonNewAgePlayerController::OpenGameMenu()
 {
-	if (IsGameMenuOpen() || !IsLocalPlayerController())
+	if (IsGameMenuOpen() || !IsLocalPlayerController() || BattleComponent->IsInBattle() || BattleHUD)
 	{
 		return;
+	}
+
+	// Le Pokédex 3D (SCRUM-64)
+	if (bUsePokedex3D && PokedexDeviceClass)
+	{
+		FActorSpawnParameters Params;
+		Params.Owner = this;
+		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		APokedexDevice* Device = GetWorld()->SpawnActor<APokedexDevice>(PokedexDeviceClass, FTransform::Identity, Params);
+		if (Device && Device->InitializeFor(this))
+		{
+			PokedexDevice = Device;
+			// Pause en solo seulement : en ligne, le monde continue pour les autres (SCRUM-68)
+			if (GetNetMode() == NM_Standalone)
+			{
+				SetPause(true);
+			}
+			SetShowMouseCursor(true);
+			FInputModeUIOnly InputMode;
+			InputMode.SetWidgetToFocus(Device->GetInputWidget()->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+			Device->Open();
+			return;
+		}
+		if (Device)
+		{
+			Device->Destroy();
+		}
 	}
 
 	TSubclassOf<UGameMenuWidget> MenuClass = GameMenuClass ? GameMenuClass : TSubclassOf<UGameMenuWidget>(UGameMenuWidget::StaticClass());
@@ -130,8 +184,11 @@ void APokemonNewAgePlayerController::OpenGameMenu()
 	}
 	GameMenu->AddToPlayerScreen(10);
 
-	// Le monde se fige, la souris apparaît, le clavier et la manette pilotent le menu
-	SetPause(true);
+	// Le monde se fige (en solo), la souris apparaît, le clavier et la manette pilotent le menu
+	if (GetNetMode() == NM_Standalone)
+	{
+		SetPause(true);
+	}
 	SetShowMouseCursor(true);
 	FInputModeUIOnly InputMode;
 	InputMode.SetWidgetToFocus(GameMenu->TakeWidget());
@@ -147,12 +204,147 @@ void APokemonNewAgePlayerController::CloseGameMenu()
 		return;
 	}
 
+	// Le Pokédex se referme en animation, puis appelle OnPokedexClosed
+	if (PokedexDevice)
+	{
+		PokedexDevice->Close();
+		return;
+	}
+
 	GameMenu->RemoveFromParent();
 	GameMenu = nullptr;
 
 	SetPause(false);
 	SetShowMouseCursor(false);
 	SetInputMode(FInputModeGameOnly());
+}
+
+void APokemonNewAgePlayerController::OnPokedexClosed(APokedexDevice* Device)
+{
+	if (Device != PokedexDevice)
+	{
+		return;
+	}
+	PokedexDevice = nullptr;
+	SetPause(false);
+	SetShowMouseCursor(false);
+	SetInputMode(FInputModeGameOnly());
+}
+
+void APokemonNewAgePlayerController::HandleBattleStarted(const FBattleSnapshot& Snapshot)
+{
+	// Un combat peut commencer menu ouvert (dresseur qui nous voit en ligne) : on le ferme sans animation
+	if (PokedexDevice)
+	{
+		PokedexDevice->Close(true);
+	}
+	else if (GameMenu)
+	{
+		CloseGameMenu();
+	}
+
+	if (BattleHUD)
+	{
+		return;
+	}
+	TSubclassOf<UBattleHUDWidget> HUDClass = BattleHUDClass ? BattleHUDClass : TSubclassOf<UBattleHUDWidget>(UBattleHUDWidget::StaticClass());
+	BattleHUD = CreateWidget<UBattleHUDWidget>(this, HUDClass);
+	if (!BattleHUD)
+	{
+		return;
+	}
+	// L'écran de combat remplace les messages de test du combat
+	BattleComponent->bPrintEventsToScreen = false;
+	BattleHUD->AddToPlayerScreen(5);
+	BattleHUD->Begin(BattleComponent, Snapshot);
+
+	SetShowMouseCursor(true);
+	FInputModeUIOnly InputMode;
+	InputMode.SetWidgetToFocus(BattleHUD->TakeWidget());
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
+}
+
+void APokemonNewAgePlayerController::OnBattleHUDClosed()
+{
+	BattleHUD = nullptr;
+	SetShowMouseCursor(false);
+	SetInputMode(FInputModeGameOnly());
+}
+
+void APokemonNewAgePlayerController::ApplyGameOptions()
+{
+	const UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
+	CameraSensitivity = FMath::Clamp(Options->CameraSensitivity, 0.1f, 5.f);
+	bInvertCameraY = Options->bInvertCameraY;
+	UPokemonSaveLibrary::ApplyOptions(this, Options);
+}
+
+void APokemonNewAgePlayerController::ServerSwapPartyPokemon_Implementation(int32 IndexA, int32 IndexB)
+{
+	if (APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>(); State && !BattleComponent->IsInBattle())
+	{
+		State->SwapPartyPokemon(IndexA, IndexB);
+	}
+}
+
+void APokemonNewAgePlayerController::ServerUseFieldItem_Implementation(FName Item, int32 PartyIndex)
+{
+	if (APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>(); State && !BattleComponent->IsInBattle())
+	{
+		State->UseItemOnPokemon(UPokemonDataSubsystem::GetDatabase(this), Item, PartyIndex);
+	}
+}
+
+void APokemonNewAgePlayerController::ServerLoadSave_Implementation(const FPlayerSaveData& Data)
+{
+	APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>();
+	if (!State || BattleComponent->IsInBattle())
+	{
+		return;
+	}
+	State->ApplySaveData(Data);
+
+	if (Data.bHasTransform)
+	{
+		bHasPendingTransform = true;
+		PendingLocation = Data.PlayerLocation;
+		PendingRotation = Data.PlayerRotation;
+		ApplyPendingTransform();
+	}
+}
+
+void APokemonNewAgePlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+	ApplyPendingTransform();
+}
+
+void APokemonNewAgePlayerController::ApplyPendingTransform()
+{
+	ACharacter* PlayerCharacter = Cast<ACharacter>(GetPawn());
+	if (!bHasPendingTransform || !PlayerCharacter)
+	{
+		return;
+	}
+	bHasPendingTransform = false;
+
+	// Un peu plus haut, et sans gravité le temps que le terrain (World Partition) se charge autour du joueur
+	PlayerCharacter->TeleportTo(PendingLocation + FVector(0.f, 0.f, 50.f), FRotator(0.f, PendingRotation.Yaw, 0.f));
+	SetControlRotation(FRotator(0.f, PendingRotation.Yaw, 0.f));
+	if (UCharacterMovementComponent* Movement = PlayerCharacter->GetCharacterMovement())
+	{
+		Movement->DisableMovement();
+		TWeakObjectPtr<UCharacterMovementComponent> WeakMovement = Movement;
+		FTimerHandle Handle;
+		GetWorldTimerManager().SetTimer(Handle, [WeakMovement]()
+		{
+			if (UCharacterMovementComponent* M = WeakMovement.Get())
+			{
+				M->SetMovementMode(MOVE_Falling);
+			}
+		}, 1.5f, false);
+	}
 }
 
 bool APokemonNewAgePlayerController::ShouldUseTouchControls() const
@@ -301,4 +493,15 @@ void APokemonNewAgePlayerController::Equipe()
 			*UPokemonLibrary::GetDisplayName(Database, Pokemon).ToString(), Pokemon.Level, Pokemon.CurrentHP, Pokemon.GetMaxHP(),
 			Pokemon.Experience, *Moves));
 	}
+}
+
+void APokemonNewAgePlayerController::Sauvegarder()
+{
+	PrintDebug(UPokemonSaveLibrary::SaveGame(this) ? TEXT("Partie sauvegardee") : TEXT("Echec de la sauvegarde"));
+}
+
+void APokemonNewAgePlayerController::NouvellePartie()
+{
+	UPokemonSaveLibrary::DeleteSaveGame();
+	PrintDebug(TEXT("Sauvegarde effacee : relance le jeu pour une nouvelle partie"));
 }

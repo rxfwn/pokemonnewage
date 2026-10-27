@@ -71,7 +71,7 @@ Objectif : un combat sauvage complet du début à la fin.
 - **CMB-1** Arène de combat : placement des Pokémon et caméra de combat
 - **CMB-2** Boucle de tour : choix d'action, ordre selon la Vitesse
 - **CMB-3** Formule de dégâts (STAB, types, coups critiques, aléatoire)
-- **CMB-4** UI de combat : barres de PV, menu Attaque / Sac / Pokémon / Fuite
+- **CMB-4** (SCRUM-36) UI de combat : barres de PV, menu Attaque / Sac / Pokémon / Fuite (`docs/MENU_POKEDEX.md`)
 - **CMB-5** IA simple de l'adversaire
 - **CMB-6** Changement de Pokémon, K.O., fin de combat et fuite
 
@@ -99,10 +99,11 @@ Objectif : farmer des niveaux et voir son Pokémon évoluer.
 
 Objectif : le joueur peut gérer son aventure et la reprendre plus tard.
 
-- **DEX-2** UI du Pokédex : liste, fiche, modèle 3D qui tourne, compteur vu / capturé
+- **UI-0** (SCRUM-64) Menu en jeu : un Pokédex rouge en 3D qu'on tourne à la souris, 6 boutons (Pokémon, Pokédex, Sac, Dresseur, Sauvegarder, Options), voyants et sons (`docs/MENU_POKEDEX.md`)
+- **DEX-2** UI du Pokédex : liste, fiche, compteur vu / capturé (fait dans SCRUM-64 ; le modèle 3D du Pokémon dans la fiche reste à faire)
 - **UI-1** Menu équipe (ordre, détails, stats)
 - **UI-2** Sac : objets, Poké Balls, Potions
-- **UI-3** Sauvegarde et chargement
+- **UI-3** Sauvegarde et chargement (+ Options)
 - **UI-4** Centre Pokémon (soin) et Boutique (achat)
 
 ## Sprint 7 : jusqu'à Pierre, fin du MVP (semaines 15-16)
