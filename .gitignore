@@ -34,3 +34,6 @@ Thumbs.db
 *.log
 
 __pycache__/
+
+# Cache des CSV PokeAPI (Tools/Data/build_pokemon_data.py)
+Tools/Data/.cache/

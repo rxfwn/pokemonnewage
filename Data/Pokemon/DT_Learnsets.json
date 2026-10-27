@@ -1,0 +1,10646 @@
+[
+ {
+  "Name": "Bulbasaur",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 4,
+    "Move": "Growl"
+   },
+   {
+    "Level": 7,
+    "Move": "LeechSeed"
+   },
+   {
+    "Level": 10,
+    "Move": "VineWhip"
+   },
+   {
+    "Level": 15,
+    "Move": "PoisonPowder"
+   },
+   {
+    "Level": 15,
+    "Move": "SleepPowder"
+   },
+   {
+    "Level": 20,
+    "Move": "RazorLeaf"
+   },
+   {
+    "Level": 25,
+    "Move": "SweetScent"
+   },
+   {
+    "Level": 32,
+    "Move": "Growth"
+   },
+   {
+    "Level": 39,
+    "Move": "Synthesis"
+   },
+   {
+    "Level": 46,
+    "Move": "SolarBeam"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Strength",
+   "SolarBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "BulletSeed"
+  ]
+ },
+ {
+  "Name": "Ivysaur",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 1,
+    "Move": "LeechSeed"
+   },
+   {
+    "Level": 4,
+    "Move": "Growl"
+   },
+   {
+    "Level": 7,
+    "Move": "LeechSeed"
+   },
+   {
+    "Level": 10,
+    "Move": "VineWhip"
+   },
+   {
+    "Level": 15,
+    "Move": "PoisonPowder"
+   },
+   {
+    "Level": 15,
+    "Move": "SleepPowder"
+   },
+   {
+    "Level": 22,
+    "Move": "RazorLeaf"
+   },
+   {
+    "Level": 29,
+    "Move": "SweetScent"
+   },
+   {
+    "Level": 38,
+    "Move": "Growth"
+   },
+   {
+    "Level": 47,
+    "Move": "Synthesis"
+   },
+   {
+    "Level": 56,
+    "Move": "SolarBeam"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Strength",
+   "SolarBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "BulletSeed"
+  ]
+ },
+ {
+  "Name": "Venusaur",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 1,
+    "Move": "LeechSeed"
+   },
+   {
+    "Level": 1,
+    "Move": "VineWhip"
+   },
+   {
+    "Level": 4,
+    "Move": "Growl"
+   },
+   {
+    "Level": 7,
+    "Move": "LeechSeed"
+   },
+   {
+    "Level": 10,
+    "Move": "VineWhip"
+   },
+   {
+    "Level": 15,
+    "Move": "PoisonPowder"
+   },
+   {
+    "Level": 15,
+    "Move": "SleepPowder"
+   },
+   {
+    "Level": 22,
+    "Move": "RazorLeaf"
+   },
+   {
+    "Level": 29,
+    "Move": "SweetScent"
+   },
+   {
+    "Level": 41,
+    "Move": "Growth"
+   },
+   {
+    "Level": 53,
+    "Move": "Synthesis"
+   },
+   {
+    "Level": 65,
+    "Move": "SolarBeam"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Roar",
+   "HyperBeam",
+   "Strength",
+   "SolarBeam",
+   "Earthquake",
+   "Toxic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "BulletSeed"
+  ]
+ },
+ {
+  "Name": "Charmander",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 7,
+    "Move": "Ember"
+   },
+   {
+    "Level": 13,
+    "Move": "MetalClaw"
+   },
+   {
+    "Level": 19,
+    "Move": "Smokescreen"
+   },
+   {
+    "Level": 25,
+    "Move": "ScaryFace"
+   },
+   {
+    "Level": 31,
+    "Move": "Flamethrower"
+   },
+   {
+    "Level": 37,
+    "Move": "Slash"
+   },
+   {
+    "Level": 43,
+    "Move": "DragonRage"
+   },
+   {
+    "Level": 49,
+    "Move": "FireSpin"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Flamethrower",
+   "Strength",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "Overheat",
+   "AerialAce",
+   "DragonClaw"
+  ]
+ },
+ {
+  "Name": "Charmeleon",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 1,
+    "Move": "Ember"
+   },
+   {
+    "Level": 7,
+    "Move": "Ember"
+   },
+   {
+    "Level": 13,
+    "Move": "MetalClaw"
+   },
+   {
+    "Level": 20,
+    "Move": "Smokescreen"
+   },
+   {
+    "Level": 27,
+    "Move": "ScaryFace"
+   },
+   {
+    "Level": 34,
+    "Move": "Flamethrower"
+   },
+   {
+    "Level": 41,
+    "Move": "Slash"
+   },
+   {
+    "Level": 48,
+    "Move": "DragonRage"
+   },
+   {
+    "Level": 55,
+    "Move": "FireSpin"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Flamethrower",
+   "Strength",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "Overheat",
+   "AerialAce",
+   "DragonClaw"
+  ]
+ },
+ {
+  "Name": "Charizard",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "HeatWave"
+   },
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 1,
+    "Move": "Ember"
+   },
+   {
+    "Level": 1,
+    "Move": "MetalClaw"
+   },
+   {
+    "Level": 7,
+    "Move": "Ember"
+   },
+   {
+    "Level": 13,
+    "Move": "MetalClaw"
+   },
+   {
+    "Level": 20,
+    "Move": "Smokescreen"
+   },
+   {
+    "Level": 27,
+    "Move": "ScaryFace"
+   },
+   {
+    "Level": 34,
+    "Move": "Flamethrower"
+   },
+   {
+    "Level": 36,
+    "Move": "WingAttack"
+   },
+   {
+    "Level": 44,
+    "Move": "Slash"
+   },
+   {
+    "Level": 54,
+    "Move": "DragonRage"
+   },
+   {
+    "Level": 64,
+    "Move": "FireSpin"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Fly",
+   "Roar",
+   "Flamethrower",
+   "HyperBeam",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Protect",
+   "SteelWing",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "Overheat",
+   "AerialAce",
+   "DragonClaw"
+  ]
+ },
+ {
+  "Name": "Squirtle",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 4,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 7,
+    "Move": "Bubble"
+   },
+   {
+    "Level": 10,
+    "Move": "Withdraw"
+   },
+   {
+    "Level": 13,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 18,
+    "Move": "Bite"
+   },
+   {
+    "Level": 23,
+    "Move": "RapidSpin"
+   },
+   {
+    "Level": 28,
+    "Move": "Protect"
+   },
+   {
+    "Level": 33,
+    "Move": "RainDance"
+   },
+   {
+    "Level": 40,
+    "Move": "SkullBash"
+   },
+   {
+    "Level": 47,
+    "Move": "HydroPump"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "Strength",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Wartortle",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "Bubble"
+   },
+   {
+    "Level": 4,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 7,
+    "Move": "Bubble"
+   },
+   {
+    "Level": 10,
+    "Move": "Withdraw"
+   },
+   {
+    "Level": 13,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 19,
+    "Move": "Bite"
+   },
+   {
+    "Level": 25,
+    "Move": "RapidSpin"
+   },
+   {
+    "Level": 31,
+    "Move": "Protect"
+   },
+   {
+    "Level": 37,
+    "Move": "RainDance"
+   },
+   {
+    "Level": 45,
+    "Move": "SkullBash"
+   },
+   {
+    "Level": 53,
+    "Move": "HydroPump"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "Strength",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Blastoise",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "Bubble"
+   },
+   {
+    "Level": 1,
+    "Move": "Withdraw"
+   },
+   {
+    "Level": 4,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 7,
+    "Move": "Bubble"
+   },
+   {
+    "Level": 10,
+    "Move": "Withdraw"
+   },
+   {
+    "Level": 13,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 19,
+    "Move": "Bite"
+   },
+   {
+    "Level": 25,
+    "Move": "RapidSpin"
+   },
+   {
+    "Level": 31,
+    "Move": "Protect"
+   },
+   {
+    "Level": 42,
+    "Move": "RainDance"
+   },
+   {
+    "Level": 55,
+    "Move": "SkullBash"
+   },
+   {
+    "Level": 68,
+    "Move": "HydroPump"
+   }
+  ],
+  "MachineMoves": [
+   "Roar",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Caterpie",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "StringShot"
+   }
+  ],
+  "MachineMoves": []
+ },
+ {
+  "Name": "Metapod",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Harden"
+   },
+   {
+    "Level": 7,
+    "Move": "Harden"
+   }
+  ],
+  "MachineMoves": []
+ },
+ {
+  "Name": "Butterfree",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 10,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 13,
+    "Move": "PoisonPowder"
+   },
+   {
+    "Level": 14,
+    "Move": "StunSpore"
+   },
+   {
+    "Level": 15,
+    "Move": "SleepPowder"
+   },
+   {
+    "Level": 18,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 23,
+    "Move": "Whirlwind"
+   },
+   {
+    "Level": 28,
+    "Move": "Gust"
+   },
+   {
+    "Level": 34,
+    "Move": "Psybeam"
+   },
+   {
+    "Level": 40,
+    "Move": "Safeguard"
+   },
+   {
+    "Level": 47,
+    "Move": "SilverWind"
+   }
+  ],
+  "MachineMoves": [
+   "HyperBeam",
+   "SolarBeam",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Facade",
+   "SkillSwap",
+   "SecretPower",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Weedle",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "PoisonSting"
+   },
+   {
+    "Level": 1,
+    "Move": "StringShot"
+   }
+  ],
+  "MachineMoves": []
+ },
+ {
+  "Name": "Kakuna",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Harden"
+   },
+   {
+    "Level": 7,
+    "Move": "Harden"
+   }
+  ],
+  "MachineMoves": []
+ },
+ {
+  "Name": "Beedrill",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 10,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 15,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 20,
+    "Move": "Twineedle"
+   },
+   {
+    "Level": 25,
+    "Move": "Rage"
+   },
+   {
+    "Level": 30,
+    "Move": "Pursuit"
+   },
+   {
+    "Level": 35,
+    "Move": "PinMissile"
+   },
+   {
+    "Level": 40,
+    "Move": "Agility"
+   },
+   {
+    "Level": 45,
+    "Move": "Endeavor"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "HyperBeam",
+   "SolarBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "BrickBreak",
+   "SecretPower",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Pidgey",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 5,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 9,
+    "Move": "Gust"
+   },
+   {
+    "Level": 13,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 19,
+    "Move": "Whirlwind"
+   },
+   {
+    "Level": 25,
+    "Move": "WingAttack"
+   },
+   {
+    "Level": 31,
+    "Move": "FeatherDance"
+   },
+   {
+    "Level": 39,
+    "Move": "Agility"
+   },
+   {
+    "Level": 47,
+    "Move": "MirrorMove"
+   }
+  ],
+  "MachineMoves": [
+   "Fly",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SteelWing",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Pidgeotto",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 1,
+    "Move": "Gust"
+   },
+   {
+    "Level": 5,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 9,
+    "Move": "Gust"
+   },
+   {
+    "Level": 13,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 20,
+    "Move": "Whirlwind"
+   },
+   {
+    "Level": 27,
+    "Move": "WingAttack"
+   },
+   {
+    "Level": 34,
+    "Move": "FeatherDance"
+   },
+   {
+    "Level": 43,
+    "Move": "Agility"
+   },
+   {
+    "Level": 52,
+    "Move": "MirrorMove"
+   }
+  ],
+  "MachineMoves": [
+   "Fly",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SteelWing",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Pidgeot",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 1,
+    "Move": "Gust"
+   },
+   {
+    "Level": 1,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 5,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 9,
+    "Move": "Gust"
+   },
+   {
+    "Level": 13,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 20,
+    "Move": "Whirlwind"
+   },
+   {
+    "Level": 27,
+    "Move": "WingAttack"
+   },
+   {
+    "Level": 34,
+    "Move": "FeatherDance"
+   },
+   {
+    "Level": 48,
+    "Move": "Agility"
+   },
+   {
+    "Level": 62,
+    "Move": "MirrorMove"
+   }
+  ],
+  "MachineMoves": [
+   "Fly",
+   "HyperBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SteelWing",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Rattata",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 7,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 13,
+    "Move": "HyperFang"
+   },
+   {
+    "Level": 20,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 27,
+    "Move": "Pursuit"
+   },
+   {
+    "Level": 34,
+    "Move": "SuperFang"
+   },
+   {
+    "Level": 41,
+    "Move": "Endeavor"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "IceBeam",
+   "Blizzard",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "RockSmash",
+   "Facade",
+   "Taunt",
+   "SecretPower",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Raticate",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 7,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 13,
+    "Move": "HyperFang"
+   },
+   {
+    "Level": 20,
+    "Move": "ScaryFace"
+   },
+   {
+    "Level": 30,
+    "Move": "Pursuit"
+   },
+   {
+    "Level": 40,
+    "Move": "SuperFang"
+   },
+   {
+    "Level": 50,
+    "Move": "Endeavor"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Roar",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "RockSmash",
+   "Facade",
+   "Taunt",
+   "SecretPower",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Spearow",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Peck"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 7,
+    "Move": "Leer"
+   },
+   {
+    "Level": 13,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 19,
+    "Move": "Pursuit"
+   },
+   {
+    "Level": 25,
+    "Move": "AerialAce"
+   },
+   {
+    "Level": 31,
+    "Move": "MirrorMove"
+   },
+   {
+    "Level": 37,
+    "Move": "DrillPeck"
+   },
+   {
+    "Level": 43,
+    "Move": "Agility"
+   }
+  ],
+  "MachineMoves": [
+   "Fly",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SteelWing",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Fearow",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Peck"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 1,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 7,
+    "Move": "Leer"
+   },
+   {
+    "Level": 13,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 26,
+    "Move": "Pursuit"
+   },
+   {
+    "Level": 32,
+    "Move": "MirrorMove"
+   },
+   {
+    "Level": 40,
+    "Move": "DrillPeck"
+   },
+   {
+    "Level": 47,
+    "Move": "Agility"
+   }
+  ],
+  "MachineMoves": [
+   "Fly",
+   "HyperBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SteelWing",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Ekans",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Wrap"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 8,
+    "Move": "PoisonSting"
+   },
+   {
+    "Level": 13,
+    "Move": "Bite"
+   },
+   {
+    "Level": 20,
+    "Move": "Glare"
+   },
+   {
+    "Level": 25,
+    "Move": "Screech"
+   },
+   {
+    "Level": 32,
+    "Move": "Acid"
+   },
+   {
+    "Level": 37,
+    "Move": "Stockpile"
+   },
+   {
+    "Level": 37,
+    "Move": "Swallow"
+   },
+   {
+    "Level": 37,
+    "Move": "SpitUp"
+   },
+   {
+    "Level": 44,
+    "Move": "Haze"
+   }
+  ],
+  "MachineMoves": [
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "Torment",
+   "Facade",
+   "Snatch",
+   "SecretPower"
+  ]
+ },
+ {
+  "Name": "Arbok",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Wrap"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 1,
+    "Move": "PoisonSting"
+   },
+   {
+    "Level": 1,
+    "Move": "Bite"
+   },
+   {
+    "Level": 8,
+    "Move": "PoisonSting"
+   },
+   {
+    "Level": 13,
+    "Move": "Bite"
+   },
+   {
+    "Level": 20,
+    "Move": "Glare"
+   },
+   {
+    "Level": 28,
+    "Move": "Screech"
+   },
+   {
+    "Level": 38,
+    "Move": "Acid"
+   },
+   {
+    "Level": 46,
+    "Move": "Stockpile"
+   },
+   {
+    "Level": 46,
+    "Move": "Swallow"
+   },
+   {
+    "Level": 46,
+    "Move": "SpitUp"
+   },
+   {
+    "Level": 56,
+    "Move": "Haze"
+   }
+  ],
+  "MachineMoves": [
+   "HyperBeam",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "Torment",
+   "Facade",
+   "Snatch",
+   "SecretPower"
+  ]
+ },
+ {
+  "Name": "Pikachu",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "ThunderShock"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 6,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 8,
+    "Move": "ThunderWave"
+   },
+   {
+    "Level": 11,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 15,
+    "Move": "DoubleTeam"
+   },
+   {
+    "Level": 20,
+    "Move": "Slam"
+   },
+   {
+    "Level": 26,
+    "Move": "Thunderbolt"
+   },
+   {
+    "Level": 33,
+    "Move": "Agility"
+   },
+   {
+    "Level": 41,
+    "Move": "Thunder"
+   },
+   {
+    "Level": 50,
+    "Move": "LightScreen"
+   }
+  ],
+  "MachineMoves": [
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "LightScreen",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Raichu",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "ThunderShock"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 1,
+    "Move": "Thunderbolt"
+   }
+  ],
+  "MachineMoves": [
+   "HyperBeam",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "LightScreen",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Sandshrew",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 6,
+    "Move": "DefenseCurl"
+   },
+   {
+    "Level": 11,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 17,
+    "Move": "PoisonSting"
+   },
+   {
+    "Level": 23,
+    "Move": "Slash"
+   },
+   {
+    "Level": 30,
+    "Move": "Swift"
+   },
+   {
+    "Level": 37,
+    "Move": "FurySwipes"
+   },
+   {
+    "Level": 45,
+    "Move": "SandTomb"
+   },
+   {
+    "Level": 53,
+    "Move": "Sandstorm"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Sandslash",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 1,
+    "Move": "DefenseCurl"
+   },
+   {
+    "Level": 1,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 6,
+    "Move": "DefenseCurl"
+   },
+   {
+    "Level": 11,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 17,
+    "Move": "PoisonSting"
+   },
+   {
+    "Level": 24,
+    "Move": "Slash"
+   },
+   {
+    "Level": 33,
+    "Move": "Swift"
+   },
+   {
+    "Level": 42,
+    "Move": "FurySwipes"
+   },
+   {
+    "Level": 52,
+    "Move": "SandTomb"
+   },
+   {
+    "Level": 62,
+    "Move": "Sandstorm"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "HyperBeam",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "NidoranF",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 8,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 12,
+    "Move": "DoubleKick"
+   },
+   {
+    "Level": 17,
+    "Move": "PoisonSting"
+   },
+   {
+    "Level": 20,
+    "Move": "Bite"
+   },
+   {
+    "Level": 23,
+    "Move": "HelpingHand"
+   },
+   {
+    "Level": 30,
+    "Move": "FurySwipes"
+   },
+   {
+    "Level": 38,
+    "Move": "Flatter"
+   },
+   {
+    "Level": 47,
+    "Move": "Crunch"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "IceBeam",
+   "Blizzard",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "AerialAce",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Nidorina",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 8,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 12,
+    "Move": "DoubleKick"
+   },
+   {
+    "Level": 18,
+    "Move": "PoisonSting"
+   },
+   {
+    "Level": 22,
+    "Move": "Bite"
+   },
+   {
+    "Level": 26,
+    "Move": "HelpingHand"
+   },
+   {
+    "Level": 34,
+    "Move": "FurySwipes"
+   },
+   {
+    "Level": 43,
+    "Move": "Flatter"
+   },
+   {
+    "Level": 53,
+    "Move": "Crunch"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "IceBeam",
+   "Blizzard",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "AerialAce",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Nidoqueen",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "DoubleKick"
+   },
+   {
+    "Level": 1,
+    "Move": "PoisonSting"
+   },
+   {
+    "Level": 22,
+    "Move": "BodySlam"
+   },
+   {
+    "Level": 43,
+    "Move": "Superpower"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Roar",
+   "Flamethrower",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "RockSmash",
+   "Torment",
+   "Facade",
+   "FocusPunch",
+   "Taunt",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "AerialAce",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "NidoranM",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 1,
+    "Move": "Peck"
+   },
+   {
+    "Level": 8,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 12,
+    "Move": "DoubleKick"
+   },
+   {
+    "Level": 17,
+    "Move": "PoisonSting"
+   },
+   {
+    "Level": 20,
+    "Move": "HornAttack"
+   },
+   {
+    "Level": 23,
+    "Move": "HelpingHand"
+   },
+   {
+    "Level": 30,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 38,
+    "Move": "Flatter"
+   },
+   {
+    "Level": 47,
+    "Move": "HornDrill"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "IceBeam",
+   "Blizzard",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Nidorino",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 1,
+    "Move": "Peck"
+   },
+   {
+    "Level": 8,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 12,
+    "Move": "DoubleKick"
+   },
+   {
+    "Level": 18,
+    "Move": "PoisonSting"
+   },
+   {
+    "Level": 22,
+    "Move": "HornAttack"
+   },
+   {
+    "Level": 26,
+    "Move": "HelpingHand"
+   },
+   {
+    "Level": 34,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 43,
+    "Move": "Flatter"
+   },
+   {
+    "Level": 53,
+    "Move": "HornDrill"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "IceBeam",
+   "Blizzard",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Nidoking",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Peck"
+   },
+   {
+    "Level": 1,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 1,
+    "Move": "DoubleKick"
+   },
+   {
+    "Level": 1,
+    "Move": "PoisonSting"
+   },
+   {
+    "Level": 22,
+    "Move": "Thrash"
+   },
+   {
+    "Level": 43,
+    "Move": "Megahorn"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Roar",
+   "Flamethrower",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "RockSmash",
+   "Torment",
+   "Facade",
+   "FocusPunch",
+   "Taunt",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Clefairy",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Pound"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 5,
+    "Move": "Encore"
+   },
+   {
+    "Level": 9,
+    "Move": "Sing"
+   },
+   {
+    "Level": 13,
+    "Move": "DoubleSlap"
+   },
+   {
+    "Level": 17,
+    "Move": "FollowMe"
+   },
+   {
+    "Level": 21,
+    "Move": "Minimize"
+   },
+   {
+    "Level": 25,
+    "Move": "DefenseCurl"
+   },
+   {
+    "Level": 29,
+    "Move": "Metronome"
+   },
+   {
+    "Level": 33,
+    "Move": "CosmicPower"
+   },
+   {
+    "Level": 37,
+    "Move": "Moonlight"
+   },
+   {
+    "Level": 41,
+    "Move": "LightScreen"
+   },
+   {
+    "Level": 45,
+    "Move": "MeteorMash"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "IceBeam",
+   "Blizzard",
+   "Strength",
+   "SolarBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "FireBlast",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "Snatch",
+   "SecretPower",
+   "CalmMind",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Clefable",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Sing"
+   },
+   {
+    "Level": 1,
+    "Move": "DoubleSlap"
+   },
+   {
+    "Level": 1,
+    "Move": "Minimize"
+   },
+   {
+    "Level": 1,
+    "Move": "Metronome"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "SolarBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "FireBlast",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "Snatch",
+   "SecretPower",
+   "CalmMind",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Vulpix",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Ember"
+   },
+   {
+    "Level": 5,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 9,
+    "Move": "Roar"
+   },
+   {
+    "Level": 13,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 17,
+    "Move": "WillOWisp"
+   },
+   {
+    "Level": 21,
+    "Move": "ConfuseRay"
+   },
+   {
+    "Level": 25,
+    "Move": "Imprison"
+   },
+   {
+    "Level": 29,
+    "Move": "Flamethrower"
+   },
+   {
+    "Level": 33,
+    "Move": "Safeguard"
+   },
+   {
+    "Level": 37,
+    "Move": "Grudge"
+   },
+   {
+    "Level": 41,
+    "Move": "FireSpin"
+   }
+  ],
+  "MachineMoves": [
+   "Roar",
+   "Flamethrower",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "IronTail",
+   "HiddenPower",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "Overheat"
+  ]
+ },
+ {
+  "Name": "Ninetales",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Ember"
+   },
+   {
+    "Level": 1,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 1,
+    "Move": "ConfuseRay"
+   },
+   {
+    "Level": 1,
+    "Move": "Safeguard"
+   },
+   {
+    "Level": 45,
+    "Move": "FireSpin"
+   }
+  ],
+  "MachineMoves": [
+   "Roar",
+   "Flamethrower",
+   "HyperBeam",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "IronTail",
+   "HiddenPower",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "Overheat"
+  ]
+ },
+ {
+  "Name": "Jigglypuff",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Sing"
+   },
+   {
+    "Level": 4,
+    "Move": "DefenseCurl"
+   },
+   {
+    "Level": 9,
+    "Move": "Pound"
+   },
+   {
+    "Level": 14,
+    "Move": "Disable"
+   },
+   {
+    "Level": 19,
+    "Move": "Rollout"
+   },
+   {
+    "Level": 24,
+    "Move": "DoubleSlap"
+   },
+   {
+    "Level": 29,
+    "Move": "Rest"
+   },
+   {
+    "Level": 34,
+    "Move": "BodySlam"
+   },
+   {
+    "Level": 39,
+    "Move": "Mimic"
+   },
+   {
+    "Level": 44,
+    "Move": "HyperVoice"
+   },
+   {
+    "Level": 49,
+    "Move": "DoubleEdge"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "IceBeam",
+   "Blizzard",
+   "Strength",
+   "SolarBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "FireBlast",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "Snatch",
+   "SecretPower",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Wigglytuff",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Sing"
+   },
+   {
+    "Level": 1,
+    "Move": "Disable"
+   },
+   {
+    "Level": 1,
+    "Move": "DefenseCurl"
+   },
+   {
+    "Level": 1,
+    "Move": "DoubleSlap"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "SolarBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "FireBlast",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "Snatch",
+   "SecretPower",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Zubat",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "LeechLife"
+   },
+   {
+    "Level": 6,
+    "Move": "Astonish"
+   },
+   {
+    "Level": 11,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 16,
+    "Move": "Bite"
+   },
+   {
+    "Level": 21,
+    "Move": "WingAttack"
+   },
+   {
+    "Level": 26,
+    "Move": "ConfuseRay"
+   },
+   {
+    "Level": 31,
+    "Move": "AirCutter"
+   },
+   {
+    "Level": 36,
+    "Move": "MeanLook"
+   },
+   {
+    "Level": 41,
+    "Move": "PoisonFang"
+   },
+   {
+    "Level": 46,
+    "Move": "Haze"
+   }
+  ],
+  "MachineMoves": [
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "SteelWing",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Torment",
+   "Facade",
+   "Taunt",
+   "Snatch",
+   "SecretPower",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Golbat",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Screech"
+   },
+   {
+    "Level": 1,
+    "Move": "LeechLife"
+   },
+   {
+    "Level": 1,
+    "Move": "Astonish"
+   },
+   {
+    "Level": 1,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 6,
+    "Move": "Astonish"
+   },
+   {
+    "Level": 11,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 16,
+    "Move": "Bite"
+   },
+   {
+    "Level": 21,
+    "Move": "WingAttack"
+   },
+   {
+    "Level": 28,
+    "Move": "ConfuseRay"
+   },
+   {
+    "Level": 35,
+    "Move": "AirCutter"
+   },
+   {
+    "Level": 42,
+    "Move": "MeanLook"
+   },
+   {
+    "Level": 49,
+    "Move": "PoisonFang"
+   },
+   {
+    "Level": 56,
+    "Move": "Haze"
+   }
+  ],
+  "MachineMoves": [
+   "HyperBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "SteelWing",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Torment",
+   "Facade",
+   "Taunt",
+   "Snatch",
+   "SecretPower",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Oddish",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Absorb"
+   },
+   {
+    "Level": 7,
+    "Move": "SweetScent"
+   },
+   {
+    "Level": 14,
+    "Move": "PoisonPowder"
+   },
+   {
+    "Level": 16,
+    "Move": "StunSpore"
+   },
+   {
+    "Level": 18,
+    "Move": "SleepPowder"
+   },
+   {
+    "Level": 23,
+    "Move": "Acid"
+   },
+   {
+    "Level": 32,
+    "Move": "Moonlight"
+   },
+   {
+    "Level": 39,
+    "Move": "PetalDance"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "SolarBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "BulletSeed"
+  ]
+ },
+ {
+  "Name": "Gloom",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Absorb"
+   },
+   {
+    "Level": 1,
+    "Move": "SweetScent"
+   },
+   {
+    "Level": 1,
+    "Move": "PoisonPowder"
+   },
+   {
+    "Level": 7,
+    "Move": "SweetScent"
+   },
+   {
+    "Level": 14,
+    "Move": "PoisonPowder"
+   },
+   {
+    "Level": 16,
+    "Move": "StunSpore"
+   },
+   {
+    "Level": 18,
+    "Move": "SleepPowder"
+   },
+   {
+    "Level": 24,
+    "Move": "Acid"
+   },
+   {
+    "Level": 35,
+    "Move": "Moonlight"
+   },
+   {
+    "Level": 44,
+    "Move": "PetalDance"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "SolarBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "BulletSeed"
+  ]
+ },
+ {
+  "Name": "Vileplume",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Absorb"
+   },
+   {
+    "Level": 1,
+    "Move": "Aromatherapy"
+   },
+   {
+    "Level": 1,
+    "Move": "StunSpore"
+   },
+   {
+    "Level": 1,
+    "Move": "MegaDrain"
+   },
+   {
+    "Level": 44,
+    "Move": "PetalDance"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "HyperBeam",
+   "SolarBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "BulletSeed"
+  ]
+ },
+ {
+  "Name": "Paras",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 7,
+    "Move": "StunSpore"
+   },
+   {
+    "Level": 13,
+    "Move": "PoisonPowder"
+   },
+   {
+    "Level": 19,
+    "Move": "LeechLife"
+   },
+   {
+    "Level": 25,
+    "Move": "Spore"
+   },
+   {
+    "Level": 31,
+    "Move": "Slash"
+   },
+   {
+    "Level": 37,
+    "Move": "Growth"
+   },
+   {
+    "Level": 43,
+    "Move": "GigaDrain"
+   },
+   {
+    "Level": 49,
+    "Move": "Aromatherapy"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "SolarBeam",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "BulletSeed",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Parasect",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 1,
+    "Move": "StunSpore"
+   },
+   {
+    "Level": 1,
+    "Move": "PoisonPowder"
+   },
+   {
+    "Level": 7,
+    "Move": "StunSpore"
+   },
+   {
+    "Level": 13,
+    "Move": "PoisonPowder"
+   },
+   {
+    "Level": 19,
+    "Move": "LeechLife"
+   },
+   {
+    "Level": 27,
+    "Move": "Spore"
+   },
+   {
+    "Level": 35,
+    "Move": "Slash"
+   },
+   {
+    "Level": 43,
+    "Move": "Growth"
+   },
+   {
+    "Level": 51,
+    "Move": "GigaDrain"
+   },
+   {
+    "Level": 59,
+    "Move": "Aromatherapy"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "HyperBeam",
+   "SolarBeam",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "BulletSeed",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Venonat",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "Disable"
+   },
+   {
+    "Level": 1,
+    "Move": "Foresight"
+   },
+   {
+    "Level": 9,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 17,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 20,
+    "Move": "PoisonPowder"
+   },
+   {
+    "Level": 25,
+    "Move": "LeechLife"
+   },
+   {
+    "Level": 28,
+    "Move": "StunSpore"
+   },
+   {
+    "Level": 33,
+    "Move": "Psybeam"
+   },
+   {
+    "Level": 36,
+    "Move": "SleepPowder"
+   },
+   {
+    "Level": 41,
+    "Move": "Psychic"
+   }
+  ],
+  "MachineMoves": [
+   "SolarBeam",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "Facade",
+   "SkillSwap",
+   "SecretPower"
+  ]
+ },
+ {
+  "Name": "Venomoth",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "SilverWind"
+   },
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "Disable"
+   },
+   {
+    "Level": 1,
+    "Move": "Foresight"
+   },
+   {
+    "Level": 1,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 9,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 17,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 20,
+    "Move": "PoisonPowder"
+   },
+   {
+    "Level": 25,
+    "Move": "LeechLife"
+   },
+   {
+    "Level": 28,
+    "Move": "StunSpore"
+   },
+   {
+    "Level": 31,
+    "Move": "Gust"
+   },
+   {
+    "Level": 36,
+    "Move": "Psybeam"
+   },
+   {
+    "Level": 42,
+    "Move": "SleepPowder"
+   },
+   {
+    "Level": 52,
+    "Move": "Psychic"
+   }
+  ],
+  "MachineMoves": [
+   "HyperBeam",
+   "SolarBeam",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "Facade",
+   "SkillSwap",
+   "SecretPower",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Diglett",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 5,
+    "Move": "Growl"
+   },
+   {
+    "Level": 9,
+    "Move": "Magnitude"
+   },
+   {
+    "Level": 17,
+    "Move": "Dig"
+   },
+   {
+    "Level": 21,
+    "Move": "FurySwipes"
+   },
+   {
+    "Level": 25,
+    "Move": "MudSlap"
+   },
+   {
+    "Level": 33,
+    "Move": "Slash"
+   },
+   {
+    "Level": 41,
+    "Move": "Earthquake"
+   },
+   {
+    "Level": 49,
+    "Move": "Fissure"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "RockTomb",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Dugtrio",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "TriAttack"
+   },
+   {
+    "Level": 1,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 5,
+    "Move": "Growl"
+   },
+   {
+    "Level": 9,
+    "Move": "Magnitude"
+   },
+   {
+    "Level": 17,
+    "Move": "Dig"
+   },
+   {
+    "Level": 21,
+    "Move": "FurySwipes"
+   },
+   {
+    "Level": 25,
+    "Move": "MudSlap"
+   },
+   {
+    "Level": 26,
+    "Move": "SandTomb"
+   },
+   {
+    "Level": 38,
+    "Move": "Slash"
+   },
+   {
+    "Level": 51,
+    "Move": "Earthquake"
+   },
+   {
+    "Level": 64,
+    "Move": "Fissure"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "HyperBeam",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "RockTomb",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Meowth",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 10,
+    "Move": "Bite"
+   },
+   {
+    "Level": 18,
+    "Move": "PayDay"
+   },
+   {
+    "Level": 25,
+    "Move": "FeintAttack"
+   },
+   {
+    "Level": 31,
+    "Move": "Screech"
+   },
+   {
+    "Level": 36,
+    "Move": "FurySwipes"
+   },
+   {
+    "Level": 40,
+    "Move": "Slash"
+   },
+   {
+    "Level": 43,
+    "Move": "FakeOut"
+   },
+   {
+    "Level": 45,
+    "Move": "Swagger"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Torment",
+   "Facade",
+   "Taunt",
+   "Snatch",
+   "SecretPower",
+   "AerialAce",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Persian",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 1,
+    "Move": "Bite"
+   },
+   {
+    "Level": 10,
+    "Move": "Bite"
+   },
+   {
+    "Level": 18,
+    "Move": "PayDay"
+   },
+   {
+    "Level": 25,
+    "Move": "FeintAttack"
+   },
+   {
+    "Level": 34,
+    "Move": "Screech"
+   },
+   {
+    "Level": 42,
+    "Move": "FurySwipes"
+   },
+   {
+    "Level": 49,
+    "Move": "Slash"
+   },
+   {
+    "Level": 55,
+    "Move": "FakeOut"
+   },
+   {
+    "Level": 61,
+    "Move": "Swagger"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Roar",
+   "HyperBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Torment",
+   "Facade",
+   "Taunt",
+   "Snatch",
+   "SecretPower",
+   "AerialAce",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Psyduck",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "WaterSport"
+   },
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 5,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 10,
+    "Move": "Disable"
+   },
+   {
+    "Level": 16,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 23,
+    "Move": "Screech"
+   },
+   {
+    "Level": 31,
+    "Move": "PsychUp"
+   },
+   {
+    "Level": 40,
+    "Move": "FurySwipes"
+   },
+   {
+    "Level": 50,
+    "Move": "HydroPump"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "Strength",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "AerialAce",
+   "CalmMind",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Golduck",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "WaterSport"
+   },
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "Disable"
+   },
+   {
+    "Level": 5,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 10,
+    "Move": "Disable"
+   },
+   {
+    "Level": 16,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 23,
+    "Move": "Screech"
+   },
+   {
+    "Level": 31,
+    "Move": "PsychUp"
+   },
+   {
+    "Level": 44,
+    "Move": "FurySwipes"
+   },
+   {
+    "Level": 58,
+    "Move": "HydroPump"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "AerialAce",
+   "CalmMind",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Mankey",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 6,
+    "Move": "LowKick"
+   },
+   {
+    "Level": 11,
+    "Move": "KarateChop"
+   },
+   {
+    "Level": 16,
+    "Move": "FurySwipes"
+   },
+   {
+    "Level": 21,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 26,
+    "Move": "SeismicToss"
+   },
+   {
+    "Level": 31,
+    "Move": "CrossChop"
+   },
+   {
+    "Level": 36,
+    "Move": "Swagger"
+   },
+   {
+    "Level": 41,
+    "Move": "Screech"
+   },
+   {
+    "Level": 46,
+    "Move": "Thrash"
+   }
+  ],
+  "MachineMoves": [
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "Taunt",
+   "BrickBreak",
+   "SecretPower",
+   "Overheat",
+   "RockTomb",
+   "AerialAce",
+   "BulkUp"
+  ]
+ },
+ {
+  "Name": "Primeape",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 1,
+    "Move": "LowKick"
+   },
+   {
+    "Level": 1,
+    "Move": "Rage"
+   },
+   {
+    "Level": 6,
+    "Move": "LowKick"
+   },
+   {
+    "Level": 11,
+    "Move": "KarateChop"
+   },
+   {
+    "Level": 16,
+    "Move": "FurySwipes"
+   },
+   {
+    "Level": 21,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 26,
+    "Move": "SeismicToss"
+   },
+   {
+    "Level": 28,
+    "Move": "Rage"
+   },
+   {
+    "Level": 35,
+    "Move": "CrossChop"
+   },
+   {
+    "Level": 44,
+    "Move": "Swagger"
+   },
+   {
+    "Level": 53,
+    "Move": "Screech"
+   },
+   {
+    "Level": 62,
+    "Move": "Thrash"
+   }
+  ],
+  "MachineMoves": [
+   "HyperBeam",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "Taunt",
+   "BrickBreak",
+   "SecretPower",
+   "Overheat",
+   "RockTomb",
+   "AerialAce",
+   "BulkUp"
+  ]
+ },
+ {
+  "Name": "Growlithe",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Bite"
+   },
+   {
+    "Level": 1,
+    "Move": "Roar"
+   },
+   {
+    "Level": 7,
+    "Move": "Ember"
+   },
+   {
+    "Level": 13,
+    "Move": "Leer"
+   },
+   {
+    "Level": 19,
+    "Move": "OdorSleuth"
+   },
+   {
+    "Level": 25,
+    "Move": "TakeDown"
+   },
+   {
+    "Level": 31,
+    "Move": "FlameWheel"
+   },
+   {
+    "Level": 37,
+    "Move": "HelpingHand"
+   },
+   {
+    "Level": 43,
+    "Move": "Agility"
+   },
+   {
+    "Level": 49,
+    "Move": "Flamethrower"
+   }
+  ],
+  "MachineMoves": [
+   "Roar",
+   "Flamethrower",
+   "Strength",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "Overheat",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Arcanine",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Bite"
+   },
+   {
+    "Level": 1,
+    "Move": "Roar"
+   },
+   {
+    "Level": 1,
+    "Move": "Ember"
+   },
+   {
+    "Level": 1,
+    "Move": "OdorSleuth"
+   },
+   {
+    "Level": 49,
+    "Move": "ExtremeSpeed"
+   }
+  ],
+  "MachineMoves": [
+   "Roar",
+   "Flamethrower",
+   "HyperBeam",
+   "Strength",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "Overheat",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Poliwag",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Bubble"
+   },
+   {
+    "Level": 7,
+    "Move": "Hypnosis"
+   },
+   {
+    "Level": 13,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 19,
+    "Move": "DoubleSlap"
+   },
+   {
+    "Level": 25,
+    "Move": "RainDance"
+   },
+   {
+    "Level": 31,
+    "Move": "BodySlam"
+   },
+   {
+    "Level": 37,
+    "Move": "BellyDrum"
+   },
+   {
+    "Level": 43,
+    "Move": "HydroPump"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "Dig",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Poliwhirl",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Bubble"
+   },
+   {
+    "Level": 1,
+    "Move": "Hypnosis"
+   },
+   {
+    "Level": 1,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 7,
+    "Move": "Hypnosis"
+   },
+   {
+    "Level": 13,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 19,
+    "Move": "DoubleSlap"
+   },
+   {
+    "Level": 27,
+    "Move": "RainDance"
+   },
+   {
+    "Level": 35,
+    "Move": "BodySlam"
+   },
+   {
+    "Level": 43,
+    "Move": "BellyDrum"
+   },
+   {
+    "Level": 51,
+    "Move": "HydroPump"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Poliwrath",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 1,
+    "Move": "Hypnosis"
+   },
+   {
+    "Level": 1,
+    "Move": "DoubleSlap"
+   },
+   {
+    "Level": 1,
+    "Move": "Submission"
+   },
+   {
+    "Level": 35,
+    "Move": "Submission"
+   },
+   {
+    "Level": 51,
+    "Move": "MindReader"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "BulkUp",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Abra",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Teleport"
+   }
+  ],
+  "MachineMoves": [
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Torment",
+   "Facade",
+   "FocusPunch",
+   "Taunt",
+   "SkillSwap",
+   "Snatch",
+   "SecretPower",
+   "CalmMind",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Kadabra",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Teleport"
+   },
+   {
+    "Level": 1,
+    "Move": "Kinesis"
+   },
+   {
+    "Level": 1,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 16,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 18,
+    "Move": "Disable"
+   },
+   {
+    "Level": 21,
+    "Move": "Psybeam"
+   },
+   {
+    "Level": 23,
+    "Move": "Reflect"
+   },
+   {
+    "Level": 25,
+    "Move": "Recover"
+   },
+   {
+    "Level": 30,
+    "Move": "FutureSight"
+   },
+   {
+    "Level": 33,
+    "Move": "RolePlay"
+   },
+   {
+    "Level": 36,
+    "Move": "Psychic"
+   },
+   {
+    "Level": 43,
+    "Move": "Trick"
+   }
+  ],
+  "MachineMoves": [
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Torment",
+   "Facade",
+   "FocusPunch",
+   "Taunt",
+   "SkillSwap",
+   "Snatch",
+   "SecretPower",
+   "CalmMind",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Alakazam",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Teleport"
+   },
+   {
+    "Level": 1,
+    "Move": "Kinesis"
+   },
+   {
+    "Level": 1,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 16,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 18,
+    "Move": "Disable"
+   },
+   {
+    "Level": 21,
+    "Move": "Psybeam"
+   },
+   {
+    "Level": 23,
+    "Move": "Reflect"
+   },
+   {
+    "Level": 25,
+    "Move": "Recover"
+   },
+   {
+    "Level": 30,
+    "Move": "FutureSight"
+   },
+   {
+    "Level": 33,
+    "Move": "CalmMind"
+   },
+   {
+    "Level": 36,
+    "Move": "Psychic"
+   },
+   {
+    "Level": 43,
+    "Move": "Trick"
+   }
+  ],
+  "MachineMoves": [
+   "HyperBeam",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Torment",
+   "Facade",
+   "FocusPunch",
+   "Taunt",
+   "SkillSwap",
+   "Snatch",
+   "SecretPower",
+   "CalmMind",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Machop",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "LowKick"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 7,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 13,
+    "Move": "KarateChop"
+   },
+   {
+    "Level": 19,
+    "Move": "SeismicToss"
+   },
+   {
+    "Level": 22,
+    "Move": "Foresight"
+   },
+   {
+    "Level": 25,
+    "Move": "Revenge"
+   },
+   {
+    "Level": 31,
+    "Move": "VitalThrow"
+   },
+   {
+    "Level": 37,
+    "Move": "Submission"
+   },
+   {
+    "Level": 40,
+    "Move": "CrossChop"
+   },
+   {
+    "Level": 43,
+    "Move": "ScaryFace"
+   },
+   {
+    "Level": 49,
+    "Move": "DynamicPunch"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "BulkUp"
+  ]
+ },
+ {
+  "Name": "Machoke",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "LowKick"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 1,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 7,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 13,
+    "Move": "KarateChop"
+   },
+   {
+    "Level": 19,
+    "Move": "SeismicToss"
+   },
+   {
+    "Level": 22,
+    "Move": "Foresight"
+   },
+   {
+    "Level": 25,
+    "Move": "Revenge"
+   },
+   {
+    "Level": 33,
+    "Move": "VitalThrow"
+   },
+   {
+    "Level": 41,
+    "Move": "Submission"
+   },
+   {
+    "Level": 46,
+    "Move": "CrossChop"
+   },
+   {
+    "Level": 51,
+    "Move": "ScaryFace"
+   },
+   {
+    "Level": 59,
+    "Move": "DynamicPunch"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "BulkUp"
+  ]
+ },
+ {
+  "Name": "Machamp",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "LowKick"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 1,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 7,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 13,
+    "Move": "KarateChop"
+   },
+   {
+    "Level": 19,
+    "Move": "SeismicToss"
+   },
+   {
+    "Level": 22,
+    "Move": "Foresight"
+   },
+   {
+    "Level": 25,
+    "Move": "Revenge"
+   },
+   {
+    "Level": 33,
+    "Move": "VitalThrow"
+   },
+   {
+    "Level": 41,
+    "Move": "Submission"
+   },
+   {
+    "Level": 46,
+    "Move": "CrossChop"
+   },
+   {
+    "Level": 51,
+    "Move": "ScaryFace"
+   },
+   {
+    "Level": 59,
+    "Move": "DynamicPunch"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "HyperBeam",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "BulkUp"
+  ]
+ },
+ {
+  "Name": "Bellsprout",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "VineWhip"
+   },
+   {
+    "Level": 6,
+    "Move": "Growth"
+   },
+   {
+    "Level": 11,
+    "Move": "Wrap"
+   },
+   {
+    "Level": 15,
+    "Move": "SleepPowder"
+   },
+   {
+    "Level": 17,
+    "Move": "PoisonPowder"
+   },
+   {
+    "Level": 19,
+    "Move": "StunSpore"
+   },
+   {
+    "Level": 23,
+    "Move": "Acid"
+   },
+   {
+    "Level": 30,
+    "Move": "SweetScent"
+   },
+   {
+    "Level": 37,
+    "Move": "RazorLeaf"
+   },
+   {
+    "Level": 45,
+    "Move": "Slam"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "SolarBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "BulletSeed"
+  ]
+ },
+ {
+  "Name": "Weepinbell",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "VineWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "Growth"
+   },
+   {
+    "Level": 1,
+    "Move": "Wrap"
+   },
+   {
+    "Level": 6,
+    "Move": "Growth"
+   },
+   {
+    "Level": 11,
+    "Move": "Wrap"
+   },
+   {
+    "Level": 15,
+    "Move": "SleepPowder"
+   },
+   {
+    "Level": 17,
+    "Move": "PoisonPowder"
+   },
+   {
+    "Level": 19,
+    "Move": "StunSpore"
+   },
+   {
+    "Level": 24,
+    "Move": "Acid"
+   },
+   {
+    "Level": 33,
+    "Move": "SweetScent"
+   },
+   {
+    "Level": 42,
+    "Move": "RazorLeaf"
+   },
+   {
+    "Level": 54,
+    "Move": "Slam"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "SolarBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "BulletSeed"
+  ]
+ },
+ {
+  "Name": "Victreebel",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Stockpile"
+   },
+   {
+    "Level": 1,
+    "Move": "SpitUp"
+   },
+   {
+    "Level": 1,
+    "Move": "Swallow"
+   },
+   {
+    "Level": 1,
+    "Move": "VineWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "SleepPowder"
+   },
+   {
+    "Level": 1,
+    "Move": "SweetScent"
+   },
+   {
+    "Level": 1,
+    "Move": "RazorLeaf"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "HyperBeam",
+   "SolarBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "BulletSeed"
+  ]
+ },
+ {
+  "Name": "Tentacool",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "PoisonSting"
+   },
+   {
+    "Level": 6,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 12,
+    "Move": "Constrict"
+   },
+   {
+    "Level": 19,
+    "Move": "Acid"
+   },
+   {
+    "Level": 25,
+    "Move": "BubbleBeam"
+   },
+   {
+    "Level": 30,
+    "Move": "Wrap"
+   },
+   {
+    "Level": 36,
+    "Move": "Barrier"
+   },
+   {
+    "Level": 43,
+    "Move": "Screech"
+   },
+   {
+    "Level": 49,
+    "Move": "HydroPump"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Tentacruel",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "PoisonSting"
+   },
+   {
+    "Level": 1,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 1,
+    "Move": "Constrict"
+   },
+   {
+    "Level": 6,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 12,
+    "Move": "Constrict"
+   },
+   {
+    "Level": 19,
+    "Move": "Acid"
+   },
+   {
+    "Level": 25,
+    "Move": "BubbleBeam"
+   },
+   {
+    "Level": 30,
+    "Move": "Wrap"
+   },
+   {
+    "Level": 38,
+    "Move": "Barrier"
+   },
+   {
+    "Level": 47,
+    "Move": "Screech"
+   },
+   {
+    "Level": 55,
+    "Move": "HydroPump"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Geodude",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "DefenseCurl"
+   },
+   {
+    "Level": 6,
+    "Move": "MudSport"
+   },
+   {
+    "Level": 11,
+    "Move": "RockThrow"
+   },
+   {
+    "Level": 16,
+    "Move": "Magnitude"
+   },
+   {
+    "Level": 21,
+    "Move": "SelfDestruct"
+   },
+   {
+    "Level": 26,
+    "Move": "Rollout"
+   },
+   {
+    "Level": 31,
+    "Move": "RockBlast"
+   },
+   {
+    "Level": 36,
+    "Move": "Earthquake"
+   },
+   {
+    "Level": 41,
+    "Move": "Explosion"
+   },
+   {
+    "Level": 46,
+    "Move": "DoubleEdge"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb"
+  ]
+ },
+ {
+  "Name": "Graveler",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "DefenseCurl"
+   },
+   {
+    "Level": 1,
+    "Move": "MudSport"
+   },
+   {
+    "Level": 1,
+    "Move": "RockThrow"
+   },
+   {
+    "Level": 6,
+    "Move": "MudSport"
+   },
+   {
+    "Level": 11,
+    "Move": "RockThrow"
+   },
+   {
+    "Level": 16,
+    "Move": "Magnitude"
+   },
+   {
+    "Level": 21,
+    "Move": "SelfDestruct"
+   },
+   {
+    "Level": 29,
+    "Move": "Rollout"
+   },
+   {
+    "Level": 37,
+    "Move": "RockBlast"
+   },
+   {
+    "Level": 45,
+    "Move": "Earthquake"
+   },
+   {
+    "Level": 53,
+    "Move": "Explosion"
+   },
+   {
+    "Level": 62,
+    "Move": "DoubleEdge"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb"
+  ]
+ },
+ {
+  "Name": "Golem",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "DefenseCurl"
+   },
+   {
+    "Level": 1,
+    "Move": "MudSport"
+   },
+   {
+    "Level": 1,
+    "Move": "RockThrow"
+   },
+   {
+    "Level": 6,
+    "Move": "MudSport"
+   },
+   {
+    "Level": 11,
+    "Move": "RockThrow"
+   },
+   {
+    "Level": 16,
+    "Move": "Magnitude"
+   },
+   {
+    "Level": 21,
+    "Move": "SelfDestruct"
+   },
+   {
+    "Level": 29,
+    "Move": "Rollout"
+   },
+   {
+    "Level": 37,
+    "Move": "RockBlast"
+   },
+   {
+    "Level": 45,
+    "Move": "Earthquake"
+   },
+   {
+    "Level": 53,
+    "Move": "Explosion"
+   },
+   {
+    "Level": 62,
+    "Move": "DoubleEdge"
+   }
+  ],
+  "MachineMoves": [
+   "Roar",
+   "Flamethrower",
+   "HyperBeam",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb"
+  ]
+ },
+ {
+  "Name": "Ponyta",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 5,
+    "Move": "Growl"
+   },
+   {
+    "Level": 9,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 14,
+    "Move": "Ember"
+   },
+   {
+    "Level": 19,
+    "Move": "Stomp"
+   },
+   {
+    "Level": 25,
+    "Move": "FireSpin"
+   },
+   {
+    "Level": 31,
+    "Move": "TakeDown"
+   },
+   {
+    "Level": 38,
+    "Move": "Agility"
+   },
+   {
+    "Level": 45,
+    "Move": "Bounce"
+   },
+   {
+    "Level": 53,
+    "Move": "FireBlast"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "Strength",
+   "SolarBeam",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "Overheat"
+  ]
+ },
+ {
+  "Name": "Rapidash",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "Ember"
+   },
+   {
+    "Level": 5,
+    "Move": "Growl"
+   },
+   {
+    "Level": 9,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 14,
+    "Move": "Ember"
+   },
+   {
+    "Level": 19,
+    "Move": "Stomp"
+   },
+   {
+    "Level": 25,
+    "Move": "FireSpin"
+   },
+   {
+    "Level": 31,
+    "Move": "TakeDown"
+   },
+   {
+    "Level": 38,
+    "Move": "Agility"
+   },
+   {
+    "Level": 40,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 50,
+    "Move": "Bounce"
+   },
+   {
+    "Level": 63,
+    "Move": "FireBlast"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "HyperBeam",
+   "Strength",
+   "SolarBeam",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "Overheat"
+  ]
+ },
+ {
+  "Name": "Slowpoke",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Curse"
+   },
+   {
+    "Level": 1,
+    "Move": "Yawn"
+   },
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 6,
+    "Move": "Growl"
+   },
+   {
+    "Level": 13,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 17,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 24,
+    "Move": "Disable"
+   },
+   {
+    "Level": 29,
+    "Move": "Headbutt"
+   },
+   {
+    "Level": 36,
+    "Move": "Amnesia"
+   },
+   {
+    "Level": 40,
+    "Move": "Psychic"
+   },
+   {
+    "Level": 47,
+    "Move": "PsychUp"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "FireBlast",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Hail",
+   "Facade",
+   "SkillSwap",
+   "SecretPower",
+   "CalmMind",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Slowbro",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Curse"
+   },
+   {
+    "Level": 1,
+    "Move": "Yawn"
+   },
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 6,
+    "Move": "Growl"
+   },
+   {
+    "Level": 13,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 17,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 24,
+    "Move": "Disable"
+   },
+   {
+    "Level": 29,
+    "Move": "Headbutt"
+   },
+   {
+    "Level": 36,
+    "Move": "Amnesia"
+   },
+   {
+    "Level": 37,
+    "Move": "Withdraw"
+   },
+   {
+    "Level": 44,
+    "Move": "Psychic"
+   },
+   {
+    "Level": 55,
+    "Move": "PsychUp"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "FireBlast",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SkillSwap",
+   "SecretPower",
+   "CalmMind",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Magnemite",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "MetalSound"
+   },
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 6,
+    "Move": "ThunderShock"
+   },
+   {
+    "Level": 11,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 16,
+    "Move": "SonicBoom"
+   },
+   {
+    "Level": 21,
+    "Move": "ThunderWave"
+   },
+   {
+    "Level": 26,
+    "Move": "Spark"
+   },
+   {
+    "Level": 32,
+    "Move": "LockOn"
+   },
+   {
+    "Level": 38,
+    "Move": "Swift"
+   },
+   {
+    "Level": 44,
+    "Move": "Screech"
+   },
+   {
+    "Level": 50,
+    "Move": "ZapCannon"
+   }
+  ],
+  "MachineMoves": [
+   "Thunderbolt",
+   "Thunder",
+   "Toxic",
+   "DoubleTeam",
+   "Reflect",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Magneton",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "MetalSound"
+   },
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "ThunderShock"
+   },
+   {
+    "Level": 1,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 6,
+    "Move": "ThunderShock"
+   },
+   {
+    "Level": 11,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 16,
+    "Move": "SonicBoom"
+   },
+   {
+    "Level": 21,
+    "Move": "ThunderWave"
+   },
+   {
+    "Level": 26,
+    "Move": "Spark"
+   },
+   {
+    "Level": 35,
+    "Move": "LockOn"
+   },
+   {
+    "Level": 44,
+    "Move": "TriAttack"
+   },
+   {
+    "Level": 53,
+    "Move": "Screech"
+   },
+   {
+    "Level": 62,
+    "Move": "ZapCannon"
+   }
+  ],
+  "MachineMoves": [
+   "HyperBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Toxic",
+   "DoubleTeam",
+   "Reflect",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Farfetchd",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Peck"
+   },
+   {
+    "Level": 6,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 11,
+    "Move": "Leer"
+   },
+   {
+    "Level": 16,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 21,
+    "Move": "KnockOff"
+   },
+   {
+    "Level": 26,
+    "Move": "FuryCutter"
+   },
+   {
+    "Level": 31,
+    "Move": "SwordsDance"
+   },
+   {
+    "Level": 36,
+    "Move": "Agility"
+   },
+   {
+    "Level": 41,
+    "Move": "Slash"
+   },
+   {
+    "Level": 46,
+    "Move": "FalseSwipe"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Fly",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SteelWing",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Doduo",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Peck"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 9,
+    "Move": "Pursuit"
+   },
+   {
+    "Level": 13,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 21,
+    "Move": "TriAttack"
+   },
+   {
+    "Level": 25,
+    "Move": "Rage"
+   },
+   {
+    "Level": 33,
+    "Move": "Uproar"
+   },
+   {
+    "Level": 37,
+    "Move": "DrillPeck"
+   },
+   {
+    "Level": 45,
+    "Move": "Agility"
+   }
+  ],
+  "MachineMoves": [
+   "Fly",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SteelWing",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "Facade",
+   "SecretPower",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Dodrio",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Peck"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 1,
+    "Move": "Pursuit"
+   },
+   {
+    "Level": 1,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 9,
+    "Move": "Pursuit"
+   },
+   {
+    "Level": 13,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 21,
+    "Move": "TriAttack"
+   },
+   {
+    "Level": 25,
+    "Move": "Rage"
+   },
+   {
+    "Level": 38,
+    "Move": "Uproar"
+   },
+   {
+    "Level": 47,
+    "Move": "DrillPeck"
+   },
+   {
+    "Level": 60,
+    "Move": "Agility"
+   }
+  ],
+  "MachineMoves": [
+   "Fly",
+   "HyperBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SteelWing",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "Torment",
+   "Facade",
+   "Taunt",
+   "SecretPower",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Seel",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Headbutt"
+   },
+   {
+    "Level": 9,
+    "Move": "Growl"
+   },
+   {
+    "Level": 17,
+    "Move": "IcyWind"
+   },
+   {
+    "Level": 21,
+    "Move": "AuroraBeam"
+   },
+   {
+    "Level": 29,
+    "Move": "Rest"
+   },
+   {
+    "Level": 37,
+    "Move": "TakeDown"
+   },
+   {
+    "Level": 41,
+    "Move": "IceBeam"
+   },
+   {
+    "Level": 49,
+    "Move": "Safeguard"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "HiddenPower",
+   "RainDance",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Dewgong",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "SignalBeam"
+   },
+   {
+    "Level": 1,
+    "Move": "Headbutt"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 1,
+    "Move": "IcyWind"
+   },
+   {
+    "Level": 1,
+    "Move": "AuroraBeam"
+   },
+   {
+    "Level": 9,
+    "Move": "Growl"
+   },
+   {
+    "Level": 17,
+    "Move": "IcyWind"
+   },
+   {
+    "Level": 21,
+    "Move": "AuroraBeam"
+   },
+   {
+    "Level": 29,
+    "Move": "Rest"
+   },
+   {
+    "Level": 34,
+    "Move": "SheerCold"
+   },
+   {
+    "Level": 42,
+    "Move": "TakeDown"
+   },
+   {
+    "Level": 51,
+    "Move": "IceBeam"
+   },
+   {
+    "Level": 64,
+    "Move": "Safeguard"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "HiddenPower",
+   "RainDance",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Grimer",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "PoisonGas"
+   },
+   {
+    "Level": 1,
+    "Move": "Pound"
+   },
+   {
+    "Level": 4,
+    "Move": "Harden"
+   },
+   {
+    "Level": 8,
+    "Move": "Disable"
+   },
+   {
+    "Level": 13,
+    "Move": "Sludge"
+   },
+   {
+    "Level": 19,
+    "Move": "Minimize"
+   },
+   {
+    "Level": 26,
+    "Move": "Screech"
+   },
+   {
+    "Level": 34,
+    "Move": "AcidArmor"
+   },
+   {
+    "Level": 43,
+    "Move": "SludgeBomb"
+   },
+   {
+    "Level": 53,
+    "Move": "Memento"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "Torment",
+   "Facade",
+   "Taunt",
+   "SecretPower",
+   "RockTomb",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Muk",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "PoisonGas"
+   },
+   {
+    "Level": 1,
+    "Move": "Pound"
+   },
+   {
+    "Level": 1,
+    "Move": "Harden"
+   },
+   {
+    "Level": 4,
+    "Move": "Harden"
+   },
+   {
+    "Level": 8,
+    "Move": "Disable"
+   },
+   {
+    "Level": 13,
+    "Move": "Sludge"
+   },
+   {
+    "Level": 19,
+    "Move": "Minimize"
+   },
+   {
+    "Level": 26,
+    "Move": "Screech"
+   },
+   {
+    "Level": 34,
+    "Move": "AcidArmor"
+   },
+   {
+    "Level": 47,
+    "Move": "SludgeBomb"
+   },
+   {
+    "Level": 61,
+    "Move": "Memento"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "HyperBeam",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Torment",
+   "Facade",
+   "FocusPunch",
+   "Taunt",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Shellder",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "Withdraw"
+   },
+   {
+    "Level": 8,
+    "Move": "IcicleSpear"
+   },
+   {
+    "Level": 15,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 22,
+    "Move": "AuroraBeam"
+   },
+   {
+    "Level": 29,
+    "Move": "Protect"
+   },
+   {
+    "Level": 36,
+    "Move": "Leer"
+   },
+   {
+    "Level": 43,
+    "Move": "Clamp"
+   },
+   {
+    "Level": 50,
+    "Move": "IceBeam"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Cloyster",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Withdraw"
+   },
+   {
+    "Level": 1,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 1,
+    "Move": "AuroraBeam"
+   },
+   {
+    "Level": 1,
+    "Move": "Protect"
+   },
+   {
+    "Level": 36,
+    "Move": "Spikes"
+   },
+   {
+    "Level": 43,
+    "Move": "SpikeCannon"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "Hail",
+   "Torment",
+   "Facade",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Gastly",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Hypnosis"
+   },
+   {
+    "Level": 1,
+    "Move": "Lick"
+   },
+   {
+    "Level": 8,
+    "Move": "Spite"
+   },
+   {
+    "Level": 13,
+    "Move": "Curse"
+   },
+   {
+    "Level": 16,
+    "Move": "NightShade"
+   },
+   {
+    "Level": 21,
+    "Move": "ConfuseRay"
+   },
+   {
+    "Level": 28,
+    "Move": "DreamEater"
+   },
+   {
+    "Level": 33,
+    "Move": "DestinyBond"
+   },
+   {
+    "Level": 36,
+    "Move": "ShadowBall"
+   },
+   {
+    "Level": 41,
+    "Move": "Nightmare"
+   },
+   {
+    "Level": 48,
+    "Move": "MeanLook"
+   }
+  ],
+  "MachineMoves": [
+   "Thunderbolt",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Torment",
+   "Facade",
+   "Taunt",
+   "SkillSwap",
+   "Snatch",
+   "SecretPower"
+  ]
+ },
+ {
+  "Name": "Haunter",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Hypnosis"
+   },
+   {
+    "Level": 1,
+    "Move": "Lick"
+   },
+   {
+    "Level": 1,
+    "Move": "Spite"
+   },
+   {
+    "Level": 8,
+    "Move": "Spite"
+   },
+   {
+    "Level": 13,
+    "Move": "Curse"
+   },
+   {
+    "Level": 16,
+    "Move": "NightShade"
+   },
+   {
+    "Level": 21,
+    "Move": "ConfuseRay"
+   },
+   {
+    "Level": 25,
+    "Move": "ShadowPunch"
+   },
+   {
+    "Level": 31,
+    "Move": "DreamEater"
+   },
+   {
+    "Level": 39,
+    "Move": "DestinyBond"
+   },
+   {
+    "Level": 45,
+    "Move": "ShadowBall"
+   },
+   {
+    "Level": 53,
+    "Move": "Nightmare"
+   },
+   {
+    "Level": 64,
+    "Move": "MeanLook"
+   }
+  ],
+  "MachineMoves": [
+   "Thunderbolt",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Torment",
+   "Facade",
+   "Taunt",
+   "SkillSwap",
+   "Snatch",
+   "SecretPower"
+  ]
+ },
+ {
+  "Name": "Gengar",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Hypnosis"
+   },
+   {
+    "Level": 1,
+    "Move": "Lick"
+   },
+   {
+    "Level": 1,
+    "Move": "Spite"
+   },
+   {
+    "Level": 8,
+    "Move": "Spite"
+   },
+   {
+    "Level": 13,
+    "Move": "Curse"
+   },
+   {
+    "Level": 16,
+    "Move": "NightShade"
+   },
+   {
+    "Level": 21,
+    "Move": "ConfuseRay"
+   },
+   {
+    "Level": 25,
+    "Move": "ShadowPunch"
+   },
+   {
+    "Level": 31,
+    "Move": "DreamEater"
+   },
+   {
+    "Level": 39,
+    "Move": "DestinyBond"
+   },
+   {
+    "Level": 45,
+    "Move": "ShadowBall"
+   },
+   {
+    "Level": 53,
+    "Move": "Nightmare"
+   },
+   {
+    "Level": 64,
+    "Move": "MeanLook"
+   }
+  ],
+  "MachineMoves": [
+   "HyperBeam",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "RockSmash",
+   "Torment",
+   "Facade",
+   "FocusPunch",
+   "Taunt",
+   "BrickBreak",
+   "SkillSwap",
+   "Snatch",
+   "SecretPower"
+  ]
+ },
+ {
+  "Name": "Onix",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "Screech"
+   },
+   {
+    "Level": 8,
+    "Move": "Bind"
+   },
+   {
+    "Level": 12,
+    "Move": "RockThrow"
+   },
+   {
+    "Level": 19,
+    "Move": "Harden"
+   },
+   {
+    "Level": 23,
+    "Move": "Rage"
+   },
+   {
+    "Level": 30,
+    "Move": "DragonBreath"
+   },
+   {
+    "Level": 34,
+    "Move": "Sandstorm"
+   },
+   {
+    "Level": 41,
+    "Move": "Slam"
+   },
+   {
+    "Level": 45,
+    "Move": "IronTail"
+   },
+   {
+    "Level": 52,
+    "Move": "SandTomb"
+   },
+   {
+    "Level": 56,
+    "Move": "DoubleEdge"
+   }
+  ],
+  "MachineMoves": [
+   "Roar",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Torment",
+   "Facade",
+   "Taunt",
+   "SecretPower",
+   "RockTomb"
+  ]
+ },
+ {
+  "Name": "Drowzee",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Pound"
+   },
+   {
+    "Level": 1,
+    "Move": "Hypnosis"
+   },
+   {
+    "Level": 7,
+    "Move": "Disable"
+   },
+   {
+    "Level": 11,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 17,
+    "Move": "Headbutt"
+   },
+   {
+    "Level": 21,
+    "Move": "PoisonGas"
+   },
+   {
+    "Level": 27,
+    "Move": "Meditate"
+   },
+   {
+    "Level": 31,
+    "Move": "Psychic"
+   },
+   {
+    "Level": 37,
+    "Move": "PsychUp"
+   },
+   {
+    "Level": 41,
+    "Move": "Swagger"
+   },
+   {
+    "Level": 47,
+    "Move": "FutureSight"
+   }
+  ],
+  "MachineMoves": [
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Torment",
+   "Facade",
+   "FocusPunch",
+   "Taunt",
+   "BrickBreak",
+   "SkillSwap",
+   "Snatch",
+   "SecretPower",
+   "CalmMind"
+  ]
+ },
+ {
+  "Name": "Hypno",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Nightmare"
+   },
+   {
+    "Level": 1,
+    "Move": "Pound"
+   },
+   {
+    "Level": 1,
+    "Move": "Hypnosis"
+   },
+   {
+    "Level": 1,
+    "Move": "Disable"
+   },
+   {
+    "Level": 1,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 7,
+    "Move": "Disable"
+   },
+   {
+    "Level": 11,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 17,
+    "Move": "Headbutt"
+   },
+   {
+    "Level": 21,
+    "Move": "PoisonGas"
+   },
+   {
+    "Level": 29,
+    "Move": "Meditate"
+   },
+   {
+    "Level": 35,
+    "Move": "Psychic"
+   },
+   {
+    "Level": 43,
+    "Move": "PsychUp"
+   },
+   {
+    "Level": 49,
+    "Move": "Swagger"
+   },
+   {
+    "Level": 57,
+    "Move": "FutureSight"
+   }
+  ],
+  "MachineMoves": [
+   "HyperBeam",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Torment",
+   "Facade",
+   "FocusPunch",
+   "Taunt",
+   "BrickBreak",
+   "SkillSwap",
+   "Snatch",
+   "SecretPower",
+   "CalmMind"
+  ]
+ },
+ {
+  "Name": "Krabby",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Bubble"
+   },
+   {
+    "Level": 5,
+    "Move": "Leer"
+   },
+   {
+    "Level": 12,
+    "Move": "ViceGrip"
+   },
+   {
+    "Level": 16,
+    "Move": "Harden"
+   },
+   {
+    "Level": 23,
+    "Move": "MudShot"
+   },
+   {
+    "Level": 27,
+    "Move": "Stomp"
+   },
+   {
+    "Level": 34,
+    "Move": "Guillotine"
+   },
+   {
+    "Level": 38,
+    "Move": "Protect"
+   },
+   {
+    "Level": 45,
+    "Move": "Crabhammer"
+   },
+   {
+    "Level": 49,
+    "Move": "Flail"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "Strength",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "RockTomb",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Kingler",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "MetalClaw"
+   },
+   {
+    "Level": 1,
+    "Move": "Bubble"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 1,
+    "Move": "ViceGrip"
+   },
+   {
+    "Level": 1,
+    "Move": "Harden"
+   },
+   {
+    "Level": 5,
+    "Move": "Leer"
+   },
+   {
+    "Level": 12,
+    "Move": "ViceGrip"
+   },
+   {
+    "Level": 16,
+    "Move": "Harden"
+   },
+   {
+    "Level": 23,
+    "Move": "MudShot"
+   },
+   {
+    "Level": 27,
+    "Move": "Stomp"
+   },
+   {
+    "Level": 38,
+    "Move": "Guillotine"
+   },
+   {
+    "Level": 42,
+    "Move": "Protect"
+   },
+   {
+    "Level": 57,
+    "Move": "Crabhammer"
+   },
+   {
+    "Level": 65,
+    "Move": "Flail"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "RockTomb",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Voltorb",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Charge"
+   },
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 8,
+    "Move": "Screech"
+   },
+   {
+    "Level": 15,
+    "Move": "SonicBoom"
+   },
+   {
+    "Level": 21,
+    "Move": "Spark"
+   },
+   {
+    "Level": 27,
+    "Move": "SelfDestruct"
+   },
+   {
+    "Level": 32,
+    "Move": "Rollout"
+   },
+   {
+    "Level": 37,
+    "Move": "LightScreen"
+   },
+   {
+    "Level": 42,
+    "Move": "Swift"
+   },
+   {
+    "Level": 46,
+    "Move": "Explosion"
+   },
+   {
+    "Level": 49,
+    "Move": "MirrorCoat"
+   }
+  ],
+  "MachineMoves": [
+   "Thunderbolt",
+   "Thunder",
+   "Toxic",
+   "DoubleTeam",
+   "LightScreen",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "Torment",
+   "Facade",
+   "Taunt",
+   "SecretPower",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Electrode",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Charge"
+   },
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "Screech"
+   },
+   {
+    "Level": 1,
+    "Move": "SonicBoom"
+   },
+   {
+    "Level": 8,
+    "Move": "Screech"
+   },
+   {
+    "Level": 15,
+    "Move": "SonicBoom"
+   },
+   {
+    "Level": 21,
+    "Move": "Spark"
+   },
+   {
+    "Level": 27,
+    "Move": "SelfDestruct"
+   },
+   {
+    "Level": 34,
+    "Move": "Rollout"
+   },
+   {
+    "Level": 41,
+    "Move": "LightScreen"
+   },
+   {
+    "Level": 48,
+    "Move": "Swift"
+   },
+   {
+    "Level": 54,
+    "Move": "Explosion"
+   },
+   {
+    "Level": 59,
+    "Move": "MirrorCoat"
+   }
+  ],
+  "MachineMoves": [
+   "HyperBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Toxic",
+   "DoubleTeam",
+   "LightScreen",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "Torment",
+   "Facade",
+   "Taunt",
+   "SecretPower",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Exeggcute",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Barrage"
+   },
+   {
+    "Level": 1,
+    "Move": "Uproar"
+   },
+   {
+    "Level": 1,
+    "Move": "Hypnosis"
+   },
+   {
+    "Level": 7,
+    "Move": "Reflect"
+   },
+   {
+    "Level": 13,
+    "Move": "LeechSeed"
+   },
+   {
+    "Level": 19,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 25,
+    "Move": "StunSpore"
+   },
+   {
+    "Level": 31,
+    "Move": "PoisonPowder"
+   },
+   {
+    "Level": 37,
+    "Move": "SleepPowder"
+   },
+   {
+    "Level": 43,
+    "Move": "SolarBeam"
+   }
+  ],
+  "MachineMoves": [
+   "Strength",
+   "SolarBeam",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "Facade",
+   "SkillSwap",
+   "SecretPower",
+   "BulletSeed"
+  ]
+ },
+ {
+  "Name": "Exeggutor",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Barrage"
+   },
+   {
+    "Level": 1,
+    "Move": "Hypnosis"
+   },
+   {
+    "Level": 1,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 19,
+    "Move": "Stomp"
+   },
+   {
+    "Level": 31,
+    "Move": "EggBomb"
+   }
+  ],
+  "MachineMoves": [
+   "HyperBeam",
+   "Strength",
+   "SolarBeam",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "Facade",
+   "SkillSwap",
+   "SecretPower",
+   "BulletSeed"
+  ]
+ },
+ {
+  "Name": "Cubone",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 5,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 9,
+    "Move": "BoneClub"
+   },
+   {
+    "Level": 13,
+    "Move": "Headbutt"
+   },
+   {
+    "Level": 17,
+    "Move": "Leer"
+   },
+   {
+    "Level": 21,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 25,
+    "Move": "Bonemerang"
+   },
+   {
+    "Level": 29,
+    "Move": "Rage"
+   },
+   {
+    "Level": 33,
+    "Move": "FalseSwipe"
+   },
+   {
+    "Level": 37,
+    "Move": "Thrash"
+   },
+   {
+    "Level": 41,
+    "Move": "BoneRush"
+   },
+   {
+    "Level": 45,
+    "Move": "DoubleEdge"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "IceBeam",
+   "Blizzard",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Marowak",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "BoneClub"
+   },
+   {
+    "Level": 1,
+    "Move": "Headbutt"
+   },
+   {
+    "Level": 5,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 9,
+    "Move": "BoneClub"
+   },
+   {
+    "Level": 13,
+    "Move": "Headbutt"
+   },
+   {
+    "Level": 17,
+    "Move": "Leer"
+   },
+   {
+    "Level": 21,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 25,
+    "Move": "Bonemerang"
+   },
+   {
+    "Level": 32,
+    "Move": "Rage"
+   },
+   {
+    "Level": 39,
+    "Move": "FalseSwipe"
+   },
+   {
+    "Level": 46,
+    "Move": "Thrash"
+   },
+   {
+    "Level": 53,
+    "Move": "BoneRush"
+   },
+   {
+    "Level": 61,
+    "Move": "DoubleEdge"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Hitmonlee",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Revenge"
+   },
+   {
+    "Level": 1,
+    "Move": "DoubleKick"
+   },
+   {
+    "Level": 6,
+    "Move": "Meditate"
+   },
+   {
+    "Level": 11,
+    "Move": "RollingKick"
+   },
+   {
+    "Level": 16,
+    "Move": "JumpKick"
+   },
+   {
+    "Level": 20,
+    "Move": "BrickBreak"
+   },
+   {
+    "Level": 21,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 26,
+    "Move": "HighJumpKick"
+   },
+   {
+    "Level": 31,
+    "Move": "MindReader"
+   },
+   {
+    "Level": 36,
+    "Move": "Foresight"
+   },
+   {
+    "Level": 41,
+    "Move": "Endure"
+   },
+   {
+    "Level": 46,
+    "Move": "MegaKick"
+   },
+   {
+    "Level": 51,
+    "Move": "Reversal"
+   }
+  ],
+  "MachineMoves": [
+   "Strength",
+   "Earthquake",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "BulkUp"
+  ]
+ },
+ {
+  "Name": "Hitmonchan",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Revenge"
+   },
+   {
+    "Level": 1,
+    "Move": "CometPunch"
+   },
+   {
+    "Level": 7,
+    "Move": "Agility"
+   },
+   {
+    "Level": 13,
+    "Move": "Pursuit"
+   },
+   {
+    "Level": 20,
+    "Move": "MachPunch"
+   },
+   {
+    "Level": 26,
+    "Move": "ThunderPunch"
+   },
+   {
+    "Level": 26,
+    "Move": "IcePunch"
+   },
+   {
+    "Level": 26,
+    "Move": "FirePunch"
+   },
+   {
+    "Level": 32,
+    "Move": "SkyUppercut"
+   },
+   {
+    "Level": 38,
+    "Move": "MegaPunch"
+   },
+   {
+    "Level": 44,
+    "Move": "Detect"
+   },
+   {
+    "Level": 50,
+    "Move": "Counter"
+   }
+  ],
+  "MachineMoves": [
+   "Strength",
+   "Earthquake",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "BulkUp"
+  ]
+ },
+ {
+  "Name": "Lickitung",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Lick"
+   },
+   {
+    "Level": 7,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 12,
+    "Move": "DefenseCurl"
+   },
+   {
+    "Level": 18,
+    "Move": "KnockOff"
+   },
+   {
+    "Level": 23,
+    "Move": "Stomp"
+   },
+   {
+    "Level": 29,
+    "Move": "Wrap"
+   },
+   {
+    "Level": 34,
+    "Move": "Disable"
+   },
+   {
+    "Level": 40,
+    "Move": "Slam"
+   },
+   {
+    "Level": 45,
+    "Move": "Screech"
+   },
+   {
+    "Level": 51,
+    "Move": "Refresh"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Flamethrower",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "SolarBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Koffing",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "PoisonGas"
+   },
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 9,
+    "Move": "Smog"
+   },
+   {
+    "Level": 17,
+    "Move": "SelfDestruct"
+   },
+   {
+    "Level": 21,
+    "Move": "Sludge"
+   },
+   {
+    "Level": 25,
+    "Move": "Smokescreen"
+   },
+   {
+    "Level": 33,
+    "Move": "Haze"
+   },
+   {
+    "Level": 41,
+    "Move": "Explosion"
+   },
+   {
+    "Level": 45,
+    "Move": "DestinyBond"
+   },
+   {
+    "Level": 49,
+    "Move": "Memento"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "Thunderbolt",
+   "Thunder",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Torment",
+   "Facade",
+   "Taunt",
+   "SecretPower",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Weezing",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "PoisonGas"
+   },
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "Smog"
+   },
+   {
+    "Level": 1,
+    "Move": "SelfDestruct"
+   },
+   {
+    "Level": 9,
+    "Move": "Smog"
+   },
+   {
+    "Level": 17,
+    "Move": "SelfDestruct"
+   },
+   {
+    "Level": 21,
+    "Move": "Sludge"
+   },
+   {
+    "Level": 25,
+    "Move": "Smokescreen"
+   },
+   {
+    "Level": 33,
+    "Move": "Haze"
+   },
+   {
+    "Level": 44,
+    "Move": "Explosion"
+   },
+   {
+    "Level": 51,
+    "Move": "DestinyBond"
+   },
+   {
+    "Level": 58,
+    "Move": "Memento"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "HyperBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Torment",
+   "Facade",
+   "Taunt",
+   "SecretPower",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Rhyhorn",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "HornAttack"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 10,
+    "Move": "Stomp"
+   },
+   {
+    "Level": 15,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 24,
+    "Move": "ScaryFace"
+   },
+   {
+    "Level": 29,
+    "Move": "RockBlast"
+   },
+   {
+    "Level": 38,
+    "Move": "HornDrill"
+   },
+   {
+    "Level": 43,
+    "Move": "TakeDown"
+   },
+   {
+    "Level": 52,
+    "Move": "Earthquake"
+   },
+   {
+    "Level": 57,
+    "Move": "Megahorn"
+   }
+  ],
+  "MachineMoves": [
+   "Roar",
+   "Flamethrower",
+   "IceBeam",
+   "Blizzard",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "RockTomb",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Rhydon",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "HornAttack"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "Stomp"
+   },
+   {
+    "Level": 1,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 10,
+    "Move": "Stomp"
+   },
+   {
+    "Level": 15,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 24,
+    "Move": "ScaryFace"
+   },
+   {
+    "Level": 29,
+    "Move": "RockBlast"
+   },
+   {
+    "Level": 38,
+    "Move": "HornDrill"
+   },
+   {
+    "Level": 46,
+    "Move": "TakeDown"
+   },
+   {
+    "Level": 58,
+    "Move": "Earthquake"
+   },
+   {
+    "Level": 66,
+    "Move": "Megahorn"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Roar",
+   "Flamethrower",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Chansey",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Pound"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 5,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 9,
+    "Move": "Refresh"
+   },
+   {
+    "Level": 13,
+    "Move": "SoftBoiled"
+   },
+   {
+    "Level": 17,
+    "Move": "DoubleSlap"
+   },
+   {
+    "Level": 23,
+    "Move": "Minimize"
+   },
+   {
+    "Level": 29,
+    "Move": "Sing"
+   },
+   {
+    "Level": 35,
+    "Move": "EggBomb"
+   },
+   {
+    "Level": 41,
+    "Move": "DefenseCurl"
+   },
+   {
+    "Level": 49,
+    "Move": "LightScreen"
+   },
+   {
+    "Level": 57,
+    "Move": "DoubleEdge"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "SolarBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Earthquake",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "FireBlast",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SkillSwap",
+   "Snatch",
+   "SecretPower",
+   "RockTomb",
+   "CalmMind",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Tangela",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Ingrain"
+   },
+   {
+    "Level": 1,
+    "Move": "Constrict"
+   },
+   {
+    "Level": 4,
+    "Move": "SleepPowder"
+   },
+   {
+    "Level": 10,
+    "Move": "Absorb"
+   },
+   {
+    "Level": 13,
+    "Move": "Growth"
+   },
+   {
+    "Level": 19,
+    "Move": "PoisonPowder"
+   },
+   {
+    "Level": 22,
+    "Move": "VineWhip"
+   },
+   {
+    "Level": 28,
+    "Move": "Bind"
+   },
+   {
+    "Level": 31,
+    "Move": "MegaDrain"
+   },
+   {
+    "Level": 37,
+    "Move": "StunSpore"
+   },
+   {
+    "Level": 40,
+    "Move": "Slam"
+   },
+   {
+    "Level": 46,
+    "Move": "Tickle"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "HyperBeam",
+   "SolarBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "BulletSeed"
+  ]
+ },
+ {
+  "Name": "Kangaskhan",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "CometPunch"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 7,
+    "Move": "Bite"
+   },
+   {
+    "Level": 13,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 19,
+    "Move": "FakeOut"
+   },
+   {
+    "Level": 25,
+    "Move": "MegaPunch"
+   },
+   {
+    "Level": 31,
+    "Move": "Rage"
+   },
+   {
+    "Level": 37,
+    "Move": "Endure"
+   },
+   {
+    "Level": 43,
+    "Move": "DizzyPunch"
+   },
+   {
+    "Level": 49,
+    "Move": "Reversal"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Roar",
+   "Flamethrower",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "SolarBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "AerialAce",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Horsea",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Bubble"
+   },
+   {
+    "Level": 8,
+    "Move": "Smokescreen"
+   },
+   {
+    "Level": 15,
+    "Move": "Leer"
+   },
+   {
+    "Level": 22,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 29,
+    "Move": "Twister"
+   },
+   {
+    "Level": 36,
+    "Move": "Agility"
+   },
+   {
+    "Level": 43,
+    "Move": "HydroPump"
+   },
+   {
+    "Level": 50,
+    "Move": "DragonDance"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Seadra",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Bubble"
+   },
+   {
+    "Level": 1,
+    "Move": "Smokescreen"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 1,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 8,
+    "Move": "Smokescreen"
+   },
+   {
+    "Level": 15,
+    "Move": "Leer"
+   },
+   {
+    "Level": 22,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 29,
+    "Move": "Twister"
+   },
+   {
+    "Level": 40,
+    "Move": "Agility"
+   },
+   {
+    "Level": 51,
+    "Move": "HydroPump"
+   },
+   {
+    "Level": 62,
+    "Move": "DragonDance"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Goldeen",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Peck"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "WaterSport"
+   },
+   {
+    "Level": 10,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 15,
+    "Move": "HornAttack"
+   },
+   {
+    "Level": 24,
+    "Move": "Flail"
+   },
+   {
+    "Level": 29,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 38,
+    "Move": "Waterfall"
+   },
+   {
+    "Level": 43,
+    "Move": "HornDrill"
+   },
+   {
+    "Level": 52,
+    "Move": "Agility"
+   },
+   {
+    "Level": 57,
+    "Move": "Megahorn"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Seaking",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Peck"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "WaterSport"
+   },
+   {
+    "Level": 1,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 10,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 15,
+    "Move": "HornAttack"
+   },
+   {
+    "Level": 24,
+    "Move": "Flail"
+   },
+   {
+    "Level": 29,
+    "Move": "FuryAttack"
+   },
+   {
+    "Level": 41,
+    "Move": "Waterfall"
+   },
+   {
+    "Level": 49,
+    "Move": "HornDrill"
+   },
+   {
+    "Level": 61,
+    "Move": "Agility"
+   },
+   {
+    "Level": 69,
+    "Move": "Megahorn"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Staryu",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "Harden"
+   },
+   {
+    "Level": 6,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 10,
+    "Move": "RapidSpin"
+   },
+   {
+    "Level": 15,
+    "Move": "Recover"
+   },
+   {
+    "Level": 19,
+    "Move": "Camouflage"
+   },
+   {
+    "Level": 24,
+    "Move": "Swift"
+   },
+   {
+    "Level": 28,
+    "Move": "BubbleBeam"
+   },
+   {
+    "Level": 33,
+    "Move": "Minimize"
+   },
+   {
+    "Level": 37,
+    "Move": "LightScreen"
+   },
+   {
+    "Level": 42,
+    "Move": "CosmicPower"
+   },
+   {
+    "Level": 46,
+    "Move": "HydroPump"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "Thunderbolt",
+   "Thunder",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "Waterfall",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Starmie",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 1,
+    "Move": "RapidSpin"
+   },
+   {
+    "Level": 1,
+    "Move": "Recover"
+   },
+   {
+    "Level": 1,
+    "Move": "Swift"
+   },
+   {
+    "Level": 33,
+    "Move": "ConfuseRay"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "Waterfall",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "Hail",
+   "Facade",
+   "SkillSwap",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "MrMime",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Barrier"
+   },
+   {
+    "Level": 5,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 8,
+    "Move": "Substitute"
+   },
+   {
+    "Level": 12,
+    "Move": "Meditate"
+   },
+   {
+    "Level": 15,
+    "Move": "DoubleSlap"
+   },
+   {
+    "Level": 19,
+    "Move": "LightScreen"
+   },
+   {
+    "Level": 19,
+    "Move": "Reflect"
+   },
+   {
+    "Level": 22,
+    "Move": "MagicalLeaf"
+   },
+   {
+    "Level": 26,
+    "Move": "Encore"
+   },
+   {
+    "Level": 29,
+    "Move": "Psybeam"
+   },
+   {
+    "Level": 33,
+    "Move": "Recycle"
+   },
+   {
+    "Level": 36,
+    "Move": "Trick"
+   },
+   {
+    "Level": 40,
+    "Move": "RolePlay"
+   },
+   {
+    "Level": 43,
+    "Move": "Psychic"
+   },
+   {
+    "Level": 47,
+    "Move": "BatonPass"
+   },
+   {
+    "Level": 50,
+    "Move": "Safeguard"
+   }
+  ],
+  "MachineMoves": [
+   "HyperBeam",
+   "SolarBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Torment",
+   "Facade",
+   "FocusPunch",
+   "Taunt",
+   "BrickBreak",
+   "SkillSwap",
+   "Snatch",
+   "SecretPower",
+   "CalmMind",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Scyther",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 6,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 11,
+    "Move": "Pursuit"
+   },
+   {
+    "Level": 16,
+    "Move": "FalseSwipe"
+   },
+   {
+    "Level": 21,
+    "Move": "Agility"
+   },
+   {
+    "Level": 26,
+    "Move": "WingAttack"
+   },
+   {
+    "Level": 31,
+    "Move": "Slash"
+   },
+   {
+    "Level": 36,
+    "Move": "SwordsDance"
+   },
+   {
+    "Level": 41,
+    "Move": "DoubleTeam"
+   },
+   {
+    "Level": 46,
+    "Move": "FuryCutter"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "HyperBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SteelWing",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Jynx",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Pound"
+   },
+   {
+    "Level": 1,
+    "Move": "Lick"
+   },
+   {
+    "Level": 1,
+    "Move": "LovelyKiss"
+   },
+   {
+    "Level": 1,
+    "Move": "PowderSnow"
+   },
+   {
+    "Level": 9,
+    "Move": "LovelyKiss"
+   },
+   {
+    "Level": 13,
+    "Move": "PowderSnow"
+   },
+   {
+    "Level": 21,
+    "Move": "DoubleSlap"
+   },
+   {
+    "Level": 25,
+    "Move": "IcePunch"
+   },
+   {
+    "Level": 35,
+    "Move": "MeanLook"
+   },
+   {
+    "Level": 41,
+    "Move": "FakeTears"
+   },
+   {
+    "Level": 51,
+    "Move": "BodySlam"
+   },
+   {
+    "Level": 57,
+    "Move": "PerishSong"
+   },
+   {
+    "Level": 67,
+    "Move": "Blizzard"
+   }
+  ],
+  "MachineMoves": [
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "ShadowBall",
+   "Hail",
+   "Torment",
+   "Facade",
+   "FocusPunch",
+   "Taunt",
+   "BrickBreak",
+   "SkillSwap",
+   "SecretPower",
+   "CalmMind",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Electabuzz",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 1,
+    "Move": "ThunderPunch"
+   },
+   {
+    "Level": 9,
+    "Move": "ThunderPunch"
+   },
+   {
+    "Level": 17,
+    "Move": "LightScreen"
+   },
+   {
+    "Level": 25,
+    "Move": "Swift"
+   },
+   {
+    "Level": 36,
+    "Move": "Screech"
+   },
+   {
+    "Level": 47,
+    "Move": "Thunderbolt"
+   },
+   {
+    "Level": 58,
+    "Move": "Thunder"
+   }
+  ],
+  "MachineMoves": [
+   "HyperBeam",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Magmar",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Ember"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 1,
+    "Move": "Smog"
+   },
+   {
+    "Level": 1,
+    "Move": "FirePunch"
+   },
+   {
+    "Level": 7,
+    "Move": "Leer"
+   },
+   {
+    "Level": 13,
+    "Move": "Smog"
+   },
+   {
+    "Level": 19,
+    "Move": "FirePunch"
+   },
+   {
+    "Level": 25,
+    "Move": "Smokescreen"
+   },
+   {
+    "Level": 33,
+    "Move": "SunnyDay"
+   },
+   {
+    "Level": 41,
+    "Move": "Flamethrower"
+   },
+   {
+    "Level": 49,
+    "Move": "ConfuseRay"
+   },
+   {
+    "Level": 57,
+    "Move": "FireBlast"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "HyperBeam",
+   "Strength",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower"
+  ]
+ },
+ {
+  "Name": "Pinsir",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "ViceGrip"
+   },
+   {
+    "Level": 1,
+    "Move": "FocusEnergy"
+   },
+   {
+    "Level": 7,
+    "Move": "Bind"
+   },
+   {
+    "Level": 13,
+    "Move": "SeismicToss"
+   },
+   {
+    "Level": 19,
+    "Move": "Harden"
+   },
+   {
+    "Level": 25,
+    "Move": "Revenge"
+   },
+   {
+    "Level": 31,
+    "Move": "BrickBreak"
+   },
+   {
+    "Level": 37,
+    "Move": "Guillotine"
+   },
+   {
+    "Level": 43,
+    "Move": "Submission"
+   },
+   {
+    "Level": 49,
+    "Move": "SwordsDance"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "HyperBeam",
+   "Strength",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "BulkUp"
+  ]
+ },
+ {
+  "Name": "Tauros",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 4,
+    "Move": "Rage"
+   },
+   {
+    "Level": 8,
+    "Move": "HornAttack"
+   },
+   {
+    "Level": 13,
+    "Move": "ScaryFace"
+   },
+   {
+    "Level": 19,
+    "Move": "Pursuit"
+   },
+   {
+    "Level": 26,
+    "Move": "Swagger"
+   },
+   {
+    "Level": 34,
+    "Move": "Rest"
+   },
+   {
+    "Level": 43,
+    "Move": "Thrash"
+   },
+   {
+    "Level": 53,
+    "Move": "TakeDown"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "SolarBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Earthquake",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "RockTomb",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Magikarp",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Splash"
+   },
+   {
+    "Level": 15,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 30,
+    "Move": "Flail"
+   }
+  ],
+  "MachineMoves": []
+ },
+ {
+  "Name": "Gyarados",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Thrash"
+   },
+   {
+    "Level": 20,
+    "Move": "Bite"
+   },
+   {
+    "Level": 25,
+    "Move": "DragonRage"
+   },
+   {
+    "Level": 30,
+    "Move": "Leer"
+   },
+   {
+    "Level": 35,
+    "Move": "Twister"
+   },
+   {
+    "Level": 40,
+    "Move": "HydroPump"
+   },
+   {
+    "Level": 45,
+    "Move": "RainDance"
+   },
+   {
+    "Level": 50,
+    "Move": "DragonDance"
+   },
+   {
+    "Level": 55,
+    "Move": "HyperBeam"
+   }
+  ],
+  "MachineMoves": [
+   "Roar",
+   "Flamethrower",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Earthquake",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Waterfall",
+   "Rest",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Hail",
+   "Torment",
+   "Facade",
+   "Taunt",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Lapras",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 1,
+    "Move": "Growl"
+   },
+   {
+    "Level": 1,
+    "Move": "Sing"
+   },
+   {
+    "Level": 7,
+    "Move": "Mist"
+   },
+   {
+    "Level": 13,
+    "Move": "BodySlam"
+   },
+   {
+    "Level": 19,
+    "Move": "ConfuseRay"
+   },
+   {
+    "Level": 25,
+    "Move": "PerishSong"
+   },
+   {
+    "Level": 31,
+    "Move": "IceBeam"
+   },
+   {
+    "Level": 37,
+    "Move": "RainDance"
+   },
+   {
+    "Level": 43,
+    "Move": "Safeguard"
+   },
+   {
+    "Level": 49,
+    "Move": "HydroPump"
+   },
+   {
+    "Level": 55,
+    "Move": "SheerCold"
+   }
+  ],
+  "MachineMoves": [
+   "Roar",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Ditto",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Transform"
+   }
+  ],
+  "MachineMoves": []
+ },
+ {
+  "Name": "Eevee",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "HelpingHand"
+   },
+   {
+    "Level": 8,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 16,
+    "Move": "Growl"
+   },
+   {
+    "Level": 23,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 30,
+    "Move": "Bite"
+   },
+   {
+    "Level": 36,
+    "Move": "BatonPass"
+   },
+   {
+    "Level": 42,
+    "Move": "TakeDown"
+   }
+  ],
+  "MachineMoves": [
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Facade",
+   "SecretPower"
+  ]
+ },
+ {
+  "Name": "Vaporeon",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "HelpingHand"
+   },
+   {
+    "Level": 8,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 16,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 23,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 30,
+    "Move": "Bite"
+   },
+   {
+    "Level": 36,
+    "Move": "AuroraBeam"
+   },
+   {
+    "Level": 42,
+    "Move": "Haze"
+   },
+   {
+    "Level": 47,
+    "Move": "AcidArmor"
+   },
+   {
+    "Level": 52,
+    "Move": "HydroPump"
+   }
+  ],
+  "MachineMoves": [
+   "Roar",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Jolteon",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "HelpingHand"
+   },
+   {
+    "Level": 8,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 16,
+    "Move": "ThunderShock"
+   },
+   {
+    "Level": 23,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 30,
+    "Move": "DoubleKick"
+   },
+   {
+    "Level": 36,
+    "Move": "PinMissile"
+   },
+   {
+    "Level": 42,
+    "Move": "ThunderWave"
+   },
+   {
+    "Level": 47,
+    "Move": "Agility"
+   },
+   {
+    "Level": 52,
+    "Move": "Thunder"
+   }
+  ],
+  "MachineMoves": [
+   "Roar",
+   "HyperBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Facade",
+   "SecretPower",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Flareon",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "TailWhip"
+   },
+   {
+    "Level": 1,
+    "Move": "HelpingHand"
+   },
+   {
+    "Level": 8,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 16,
+    "Move": "Ember"
+   },
+   {
+    "Level": 23,
+    "Move": "QuickAttack"
+   },
+   {
+    "Level": 30,
+    "Move": "Bite"
+   },
+   {
+    "Level": 36,
+    "Move": "FireSpin"
+   },
+   {
+    "Level": 42,
+    "Move": "Smog"
+   },
+   {
+    "Level": 47,
+    "Move": "Leer"
+   },
+   {
+    "Level": 52,
+    "Move": "Flamethrower"
+   }
+  ],
+  "MachineMoves": [
+   "Roar",
+   "Flamethrower",
+   "HyperBeam",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Facade",
+   "SecretPower",
+   "Overheat"
+  ]
+ },
+ {
+  "Name": "Porygon",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Conversion2"
+   },
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 1,
+    "Move": "Conversion"
+   },
+   {
+    "Level": 9,
+    "Move": "Agility"
+   },
+   {
+    "Level": 12,
+    "Move": "Psybeam"
+   },
+   {
+    "Level": 20,
+    "Move": "Recover"
+   },
+   {
+    "Level": 24,
+    "Move": "Sharpen"
+   },
+   {
+    "Level": 32,
+    "Move": "LockOn"
+   },
+   {
+    "Level": 36,
+    "Move": "TriAttack"
+   },
+   {
+    "Level": 44,
+    "Move": "Recycle"
+   },
+   {
+    "Level": 48,
+    "Move": "ZapCannon"
+   }
+  ],
+  "MachineMoves": [
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "SolarBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Facade",
+   "SecretPower",
+   "AerialAce",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Omanyte",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Constrict"
+   },
+   {
+    "Level": 1,
+    "Move": "Withdraw"
+   },
+   {
+    "Level": 13,
+    "Move": "Bite"
+   },
+   {
+    "Level": 19,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 25,
+    "Move": "MudShot"
+   },
+   {
+    "Level": 31,
+    "Move": "Leer"
+   },
+   {
+    "Level": 37,
+    "Move": "Protect"
+   },
+   {
+    "Level": 43,
+    "Move": "Tickle"
+   },
+   {
+    "Level": 49,
+    "Move": "AncientPower"
+   },
+   {
+    "Level": 55,
+    "Move": "HydroPump"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "RockTomb",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Omastar",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Constrict"
+   },
+   {
+    "Level": 1,
+    "Move": "Withdraw"
+   },
+   {
+    "Level": 1,
+    "Move": "Bite"
+   },
+   {
+    "Level": 1,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 13,
+    "Move": "Bite"
+   },
+   {
+    "Level": 19,
+    "Move": "WaterGun"
+   },
+   {
+    "Level": 25,
+    "Move": "MudShot"
+   },
+   {
+    "Level": 31,
+    "Move": "Leer"
+   },
+   {
+    "Level": 37,
+    "Move": "Protect"
+   },
+   {
+    "Level": 40,
+    "Move": "SpikeCannon"
+   },
+   {
+    "Level": 46,
+    "Move": "Tickle"
+   },
+   {
+    "Level": 55,
+    "Move": "AncientPower"
+   },
+   {
+    "Level": 65,
+    "Move": "HydroPump"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "RockTomb",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Kabuto",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 1,
+    "Move": "Harden"
+   },
+   {
+    "Level": 13,
+    "Move": "Absorb"
+   },
+   {
+    "Level": 19,
+    "Move": "Leer"
+   },
+   {
+    "Level": 25,
+    "Move": "MudShot"
+   },
+   {
+    "Level": 31,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 37,
+    "Move": "Endure"
+   },
+   {
+    "Level": 43,
+    "Move": "MetalSound"
+   },
+   {
+    "Level": 49,
+    "Move": "MegaDrain"
+   },
+   {
+    "Level": 55,
+    "Move": "AncientPower"
+   }
+  ],
+  "MachineMoves": [
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Sandstorm",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "RockTomb",
+   "AerialAce",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Kabutops",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "FuryCutter"
+   },
+   {
+    "Level": 1,
+    "Move": "Scratch"
+   },
+   {
+    "Level": 1,
+    "Move": "Harden"
+   },
+   {
+    "Level": 1,
+    "Move": "Absorb"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 13,
+    "Move": "Absorb"
+   },
+   {
+    "Level": 19,
+    "Move": "Leer"
+   },
+   {
+    "Level": 25,
+    "Move": "MudShot"
+   },
+   {
+    "Level": 31,
+    "Move": "SandAttack"
+   },
+   {
+    "Level": 37,
+    "Move": "Endure"
+   },
+   {
+    "Level": 40,
+    "Move": "Slash"
+   },
+   {
+    "Level": 46,
+    "Move": "MetalSound"
+   },
+   {
+    "Level": 55,
+    "Move": "MegaDrain"
+   },
+   {
+    "Level": 65,
+    "Move": "AncientPower"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Dig",
+   "Toxic",
+   "DoubleTeam",
+   "Waterfall",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Sandstorm",
+   "GigaDrain",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "AerialAce",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Aerodactyl",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "WingAttack"
+   },
+   {
+    "Level": 8,
+    "Move": "Agility"
+   },
+   {
+    "Level": 15,
+    "Move": "Bite"
+   },
+   {
+    "Level": 22,
+    "Move": "Supersonic"
+   },
+   {
+    "Level": 29,
+    "Move": "AncientPower"
+   },
+   {
+    "Level": 36,
+    "Move": "ScaryFace"
+   },
+   {
+    "Level": 43,
+    "Move": "TakeDown"
+   },
+   {
+    "Level": 50,
+    "Move": "HyperBeam"
+   }
+  ],
+  "MachineMoves": [
+   "Fly",
+   "Roar",
+   "Flamethrower",
+   "HyperBeam",
+   "Strength",
+   "Earthquake",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Thief",
+   "Protect",
+   "Sandstorm",
+   "SteelWing",
+   "Attract",
+   "Return",
+   "Frustration",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Torment",
+   "Facade",
+   "Taunt",
+   "SecretPower",
+   "RockTomb",
+   "AerialAce",
+   "DragonClaw"
+  ]
+ },
+ {
+  "Name": "Snorlax",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Tackle"
+   },
+   {
+    "Level": 5,
+    "Move": "Amnesia"
+   },
+   {
+    "Level": 9,
+    "Move": "DefenseCurl"
+   },
+   {
+    "Level": 13,
+    "Move": "BellyDrum"
+   },
+   {
+    "Level": 17,
+    "Move": "Headbutt"
+   },
+   {
+    "Level": 21,
+    "Move": "Yawn"
+   },
+   {
+    "Level": 25,
+    "Move": "Rest"
+   },
+   {
+    "Level": 29,
+    "Move": "Snore"
+   },
+   {
+    "Level": 33,
+    "Move": "BodySlam"
+   },
+   {
+    "Level": 37,
+    "Move": "SleepTalk"
+   },
+   {
+    "Level": 41,
+    "Move": "Block"
+   },
+   {
+    "Level": 45,
+    "Move": "Covet"
+   },
+   {
+    "Level": 49,
+    "Move": "Rollout"
+   },
+   {
+    "Level": 53,
+    "Move": "HyperBeam"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "SolarBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Earthquake",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Protect",
+   "Sandstorm",
+   "Attract",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Articuno",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Gust"
+   },
+   {
+    "Level": 1,
+    "Move": "PowderSnow"
+   },
+   {
+    "Level": 13,
+    "Move": "Mist"
+   },
+   {
+    "Level": 25,
+    "Move": "Agility"
+   },
+   {
+    "Level": 37,
+    "Move": "MindReader"
+   },
+   {
+    "Level": 49,
+    "Move": "IceBeam"
+   },
+   {
+    "Level": 61,
+    "Move": "Reflect"
+   },
+   {
+    "Level": 73,
+    "Move": "Blizzard"
+   },
+   {
+    "Level": 85,
+    "Move": "SheerCold"
+   }
+  ],
+  "MachineMoves": [
+   "Fly",
+   "Roar",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Toxic",
+   "DoubleTeam",
+   "Reflect",
+   "Rest",
+   "Protect",
+   "Sandstorm",
+   "SteelWing",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "AerialAce",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Zapdos",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Peck"
+   },
+   {
+    "Level": 1,
+    "Move": "ThunderShock"
+   },
+   {
+    "Level": 13,
+    "Move": "ThunderWave"
+   },
+   {
+    "Level": 25,
+    "Move": "Agility"
+   },
+   {
+    "Level": 37,
+    "Move": "Detect"
+   },
+   {
+    "Level": 49,
+    "Move": "DrillPeck"
+   },
+   {
+    "Level": 61,
+    "Move": "Charge"
+   },
+   {
+    "Level": 73,
+    "Move": "LightScreen"
+   },
+   {
+    "Level": 85,
+    "Move": "Thunder"
+   }
+  ],
+  "MachineMoves": [
+   "Fly",
+   "Roar",
+   "HyperBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Toxic",
+   "DoubleTeam",
+   "LightScreen",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Sandstorm",
+   "SteelWing",
+   "Return",
+   "Frustration",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "AerialAce",
+   "ShockWave"
+  ]
+ },
+ {
+  "Name": "Moltres",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "WingAttack"
+   },
+   {
+    "Level": 1,
+    "Move": "Ember"
+   },
+   {
+    "Level": 13,
+    "Move": "FireSpin"
+   },
+   {
+    "Level": 25,
+    "Move": "Agility"
+   },
+   {
+    "Level": 37,
+    "Move": "Endure"
+   },
+   {
+    "Level": 49,
+    "Move": "Flamethrower"
+   },
+   {
+    "Level": 61,
+    "Move": "Safeguard"
+   },
+   {
+    "Level": 73,
+    "Move": "HeatWave"
+   },
+   {
+    "Level": 85,
+    "Move": "SkyAttack"
+   }
+  ],
+  "MachineMoves": [
+   "Fly",
+   "Roar",
+   "Flamethrower",
+   "HyperBeam",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Rest",
+   "Protect",
+   "Sandstorm",
+   "SteelWing",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Facade",
+   "SecretPower",
+   "Overheat",
+   "AerialAce"
+  ]
+ },
+ {
+  "Name": "Dratini",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Wrap"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 8,
+    "Move": "ThunderWave"
+   },
+   {
+    "Level": 15,
+    "Move": "Twister"
+   },
+   {
+    "Level": 22,
+    "Move": "DragonRage"
+   },
+   {
+    "Level": 29,
+    "Move": "Slam"
+   },
+   {
+    "Level": 36,
+    "Move": "Agility"
+   },
+   {
+    "Level": 43,
+    "Move": "Safeguard"
+   },
+   {
+    "Level": 50,
+    "Move": "Outrage"
+   },
+   {
+    "Level": 57,
+    "Move": "HyperBeam"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Waterfall",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Dragonair",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Wrap"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 1,
+    "Move": "ThunderWave"
+   },
+   {
+    "Level": 1,
+    "Move": "Twister"
+   },
+   {
+    "Level": 8,
+    "Move": "ThunderWave"
+   },
+   {
+    "Level": 15,
+    "Move": "Twister"
+   },
+   {
+    "Level": 22,
+    "Move": "DragonRage"
+   },
+   {
+    "Level": 29,
+    "Move": "Slam"
+   },
+   {
+    "Level": 38,
+    "Move": "Agility"
+   },
+   {
+    "Level": 47,
+    "Move": "Safeguard"
+   },
+   {
+    "Level": 56,
+    "Move": "Outrage"
+   },
+   {
+    "Level": 65,
+    "Move": "HyperBeam"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Waterfall",
+   "Rest",
+   "Protect",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "Hail",
+   "Facade",
+   "SecretPower",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Dragonite",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Wrap"
+   },
+   {
+    "Level": 1,
+    "Move": "Leer"
+   },
+   {
+    "Level": 1,
+    "Move": "ThunderWave"
+   },
+   {
+    "Level": 1,
+    "Move": "Twister"
+   },
+   {
+    "Level": 8,
+    "Move": "ThunderWave"
+   },
+   {
+    "Level": 15,
+    "Move": "Twister"
+   },
+   {
+    "Level": 22,
+    "Move": "DragonRage"
+   },
+   {
+    "Level": 29,
+    "Move": "Slam"
+   },
+   {
+    "Level": 38,
+    "Move": "Agility"
+   },
+   {
+    "Level": 47,
+    "Move": "Safeguard"
+   },
+   {
+    "Level": 55,
+    "Move": "WingAttack"
+   },
+   {
+    "Level": 61,
+    "Move": "Outrage"
+   },
+   {
+    "Level": 75,
+    "Move": "HyperBeam"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Fly",
+   "Roar",
+   "Flamethrower",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "Thunderbolt",
+   "Thunder",
+   "Earthquake",
+   "Toxic",
+   "DoubleTeam",
+   "FireBlast",
+   "Waterfall",
+   "Rest",
+   "Protect",
+   "Sandstorm",
+   "SteelWing",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "RockSmash",
+   "Hail",
+   "Facade",
+   "FocusPunch",
+   "BrickBreak",
+   "SecretPower",
+   "RockTomb",
+   "AerialAce",
+   "DragonClaw",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Mewtwo",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Confusion"
+   },
+   {
+    "Level": 1,
+    "Move": "Disable"
+   },
+   {
+    "Level": 11,
+    "Move": "Barrier"
+   },
+   {
+    "Level": 22,
+    "Move": "Mist"
+   },
+   {
+    "Level": 33,
+    "Move": "Swift"
+   },
+   {
+    "Level": 44,
+    "Move": "Recover"
+   },
+   {
+    "Level": 55,
+    "Move": "Safeguard"
+   },
+   {
+    "Level": 66,
+    "Move": "Psychic"
+   },
+   {
+    "Level": 77,
+    "Move": "PsychUp"
+   },
+   {
+    "Level": 88,
+    "Move": "FutureSight"
+   },
+   {
+    "Level": 99,
+    "Move": "Amnesia"
+   }
+  ],
+  "MachineMoves": [
+   "Flamethrower",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "SolarBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Earthquake",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "FireBlast",
+   "Flash",
+   "Rest",
+   "Protect",
+   "Sandstorm",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "RockSmash",
+   "Hail",
+   "Torment",
+   "Facade",
+   "FocusPunch",
+   "Taunt",
+   "BrickBreak",
+   "SkillSwap",
+   "Snatch",
+   "SecretPower",
+   "RockTomb",
+   "AerialAce",
+   "BulkUp",
+   "CalmMind",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ },
+ {
+  "Name": "Mew",
+  "LevelUpMoves": [
+   {
+    "Level": 1,
+    "Move": "Pound"
+   },
+   {
+    "Level": 10,
+    "Move": "Transform"
+   },
+   {
+    "Level": 20,
+    "Move": "MegaPunch"
+   },
+   {
+    "Level": 30,
+    "Move": "Metronome"
+   },
+   {
+    "Level": 40,
+    "Move": "Psychic"
+   },
+   {
+    "Level": 50,
+    "Move": "AncientPower"
+   }
+  ],
+  "MachineMoves": [
+   "Cut",
+   "Fly",
+   "Roar",
+   "Flamethrower",
+   "Surf",
+   "IceBeam",
+   "Blizzard",
+   "HyperBeam",
+   "Strength",
+   "SolarBeam",
+   "Thunderbolt",
+   "Thunder",
+   "Earthquake",
+   "Dig",
+   "Toxic",
+   "Psychic",
+   "DoubleTeam",
+   "LightScreen",
+   "Reflect",
+   "FireBlast",
+   "Waterfall",
+   "Flash",
+   "Rest",
+   "Thief",
+   "Protect",
+   "SludgeBomb",
+   "Sandstorm",
+   "GigaDrain",
+   "SteelWing",
+   "Attract",
+   "Return",
+   "Frustration",
+   "Safeguard",
+   "IronTail",
+   "HiddenPower",
+   "RainDance",
+   "SunnyDay",
+   "ShadowBall",
+   "RockSmash",
+   "Hail",
+   "Torment",
+   "Facade",
+   "FocusPunch",
+   "Taunt",
+   "BrickBreak",
+   "SkillSwap",
+   "Snatch",
+   "SecretPower",
+   "Overheat",
+   "RockTomb",
+   "BulletSeed",
+   "AerialAce",
+   "DragonClaw",
+   "BulkUp",
+   "CalmMind",
+   "ShockWave",
+   "WaterPulse"
+  ]
+ }
+]

@@ -1,0 +1,152 @@
+[
+ {
+  "Name": "Hardy",
+  "DisplayName": "Hardi",
+  "IncreasedStat": "Attack",
+  "DecreasedStat": "Attack"
+ },
+ {
+  "Name": "Lonely",
+  "DisplayName": "Solo",
+  "IncreasedStat": "Attack",
+  "DecreasedStat": "Defense"
+ },
+ {
+  "Name": "Brave",
+  "DisplayName": "Brave",
+  "IncreasedStat": "Attack",
+  "DecreasedStat": "Speed"
+ },
+ {
+  "Name": "Adamant",
+  "DisplayName": "Rigide",
+  "IncreasedStat": "Attack",
+  "DecreasedStat": "SpecialAttack"
+ },
+ {
+  "Name": "Naughty",
+  "DisplayName": "Mauvais",
+  "IncreasedStat": "Attack",
+  "DecreasedStat": "SpecialDefense"
+ },
+ {
+  "Name": "Bold",
+  "DisplayName": "Assuré",
+  "IncreasedStat": "Defense",
+  "DecreasedStat": "Attack"
+ },
+ {
+  "Name": "Docile",
+  "DisplayName": "Docile",
+  "IncreasedStat": "Defense",
+  "DecreasedStat": "Defense"
+ },
+ {
+  "Name": "Relaxed",
+  "DisplayName": "Relax",
+  "IncreasedStat": "Defense",
+  "DecreasedStat": "Speed"
+ },
+ {
+  "Name": "Impish",
+  "DisplayName": "Malin",
+  "IncreasedStat": "Defense",
+  "DecreasedStat": "SpecialAttack"
+ },
+ {
+  "Name": "Lax",
+  "DisplayName": "Lâche",
+  "IncreasedStat": "Defense",
+  "DecreasedStat": "SpecialDefense"
+ },
+ {
+  "Name": "Timid",
+  "DisplayName": "Timide",
+  "IncreasedStat": "Speed",
+  "DecreasedStat": "Attack"
+ },
+ {
+  "Name": "Hasty",
+  "DisplayName": "Pressé",
+  "IncreasedStat": "Speed",
+  "DecreasedStat": "Defense"
+ },
+ {
+  "Name": "Serious",
+  "DisplayName": "Sérieux",
+  "IncreasedStat": "Speed",
+  "DecreasedStat": "Speed"
+ },
+ {
+  "Name": "Jolly",
+  "DisplayName": "Jovial",
+  "IncreasedStat": "Speed",
+  "DecreasedStat": "SpecialAttack"
+ },
+ {
+  "Name": "Naive",
+  "DisplayName": "Naïf",
+  "IncreasedStat": "Speed",
+  "DecreasedStat": "SpecialDefense"
+ },
+ {
+  "Name": "Modest",
+  "DisplayName": "Modeste",
+  "IncreasedStat": "SpecialAttack",
+  "DecreasedStat": "Attack"
+ },
+ {
+  "Name": "Mild",
+  "DisplayName": "Doux",
+  "IncreasedStat": "SpecialAttack",
+  "DecreasedStat": "Defense"
+ },
+ {
+  "Name": "Quiet",
+  "DisplayName": "Discret",
+  "IncreasedStat": "SpecialAttack",
+  "DecreasedStat": "Speed"
+ },
+ {
+  "Name": "Bashful",
+  "DisplayName": "Pudique",
+  "IncreasedStat": "SpecialAttack",
+  "DecreasedStat": "SpecialAttack"
+ },
+ {
+  "Name": "Rash",
+  "DisplayName": "Foufou",
+  "IncreasedStat": "SpecialAttack",
+  "DecreasedStat": "SpecialDefense"
+ },
+ {
+  "Name": "Calm",
+  "DisplayName": "Calme",
+  "IncreasedStat": "SpecialDefense",
+  "DecreasedStat": "Attack"
+ },
+ {
+  "Name": "Gentle",
+  "DisplayName": "Gentil",
+  "IncreasedStat": "SpecialDefense",
+  "DecreasedStat": "Defense"
+ },
+ {
+  "Name": "Sassy",
+  "DisplayName": "Malpoli",
+  "IncreasedStat": "SpecialDefense",
+  "DecreasedStat": "Speed"
+ },
+ {
+  "Name": "Careful",
+  "DisplayName": "Prudent",
+  "IncreasedStat": "SpecialDefense",
+  "DecreasedStat": "SpecialAttack"
+ },
+ {
+  "Name": "Quirky",
+  "DisplayName": "Bizarre",
+  "IncreasedStat": "SpecialDefense",
+  "DecreasedStat": "SpecialDefense"
+ }
+]

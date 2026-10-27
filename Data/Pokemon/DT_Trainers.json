@@ -1,0 +1,312 @@
+[
+ {
+  "Name": "RivalLab_Bulbasaur",
+  "TrainerClass": "Rival",
+  "ClassDisplayName": "Rival",
+  "DisplayName": "Régis",
+  "Location": "PalletTown",
+  "RequiredPlayerStarter": "Bulbasaur",
+  "PrizeMoney": 175,
+  "bIsGymLeader": false,
+  "Badge": "None",
+  "RewardItem": "None",
+  "Party": [
+   {
+    "Species": "Charmander",
+    "Level": 5,
+    "Moves": []
+   }
+  ]
+ },
+ {
+  "Name": "RivalRoute22_Bulbasaur",
+  "TrainerClass": "Rival",
+  "ClassDisplayName": "Rival",
+  "DisplayName": "Régis",
+  "Location": "Route22",
+  "RequiredPlayerStarter": "Bulbasaur",
+  "PrizeMoney": 315,
+  "bIsGymLeader": false,
+  "Badge": "None",
+  "RewardItem": "None",
+  "Party": [
+   {
+    "Species": "Pidgey",
+    "Level": 9,
+    "Moves": []
+   },
+   {
+    "Species": "Charmander",
+    "Level": 9,
+    "Moves": []
+   }
+  ]
+ },
+ {
+  "Name": "RivalLab_Charmander",
+  "TrainerClass": "Rival",
+  "ClassDisplayName": "Rival",
+  "DisplayName": "Régis",
+  "Location": "PalletTown",
+  "RequiredPlayerStarter": "Charmander",
+  "PrizeMoney": 175,
+  "bIsGymLeader": false,
+  "Badge": "None",
+  "RewardItem": "None",
+  "Party": [
+   {
+    "Species": "Squirtle",
+    "Level": 5,
+    "Moves": []
+   }
+  ]
+ },
+ {
+  "Name": "RivalRoute22_Charmander",
+  "TrainerClass": "Rival",
+  "ClassDisplayName": "Rival",
+  "DisplayName": "Régis",
+  "Location": "Route22",
+  "RequiredPlayerStarter": "Charmander",
+  "PrizeMoney": 315,
+  "bIsGymLeader": false,
+  "Badge": "None",
+  "RewardItem": "None",
+  "Party": [
+   {
+    "Species": "Pidgey",
+    "Level": 9,
+    "Moves": []
+   },
+   {
+    "Species": "Squirtle",
+    "Level": 9,
+    "Moves": []
+   }
+  ]
+ },
+ {
+  "Name": "RivalLab_Squirtle",
+  "TrainerClass": "Rival",
+  "ClassDisplayName": "Rival",
+  "DisplayName": "Régis",
+  "Location": "PalletTown",
+  "RequiredPlayerStarter": "Squirtle",
+  "PrizeMoney": 175,
+  "bIsGymLeader": false,
+  "Badge": "None",
+  "RewardItem": "None",
+  "Party": [
+   {
+    "Species": "Bulbasaur",
+    "Level": 5,
+    "Moves": []
+   }
+  ]
+ },
+ {
+  "Name": "RivalRoute22_Squirtle",
+  "TrainerClass": "Rival",
+  "ClassDisplayName": "Rival",
+  "DisplayName": "Régis",
+  "Location": "Route22",
+  "RequiredPlayerStarter": "Squirtle",
+  "PrizeMoney": 315,
+  "bIsGymLeader": false,
+  "Badge": "None",
+  "RewardItem": "None",
+  "Party": [
+   {
+    "Species": "Pidgey",
+    "Level": 9,
+    "Moves": []
+   },
+   {
+    "Species": "Bulbasaur",
+    "Level": 9,
+    "Moves": []
+   }
+  ]
+ },
+ {
+  "Name": "BugCatcherRick",
+  "TrainerClass": "BugCatcher",
+  "ClassDisplayName": "Scout",
+  "DisplayName": "Rick",
+  "Location": "ViridianForest",
+  "RequiredPlayerStarter": "None",
+  "PrizeMoney": 96,
+  "bIsGymLeader": false,
+  "Badge": "None",
+  "RewardItem": "None",
+  "Party": [
+   {
+    "Species": "Weedle",
+    "Level": 6,
+    "Moves": []
+   },
+   {
+    "Species": "Caterpie",
+    "Level": 6,
+    "Moves": []
+   }
+  ]
+ },
+ {
+  "Name": "BugCatcherDoug",
+  "TrainerClass": "BugCatcher",
+  "ClassDisplayName": "Scout",
+  "DisplayName": "Doug",
+  "Location": "ViridianForest",
+  "RequiredPlayerStarter": "None",
+  "PrizeMoney": 112,
+  "bIsGymLeader": false,
+  "Badge": "None",
+  "RewardItem": "None",
+  "Party": [
+   {
+    "Species": "Weedle",
+    "Level": 7,
+    "Moves": []
+   },
+   {
+    "Species": "Kakuna",
+    "Level": 7,
+    "Moves": []
+   },
+   {
+    "Species": "Weedle",
+    "Level": 7,
+    "Moves": []
+   }
+  ]
+ },
+ {
+  "Name": "BugCatcherAnthony",
+  "TrainerClass": "BugCatcher",
+  "ClassDisplayName": "Scout",
+  "DisplayName": "Anthony",
+  "Location": "ViridianForest",
+  "RequiredPlayerStarter": "None",
+  "PrizeMoney": 128,
+  "bIsGymLeader": false,
+  "Badge": "None",
+  "RewardItem": "None",
+  "Party": [
+   {
+    "Species": "Caterpie",
+    "Level": 7,
+    "Moves": []
+   },
+   {
+    "Species": "Caterpie",
+    "Level": 8,
+    "Moves": []
+   }
+  ]
+ },
+ {
+  "Name": "BugCatcherCharlie",
+  "TrainerClass": "BugCatcher",
+  "ClassDisplayName": "Scout",
+  "DisplayName": "Charlie",
+  "Location": "ViridianForest",
+  "RequiredPlayerStarter": "None",
+  "PrizeMoney": 112,
+  "bIsGymLeader": false,
+  "Badge": "None",
+  "RewardItem": "None",
+  "Party": [
+   {
+    "Species": "Metapod",
+    "Level": 7,
+    "Moves": []
+   },
+   {
+    "Species": "Caterpie",
+    "Level": 7,
+    "Moves": []
+   },
+   {
+    "Species": "Metapod",
+    "Level": 7,
+    "Moves": []
+   }
+  ]
+ },
+ {
+  "Name": "BugCatcherSammy",
+  "TrainerClass": "BugCatcher",
+  "ClassDisplayName": "Scout",
+  "DisplayName": "Sammy",
+  "Location": "ViridianForest",
+  "RequiredPlayerStarter": "None",
+  "PrizeMoney": 144,
+  "bIsGymLeader": false,
+  "Badge": "None",
+  "RewardItem": "None",
+  "Party": [
+   {
+    "Species": "Weedle",
+    "Level": 9,
+    "Moves": []
+   }
+  ]
+ },
+ {
+  "Name": "CamperLiam",
+  "TrainerClass": "Camper",
+  "ClassDisplayName": "Campeur",
+  "DisplayName": "Liam",
+  "Location": "PewterCity",
+  "RequiredPlayerStarter": "None",
+  "PrizeMoney": 220,
+  "bIsGymLeader": false,
+  "Badge": "None",
+  "RewardItem": "None",
+  "Party": [
+   {
+    "Species": "Geodude",
+    "Level": 10,
+    "Moves": []
+   },
+   {
+    "Species": "Sandshrew",
+    "Level": 11,
+    "Moves": []
+   }
+  ]
+ },
+ {
+  "Name": "Brock",
+  "TrainerClass": "GymLeader",
+  "ClassDisplayName": "Champion d'Arène",
+  "DisplayName": "Pierre",
+  "Location": "PewterCity",
+  "RequiredPlayerStarter": "None",
+  "PrizeMoney": 1386,
+  "bIsGymLeader": true,
+  "Badge": "BoulderBadge",
+  "RewardItem": "TM39",
+  "Party": [
+   {
+    "Species": "Geodude",
+    "Level": 12,
+    "Moves": [
+     "Tackle",
+     "DefenseCurl"
+    ]
+   },
+   {
+    "Species": "Onix",
+    "Level": 14,
+    "Moves": [
+     "Tackle",
+     "Bind",
+     "RockTomb",
+     "Screech"
+    ]
+   }
+  ]
+ }
+]

@@ -57,6 +57,7 @@ Objectif : le jeu sait ce qu'est un Pokémon.
 - **DAT-1** Data Table des espèces (stats de base, types, taux de capture, courbe d'XP)
 - **DAT-2** Table des 18 types et des multiplicateurs d'efficacité
 - **DAT-3** Data Table des attaques (puissance, précision, PP, catégorie)
+  - DAT-1 à DAT-3 (SCRUM-27, 28, 29) : données générées, plus apprentissages, CT, talents, natures, rencontres et dresseurs V1 (`docs/DONNEES_POKEMON.md`)
 - **DAT-4** Instance de Pokémon : niveau, IV/EV, nature, PV, attaques connues
 - **DAT-5** Équipe du joueur (6 max) et choix du starter au labo
 - **ART-2** Premier modèle 3D réaliste de test (un starter) avec animations idle et attaque
