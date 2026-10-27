@@ -15,7 +15,7 @@
 
 namespace BattleTest
 {
-	constexpr EAutomationTestFlags Flags = EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter;
+	constexpr EAutomationTestFlags TestFlags = EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter;
 
 	UDataTable* MakeTable(UScriptStruct* Struct)
 	{
@@ -192,7 +192,7 @@ namespace BattleTest
 
 using namespace BattleTest;
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleDamageFormulaTest, "PokemonNewAge.Battle.Rules.DamageFormula", BattleTest::Flags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleDamageFormulaTest, "PokemonNewAge.Battle.Rules.DamageFormula", BattleTest::TestFlags)
 bool FBattleDamageFormulaTest::RunTest(const FString& Parameters)
 {
 	// N.50, puissance 80, Attaque 100 contre Défense 100 : 22 x 80 x 100 / 100 / 50 + 2 = 37
@@ -230,7 +230,7 @@ bool FBattleDamageFormulaTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleStatFormulaTest, "PokemonNewAge.Battle.Rules.Stats", BattleTest::Flags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleStatFormulaTest, "PokemonNewAge.Battle.Rules.Stats", BattleTest::TestFlags)
 bool FBattleStatFormulaTest::RunTest(const FString& Parameters)
 {
 	// Base 100, IV 31, EV 0, N.100
@@ -257,7 +257,7 @@ bool FBattleStatFormulaTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleCaptureFormulaTest, "PokemonNewAge.Battle.Rules.Capture", BattleTest::Flags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleCaptureFormulaTest, "PokemonNewAge.Battle.Rules.Capture", BattleTest::TestFlags)
 bool FBattleCaptureFormulaTest::RunTest(const FString& Parameters)
 {
 	// PV pleins, taux 255, Poké Ball : a = 85
@@ -288,7 +288,7 @@ bool FBattleCaptureFormulaTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleExperienceFormulaTest, "PokemonNewAge.Battle.Rules.Experience", BattleTest::Flags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleExperienceFormulaTest, "PokemonNewAge.Battle.Rules.Experience", BattleTest::TestFlags)
 bool FBattleExperienceFormulaTest::RunTest(const FString& Parameters)
 {
 	// Rattata (51) N.3 battu par un N.5 : 51 x 3 / 5 x (16/18)^2,5 + 1 = 23
@@ -307,7 +307,7 @@ bool FBattleExperienceFormulaTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattlePokemonInstanceTest, "PokemonNewAge.Battle.PokemonInstance", BattleTest::Flags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattlePokemonInstanceTest, "PokemonNewAge.Battle.PokemonInstance", BattleTest::TestFlags)
 bool FBattlePokemonInstanceTest::RunTest(const FString& Parameters)
 {
 	UPokemonDatabase* Db = MakeDatabase();
@@ -346,7 +346,7 @@ bool FBattlePokemonInstanceTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleTurnOrderTest, "PokemonNewAge.Battle.Session.TurnOrder", BattleTest::Flags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleTurnOrderTest, "PokemonNewAge.Battle.Session.TurnOrder", BattleTest::TestFlags)
 bool FBattleTurnOrderTest::RunTest(const FString& Parameters)
 {
 	UPokemonDatabase* Db = MakeDatabase();
@@ -391,7 +391,7 @@ bool FBattleTurnOrderTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleWildFlowTest, "PokemonNewAge.Battle.Session.WildBattle", BattleTest::Flags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleWildFlowTest, "PokemonNewAge.Battle.Session.WildBattle", BattleTest::TestFlags)
 bool FBattleWildFlowTest::RunTest(const FString& Parameters)
 {
 	UPokemonDatabase* Db = MakeDatabase();
@@ -467,7 +467,7 @@ bool FBattleWildFlowTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleStatusTest, "PokemonNewAge.Battle.Session.Status", BattleTest::Flags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleStatusTest, "PokemonNewAge.Battle.Session.Status", BattleTest::TestFlags)
 bool FBattleStatusTest::RunTest(const FString& Parameters)
 {
 	UPokemonDatabase* Db = MakeDatabase();
@@ -510,7 +510,7 @@ bool FBattleStatusTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleTrainerTest, "PokemonNewAge.Battle.Session.TrainerBattle", BattleTest::Flags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleTrainerTest, "PokemonNewAge.Battle.Session.TrainerBattle", BattleTest::TestFlags)
 bool FBattleTrainerTest::RunTest(const FString& Parameters)
 {
 	UPokemonDatabase* Db = MakeDatabase();
@@ -543,7 +543,7 @@ bool FBattleTrainerTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleLevelUpTest, "PokemonNewAge.Battle.Session.LevelUpAndEvolution", BattleTest::Flags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleLevelUpTest, "PokemonNewAge.Battle.Session.LevelUpAndEvolution", BattleTest::TestFlags)
 bool FBattleLevelUpTest::RunTest(const FString& Parameters)
 {
 	UPokemonDatabase* Db = MakeDatabase();
@@ -578,7 +578,7 @@ bool FBattleLevelUpTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleAITest, "PokemonNewAge.Battle.AI", BattleTest::Flags)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleAITest, "PokemonNewAge.Battle.AI", BattleTest::TestFlags)
 bool FBattleAITest::RunTest(const FString& Parameters)
 {
 	UPokemonDatabase* Db = MakeDatabase();

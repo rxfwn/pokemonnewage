@@ -8,6 +8,10 @@ public class PokemonNewAge : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
+		// Pas de build « unity » : sinon Unreal colle les .cpp entre eux et les noms
+		// internes de deux fichiers (namespace anonyme) se masquent l'un l'autre (erreur C4459).
+		bUseUnity = false;
+
 		PublicDependencyModuleNames.AddRange(new string[] {
 			"Core",
 			"CoreUObject",
