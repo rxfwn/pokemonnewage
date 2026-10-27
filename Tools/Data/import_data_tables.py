@@ -29,6 +29,7 @@ TABLES = [
     ("DT_Experience", "ExperienceRow", "experience"),
     ("DT_Encounters", "EncounterTableRow", "encounters"),
     ("DT_Trainers", "TrainerRow", "trainers"),
+    ("DT_Items", "ItemRow", "items"),  # Tools/Data/build_items.py
 ]
 
 # Dialogues (docs/DIALOGUES.md) : (asset, struct C++)

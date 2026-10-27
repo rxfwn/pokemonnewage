@@ -57,6 +57,7 @@ const FLearnsetRow* UPokemonDatabase::FindLearnset(FName SpeciesId) const { retu
 const FNatureRow* UPokemonDatabase::FindNature(FName Id) const { return FindIn<FNatureRow>(Natures, Id); }
 const FEncounterTableRow* UPokemonDatabase::FindEncounterTable(FName Id) const { return FindIn<FEncounterTableRow>(Encounters, Id); }
 const FTrainerRow* UPokemonDatabase::FindTrainer(FName Id) const { return FindIn<FTrainerRow>(Trainers, Id); }
+const FItemRow* UPokemonDatabase::FindItem(FName Id) const { return FindIn<FItemRow>(Items, Id); }
 
 bool UPokemonDatabase::GetSpecies(FName Id, FSpeciesRow& OutRow) const
 {
@@ -71,6 +72,16 @@ bool UPokemonDatabase::GetSpecies(FName Id, FSpeciesRow& OutRow) const
 bool UPokemonDatabase::GetMove(FName Id, FMoveRow& OutRow) const
 {
 	if (const FMoveRow* Row = FindMove(Id))
+	{
+		OutRow = *Row;
+		return true;
+	}
+	return false;
+}
+
+bool UPokemonDatabase::GetItem(FName Id, FItemRow& OutRow) const
+{
+	if (const FItemRow* Row = FindItem(Id))
 	{
 		OutRow = *Row;
 		return true;

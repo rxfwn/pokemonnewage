@@ -50,6 +50,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Tables", meta=(RequiredAssetDataTags="RowStructure=/Script/PokemonNewAge.TrainerRow"))
 	TObjectPtr<UDataTable> Trainers;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Tables", meta=(RequiredAssetDataTags="RowStructure=/Script/PokemonNewAge.ItemRow"))
+	TObjectPtr<UDataTable> Items;
+
 	// Recherches par identifiant (C++). Renvoient nullptr si la ligne n'existe pas.
 	const FSpeciesRow* FindSpecies(FName Id) const;
 	const FMoveRow* FindMove(FName Id) const;
@@ -57,6 +60,7 @@ public:
 	const FNatureRow* FindNature(FName Id) const;
 	const FEncounterTableRow* FindEncounterTable(FName Id) const;
 	const FTrainerRow* FindTrainer(FName Id) const;
+	const FItemRow* FindItem(FName Id) const;
 
 	/** Copie de la fiche d'une espèce (Blueprint) */
 	UFUNCTION(BlueprintCallable, Category="Pokemon|Data")
@@ -65,6 +69,10 @@ public:
 	/** Copie de la fiche d'une attaque (Blueprint) */
 	UFUNCTION(BlueprintCallable, Category="Pokemon|Data")
 	bool GetMove(FName Id, FMoveRow& OutRow) const;
+
+	/** Copie de la fiche d'un objet (Blueprint) */
+	UFUNCTION(BlueprintCallable, Category="Pokemon|Data")
+	bool GetItem(FName Id, FItemRow& OutRow) const;
 
 	/** Multiplicateur de type : 0, 0.25, 0.5, 1, 2 ou 4 */
 	UFUNCTION(BlueprintPure, Category="Pokemon|Data")

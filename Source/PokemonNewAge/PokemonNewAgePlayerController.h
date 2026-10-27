@@ -10,6 +10,7 @@ class UInputMappingContext;
 class UUserWidget;
 class UInputAction;
 class UGameMenuWidget;
+class UBattleComponent;
 
 /**
  *  Basic PlayerController class for a third person game
@@ -77,6 +78,12 @@ protected:
 
 public:
 
+	APokemonNewAgePlayerController();
+
+	/** Combats de ce joueur : envoie ses choix au serveur et reçoit les événements (docs/COMBAT.md) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Battle")
+	TObjectPtr<UBattleComponent> BattleComponent;
+
 	/** Ouvre le menu en jeu s'il est fermé, sinon le ferme */
 	UFUNCTION(BlueprintCallable, Category="UI")
 	void ToggleGameMenu();
@@ -92,5 +99,59 @@ public:
 	/** Vrai si le menu en jeu est ouvert */
 	UFUNCTION(BlueprintPure, Category="UI")
 	bool IsGameMenuOpen() const { return GameMenu != nullptr; }
+
+	// Commandes de test du combat, à taper dans la console (touche ²) tant que l'UI n'existe pas.
+	// Voir docs/COMBAT.md. Les numéros commencent à 1 comme à l'écran.
+
+	/** CombatSauvage Pidgey 3 */
+	UFUNCTION(Exec)
+	void CombatSauvage(FName Species, int32 Level);
+
+	/** CombatRencontre Route1_Walk */
+	UFUNCTION(Exec)
+	void CombatRencontre(FName EncounterTable);
+
+	/** CombatDresseur Brock (ou RivalLab) */
+	UFUNCTION(Exec)
+	void CombatDresseur(FName TrainerGroup);
+
+	/** Attaque 1 à 4 */
+	UFUNCTION(Exec)
+	void Attaque(int32 Slot);
+
+	/** Changer 1 à 6 (aussi pour envoyer un Pokémon après un K.O.) */
+	UFUNCTION(Exec)
+	void Changer(int32 PartySlot);
+
+	/** Objet PokeBall, Objet Potion 1 */
+	UFUNCTION(Exec)
+	void Objet(FName Item, int32 PartySlot = 1);
+
+	UFUNCTION(Exec)
+	void Fuite();
+
+	/** 5e attaque : Oublier 1 à 4, Oublier 0 pour ne pas l'apprendre */
+	UFUNCTION(Exec)
+	void Oublier(int32 Slot);
+
+	/** Évolution après le combat : Evoluer 1 (Evoluer 1 0 pour l'annuler) */
+	UFUNCTION(Exec)
+	void Evoluer(int32 PartySlot, int32 bAccept = 1);
+
+	/** DonnerPokemon Bulbasaur 5 */
+	UFUNCTION(Exec)
+	void DonnerPokemon(FName Species, int32 Level);
+
+	/** DonnerObjet PokeBall 10 */
+	UFUNCTION(Exec)
+	void DonnerObjet(FName Item, int32 Count = 1);
+
+	/** Soigne l'équipe */
+	UFUNCTION(Exec)
+	void Soigner();
+
+	/** Affiche l'équipe dans le journal et à l'écran */
+	UFUNCTION(Exec)
+	void Equipe();
 
 };

@@ -161,6 +161,30 @@ enum class EEncounterMethod : uint8
 	RockSmash
 };
 
+/** Statut majeur d'un Pokémon : il reste après le combat (contrairement à la confusion). */
+UENUM(BlueprintType)
+enum class EMajorStatus : uint8
+{
+	None,
+	Paralysis,
+	Sleep,
+	Freeze,
+	Burn,
+	Poison,
+	/** Gravement empoisonné (Toxik) : les dégâts augmentent à chaque tour */
+	BadlyPoisoned
+};
+
+/** Poche du sac où range un objet (DT_Items). */
+UENUM(BlueprintType)
+enum class EItemCategory : uint8
+{
+	Medicine,
+	PokeBall,
+	KeyItem,
+	Other
+};
+
 /** Six statistiques de base. Sert aussi pour les EV donnés en battant l'espèce. */
 USTRUCT(BlueprintType)
 struct FPokemonBaseStats
