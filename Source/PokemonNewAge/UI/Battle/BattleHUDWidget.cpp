@@ -25,7 +25,7 @@
 
 namespace BattleHUD
 {
-	const FLinearColor Panel(0.02f, 0.025f, 0.035f, 0.82f);
+	const FLinearColor PanelColor(0.02f, 0.025f, 0.035f, 0.82f);
 	const FLinearColor Text(0.95f, 0.96f, 0.97f, 1.f);
 	const FLinearColor Dim(0.6f, 0.65f, 0.7f, 1.f);
 	const FLinearColor Good(0.3f, 0.85f, 0.4f, 1.f);
@@ -142,7 +142,7 @@ TSharedRef<SWidget> UBattleHUDWidget::RebuildWidget()
 
 		// Boîte de texte en bas
 		UBorder* MessageFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MessageFrame"));
-		MessageFrame->SetBrush(FSlateRoundedBoxBrush(Panel, 14.f));
+		MessageFrame->SetBrush(FSlateRoundedBoxBrush(PanelColor, 14.f));
 		MessageFrame->SetPadding(FMargin(32.f, 22.f));
 		UOverlaySlot* MessageSlot = Root->AddChildToOverlay(MessageFrame);
 		MessageSlot->SetHorizontalAlignment(HAlign_Fill);
@@ -164,7 +164,7 @@ TSharedRef<SWidget> UBattleHUDWidget::RebuildWidget()
 
 		// Menu des choix, à droite au-dessus de la boîte de texte
 		MenuFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MenuFrame"));
-		MenuFrame->SetBrush(FSlateRoundedBoxBrush(Panel, 14.f));
+		MenuFrame->SetBrush(FSlateRoundedBoxBrush(PanelColor, 14.f));
 		MenuFrame->SetPadding(FMargin(16.f));
 		UOverlaySlot* MenuSlot = Root->AddChildToOverlay(MenuFrame);
 		MenuSlot->SetHorizontalAlignment(HAlign_Right);
@@ -181,7 +181,7 @@ TSharedRef<SWidget> UBattleHUDWidget::RebuildWidget()
 void UBattleHUDWidget::BuildInfoBox(FInfoBox& Box, bool bPlayer)
 {
 	Box.Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass());
-	Box.Frame->SetBrush(FSlateRoundedBoxBrush(Panel, 12.f));
+	Box.Frame->SetBrush(FSlateRoundedBoxBrush(PanelColor, 12.f));
 	Box.Frame->SetPadding(FMargin(22.f, 14.f));
 	Box.Frame->SetVisibility(ESlateVisibility::Hidden);
 
