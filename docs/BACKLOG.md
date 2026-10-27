@@ -49,6 +49,7 @@ Objectif : marcher dans une version blockout de Bourg Palette et de la Route 1.
 - **EXP-4** Blockout de la Route 1 avec zones d'herbes hautes
 - **EXP-5** Entrer et sortir des bâtiments (transition de niveau)
 - **EXP-6** Dialogue simple avec un PNJ
+  - SCRUM-71 : textes de tous les dialogues de la V1 en Data Tables (`docs/DIALOGUES.md`)
 
 ## Sprint 2 : les données Pokémon (semaines 5-6)
 

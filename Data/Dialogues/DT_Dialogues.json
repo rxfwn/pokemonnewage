@@ -1,0 +1,5008 @@
+[
+  {
+    "Name": "PalletTown_Sign_Read",
+    "Npc": "PalletTown_Sign",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PalletTown_Sign",
+        "Text": "BOURG PALETTE\nDes couleurs pures et paisibles.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PalletTown_PlayerHouseSign_Read",
+    "Npc": "PalletTown_PlayerHouseSign",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PalletTown_PlayerHouseSign",
+        "Text": "Maison de {PlayerName}",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PalletTown_RivalHouseSign_Read",
+    "Npc": "PalletTown_RivalHouseSign",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PalletTown_RivalHouseSign",
+        "Text": "Maison de Régis",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PalletTown_OaksLabSign_Read",
+    "Npc": "PalletTown_OaksLabSign",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PalletTown_OaksLabSign",
+        "Text": "LABORATOIRE POKÉMON DU PROF. CHEN",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PalletTown_Girl_Talk",
+    "Npc": "PalletTown_Girl",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PalletTown_Girl",
+        "Text": "Moi aussi, j'élève des Pokémon !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PalletTown_Girl",
+        "Text": "Quand ils seront grands et forts, ce sont eux qui me protégeront.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PalletTown_TechGuy_Talk",
+    "Npc": "PalletTown_TechGuy",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PalletTown_TechGuy",
+        "Text": "La technologie, c'est fou !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PalletTown_TechGuy",
+        "Text": "Aujourd'hui, on peut ranger des Pokémon et des objets dans un PC, comme de simples données !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PalletTown_ProfOak_StopGrass",
+    "Npc": "ProfOak",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "MetOak"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ProfOak",
+        "Text": "Hé ! Attends ! Ne va pas plus loin !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "C'est dangereux ! Des Pokémon sauvages vivent dans les hautes herbes !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Il te faut ton propre Pokémon pour te protéger.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Allez, suis-moi !",
+        "Event": "PlayCutscene",
+        "EventParam": "OakLeadsToLab",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [
+      "MetOak"
+    ],
+    "NextConversation": "OaksLab_Intro"
+  },
+  {
+    "Name": "PlayerHouse_Mom_Default",
+    "Npc": "Mom",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Mom",
+        "Text": "Un jour ou l'autre, tout le monde quitte la maison pour partir à l'aventure.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Mom",
+        "Text": "Enfin, c'est ce qu'ils disent à la télé.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Mom",
+        "Text": "Au fait, le Prof. Chen, notre voisin, te cherchait tout à l'heure.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PlayerHouse_Mom_AfterStarter",
+    "Npc": "Mom",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "GotStarter"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Mom",
+        "Text": "{PlayerName} ! Le Prof. Chen t'a confié un Pokémon ? C'est merveilleux !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Mom",
+        "Text": "Viens donc te reposer un peu, tous les deux.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} et {StarterName} reprennent des forces.",
+        "Event": "HealParty",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Mom",
+        "Text": "Voilà ! Ton Pokémon a l'air en pleine forme. Fais bien attention à toi !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PlayerHouse_Mom_AfterPokedex",
+    "Npc": "Mom",
+    "Trigger": "Talk",
+    "Priority": 20,
+    "RequiredFlags": [
+      "GotPokedex"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Mom",
+        "Text": "Le Prof. Chen compte sur toi pour remplir son Pokédex ? Quelle aventure !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Mom",
+        "Text": "Repose-toi avant de repartir.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "Toute l'équipe est en pleine forme.",
+        "Event": "HealParty",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Mom",
+        "Text": "Et repasse me voir de temps en temps, d'accord ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PlayerHouse_Mom_AfterBadge",
+    "Npc": "Mom",
+    "Trigger": "Talk",
+    "Priority": 30,
+    "RequiredFlags": [
+      "GotBoulderBadge"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Mom",
+        "Text": "Le Badge Roche ? Tu as battu le Champion d'Argenta ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Mom",
+        "Text": "Je suis si fière de toi ! Allez, un peu de repos.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "Toute l'équipe est en pleine forme.",
+        "Event": "HealParty",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PlayerHouse_TV_Read",
+    "Npc": "PlayerHouse_TV",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PlayerHouse_TV",
+        "Text": "Un film passe à la télé. Quatre garçons marchent le long d'une voie ferrée...\nBon, il est temps d'y aller.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PlayerHouse_Console_Read",
+    "Npc": "PlayerHouse_Console",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PlayerHouse_Console",
+        "Text": "Une vieille console de jeux.\nPas le temps de jouer, l'aventure attend !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PlayerHouse_PC_Use",
+    "Npc": "PlayerHouse_PC",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} allume le PC.",
+        "Event": "OpenPC",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PlayerHouse_Bookshelf_Read",
+    "Npc": "PlayerHouse_Bookshelf",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PlayerHouse_Bookshelf",
+        "Text": "Plein de livres sur les Pokémon. Que des classiques !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "RivalHouse_Daisy_Default",
+    "Npc": "Daisy",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Daisy",
+        "Text": "Salut, {PlayerName} ! Régis est parti au labo de Grand-père.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Daisy",
+        "Text": "Il ne tenait plus en place, ce matin...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "RivalHouse_Daisy_AfterStarter",
+    "Npc": "Daisy",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "GotStarter"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Daisy",
+        "Text": "Grand-père t'a donné un Pokémon ? Je peux te donner un conseil ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Daisy",
+        "Text": "Parle-lui souvent. Un Pokémon sent quand on tient à lui.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "RivalHouse_Daisy_GiveTownMap",
+    "Npc": "Daisy",
+    "Trigger": "Talk",
+    "Priority": 20,
+    "RequiredFlags": [
+      "GotPokedex"
+    ],
+    "BlockedByFlags": [
+      "GotTownMap"
+    ],
+    "Lines": [
+      {
+        "Speaker": "Daisy",
+        "Text": "Grand-père t'a demandé un service, c'est ça ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Daisy",
+        "Text": "Alors prends ça, ça te sera utile.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} obtient : Carte !",
+        "Event": "GiveItem",
+        "EventParam": "TownMap",
+        "EventAmount": 1,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Daisy",
+        "Text": "C'est une carte de Kanto. Elle te montre toujours où tu te trouves.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [
+      "GotTownMap"
+    ],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "RivalHouse_Daisy_AfterTownMap",
+    "Npc": "Daisy",
+    "Trigger": "Talk",
+    "Priority": 30,
+    "RequiredFlags": [
+      "GotTownMap"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Daisy",
+        "Text": "La Carte est rangée dans ton Sac, avec les objets rares.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Daisy",
+        "Text": "Mon frère est parti vers Jadielle comme une flèche. Il ne changera jamais !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "RivalHouse_Painting_Read",
+    "Npc": "RivalHouse_Painting",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "RivalHouse_Painting",
+        "Text": "Un joli tableau. On dirait un paysage de Kanto vu du ciel.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_Rival_Waiting",
+    "Npc": "Rival",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "MetOak"
+    ],
+    "Lines": [
+      {
+        "Speaker": "Rival",
+        "Text": "Tiens, {PlayerName} ! Pépé n'est pas là.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Il m'a dit de passer, il va me donner un Pokémon. Toi, rentre chez toi !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_Intro",
+    "Npc": "Rival",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [
+      "MetOak"
+    ],
+    "BlockedByFlags": [
+      "LabIntroDone"
+    ],
+    "Lines": [
+      {
+        "Speaker": "Rival",
+        "Text": "Pépé ! J'en ai marre d'attendre !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Régis ? Ah, c'est vrai, je t'avais dit de venir. Patiente un peu.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Bien. {PlayerName}, approche.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Sur cette table, il y a trois Poké Balls. Chacune contient un Pokémon.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Quand j'étais jeune, j'étais un Dresseur redoutable, tu sais.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Aujourd'hui, il ne me reste que ces trois-là. Je t'en confie un. Vas-y, choisis !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Hé ! Pépé ! Et moi, alors ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Sois patient, Régis ! Tu auras le tien juste après.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [
+      "LabIntroDone"
+    ],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_Rival_BeforeChoice",
+    "Npc": "Rival",
+    "Trigger": "Talk",
+    "Priority": 5,
+    "RequiredFlags": [
+      "LabIntroDone"
+    ],
+    "BlockedByFlags": [
+      "GotStarter"
+    ],
+    "Lines": [
+      {
+        "Speaker": "Rival",
+        "Text": "Vas-y, choisis ! De toute façon, je prendrai le meilleur après toi.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_ProfOak_BeforeChoice",
+    "Npc": "ProfOak",
+    "Trigger": "Talk",
+    "Priority": 5,
+    "RequiredFlags": [
+      "LabIntroDone"
+    ],
+    "BlockedByFlags": [
+      "GotStarter"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ProfOak",
+        "Text": "Alors, {PlayerName} ? Choisis l'un de ces trois Pokémon. Prends ton temps !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_PokeBall_Bulbasaur_Look",
+    "Npc": "OaksLab_PokeBall_Bulbasaur",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "OaksLab_PokeBall_Bulbasaur",
+        "Text": "Une Poké Ball. Il y a un Pokémon à l'intérieur !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "OaksLab_PokeBall_Bulbasaur",
+        "Text": "Le Prof. Chen n'aimerait sans doute pas qu'on y touche...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_PokeBall_Bulbasaur_Offer",
+    "Npc": "OaksLab_PokeBall_Bulbasaur",
+    "Trigger": "Talk",
+    "Priority": 5,
+    "RequiredFlags": [
+      "LabIntroDone"
+    ],
+    "BlockedByFlags": [
+      "GotStarter"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ProfOak",
+        "Text": "Ah ! Bulbizarre, le Pokémon Plante ? Il est facile à élever et très résistant.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Tu choisis Bulbizarre ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": [
+          {
+            "Text": "Oui",
+            "NextConversation": "OaksLab_ChooseBulbasaur"
+          },
+          {
+            "Text": "Non",
+            "NextConversation": "None"
+          }
+        ]
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_ChooseBulbasaur",
+    "Npc": "ProfOak",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "GotStarter"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ProfOak",
+        "Text": "Excellent choix ! Ce Pokémon déborde d'énergie.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} reçoit Bulbizarre de la part du Prof. Chen !",
+        "Event": "GivePokemon",
+        "EventParam": "Bulbasaur",
+        "EventAmount": 5,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "Veux-tu donner un surnom à Bulbizarre ?",
+        "Event": "OfferNickname",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Alors moi, je prends celui-là !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "Régis reçoit {RivalStarterName} de la part du Prof. Chen !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Mon Pokémon a l'air bien plus fort que le tien. Ha !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [
+      "GotStarter",
+      "Starter_Bulbasaur"
+    ],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_PokeBall_Bulbasaur_LastOne",
+    "Npc": "OaksLab_PokeBall_Bulbasaur",
+    "Trigger": "Talk",
+    "Priority": 20,
+    "RequiredFlags": [
+      "GotStarter",
+      "Starter_Charmander"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "OaksLab_PokeBall_Bulbasaur",
+        "Text": "C'est le dernier Pokémon du Prof. Chen.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "OaksLab_PokeBall_Bulbasaur",
+        "Text": "Il vaut mieux le laisser à sa place.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_PokeBall_Bulbasaur_Empty",
+    "Npc": "OaksLab_PokeBall_Bulbasaur",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "GotStarter"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "OaksLab_PokeBall_Bulbasaur",
+        "Text": "La Poké Ball est vide.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_PokeBall_Charmander_Look",
+    "Npc": "OaksLab_PokeBall_Charmander",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "OaksLab_PokeBall_Charmander",
+        "Text": "Une Poké Ball. Il y a un Pokémon à l'intérieur !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "OaksLab_PokeBall_Charmander",
+        "Text": "Le Prof. Chen n'aimerait sans doute pas qu'on y touche...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_PokeBall_Charmander_Offer",
+    "Npc": "OaksLab_PokeBall_Charmander",
+    "Trigger": "Talk",
+    "Priority": 5,
+    "RequiredFlags": [
+      "LabIntroDone"
+    ],
+    "BlockedByFlags": [
+      "GotStarter"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ProfOak",
+        "Text": "Ah ! Salamèche, le Pokémon Feu ? La flamme au bout de sa queue montre sa force.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Tu choisis Salamèche ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": [
+          {
+            "Text": "Oui",
+            "NextConversation": "OaksLab_ChooseCharmander"
+          },
+          {
+            "Text": "Non",
+            "NextConversation": "None"
+          }
+        ]
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_ChooseCharmander",
+    "Npc": "ProfOak",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "GotStarter"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ProfOak",
+        "Text": "Excellent choix ! Ce Pokémon déborde d'énergie.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} reçoit Salamèche de la part du Prof. Chen !",
+        "Event": "GivePokemon",
+        "EventParam": "Charmander",
+        "EventAmount": 5,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "Veux-tu donner un surnom à Salamèche ?",
+        "Event": "OfferNickname",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Alors moi, je prends celui-là !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "Régis reçoit {RivalStarterName} de la part du Prof. Chen !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Mon Pokémon a l'air bien plus fort que le tien. Ha !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [
+      "GotStarter",
+      "Starter_Charmander"
+    ],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_PokeBall_Charmander_LastOne",
+    "Npc": "OaksLab_PokeBall_Charmander",
+    "Trigger": "Talk",
+    "Priority": 20,
+    "RequiredFlags": [
+      "GotStarter",
+      "Starter_Squirtle"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "OaksLab_PokeBall_Charmander",
+        "Text": "C'est le dernier Pokémon du Prof. Chen.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "OaksLab_PokeBall_Charmander",
+        "Text": "Il vaut mieux le laisser à sa place.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_PokeBall_Charmander_Empty",
+    "Npc": "OaksLab_PokeBall_Charmander",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "GotStarter"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "OaksLab_PokeBall_Charmander",
+        "Text": "La Poké Ball est vide.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_PokeBall_Squirtle_Look",
+    "Npc": "OaksLab_PokeBall_Squirtle",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "OaksLab_PokeBall_Squirtle",
+        "Text": "Une Poké Ball. Il y a un Pokémon à l'intérieur !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "OaksLab_PokeBall_Squirtle",
+        "Text": "Le Prof. Chen n'aimerait sans doute pas qu'on y touche...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_PokeBall_Squirtle_Offer",
+    "Npc": "OaksLab_PokeBall_Squirtle",
+    "Trigger": "Talk",
+    "Priority": 5,
+    "RequiredFlags": [
+      "LabIntroDone"
+    ],
+    "BlockedByFlags": [
+      "GotStarter"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ProfOak",
+        "Text": "Ah ! Carapuce, le Pokémon Eau ? Il se protège dans sa carapace et crache de l'eau.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Tu choisis Carapuce ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": [
+          {
+            "Text": "Oui",
+            "NextConversation": "OaksLab_ChooseSquirtle"
+          },
+          {
+            "Text": "Non",
+            "NextConversation": "None"
+          }
+        ]
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_ChooseSquirtle",
+    "Npc": "ProfOak",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "GotStarter"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ProfOak",
+        "Text": "Excellent choix ! Ce Pokémon déborde d'énergie.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} reçoit Carapuce de la part du Prof. Chen !",
+        "Event": "GivePokemon",
+        "EventParam": "Squirtle",
+        "EventAmount": 5,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "Veux-tu donner un surnom à Carapuce ?",
+        "Event": "OfferNickname",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Alors moi, je prends celui-là !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "Régis reçoit {RivalStarterName} de la part du Prof. Chen !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Mon Pokémon a l'air bien plus fort que le tien. Ha !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [
+      "GotStarter",
+      "Starter_Squirtle"
+    ],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_PokeBall_Squirtle_LastOne",
+    "Npc": "OaksLab_PokeBall_Squirtle",
+    "Trigger": "Talk",
+    "Priority": 20,
+    "RequiredFlags": [
+      "GotStarter",
+      "Starter_Bulbasaur"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "OaksLab_PokeBall_Squirtle",
+        "Text": "C'est le dernier Pokémon du Prof. Chen.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "OaksLab_PokeBall_Squirtle",
+        "Text": "Il vaut mieux le laisser à sa place.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_PokeBall_Squirtle_Empty",
+    "Npc": "OaksLab_PokeBall_Squirtle",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "GotStarter"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "OaksLab_PokeBall_Squirtle",
+        "Text": "La Poké Ball est vide.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_Rival_Challenge",
+    "Npc": "Rival",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [
+      "GotStarter"
+    ],
+    "BlockedByFlags": [
+      "BattledRivalLab"
+    ],
+    "Lines": [
+      {
+        "Speaker": "Rival",
+        "Text": "Attends, {PlayerName} !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Pépé nous a donné des Pokémon, alors on va voir ce qu'ils valent !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Allez, en garde !",
+        "Event": "StartTrainerBattle",
+        "EventParam": "RivalLab",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Trainer_RivalLab_PlayerWins",
+    "Npc": "Rival",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Rival",
+        "Text": "Quoi ?! Pas possible ! J'ai choisi le mauvais Pokémon !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "OaksLab_Rival_Leaves"
+  },
+  {
+    "Name": "Trainer_RivalLab_PlayerLoses",
+    "Npc": "Rival",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Rival",
+        "Text": "Ouais ! Mon Pokémon est le meilleur !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "OaksLab_Rival_Leaves"
+  },
+  {
+    "Name": "OaksLab_Rival_Leaves",
+    "Npc": "Rival",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Rival",
+        "Text": "Bon, je vais entraîner mon Pokémon et devenir encore plus fort.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "{PlayerName} ! Pépé ! À plus tard !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Ce garçon ne tient vraiment pas en place...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Vos deux Pokémon se sont bien battus. Laisse-moi soigner le tien.",
+        "Event": "HealParty",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [
+      "BattledRivalLab"
+    ],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_ProfOak_AfterStarter",
+    "Npc": "ProfOak",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "GotStarter"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ProfOak",
+        "Text": "Si un Pokémon sauvage surgit des hautes herbes, ton Pokémon peut le combattre.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Avec lui à tes côtés, tu peux aller jusqu'à la ville voisine, Jadielle.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_ProfOak_ParcelDelivery",
+    "Npc": "ProfOak",
+    "Trigger": "Talk",
+    "Priority": 20,
+    "RequiredFlags": [
+      "GotOaksParcel"
+    ],
+    "BlockedByFlags": [
+      "GotPokedex"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ProfOak",
+        "Text": "Oh, {PlayerName} ! Comment va ton Pokémon ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Il a l'air de bien t'aimer. Tu sais t'y prendre avec les Pokémon !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Hmm ? Tu as quelque chose pour moi ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} remet le Colis de Chen au Prof. Chen.",
+        "Event": "TakeItem",
+        "EventParam": "OaksParcel",
+        "EventAmount": 1,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Ah ! C'est la Poké Ball spéciale que j'avais commandée. Merci beaucoup !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Pépé ! Qu'est-ce que tu me voulais ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Ah, Régis ! Tu tombes bien. J'ai une faveur à vous demander, à tous les deux.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Sur ce bureau, voici ma dernière invention : le Pokédex !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Il enregistre automatiquement chaque Pokémon que tu vois ou que tu attrapes.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "C'est une encyclopédie high-tech !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} reçoit le Pokédex du Prof. Chen !",
+        "Event": "GiveItem",
+        "EventParam": "Pokedex",
+        "EventAmount": 1,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Faire la liste complète des Pokémon du monde... C'était mon rêve.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Mais je suis trop vieux pour ça, maintenant.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Alors je vous confie cette mission. C'est un grand moment de l'histoire des Pokémon !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "T'inquiète, Pépé ! Je m'en occupe !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "{PlayerName}, je n'ai pas besoin de toi. Je vais demander une Carte à ma sœur, et à moi la route !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Allez, salut !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Ce Régis... Tiens, {PlayerName}, prends ceci aussi.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} obtient 5 Poké Balls !",
+        "Event": "GiveItem",
+        "EventParam": "PokeBall",
+        "EventAmount": 5,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Quand un Pokémon sauvage est affaibli, lance-lui une Poké Ball pour l'attraper.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Bonne route, {PlayerName} !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [
+      "GotPokedex"
+    ],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_ProfOak_PokedexRating",
+    "Npc": "ProfOak",
+    "Trigger": "Talk",
+    "Priority": 30,
+    "RequiredFlags": [
+      "GotPokedex"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ProfOak",
+        "Text": "Ah, {PlayerName} ! Montre-moi ton Pokédex.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Tu as vu {SeenCount} Pokémon et tu en as attrapé {CaughtCount}.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Continue ! Chaque Pokémon que tu rencontres remplit un peu plus le Pokédex.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_ProfOak_AfterBadge",
+    "Npc": "ProfOak",
+    "Trigger": "Talk",
+    "Priority": 40,
+    "RequiredFlags": [
+      "GotBoulderBadge"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ProfOak",
+        "Text": "Tu as battu Pierre, à Argenta ? Formidable !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Tes Pokémon et toi formez déjà une belle équipe.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ProfOak",
+        "Text": "Tu as vu {SeenCount} Pokémon et tu en as attrapé {CaughtCount}. Ne t'arrête pas en si bon chemin !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_Aide1_Talk",
+    "Npc": "OaksLab_Aide1",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "OaksLab_Aide1",
+        "Text": "Je suis l'assistant du Prof. Chen.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "OaksLab_Aide1",
+        "Text": "Il étudie les Pokémon depuis toujours. Il en sait plus que n'importe qui !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_Aide2_Talk",
+    "Npc": "OaksLab_Aide2",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "MetOak"
+    ],
+    "Lines": [
+      {
+        "Speaker": "OaksLab_Aide2",
+        "Text": "Le Prof. Chen est sorti. Il fait souvent des promenades le matin.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_Aide2_AfterPokedex",
+    "Npc": "OaksLab_Aide2",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "GotPokedex"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "OaksLab_Aide2",
+        "Text": "Le Pokédex fonctionne ! Plus tu vois de Pokémon, plus il se remplit.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "OaksLab_Aide2",
+        "Text": "Et si tu les attrapes, tu obtiens encore plus d'informations.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_Computer_Read",
+    "Npc": "OaksLab_Computer",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "OaksLab_Computer",
+        "Text": "Un e-mail est ouvert sur l'écran.\n« Appel à tous les Dresseurs ! Les meilleurs d'entre vous attendent au Plateau Indigo. »",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "OaksLab_Bookshelf_Read",
+    "Npc": "OaksLab_Bookshelf",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "OaksLab_Bookshelf",
+        "Text": "Des livres sur les Pokémon, couverts de notes du Prof. Chen.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Route1_Sign_Read",
+    "Npc": "Route1_Sign",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Route1_Sign",
+        "Text": "ROUTE 1\nBOURG PALETTE – JADIELLE",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Route1_MartClerk_Sample",
+    "Npc": "Route1_MartClerk",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "GotPotionSample"
+    ],
+    "Lines": [
+      {
+        "Speaker": "Route1_MartClerk",
+        "Text": "Bonjour ! Je travaille à la Boutique Pokémon de Jadielle.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Route1_MartClerk",
+        "Text": "On y trouve tout ce qu'il faut pour partir à l'aventure.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Route1_MartClerk",
+        "Text": "Tenez, un échantillon gratuit !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} obtient : Potion !",
+        "Event": "GiveItem",
+        "EventParam": "Potion",
+        "EventAmount": 1,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Route1_MartClerk",
+        "Text": "Passez nous voir à Jadielle !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [
+      "GotPotionSample"
+    ],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Route1_MartClerk_After",
+    "Npc": "Route1_MartClerk",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "GotPotionSample"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Route1_MartClerk",
+        "Text": "On vend des Potions et des Poké Balls à la Boutique de Jadielle. Bonne route !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Route1_Boy_Talk",
+    "Npc": "Route1_Boy",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Route1_Boy",
+        "Text": "Tu vois ces petites corniches ? On peut sauter par-dessus pour redescendre.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Route1_Boy",
+        "Text": "C'est le raccourci pour rentrer à Bourg Palette !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianCity_Sign_Read",
+    "Npc": "ViridianCity_Sign",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianCity_Sign",
+        "Text": "JADIELLE\nLe paradis éternellement vert.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianCity_TrainerTips1_Read",
+    "Npc": "ViridianCity_TrainerTips1",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianCity_TrainerTips1",
+        "Text": "CONSEIL DE DRESSEUR\nAttrape plusieurs Pokémon : une équipe variée gagne plus facilement !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianCity_TrainerTips2_Read",
+    "Npc": "ViridianCity_TrainerTips2",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianCity_TrainerTips2",
+        "Text": "CONSEIL DE DRESSEUR\nAffaiblis un Pokémon sauvage avant de lancer une Poké Ball. Il sera plus facile à attraper.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianCity_GymSign_Read",
+    "Npc": "ViridianCity_GymSign",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianCity_GymSign",
+        "Text": "ARÈNE POKÉMON DE JADIELLE\nChampion : ???",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianCity_GymDoor_Read",
+    "Npc": "ViridianCity_GymDoor",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianCity_GymDoor",
+        "Text": "La porte de l'Arène est fermée à clé...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianCity_Youngster_Talk",
+    "Npc": "ViridianCity_Youngster",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianCity_Youngster",
+        "Text": "Ces Poké Balls à ta ceinture... Tu as des Pokémon !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianCity_Youngster",
+        "Text": "C'est génial de pouvoir les emmener partout avec soi, non ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianCity_GymWatcher_Talk",
+    "Npc": "ViridianCity_GymWatcher",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianCity_GymWatcher",
+        "Text": "L'Arène de Jadielle est fermée depuis longtemps.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianCity_GymWatcher",
+        "Text": "Personne ne sait où est passé son Champion...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianCity_GymWatcher_AfterBadge",
+    "Npc": "ViridianCity_GymWatcher",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "GotBoulderBadge"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianCity_GymWatcher",
+        "Text": "On dit que le Champion de Jadielle serait le plus fort de tout Kanto.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianCity_GymWatcher",
+        "Text": "Mais tant que la porte reste fermée, impossible de le savoir !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianCity_OldMan_Blocking",
+    "Npc": "ViridianCity_OldMan",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "GotPokedex"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ViridianCity_OldMan",
+        "Text": "Grmbl... On ne passe pas ! C'est une propriété privée !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianCity_Granddaughter",
+        "Text": "Grand-père ! Ce n'est pas vrai, voyons !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianCity_Granddaughter",
+        "Text": "Pardon... Il n'a pas encore bu son café, il est de mauvaise humeur.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianCity_OldMan_Grumpy",
+    "Npc": "ViridianCity_OldMan",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "GotPokedex"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ViridianCity_OldMan",
+        "Text": "Grmbl... Pas de café, pas de passage.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianCity_Granddaughter_Talk",
+    "Npc": "ViridianCity_Granddaughter",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "GotPokedex"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ViridianCity_Granddaughter",
+        "Text": "Grand-père est grognon le matin, tant qu'il n'a pas eu son café.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianCity_Granddaughter",
+        "Text": "Repasse un peu plus tard, il sera de meilleure humeur !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianCity_Granddaughter_After",
+    "Npc": "ViridianCity_Granddaughter",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "GotPokedex"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianCity_Granddaughter",
+        "Text": "Grand-père a bu son café. Il est tout content, maintenant !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianCity_OldMan_OfferTutorial",
+    "Npc": "ViridianCity_OldMan",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "GotPokedex"
+    ],
+    "BlockedByFlags": [
+      "CatchTutorialSeen"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ViridianCity_OldMan",
+        "Text": "Ah, mon café ! Ça va beaucoup mieux.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianCity_OldMan",
+        "Text": "Hmm ? C'est un Pokédex, ça ? Tu sais attraper des Pokémon, au moins ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianCity_OldMan",
+        "Text": "Alors ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": [
+          {
+            "Text": "Oui",
+            "NextConversation": "ViridianCity_OldMan_KnowsHow"
+          },
+          {
+            "Text": "Non",
+            "NextConversation": "ViridianCity_OldMan_Tutorial"
+          }
+        ]
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianCity_OldMan_KnowsHow",
+    "Npc": "ViridianCity_OldMan",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianCity_OldMan",
+        "Text": "Bien, bien. Alors je n'ai rien à t'apprendre. Bonne chasse !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [
+      "CatchTutorialSeen"
+    ],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianCity_OldMan_Tutorial",
+    "Npc": "ViridianCity_OldMan",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianCity_OldMan",
+        "Text": "Bon. Je vais te montrer. Regarde bien !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianCity_OldMan",
+        "Text": "D'abord, on affaiblit le Pokémon...",
+        "Event": "PlayCutscene",
+        "EventParam": "CatchTutorial",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianCity_OldMan",
+        "Text": "Et voilà ! Ensuite, on lance la Poké Ball. Facile !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianCity_OldMan",
+        "Text": "Plus le Pokémon est affaibli, plus il est facile à attraper.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianCity_OldMan",
+        "Text": "S'il te faut des Poké Balls, va voir à la Boutique.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [
+      "CatchTutorialSeen"
+    ],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianCity_OldMan_After",
+    "Npc": "ViridianCity_OldMan",
+    "Trigger": "Talk",
+    "Priority": 20,
+    "RequiredFlags": [
+      "CatchTutorialSeen"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianCity_OldMan",
+        "Text": "Un bon café le matin, et la journée est réussie !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianCity_OldMan",
+        "Text": "Attraper des Pokémon, c'est pareil : il faut de la patience.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianSchool_Student_Talk",
+    "Npc": "ViridianSchool_Student",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianSchool_Student",
+        "Text": "Je révise mes types ! Le Feu bat la Plante, l'Eau bat le Feu, la Plante bat l'Eau...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianSchool_Student",
+        "Text": "Et la Roche résiste au Feu. Pas facile de tout retenir !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianSchool_Blackboard_Read",
+    "Npc": "ViridianSchool_Blackboard",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianSchool_Blackboard",
+        "Text": "Au tableau : les problèmes de statut.\nSommeil, Poison, Paralysie, Brûlure et Gel. Ils durent même après le combat !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianPokeMart_Clerk_Parcel",
+    "Npc": "ViridianPokeMart_Clerk",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "GotOaksParcel"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ViridianPokeMart_Clerk",
+        "Text": "Bonjour ! Tu viens de Bourg Palette ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianPokeMart_Clerk",
+        "Text": "Tu connais le Prof. Chen ? Son colis vient d'arriver.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianPokeMart_Clerk",
+        "Text": "Tu veux bien le lui apporter ? Merci !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} obtient : Colis de Chen !",
+        "Event": "GiveItem",
+        "EventParam": "OaksParcel",
+        "EventAmount": 1,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [
+      "GotOaksParcel"
+    ],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianPokeMart_Clerk_Reminder",
+    "Npc": "ViridianPokeMart_Clerk",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "GotOaksParcel"
+    ],
+    "BlockedByFlags": [
+      "GotPokedex"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ViridianPokeMart_Clerk",
+        "Text": "Le Prof. Chen attend son colis à Bourg Palette. Je compte sur toi !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianPokeMart_Clerk_Shop",
+    "Npc": "ViridianPokeMart_Clerk",
+    "Trigger": "Talk",
+    "Priority": 20,
+    "RequiredFlags": [
+      "GotPokedex"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianPokeMart_Clerk",
+        "Text": "Bienvenue à la Boutique Pokémon ! Que puis-je faire pour vous ?",
+        "Event": "OpenShop",
+        "EventParam": "ViridianPokeMart",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianPokeMart_Customer_Talk",
+    "Npc": "ViridianPokeMart_Customer",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianPokeMart_Customer",
+        "Text": "Pour remplir un Pokédex, il faut beaucoup de Poké Balls !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianPokeMart_Customer",
+        "Text": "Je fais toujours des réserves avant de partir.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PokemonCenter_Nurse_Welcome",
+    "Npc": "PokemonCenterNurse",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PokemonCenterNurse",
+        "Text": "Bienvenue au Centre Pokémon !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PokemonCenterNurse",
+        "Text": "Nous soignons vos Pokémon et leur rendons toute leur énergie.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PokemonCenterNurse",
+        "Text": "Voulez-vous que je soigne vos Pokémon ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": [
+          {
+            "Text": "Oui",
+            "NextConversation": "PokemonCenter_Nurse_Heal"
+          },
+          {
+            "Text": "Non",
+            "NextConversation": "PokemonCenter_Nurse_Decline"
+          }
+        ]
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PokemonCenter_Nurse_Heal",
+    "Npc": "PokemonCenterNurse",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PokemonCenterNurse",
+        "Text": "Très bien. Je prends vos Pokémon un petit instant.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PokemonCenterNurse",
+        "Text": "Merci d'avoir patienté. Vos Pokémon sont en pleine forme !",
+        "Event": "HealParty",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PokemonCenterNurse",
+        "Text": "À bientôt !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PokemonCenter_Nurse_Decline",
+    "Npc": "PokemonCenterNurse",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PokemonCenterNurse",
+        "Text": "À bientôt !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PokemonCenter_PC_Use",
+    "Npc": "PokemonCenter_PC",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} allume le PC.",
+        "Event": "OpenPC",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianPokemonCenter_Man_Talk",
+    "Npc": "ViridianPokemonCenter_Man",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianPokemonCenter_Man",
+        "Text": "Ici, on soigne tes Pokémon gratuitement, autant de fois que tu veux.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianPokemonCenter_Man",
+        "Text": "Profites-en avant de repartir !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianPokemonCenter_Youngster_Talk",
+    "Npc": "ViridianPokemonCenter_Youngster",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianPokemonCenter_Youngster",
+        "Text": "Si tous tes Pokémon sont K.O., tu reviens au dernier Centre Pokémon visité.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianPokemonCenter_Youngster",
+        "Text": "Et tu perds un peu d'argent au passage. Fais attention !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Route22_Sign_Read",
+    "Npc": "Route22_Sign",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Route22_Sign",
+        "Text": "ROUTE 22\nPORTE DE LA LIGUE POKÉMON",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Route22_Rival_Challenge",
+    "Npc": "Rival",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [
+      "GotPokedex"
+    ],
+    "BlockedByFlags": [
+      "BattledRivalRoute22"
+    ],
+    "Lines": [
+      {
+        "Speaker": "Rival",
+        "Text": "Hé ! {PlayerName} ! Tu vas à la Ligue Pokémon ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Laisse tomber ! Tu n'as même pas un seul badge !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Le garde ne te laissera jamais passer.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Mais dis-moi, ton Pokémon est devenu plus fort ? Voyons ça !",
+        "Event": "StartTrainerBattle",
+        "EventParam": "RivalRoute22",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Trainer_RivalRoute22_PlayerWins",
+    "Npc": "Rival",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Rival",
+        "Text": "Pff ! J'ai pas eu de chance, c'est tout !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "Route22_Rival_Leaves"
+  },
+  {
+    "Name": "Trainer_RivalRoute22_PlayerLoses",
+    "Npc": "Rival",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Rival",
+        "Text": "Ha ha ! Mes Pokémon sont bien meilleurs que les tiens !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "Battle_PlayerBlackout"
+  },
+  {
+    "Name": "Route22_Rival_Leaves",
+    "Npc": "Rival",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Rival",
+        "Text": "Je vais à la Ligue Pokémon pour battre les meilleurs Dresseurs.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Mais avant, je vais attraper plein de Pokémon pour compléter mon équipe.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Rival",
+        "Text": "Salut, {PlayerName} ! À la prochaine !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [
+      "BattledRivalRoute22"
+    ],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Route22_LeagueGateGuard_NoBadge",
+    "Npc": "Route22_LeagueGateGuard",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Route22_LeagueGateGuard",
+        "Text": "Seuls les Dresseurs de talent peuvent passer par ici.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Route22_LeagueGateGuard",
+        "Text": "Montre-moi d'abord le Badge Roche, celui de l'Arène d'Argenta !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Route22_LeagueGateGuard_Badge",
+    "Npc": "Route22_LeagueGateGuard",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "GotBoulderBadge"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Route22_LeagueGateGuard",
+        "Text": "Oh ! C'est bien le Badge Roche !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Route22_LeagueGateGuard",
+        "Text": "Mais la route du Plateau Indigo est en travaux. Reviens plus tard !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Route2_Sign_Read",
+    "Npc": "Route2_Sign",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Route2_Sign",
+        "Text": "ROUTE 2\nJADIELLE – ARGENTA",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForestGateSouth_Guard_Talk",
+    "Npc": "ViridianForestGateSouth_Guard",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForestGateSouth_Guard",
+        "Text": "Tu vas traverser la Forêt de Jade ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianForestGateSouth_Guard",
+        "Text": "C'est un vrai labyrinthe naturel. Ne t'y perds pas !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForestGateSouth_Girl_Talk",
+    "Npc": "ViridianForestGateSouth_Girl",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForestGateSouth_Girl",
+        "Text": "Beaucoup de Pokémon Insecte vivent dans la forêt.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianForestGateSouth_Girl",
+        "Text": "Attention à Aspicot : son dard est empoisonné !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForestGateNorth_Man_Talk",
+    "Npc": "ViridianForestGateNorth_Man",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForestGateNorth_Man",
+        "Text": "Te voilà de l'autre côté de la forêt ! Bravo.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianForestGateNorth_Man",
+        "Text": "Argenta est juste au nord. Son Arène est réputée pour ses Pokémon Roche.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForest_Sign_Read",
+    "Npc": "ViridianForest_Sign",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_Sign",
+        "Text": "FORÊT DE JADE\nAttention : la forêt est un vrai labyrinthe !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForest_TrainerTips1_Read",
+    "Npc": "ViridianForest_TrainerTips1",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_TrainerTips1",
+        "Text": "CONSEIL DE DRESSEUR\nUn Pokémon empoisonné perd des PV, même après le combat. Soigne-le vite !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForest_TrainerTips2_Read",
+    "Npc": "ViridianForest_TrainerTips2",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_TrainerTips2",
+        "Text": "CONSEIL DE DRESSEUR\nPour quitter un combat contre un Pokémon sauvage, choisis FUITE.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForest_TrainerTips3_Read",
+    "Npc": "ViridianForest_TrainerTips3",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_TrainerTips3",
+        "Text": "CONSEIL DE DRESSEUR\nNe gaspille pas tes Poké Balls : vise les Pokémon que tu n'as pas encore !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForest_ExitSign_Read",
+    "Npc": "ViridianForest_ExitSign",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_ExitSign",
+        "Text": "SORTIE DE LA FORÊT\nARGENTA AU NORD",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForest_Youngster_Talk",
+    "Npc": "ViridianForest_Youngster",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_Youngster",
+        "Text": "Je suis venu avec des copains pour attraper des Pokémon Insecte.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianForest_Youngster",
+        "Text": "Ils n'arrêtent pas de défier tous les Dresseurs qui passent !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForest_BugCatcherRick_Intro",
+    "Npc": "ViridianForest_BugCatcherRick",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "Beaten_BugCatcherRick"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_BugCatcherRick",
+        "Text": "Hé ! Tu as des Pokémon ! Allez, on se fait un combat !",
+        "Event": "StartTrainerBattle",
+        "EventParam": "BugCatcherRick",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Trainer_BugCatcherRick_PlayerWins",
+    "Npc": "ViridianForest_BugCatcherRick",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_BugCatcherRick",
+        "Text": "Non ! Mes Insectes n'ont rien pu faire !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForest_BugCatcherRick_After",
+    "Npc": "ViridianForest_BugCatcherRick",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "Beaten_BugCatcherRick"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_BugCatcherRick",
+        "Text": "Quand ton Pokémon a du mal, n'hésite pas à en changer pendant le combat.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForest_BugCatcherDoug_Intro",
+    "Npc": "ViridianForest_BugCatcherDoug",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "Beaten_BugCatcherDoug"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_BugCatcherDoug",
+        "Text": "Ouais ! J'ai attrapé plein de Pokémon Insecte !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianForest_BugCatcherDoug",
+        "Text": "Tu vas voir ce qu'ils valent !",
+        "Event": "StartTrainerBattle",
+        "EventParam": "BugCatcherDoug",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Trainer_BugCatcherDoug_PlayerWins",
+    "Npc": "ViridianForest_BugCatcherDoug",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_BugCatcherDoug",
+        "Text": "Hein ? Déjà fini ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForest_BugCatcherDoug_After",
+    "Npc": "ViridianForest_BugCatcherDoug",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "Beaten_BugCatcherDoug"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_BugCatcherDoug",
+        "Text": "Aspicot devient Coconfort, puis Dardargnan. Les Insectes évoluent super vite !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForest_BugCatcherAnthony_Intro",
+    "Npc": "ViridianForest_BugCatcherAnthony",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "Beaten_BugCatcherAnthony"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_BugCatcherAnthony",
+        "Text": "Des Insectes, j'en vois partout dans cette forêt !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianForest_BugCatcherAnthony",
+        "Text": "Et les miens sont les meilleurs !",
+        "Event": "StartTrainerBattle",
+        "EventParam": "BugCatcherAnthony",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Trainer_BugCatcherAnthony_PlayerWins",
+    "Npc": "ViridianForest_BugCatcherAnthony",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_BugCatcherAnthony",
+        "Text": "Mes Chenipan n'étaient pas prêts...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForest_BugCatcherAnthony_After",
+    "Npc": "ViridianForest_BugCatcherAnthony",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "Beaten_BugCatcherAnthony"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_BugCatcherAnthony",
+        "Text": "Je me demande si je ne devrais pas attraper autre chose que des Insectes...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForest_BugCatcherCharlie_Intro",
+    "Npc": "ViridianForest_BugCatcherCharlie",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "Beaten_BugCatcherCharlie"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_BugCatcherCharlie",
+        "Text": "Hé, attends ! Pourquoi tu cours comme ça ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianForest_BugCatcherCharlie",
+        "Text": "Prends le temps de te battre !",
+        "Event": "StartTrainerBattle",
+        "EventParam": "BugCatcherCharlie",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Trainer_BugCatcherCharlie_PlayerWins",
+    "Npc": "ViridianForest_BugCatcherCharlie",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_BugCatcherCharlie",
+        "Text": "J'aurais dû te laisser filer...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForest_BugCatcherCharlie_After",
+    "Npc": "ViridianForest_BugCatcherCharlie",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "Beaten_BugCatcherCharlie"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_BugCatcherCharlie",
+        "Text": "Chrysacier ne sait faire qu'Armure. Il faut être patient pour qu'il évolue !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForest_BugCatcherSammy_Intro",
+    "Npc": "ViridianForest_BugCatcherSammy",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "Beaten_BugCatcherSammy"
+    ],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_BugCatcherSammy",
+        "Text": "Je me cache dans les herbes pour surprendre les Dresseurs !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "ViridianForest_BugCatcherSammy",
+        "Text": "Tu ne m'avais pas vu, hein ?",
+        "Event": "StartTrainerBattle",
+        "EventParam": "BugCatcherSammy",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Trainer_BugCatcherSammy_PlayerWins",
+    "Npc": "ViridianForest_BugCatcherSammy",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_BugCatcherSammy",
+        "Text": "Raté ! Mon Aspicot n'a pas suffi...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "ViridianForest_BugCatcherSammy_After",
+    "Npc": "ViridianForest_BugCatcherSammy",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "Beaten_BugCatcherSammy"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "ViridianForest_BugCatcherSammy",
+        "Text": "Le dard d'Aspicot peut empoisonner. Garde un Antidote sur toi !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterCity_Sign_Read",
+    "Npc": "PewterCity_Sign",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterCity_Sign",
+        "Text": "ARGENTA\nUne ville grise comme la pierre.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterCity_GymSign_Read",
+    "Npc": "PewterCity_GymSign",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterCity_GymSign",
+        "Text": "ARÈNE POKÉMON D'ARGENTA\nChampion : PIERRE\nLe Dresseur solide comme le roc !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterCity_MuseumSign_Read",
+    "Npc": "PewterCity_MuseumSign",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterCity_MuseumSign",
+        "Text": "MUSÉE DES SCIENCES D'ARGENTA",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterCity_TrainerTips_Read",
+    "Npc": "PewterCity_TrainerTips",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterCity_TrainerTips",
+        "Text": "CONSEIL DE DRESSEUR\nLes Pokémon Roche craignent les attaques Eau et Plante !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterCity_Youngster_Blocking",
+    "Npc": "PewterCity_Youngster",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "GotBoulderBadge"
+    ],
+    "Lines": [
+      {
+        "Speaker": "PewterCity_Youngster",
+        "Text": "Hé ! Tu es Dresseur, non ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterCity_Youngster",
+        "Text": "Pierre, le Champion de l'Arène, cherche des adversaires !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterCity_Youngster",
+        "Text": "Viens, je t'y emmène !",
+        "Event": "PlayCutscene",
+        "EventParam": "LeadToPewterGym",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterCity_Youngster",
+        "Text": "Voilà, c'est ici ! Bonne chance !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterCity_Youngster_Talk",
+    "Npc": "PewterCity_Youngster",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "GotBoulderBadge"
+    ],
+    "Lines": [
+      {
+        "Speaker": "PewterCity_Youngster",
+        "Text": "Pierre est super fort. Ses Pokémon sont durs comme la pierre !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterCity_Youngster_AfterBadge",
+    "Npc": "PewterCity_Youngster",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "GotBoulderBadge"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterCity_Youngster",
+        "Text": "Tu as battu Pierre ?! Incroyable !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterCity_Youngster",
+        "Text": "La route de l'est est ouverte pour toi, maintenant.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterCity_Lass_Talk",
+    "Npc": "PewterCity_Lass",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterCity_Lass",
+        "Text": "On a trouvé des fossiles près du Mont Sélénite.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterCity_Lass",
+        "Text": "Le musée en expose un, il est magnifique !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterCity_OldMan_Talk",
+    "Npc": "PewterCity_OldMan",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterCity_OldMan",
+        "Text": "Le Mont Sélénite se trouve à l'est de la ville.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterCity_OldMan",
+        "Text": "On raconte que des Pokémon venus de l'espace s'y réunissent, les nuits de pleine lune...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterCity_Man_Talk",
+    "Npc": "PewterCity_Man",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterCity_Man",
+        "Text": "Les Pokémon de Pierre encaissent très bien les coups.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterCity_Man",
+        "Text": "Les attaques Normal ne leur font presque rien. Pense à l'Eau ou à la Plante !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterMuseum_Receptionist_Welcome",
+    "Npc": "PewterMuseum_Receptionist",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "PaidMuseum"
+    ],
+    "Lines": [
+      {
+        "Speaker": "PewterMuseum_Receptionist",
+        "Text": "Bienvenue au Musée des Sciences d'Argenta !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterMuseum_Receptionist",
+        "Text": "L'entrée coûte 50 ₽. Voulez-vous visiter le musée ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": [
+          {
+            "Text": "Oui",
+            "NextConversation": "PewterMuseum_Receptionist_Pay"
+          },
+          {
+            "Text": "Non",
+            "NextConversation": "PewterMuseum_Receptionist_Decline"
+          }
+        ]
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterMuseum_Receptionist_Pay",
+    "Npc": "PewterMuseum_Receptionist",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} paie 50 ₽.",
+        "Event": "TakeMoney",
+        "EventParam": "None",
+        "EventAmount": 50,
+        "FailConversation": "PewterMuseum_Receptionist_NoMoney",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterMuseum_Receptionist",
+        "Text": "Merci ! Bonne visite !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [
+      "PaidMuseum"
+    ],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterMuseum_Receptionist_NoMoney",
+    "Npc": "PewterMuseum_Receptionist",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterMuseum_Receptionist",
+        "Text": "Je suis navrée, vous n'avez pas assez d'argent.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterMuseum_Receptionist_Decline",
+    "Npc": "PewterMuseum_Receptionist",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterMuseum_Receptionist",
+        "Text": "Revenez quand vous voulez !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterMuseum_Receptionist_Paid",
+    "Npc": "PewterMuseum_Receptionist",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "PaidMuseum"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterMuseum_Receptionist",
+        "Text": "Bonne visite ! Le fossile de Kabutops est au fond de la salle.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterMuseum_KabutopsFossil_Read",
+    "Npc": "PewterMuseum_KabutopsFossil",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterMuseum_KabutopsFossil",
+        "Text": "Fossile de Kabutops\nUn Pokémon préhistorique qui vivait dans la mer, il y a très longtemps.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterMuseum_AerodactylFossil_Read",
+    "Npc": "PewterMuseum_AerodactylFossil",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterMuseum_AerodactylFossil",
+        "Text": "Fossile de Ptéra\nUn Pokémon préhistorique volant, à la mâchoire pleine de crocs.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterMuseum_MoonStone_Read",
+    "Npc": "PewterMuseum_MoonStone",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterMuseum_MoonStone",
+        "Text": "Pierre Lune\nUne météorite tombée sur le Mont Sélénite. Elle ferait évoluer certains Pokémon.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterMuseum_SpaceShuttle_Read",
+    "Npc": "PewterMuseum_SpaceShuttle",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterMuseum_SpaceShuttle",
+        "Text": "Maquette de navette spatiale\nUne vraie navette comme celle-ci est allée jusque dans l'espace !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterMuseum_Scientist_Talk",
+    "Npc": "PewterMuseum_Scientist",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterMuseum_Scientist",
+        "Text": "Ce fossile vient du Mont Sélénite.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterMuseum_Scientist",
+        "Text": "Un jour, la science pourra peut-être ramener ces Pokémon à la vie...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterMuseum_OldMan_Talk",
+    "Npc": "PewterMuseum_OldMan",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterMuseum_OldMan",
+        "Text": "Je viens ici tous les jours. Ces vieux os me rappellent ma jeunesse !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterMuseum_OldMan",
+        "Text": "Enfin... pas tant que ça. Ha ha !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterGym_Guide_Welcome",
+    "Npc": "PewterGym_Guide",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "GotBoulderBadge"
+    ],
+    "Lines": [
+      {
+        "Speaker": "PewterGym_Guide",
+        "Text": "Hé, toi ! Tu veux devenir Champion ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Guide",
+        "Text": "Je ne suis pas Dresseur, mais je connais des astuces pour gagner.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Guide",
+        "Text": "Tu veux un conseil ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": [
+          {
+            "Text": "Oui",
+            "NextConversation": "PewterGym_Guide_Advice"
+          },
+          {
+            "Text": "Non",
+            "NextConversation": "PewterGym_Guide_NoAdvice"
+          }
+        ]
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterGym_Guide_Advice",
+    "Npc": "PewterGym_Guide",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterGym_Guide",
+        "Text": "Pierre utilise des Pokémon Roche.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Guide",
+        "Text": "Ils résistent aux attaques Normal, Feu et Vol, mais craignent l'Eau et la Plante !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Guide",
+        "Text": "Si ton équipe n'en a pas, entraîne-toi bien dans la Forêt de Jade avant de l'affronter.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterGym_Guide_NoAdvice",
+    "Npc": "PewterGym_Guide",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterGym_Guide",
+        "Text": "D'accord ! Alors, fonce !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterGym_Guide_AfterBadge",
+    "Npc": "PewterGym_Guide",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "GotBoulderBadge"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterGym_Guide",
+        "Text": "Bravo ! Tu as battu Pierre !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Guide",
+        "Text": "Tu as l'étoffe d'un grand Dresseur, crois-moi.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterGym_Statue_Read",
+    "Npc": "PewterGym_Statue",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "GotBoulderBadge"
+    ],
+    "Lines": [
+      {
+        "Speaker": "PewterGym_Statue",
+        "Text": "ARÈNE POKÉMON D'ARGENTA\nChampion : PIERRE\nDresseurs victorieux : Régis",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterGym_Statue_ReadAfterBadge",
+    "Npc": "PewterGym_Statue",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "GotBoulderBadge"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterGym_Statue",
+        "Text": "ARÈNE POKÉMON D'ARGENTA\nChampion : PIERRE\nDresseurs victorieux : Régis, {PlayerName}",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterGym_CamperLiam_Intro",
+    "Npc": "PewterGym_CamperLiam",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "Beaten_CamperLiam"
+    ],
+    "Lines": [
+      {
+        "Speaker": "PewterGym_CamperLiam",
+        "Text": "Halte !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_CamperLiam",
+        "Text": "Tu es encore à des années-lumière de pouvoir affronter Pierre !",
+        "Event": "StartTrainerBattle",
+        "EventParam": "CamperLiam",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Trainer_CamperLiam_PlayerWins",
+    "Npc": "PewterGym_CamperLiam",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterGym_CamperLiam",
+        "Text": "Zut ! Les années-lumière, ça mesure une distance, pas le temps !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterGym_CamperLiam_After",
+    "Npc": "PewterGym_CamperLiam",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "Beaten_CamperLiam"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterGym_CamperLiam",
+        "Text": "Pas mal du tout... Mais Pierre est bien plus coriace que moi. Bonne chance !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterGym_Brock_Intro",
+    "Npc": "PewterGym_Brock",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [
+      "Beaten_Brock"
+    ],
+    "Lines": [
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "Alors, te voilà.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "Je suis Pierre, le Champion de l'Arène d'Argenta.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "Ma volonté est solide comme le roc. Et mes Pokémon aussi !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "Ils sont tous de type Roche. Ha ha !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "Tu viens me défier en sachant que tu vas perdre ?",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "C'est l'honneur du Dresseur qui te pousse, n'est-ce pas ? Très bien.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "Montre-moi ce que tu vaux !",
+        "Event": "StartTrainerBattle",
+        "EventParam": "Brock",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Trainer_Brock_PlayerWins",
+    "Npc": "PewterGym_Brock",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "J'ai sous-estimé ta force...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "Tu as gagné. Je le reconnais.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "PewterGym_Brock_Reward"
+  },
+  {
+    "Name": "PewterGym_Brock_Reward",
+    "Npc": "PewterGym_Brock",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "En reconnaissance de ta victoire, voici le Badge Roche de la Ligue Pokémon.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} reçoit le Badge Roche de la part de Pierre !",
+        "Event": "GiveBadge",
+        "EventParam": "BoulderBadge",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "Il prouve ta victoire à Argenta. Il existe huit badges dans tout Kanto.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "Attends, prends aussi ceci.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} obtient : CT39 !",
+        "Event": "GiveItem",
+        "EventParam": "TM39",
+        "EventAmount": 1,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "Une CT, ou Capsule Technique, permet d'apprendre une attaque à un Pokémon.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "La CT39 contient Tomberoche. Elle inflige des dégâts et baisse la Vitesse de l'adversaire.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "Choisis bien à qui tu l'apprends !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [
+      "GotBoulderBadge"
+    ],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterGym_Brock_After",
+    "Npc": "PewterGym_Brock",
+    "Trigger": "Talk",
+    "Priority": 10,
+    "RequiredFlags": [
+      "Beaten_Brock"
+    ],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "Le monde est vaste, et il y a beaucoup de Dresseurs plus forts que moi.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterGym_Brock",
+        "Text": "Je vais continuer à m'entraîner, moi aussi. On se reverra !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterPokemonCenter_Gentleman_Talk",
+    "Npc": "PewterPokemonCenter_Gentleman",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterPokemonCenter_Gentleman",
+        "Text": "Si tes Pokémon sont fatigués après l'Arène, reviens ici.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterPokemonCenter_Gentleman",
+        "Text": "L'infirmière Joëlle s'occupe de tout, et c'est gratuit !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterPokemonCenter_Jigglypuff_Talk",
+    "Npc": "PewterPokemonCenter_Jigglypuff",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterPokemonCenter_Jigglypuff",
+        "Text": "Rondou... Rondouuu ♪",
+        "Event": "PlayCutscene",
+        "EventParam": "JigglypuffSong",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "Rondoudou chante une douce berceuse... On se sent tout à coup un peu somnolent.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterPokeMart_Clerk_Shop",
+    "Npc": "PewterPokeMart_Clerk",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterPokeMart_Clerk",
+        "Text": "Bienvenue à la Boutique Pokémon ! Que puis-je faire pour vous ?",
+        "Event": "OpenShop",
+        "EventParam": "PewterPokeMart",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PewterPokeMart_Customer_Talk",
+    "Npc": "PewterPokeMart_Customer",
+    "Trigger": "Talk",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PewterPokeMart_Customer",
+        "Text": "Un Repousse éloigne les Pokémon sauvages faibles.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PewterPokeMart_Customer",
+        "Text": "Pratique pour traverser la forêt sans être embêté !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "Battle_PlayerBlackout",
+    "Npc": "Narrator",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} n'a plus de Pokémon en état de se battre !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "{PlayerName} perd {MoneyLost} ₽...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "... et se précipite au dernier Centre Pokémon visité.",
+        "Event": "ReturnToLastHeal",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  }
+]

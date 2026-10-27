@@ -1,0 +1,583 @@
+[
+  {
+    "Name": "Narrator",
+    "DisplayName": "",
+    "Kind": "System",
+    "Location": "None",
+    "Trainer": "None"
+  },
+  {
+    "Name": "Mom",
+    "DisplayName": "Maman",
+    "Kind": "Character",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ProfOak",
+    "DisplayName": "Prof. Chen",
+    "Kind": "Character",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "Rival",
+    "DisplayName": "Régis",
+    "Kind": "Character",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "Daisy",
+    "DisplayName": "Nina",
+    "Kind": "Character",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PalletTown_Sign",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PalletTown_PlayerHouseSign",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PalletTown_RivalHouseSign",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PalletTown_OaksLabSign",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PalletTown_Girl",
+    "DisplayName": "Fillette",
+    "Kind": "Character",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PalletTown_TechGuy",
+    "DisplayName": "Gros bonhomme",
+    "Kind": "Character",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PlayerHouse_TV",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PlayerHouse_Console",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PlayerHouse_PC",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PlayerHouse_Bookshelf",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "RivalHouse_Painting",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "OaksLab_Aide1",
+    "DisplayName": "Assistant",
+    "Kind": "Character",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "OaksLab_Aide2",
+    "DisplayName": "Assistante",
+    "Kind": "Character",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "OaksLab_Computer",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "OaksLab_Bookshelf",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "OaksLab_PokeBall_Bulbasaur",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "OaksLab_PokeBall_Charmander",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "OaksLab_PokeBall_Squirtle",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "PalletTown",
+    "Trainer": "None"
+  },
+  {
+    "Name": "Route1_Sign",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "Route1",
+    "Trainer": "None"
+  },
+  {
+    "Name": "Route1_MartClerk",
+    "DisplayName": "Vendeur",
+    "Kind": "Character",
+    "Location": "Route1",
+    "Trainer": "None"
+  },
+  {
+    "Name": "Route1_Boy",
+    "DisplayName": "Gamin",
+    "Kind": "Character",
+    "Location": "Route1",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianCity_Sign",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "ViridianCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianCity_TrainerTips1",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "ViridianCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianCity_TrainerTips2",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "ViridianCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianCity_GymSign",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "ViridianCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianCity_GymDoor",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "ViridianCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianCity_OldMan",
+    "DisplayName": "Vieil homme",
+    "Kind": "Character",
+    "Location": "ViridianCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianCity_Granddaughter",
+    "DisplayName": "Petite-fille",
+    "Kind": "Character",
+    "Location": "ViridianCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianCity_Youngster",
+    "DisplayName": "Gamin",
+    "Kind": "Character",
+    "Location": "ViridianCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianCity_GymWatcher",
+    "DisplayName": "Monsieur",
+    "Kind": "Character",
+    "Location": "ViridianCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianSchool_Student",
+    "DisplayName": "Élève",
+    "Kind": "Character",
+    "Location": "ViridianCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianSchool_Blackboard",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "ViridianCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianPokeMart_Clerk",
+    "DisplayName": "Vendeur",
+    "Kind": "Character",
+    "Location": "ViridianCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianPokeMart_Customer",
+    "DisplayName": "Cliente",
+    "Kind": "Character",
+    "Location": "ViridianCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianPokemonCenter_Man",
+    "DisplayName": "Montagnard",
+    "Kind": "Character",
+    "Location": "ViridianCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianPokemonCenter_Youngster",
+    "DisplayName": "Gamin",
+    "Kind": "Character",
+    "Location": "ViridianCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PokemonCenterNurse",
+    "DisplayName": "Infirmière Joëlle",
+    "Kind": "Character",
+    "Location": "None",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PokemonCenter_PC",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "None",
+    "Trainer": "None"
+  },
+  {
+    "Name": "Route22_Sign",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "Route22",
+    "Trainer": "None"
+  },
+  {
+    "Name": "Route22_LeagueGateGuard",
+    "DisplayName": "Garde",
+    "Kind": "Character",
+    "Location": "Route22",
+    "Trainer": "None"
+  },
+  {
+    "Name": "Route2_Sign",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "Route2",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianForestGateSouth_Guard",
+    "DisplayName": "Garde",
+    "Kind": "Character",
+    "Location": "Route2",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianForestGateSouth_Girl",
+    "DisplayName": "Fillette",
+    "Kind": "Character",
+    "Location": "Route2",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianForestGateNorth_Man",
+    "DisplayName": "Monsieur",
+    "Kind": "Character",
+    "Location": "Route2",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianForest_Sign",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "ViridianForest",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianForest_TrainerTips1",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "ViridianForest",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianForest_TrainerTips2",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "ViridianForest",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianForest_TrainerTips3",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "ViridianForest",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianForest_ExitSign",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "ViridianForest",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianForest_Youngster",
+    "DisplayName": "Gamin",
+    "Kind": "Character",
+    "Location": "ViridianForest",
+    "Trainer": "None"
+  },
+  {
+    "Name": "ViridianForest_BugCatcherRick",
+    "DisplayName": "Scout Rick",
+    "Kind": "Character",
+    "Location": "ViridianForest",
+    "Trainer": "BugCatcherRick"
+  },
+  {
+    "Name": "ViridianForest_BugCatcherDoug",
+    "DisplayName": "Scout Doug",
+    "Kind": "Character",
+    "Location": "ViridianForest",
+    "Trainer": "BugCatcherDoug"
+  },
+  {
+    "Name": "ViridianForest_BugCatcherAnthony",
+    "DisplayName": "Scout Anthony",
+    "Kind": "Character",
+    "Location": "ViridianForest",
+    "Trainer": "BugCatcherAnthony"
+  },
+  {
+    "Name": "ViridianForest_BugCatcherCharlie",
+    "DisplayName": "Scout Charlie",
+    "Kind": "Character",
+    "Location": "ViridianForest",
+    "Trainer": "BugCatcherCharlie"
+  },
+  {
+    "Name": "ViridianForest_BugCatcherSammy",
+    "DisplayName": "Scout Sammy",
+    "Kind": "Character",
+    "Location": "ViridianForest",
+    "Trainer": "BugCatcherSammy"
+  },
+  {
+    "Name": "PewterCity_Sign",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterCity_GymSign",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterCity_MuseumSign",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterCity_TrainerTips",
+    "DisplayName": "",
+    "Kind": "Sign",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterCity_Youngster",
+    "DisplayName": "Gamin",
+    "Kind": "Character",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterCity_Lass",
+    "DisplayName": "Fillette",
+    "Kind": "Character",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterCity_OldMan",
+    "DisplayName": "Vieil homme",
+    "Kind": "Character",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterCity_Man",
+    "DisplayName": "Monsieur",
+    "Kind": "Character",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterMuseum_Receptionist",
+    "DisplayName": "Hôtesse",
+    "Kind": "Character",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterMuseum_Scientist",
+    "DisplayName": "Scientifique",
+    "Kind": "Character",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterMuseum_OldMan",
+    "DisplayName": "Vieil homme",
+    "Kind": "Character",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterMuseum_KabutopsFossil",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterMuseum_AerodactylFossil",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterMuseum_MoonStone",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterMuseum_SpaceShuttle",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterGym_Guide",
+    "DisplayName": "Guide",
+    "Kind": "Character",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterGym_Statue",
+    "DisplayName": "",
+    "Kind": "Object",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterGym_CamperLiam",
+    "DisplayName": "Campeur Liam",
+    "Kind": "Character",
+    "Location": "PewterCity",
+    "Trainer": "CamperLiam"
+  },
+  {
+    "Name": "PewterGym_Brock",
+    "DisplayName": "Pierre",
+    "Kind": "Character",
+    "Location": "PewterCity",
+    "Trainer": "Brock"
+  },
+  {
+    "Name": "PewterPokemonCenter_Gentleman",
+    "DisplayName": "Gentleman",
+    "Kind": "Character",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterPokemonCenter_Jigglypuff",
+    "DisplayName": "Rondoudou",
+    "Kind": "Character",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterPokeMart_Clerk",
+    "DisplayName": "Vendeur",
+    "Kind": "Character",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  },
+  {
+    "Name": "PewterPokeMart_Customer",
+    "DisplayName": "Gamin",
+    "Kind": "Character",
+    "Location": "PewterCity",
+    "Trainer": "None"
+  }
+]

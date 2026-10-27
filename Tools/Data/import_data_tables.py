@@ -5,7 +5,8 @@
     -> choisir Tools/Data/import_data_tables.py
 
 Crée ou met à jour les Data Tables dans /Game/Pokemon/Data/ et l'asset DA_PokemonDatabase qui
-les regroupe. Relançable : les tables existantes sont vidées puis re-remplies depuis le JSON.
+les regroupe, puis les tables de dialogues (Data/Dialogues/) dans /Game/World/Dialogues/.
+Relançable : les tables existantes sont vidées puis re-remplies depuis le JSON.
 """
 
 import os
@@ -30,35 +31,51 @@ TABLES = [
     ("DT_Trainers", "TrainerRow", "trainers"),
 ]
 
+# Dialogues (docs/DIALOGUES.md) : (asset, struct C++)
+DIALOGUE_CONTENT_DIR = "/Game/World/Dialogues"
+DIALOGUE_JSON_DIR = os.path.join(PROJECT_DIR, "Data", "Dialogues")
+DIALOGUE_TABLES = [
+    ("DT_Npcs", "NpcRow"),
+    ("DT_Dialogues", "DialogueRow"),
+]
+
 asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
 eal = unreal.EditorAssetLibrary
 
 
-def get_or_create_table(name, struct):
-    path = f"{CONTENT_DIR}/{name}"
+def get_or_create_table(name, struct, content_dir=CONTENT_DIR):
+    path = f"{content_dir}/{name}"
     if eal.does_asset_exist(path):
         return eal.load_asset(path)
     factory = unreal.DataTableFactory()
     factory.set_editor_property("struct", struct)
-    return asset_tools.create_asset(name, CONTENT_DIR, unreal.DataTable, factory)
+    return asset_tools.create_asset(name, content_dir, unreal.DataTable, factory)
+
+
+def import_table(name, struct_name, json_dir, content_dir=CONTENT_DIR):
+    """Remplit une Data Table depuis son JSON. Renvoie la table, ou None si le C++ n'est pas compilé."""
+    struct = unreal.load_object(None, f"/Script/PokemonNewAge.{struct_name}")
+    if struct is None:
+        unreal.log_error(f"Struct {struct_name} introuvable : compiler le C++ d'abord.")
+        return None
+    json_path = os.path.join(json_dir, f"{name}.json")
+    table = get_or_create_table(name, struct, content_dir)
+    ok = unreal.DataTableFunctionLibrary.fill_data_table_from_json_file(table, json_path, struct)
+    rows = len(unreal.DataTableFunctionLibrary.get_data_table_row_names(table))
+    if ok:
+        unreal.log(f"{name} : {rows} lignes importées")
+    else:
+        unreal.log_error(f"{name} : échec de l'import de {json_path} (voir le journal)")
+    eal.save_asset(table.get_path_name())
+    return table
 
 
 def main():
     tables = {}
     for name, struct_name, prop in TABLES:
-        struct = unreal.load_object(None, f"/Script/PokemonNewAge.{struct_name}")
-        if struct is None:
-            unreal.log_error(f"Struct {struct_name} introuvable : compiler le C++ d'abord.")
+        table = import_table(name, struct_name, JSON_DIR)
+        if table is None:
             return
-        json_path = os.path.join(JSON_DIR, f"{name}.json")
-        table = get_or_create_table(name, struct)
-        ok = unreal.DataTableFunctionLibrary.fill_data_table_from_json_file(table, json_path, struct)
-        rows = len(unreal.DataTableFunctionLibrary.get_data_table_row_names(table))
-        if ok:
-            unreal.log(f"{name} : {rows} lignes importées")
-        else:
-            unreal.log_error(f"{name} : échec de l'import de {json_path} (voir le journal)")
-        eal.save_asset(table.get_path_name())
         tables[prop] = table
 
     db_path = f"{CONTENT_DIR}/DA_PokemonDatabase"
@@ -72,6 +89,10 @@ def main():
         database.set_editor_property(prop, table)
     eal.save_asset(database.get_path_name())
     unreal.log("DA_PokemonDatabase à jour.")
+
+    for name, struct_name in DIALOGUE_TABLES:
+        if import_table(name, struct_name, DIALOGUE_JSON_DIR, DIALOGUE_CONTENT_DIR) is None:
+            return
 
 
 main()
