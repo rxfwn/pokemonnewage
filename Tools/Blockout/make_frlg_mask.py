@@ -10,6 +10,7 @@ Lancement : pip install numpy pillow, puis
 python Tools/Blockout/make_frlg_mask.py chemin/vers/carte_frlg.png
 """
 
+import json
 import os
 import struct
 import sys
@@ -82,6 +83,8 @@ def main(path):
     # Pas de mer collée à Bourg Palette : la Route 21 commence plus au sud.
     grid[560:650, 115:175][grid[560:650, 115:175] == 2] = 1
 
+    export_tall_grass(image, rows, cols)
+
     header = struct.pack("<4sHH", b"FRLG", cols, rows)
     with open(os.path.join(HERE, "kanto_frlg.bin"), "wb") as handle:
         handle.write(zlib.compress(header + grid.tobytes(), 9))
@@ -89,6 +92,52 @@ def main(path):
     Image.fromarray(colors[grid]).save(os.path.join(HERE, "kanto_frlg_apercu.png"))
     print(f"{cols} × {rows} cases ; sol {np.mean(grid == 1):.0%}, mer {np.mean(grid == 2):.0%}, "
           f"lacs {np.mean(grid == 3):.1%}")
+
+
+def export_tall_grass(image, rows, cols):
+    """Hautes herbes : tuiles de 16 px qui mêlent l'herbe claire et les brins vert foncé
+    (sans le reflet clair des arbres). Certaines zones de l'image sont voilées de gris :
+    on cherche aussi les couleurs voilées. Sortie : kanto_herbes.json, des rectangles en
+    cases (colonne, ligne, largeur, hauteur)."""
+    def share(tile, colors):
+        hit = np.zeros(tile.shape[:2], bool)
+        for color in colors:
+            hit |= np.all(np.abs(tile - color) <= 3, axis=2)
+        return hit.mean()
+
+    blade = [(56, 88, 16), (95, 109, 77)]
+    lawn = [(112, 200, 160), (120, 160, 142)]
+    leaf = [(184, 248, 136), (158, 190, 134)]
+    tiles_r, tiles_c = rows // 2, cols // 2
+    grass = np.zeros((tiles_r, tiles_c), bool)
+    for tr in range(tiles_r):
+        for tc in range(tiles_c):
+            tile = image[tr * 16:(tr + 1) * 16, tc * 16:(tc + 1) * 16]
+            grass[tr, tc] = share(tile, blade) > 0.12 and share(tile, lawn) > 0.12 and share(tile, leaf) < 0.04
+    # Rectangles : morceaux de lignes, fusionnés avec la ligne du dessous quand ils sont identiques.
+    runs, open_runs = [], {}
+    for tr in range(tiles_r + 1):
+        current = {}
+        if tr < tiles_r:
+            tc = 0
+            while tc < tiles_c:
+                if grass[tr, tc]:
+                    start = tc
+                    while tc < tiles_c and grass[tr, tc]:
+                        tc += 1
+                    current[(start, tc)] = None
+                else:
+                    tc += 1
+        for key, top in list(open_runs.items()):
+            if key in current:
+                current[key] = top
+            else:
+                runs.append((key[0] * 2, top * 2, (key[1] - key[0]) * 2, (tr - top) * 2))
+        open_runs = {key: (tr if top is None else top) for key, top in current.items()}
+    runs = [r for r in runs if r[2] * r[3] >= 8]  # au moins 2 tuiles
+    with open(os.path.join(HERE, "kanto_herbes.json"), "w", encoding="utf-8") as handle:
+        json.dump(runs, handle)
+    print(f"{len(runs)} rectangles de hautes herbes")
 
 
 if __name__ == "__main__":
