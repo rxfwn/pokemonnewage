@@ -1,0 +1,117 @@
+#include "UI/GameMenuWidget.h"
+#include "Blueprint/WidgetTree.h"
+#include "Components/Border.h"
+#include "Components/Button.h"
+#include "Components/Overlay.h"
+#include "Components/OverlaySlot.h"
+#include "Components/TextBlock.h"
+#include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "PokemonNewAgePlayerController.h"
+
+#define LOCTEXT_NAMESPACE "GameMenu"
+
+TSharedRef<SWidget> UGameMenuWidget::RebuildWidget()
+{
+	if (WidgetTree && !WidgetTree->RootWidget)
+	{
+		// Fond assombri sur tout l'écran, panneau à droite comme dans les jeux
+		UOverlay* Root = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("Root"));
+		WidgetTree->RootWidget = Root;
+
+		UBorder* Dim = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Dim"));
+		Dim->SetBrushColor(FLinearColor(0.f, 0.f, 0.f, 0.35f));
+		UOverlaySlot* DimSlot = Root->AddChildToOverlay(Dim);
+		DimSlot->SetHorizontalAlignment(HAlign_Fill);
+		DimSlot->SetVerticalAlignment(VAlign_Fill);
+
+		UBorder* Panel = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Panel"));
+		Panel->SetBrushColor(FLinearColor(0.96f, 0.95f, 0.92f, 0.95f));
+		Panel->SetPadding(FMargin(24.f, 20.f));
+		UOverlaySlot* PanelSlot = Root->AddChildToOverlay(Panel);
+		PanelSlot->SetHorizontalAlignment(HAlign_Right);
+		PanelSlot->SetVerticalAlignment(VAlign_Center);
+		PanelSlot->SetPadding(FMargin(0.f, 0.f, 60.f, 0.f));
+
+		UVerticalBox* List = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("List"));
+		Panel->SetContent(List);
+
+		AddEntry(List, LOCTEXT("Pokedex", "Pokédex"), false);
+		AddEntry(List, LOCTEXT("Pokemon", "Pokémon"), false);
+		AddEntry(List, LOCTEXT("Bag", "Sac"), false);
+		AddEntry(List, LOCTEXT("Trainer", "Dresseur"), false);
+		AddEntry(List, LOCTEXT("Save", "Sauvegarder"), false);
+		AddEntry(List, LOCTEXT("Options", "Options"), false);
+		ResumeButton = AddEntry(List, LOCTEXT("Resume", "Reprendre"), true);
+		ResumeButton->OnClicked.AddDynamic(this, &UGameMenuWidget::OnResumeClicked);
+		UButton* QuitButton = AddEntry(List, LOCTEXT("Quit", "Quitter"), true);
+		QuitButton->OnClicked.AddDynamic(this, &UGameMenuWidget::OnQuitClicked);
+	}
+
+	return Super::RebuildWidget();
+}
+
+UButton* UGameMenuWidget::AddEntry(UVerticalBox* List, const FText& Label, bool bAvailable)
+{
+	UButton* Button = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass());
+	UTextBlock* Text = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+	Text->SetText(bAvailable ? Label : FText::Format(LOCTEXT("Soon", "{0}  (bientôt)"), Label));
+	Text->SetColorAndOpacity(FSlateColor(FLinearColor(0.05f, 0.05f, 0.07f)));
+	FSlateFontInfo Font = Text->GetFont();
+	Font.Size = 26;
+	Text->SetFont(Font);
+	Button->SetContent(Text);
+	Button->SetIsEnabled(bAvailable);
+
+	UVerticalBoxSlot* EntrySlot = List->AddChildToVerticalBox(Button);
+	EntrySlot->SetPadding(FMargin(0.f, 4.f));
+	EntrySlot->SetHorizontalAlignment(HAlign_Fill);
+	return Button;
+}
+
+void UGameMenuWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+	FocusDefaultEntry();
+}
+
+void UGameMenuWidget::FocusDefaultEntry()
+{
+	if (ResumeButton)
+	{
+		ResumeButton->SetKeyboardFocus();
+	}
+}
+
+FReply UGameMenuWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	const FKey Key = InKeyEvent.GetKey();
+	if (Key == EKeys::Tab || Key == EKeys::Escape || Key == EKeys::BackSpace
+		|| Key == EKeys::Gamepad_FaceButton_Right || Key == EKeys::Gamepad_Special_Right)
+	{
+		CloseMenu();
+		return FReply::Handled();
+	}
+	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
+void UGameMenuWidget::OnResumeClicked()
+{
+	CloseMenu();
+}
+
+void UGameMenuWidget::OnQuitClicked()
+{
+	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, false);
+}
+
+void UGameMenuWidget::CloseMenu()
+{
+	if (APokemonNewAgePlayerController* PlayerController = Cast<APokemonNewAgePlayerController>(GetOwningPlayer()))
+	{
+		PlayerController->CloseGameMenu();
+	}
+}
+
+#undef LOCTEXT_NAMESPACE

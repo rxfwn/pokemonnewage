@@ -1,4 +1,4 @@
-# Entrer dans les bâtiments sans chargement (SCRUM-25)
+# Entrer dans les bâtiments sans chargement (SCRUM-25) et menu en jeu
 
 Le jeu est un monde ouvert : on entre dans une maison comme dans la vraie vie, en passant la porte. Pas d'écran noir, pas de changement de map. Les bâtiments ont leur vraie taille, l'intérieur est directement dedans.
 
@@ -28,7 +28,8 @@ La touche E marche sans rien régler : le code la crée tout seul. Pour la chang
    - ressortir : la porte se referme derrière toi ;
    - devant une porte, appuyer sur **E** pour l'ouvrir ou la fermer ;
    - aller voir le labo, puis le Centre Pokémon et la Boutique de Jadielle ; l'arène de Jadielle ne s'ouvre pas.
-7. Enregistrer la map dans Git :
+7. Tester le **menu en jeu** : appuyer sur **Tab** (ou Start à la manette). Le jeu se met en pause et le menu s'affiche à droite. Les flèches ou la souris choisissent une entrée ; **Reprendre**, **Tab** ou **Retour arrière** ferment le menu. **Quitter** arrête la partie. Les autres entrées sont grisées « (bientôt) » pour l'instant. Dans l'éditeur, **Échap** arrête le Play : c'est pour ça que le menu est sur Tab.
+8. Enregistrer la map dans Git :
    ```
    git add Content
    git commit -m "SCRUM-25 Bâtiments creux avec portes dans L_Kanto"
