@@ -35,6 +35,9 @@ Thumbs.db
 
 __pycache__/
 
+# Sorties des scripts de Tools/Capture (modèle de Ball, sons) : livrées à part, recréées par les scripts
+Tools/Capture/Generated/
+
 # Cache des CSV PokeAPI (Tools/Data/build_pokemon_data.py)
 Tools/Data/.cache/
 
