@@ -67,8 +67,12 @@ Ce que contient chaque menu (dans l'ordre des boutons) :
 6. **Carte** : Kanto vu de haut, le point rouge est le joueur, « Tu es ici » donne le lieu, la liste des villes les montre sur la carte.
 7. **Sauvegarder** : enregistre la partie (rechargée au lancement suivant).
 8. **En ligne** : mode de la partie (solo, hôte, connecté) et joueurs présents ; échanges et combats entre joueurs : bientôt (SCRUM-69).
-9. **Options** : vitesse du texte, volume général, **musique**, **bruitages**, sensibilité et inversion de la caméra, qualité, affichage, synchro verticale, **commandes** (liste des touches), effacer la sauvegarde.
+9. **Options** : vitesse du texte, volume général, **musique**, **bruitages**, sensibilité et inversion de la caméra, qualité, affichage, synchro verticale, **commandes** (changer les touches), effacer la sauvegarde.
 10. **Style** : bientôt.
+
+**Changer une touche** : Options > Commandes > « changer », puis Valider sur une commande (Avancer, Sauter, Courir, Interagir, Menu..., au clavier puis à la manette) et appuyer sur la nouvelle touche. Échap (ou Select à la manette) annule. Si la touche servait déjà à une autre commande, les deux échangent. « Remettre les touches d'origine » en bas de la liste. Les touches sont gardées dans la sauvegarde des options ; les contextes d'entrée (`IMC_Default`...) ne sont jamais modifiés, le jeu travaille sur des copies.
+
+**Figurine 3D** : dans la fiche du Pokédex (espèce vue), la liste de l'équipe et le résumé d'un Pokémon, une petite figurine du Pokémon tourne au-dessus de l'écran du volet. Le code cherche `/Game/Pokemon/Models/<Espèce>/SK_<Espèce>` (ou `SM_<Espèce>` pour un modèle fixe) et joue `A_<Espèce>_Idle` s'il existe. Sans modèle importé, rien ne s'affiche. Réglages dans `PokedexDevice` : `Figure Height` (4,5 cm), `Figure Folder`.
 
 En ligne (SCRUM-68), le menu ne met pas le jeu en pause et chaque joueur a le sien. Les actions (échanger l'ordre, utiliser ou donner un objet) passent par le serveur.
 
@@ -91,10 +95,9 @@ Il s'ouvre tout seul quand un combat commence : cadres des deux Pokémon (nom, n
 ## Pas encore fait
 
 - **Radio** et **Style** : pages « bientôt ».
-- **Changer les touches** : la page Commandes montre les touches sans pouvoir les modifier.
 - **Échanges et combats entre joueurs** : SCRUM-69.
-- **Objets tenus** : on peut les donner et les reprendre, mais ils n'ont pas encore d'effet en combat.
 - **Musique** : le réglage existe ; il agira sur les musiques dès qu'elles utiliseront la classe de son `SC_Music`.
-- Le modèle 3D du Pokémon dans la fiche du Pokédex (il n'y a pas encore de modèles importés).
+- **Figurine** : elle n'apparaît qu'une fois les modèles importés (fil des modèles 3D) ; la version chromatique (`SK_<Espèce>_Shiny`) n'est pas encore utilisée.
+- **Options proposées** (taille du texte, cris, résolution, mode daltonien...) : en attente de validation.
 - Les sons sont synthétiques : on pourra les remplacer en gardant les mêmes noms.
 - Le nom du joueur est celui donné par Unreal (pas encore d'écran pour le choisir).
