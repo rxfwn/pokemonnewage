@@ -65,4 +65,4 @@ Sans Unreal (dans le cloud) : `./Tools/BattleSim/run.sh` lance les mêmes tests 
 - **Hautes herbes** (SCRUM-39) : fait, acteur `TallGrassZone`, voir [CAPTURE.md](CAPTURE.md).
 - **UI du combat** (SCRUM-36) : écouter `On Battle Started`, `On Battle Events` (jouer les événements un par un avec `Get Event Text`, mettre à jour les barres avec `HPAfter`), `On Battle Ended`, `On Action Refused` (`Get Action Error Text`) sur le `BattleComponent` du PlayerController. Mettre `bPrintEventsToScreen` à faux quand l'UI existe.
 - **Séquence d'évolution** (SCRUM-47) : `Result.Evolutions`, puis `Confirm Evolution`.
-- **Pas encore fait** : combats doubles, météo et terrains, talents (Engrais, Brasier…), objets tenus, objets de combat (Attaque +). Surnom, PC et lancer de Ball : [CAPTURE.md](CAPTURE.md).
+- **Pas encore fait** : combats doubles, météo et terrains, talents (Engrais, Brasier…), objets tenus, objets de combat (Attaque +), PV restants transmis à l'écran du PC, surnom à la capture (SCRUM-42, côté UI).
