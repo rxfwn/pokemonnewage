@@ -848,12 +848,6 @@
     "Trigger": "Level",
     "MinLevel": 20,
     "Item": "None"
-   },
-   {
-    "Species": "Raticate",
-    "Trigger": "Level",
-    "MinLevel": 20,
-    "Item": "None"
    }
   ]
  },
@@ -1118,12 +1112,6 @@
     "Trigger": "Item",
     "MinLevel": 0,
     "Item": "ThunderStone"
-   },
-   {
-    "Species": "Raichu",
-    "Trigger": "Item",
-    "MinLevel": 0,
-    "Item": "ThunderStone"
    }
   ]
  },
@@ -1211,12 +1199,6 @@
     "Trigger": "Level",
     "MinLevel": 22,
     "Item": "None"
-   },
-   {
-    "Species": "Sandslash",
-    "Trigger": "Item",
-    "MinLevel": 0,
-    "Item": "IceStone"
    }
   ]
  },
@@ -1659,12 +1641,6 @@
     "Trigger": "Item",
     "MinLevel": 0,
     "Item": "FireStone"
-   },
-   {
-    "Species": "Ninetales",
-    "Trigger": "Item",
-    "MinLevel": 0,
-    "Item": "IceStone"
    }
   ]
  },
@@ -2235,12 +2211,6 @@
     "Trigger": "Level",
     "MinLevel": 26,
     "Item": "None"
-   },
-   {
-    "Species": "Dugtrio",
-    "Trigger": "Level",
-    "MinLevel": 26,
-    "Item": "None"
    }
   ]
  },
@@ -2328,12 +2298,6 @@
     "Species": "Persian",
     "Trigger": "Level",
     "MinLevel": 28,
-    "Item": "None"
-   },
-   {
-    "Species": "Persian",
-    "Trigger": "Level",
-    "MinLevel": 0,
     "Item": "None"
    }
   ]
@@ -2594,12 +2558,6 @@
   "bIsMythical": false,
   "bAvailableInV1": false,
   "Evolutions": [
-   {
-    "Species": "Arcanine",
-    "Trigger": "Item",
-    "MinLevel": 0,
-    "Item": "FireStone"
-   },
    {
     "Species": "Arcanine",
     "Trigger": "Item",
@@ -3325,12 +3283,6 @@
     "Trigger": "Level",
     "MinLevel": 25,
     "Item": "None"
-   },
-   {
-    "Species": "Graveler",
-    "Trigger": "Level",
-    "MinLevel": 25,
-    "Item": "None"
    }
   ]
  },
@@ -3374,12 +3326,6 @@
   "bIsMythical": false,
   "bAvailableInV1": false,
   "Evolutions": [
-   {
-    "Species": "Golem",
-    "Trigger": "Trade",
-    "MinLevel": 0,
-    "Item": "None"
-   },
    {
     "Species": "Golem",
     "Trigger": "Trade",
@@ -3474,12 +3420,6 @@
     "Trigger": "Level",
     "MinLevel": 40,
     "Item": "None"
-   },
-   {
-    "Species": "Rapidash",
-    "Trigger": "Level",
-    "MinLevel": 40,
-    "Item": "None"
    }
   ]
  },
@@ -3569,12 +3509,6 @@
     "Trigger": "Level",
     "MinLevel": 37,
     "Item": "None"
-   },
-   {
-    "Species": "Slowbro",
-    "Trigger": "Item",
-    "MinLevel": 0,
-    "Item": "GalaricaCuff"
    }
   ]
  },
@@ -3965,12 +3899,6 @@
   "bIsMythical": false,
   "bAvailableInV1": false,
   "Evolutions": [
-   {
-    "Species": "Muk",
-    "Trigger": "Level",
-    "MinLevel": 38,
-    "Item": "None"
-   },
    {
     "Species": "Muk",
     "Trigger": "Level",
@@ -4503,12 +4431,6 @@
     "Trigger": "Level",
     "MinLevel": 30,
     "Item": "None"
-   },
-   {
-    "Species": "Electrode",
-    "Trigger": "Item",
-    "MinLevel": 0,
-    "Item": "LeafStone"
    }
   ]
  },
@@ -4597,12 +4519,6 @@
     "Trigger": "Item",
     "MinLevel": 0,
     "Item": "LeafStone"
-   },
-   {
-    "Species": "Exeggutor",
-    "Trigger": "Item",
-    "MinLevel": 0,
-    "Item": "LeafStone"
    }
   ]
  },
@@ -4686,12 +4602,6 @@
   "bIsMythical": false,
   "bAvailableInV1": false,
   "Evolutions": [
-   {
-    "Species": "Marowak",
-    "Trigger": "Level",
-    "MinLevel": 28,
-    "Item": "None"
-   },
    {
     "Species": "Marowak",
     "Trigger": "Level",
@@ -4901,12 +4811,6 @@
   "bIsMythical": false,
   "bAvailableInV1": false,
   "Evolutions": [
-   {
-    "Species": "Weezing",
-    "Trigger": "Level",
-    "MinLevel": 35,
-    "Item": "None"
-   },
    {
     "Species": "Weezing",
     "Trigger": "Level",
