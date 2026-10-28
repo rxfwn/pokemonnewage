@@ -839,6 +839,9 @@ void APokemonNewAgePlayerController::ApplyKeyBindings()
 		Subsystem->RemoveMappingContext(Original);
 		Subsystem->AddMappingContext(Copy, Context.Value);
 		BoundContexts.Add(Original, Copy);
+	}
+}
+
 void APokemonNewAgePlayerController::Parler(FName Npc)
 {
 	DialogueComponent->TalkTo(Npc);
