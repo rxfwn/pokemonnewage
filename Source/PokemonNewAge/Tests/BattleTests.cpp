@@ -136,6 +136,14 @@ namespace BattleTest
 		Potion.Category = EItemCategory::Medicine;
 		Potion.HealHP = 20;
 		Db->Items->AddRow(TEXT("Potion"), Potion);
+		FItemRow OranBerry;
+		OranBerry.HeldEffect = EHeldItemEffect::BerryHeal;
+		OranBerry.HeldValue = 10;
+		Db->Items->AddRow(TEXT("OranBerry"), OranBerry);
+		FItemRow Leftovers;
+		Leftovers.HeldEffect = EHeldItemEffect::EndTurnHeal;
+		Leftovers.HeldValue = 6;
+		Db->Items->AddRow(TEXT("Leftovers"), Leftovers);
 
 		FTrainerRow Brock;
 		Brock.PrizeMoney = 1400;
@@ -711,6 +719,43 @@ bool FBattleAITest::RunTest(const FString& Parameters)
 		VineWhip += FBattleAI::ChooseAction(*Session, 1, Stream).MoveSlot == 1 ? 1 : 0;
 	}
 	TestTrue(TEXT("choisit surtout la meilleure attaque"), VineWhip > 150);
+	return true;
+}
+
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleHeldItemTest, "PokemonNewAge.Battle.Session.HeldItems", BattleTest::TestFlags)
+bool FBattleHeldItemTest::RunTest(const FString& Parameters)
+{
+	UPokemonDatabase* Db = MakeDatabase();
+
+	// Baie Oran : mangée dès que les PV sont à la moitié, puis plus d'objet
+	{
+		FPokemonInstance Bulbasaur = Make(Db, TEXT("Bulbasaur"), 20, { TEXT("Growl") });
+		Bulbasaur.HeldItem = TEXT("OranBerry");
+		Bulbasaur.CurrentHP = Bulbasaur.GetMaxHP() / 2;
+		UBattleSession* Session = NewObject<UBattleSession>();
+		Session->InitWildBattle(Db, PlayerSide({ Bulbasaur }), Make(Db, TEXT("Rattata"), 2, { TEXT("Tackle") }), 31);
+		Session->Start();
+		EBattleActionError Error;
+		Session->SubmitAction(0, FBattleAction::MakeMove(0), Error);
+		TestTrue(TEXT("baie annoncée"), HasEvent(Session, EBattleEventType::HeldItemActivated, 0));
+		TestTrue(TEXT("baie mangée"), Session->GetSide(0).Party[0].HeldItem.IsNone());
+		TestTrue(TEXT("PV rendus"), HasEvent(Session, EBattleEventType::Heal, 0));
+	}
+
+	// Restes : soin en fin de tour, l'objet reste
+	{
+		FPokemonInstance Bulbasaur = Make(Db, TEXT("Bulbasaur"), 20, { TEXT("Growl") });
+		Bulbasaur.HeldItem = TEXT("Leftovers");
+		Bulbasaur.CurrentHP = Bulbasaur.GetMaxHP() - 10;
+		UBattleSession* Session = NewObject<UBattleSession>();
+		Session->InitWildBattle(Db, PlayerSide({ Bulbasaur }), Make(Db, TEXT("Rattata"), 2, { TEXT("Tackle") }), 32);
+		Session->Start();
+		EBattleActionError Error;
+		Session->SubmitAction(0, FBattleAction::MakeMove(0), Error);
+		TestTrue(TEXT("restes annoncés"), HasEvent(Session, EBattleEventType::HeldItemActivated, 0));
+		TestEqual(TEXT("restes gardés"), Session->GetSide(0).Party[0].HeldItem, FName(TEXT("Leftovers")));
+	}
 	return true;
 }
 

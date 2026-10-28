@@ -227,4 +227,5 @@ void UBattleComponent::ClientMovesToLearn_Implementation(int32 PartyIndex, const
 			PrintBattleLine(FString::Printf(TEXT("Le Pokemon n.%d veut apprendre %s (4 capacites deja connues)"), PartyIndex + 1, *Move.ToString()), FColor::Green);
 		}
 	}
+	OnMovesToLearn.Broadcast(PartyIndex, Moves);
 }

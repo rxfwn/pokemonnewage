@@ -182,6 +182,13 @@ public:
 
 public:
 
+	/** Actions dont on peut changer la touche (Options > Commandes) */
+	const UInputAction* GetMoveAction() const { return MoveAction; }
+	const UInputAction* GetJumpAction() const { return JumpAction; }
+	const UInputAction* GetSprintAction() const { return SprintAction; }
+	const UInputAction* GetInteractAction() const { return InteractAction; }
+	UInputMappingContext* GetInteractContext() const { return DefaultInteractContext; }
+
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 

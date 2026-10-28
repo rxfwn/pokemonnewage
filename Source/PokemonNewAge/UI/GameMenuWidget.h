@@ -7,13 +7,16 @@
 class UButton;
 class UTextBlock;
 class UVerticalBox;
+class UBorder;
+class UOverlay;
+class UPokedexScreenWidget;
+enum class EPokedexMenu : uint8;
 
 /**
- *  Menu en jeu, comme le menu X des jeux Pokémon : Pokédex, Pokémon, Sac, Dresseur,
- *  Sauvegarder, Options, Reprendre, Quitter.
- *  Construit entièrement en C++ (pas besoin de Widget Blueprint) ; on pourra le remplacer
- *  plus tard par un WBP_GameMenu habillé, enfant de cette classe.
- *  Les entrées pas encore codées sont grisées, elles s'activeront avec leurs tickets.
+ *  Menu en jeu à plat, comme le menu X des jeux Pokémon : Pokédex, Pokémon, Sac, Dresseur,
+ *  Carte, En ligne, Sauvegarder, Options, Reprendre, Quitter.
+ *  C'est le menu de secours : le vrai menu est le Pokédex 3D (APokedexDevice, SCRUM-64). Celui-ci sert
+ *  tant que DA_PokedexModel n'est pas importé, et ouvre les mêmes pages (UPokedexScreenWidget) à plat.
  */
 UCLASS()
 class UGameMenuWidget : public UUserWidget
@@ -42,6 +45,15 @@ protected:
 	UFUNCTION()
 	void OnQuitClicked();
 
+	UFUNCTION() void OnPokedexClicked();
+	UFUNCTION() void OnPokemonClicked();
+	UFUNCTION() void OnBagClicked();
+	UFUNCTION() void OnTrainerClicked();
+	UFUNCTION() void OnSaveClicked();
+	UFUNCTION() void OnOptionsClicked();
+	UFUNCTION() void OnMapClicked();
+	UFUNCTION() void OnOnlineClicked();
+
 private:
 
 	/** Ajoute une ligne au menu. Sans action, elle est grisée (« bientôt ») */
@@ -50,6 +62,19 @@ private:
 	/** Ferme le menu via le PlayerController */
 	void CloseMenu();
 
+	/** Affiche une page des menus à la place de la liste */
+	void OpenScreen(EPokedexMenu Menu);
+	void CloseScreen();
+
 	UPROPERTY(Transient)
 	TObjectPtr<UButton> ResumeButton;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UOverlay> RootOverlay;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBorder> ListPanel;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UPokedexScreenWidget> Screen;
 };

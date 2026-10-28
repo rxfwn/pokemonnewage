@@ -518,6 +518,18 @@ struct FItemRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="PokeBall")
 	bool bGuaranteedCatch = false;
 
+	/** Effet quand un Pokémon le tient en combat (menu Pokémon > Donner un objet) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Held")
+	EHeldItemEffect HeldEffect = EHeldItemEffect::None;
+
+	/** Force de l'effet tenu : PV, % ou chance selon HeldEffect */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Held")
+	int32 HeldValue = 0;
+
+	/** Type renforcé (HeldEffect = TypeBoost) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Held")
+	EPokemonType HeldBoostType = EPokemonType::None;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Item")
 	bool bUsableInBattle = true;
 

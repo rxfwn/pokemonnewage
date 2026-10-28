@@ -158,6 +158,8 @@ enum class EBattleEventType : uint8
 	TrapEnded,
 	Fainted,
 	ItemUsed,
+	/** Un objet tenu fait effet : Item (le Heal ou StatusCured qui suit donne le résultat) */
+	HeldItemActivated,
 	/** Amount = numéro de la secousse (1 à 3) */
 	BallShake,
 	Caught,

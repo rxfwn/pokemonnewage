@@ -26,7 +26,7 @@ public class PokemonNewAge : ModuleRules
 			"SlateCore"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { });
+		PrivateDependencyModuleNames.AddRange(new string[] { "Landscape" });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"PokemonNewAge",

@@ -3,7 +3,11 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
 #include "Pokemon/PokemonInstance.h"
+#include "Core/PokemonSaveGame.h"
 #include "PokemonPlayerState.generated.h"
+
+class UPokemonDatabase;
+struct FItemRow;
 
 /**
  *  Tout ce qui appartient à un joueur (SCRUM-68) : son équipe, son PC, son sac, son argent,
@@ -19,6 +23,9 @@ class APokemonPlayerState : public APlayerState
 public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	/** Serveur : numéro de dresseur tiré au hasard et début du chrono de temps de jeu */
+	virtual void BeginPlay() override;
 
 	/** Équipe, 6 au maximum. L'ordre est celui du menu Pokémon */
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category="Pokemon")
@@ -53,7 +60,29 @@ public:
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category="Story")
 	FName CurrentLocation;
 
+	/** Numéro de dresseur (carte Dresseur), tiré au hasard à la première partie */
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category="Story")
+	int32 TrainerNumber = 0;
+
+	/** Temps de jeu des sessions précédentes (sauvegarde), en secondes */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category="Story")
+	float PlayTimeBeforeSession = 0.f;
+
+	/** Heure du serveur au début de cette session */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category="Story")
+	float SessionStartServerTime = 0.f;
+
 	// ------------------------------------------------ Lecture (partout)
+
+	/** Temps de jeu total en secondes */
+	UFUNCTION(BlueprintPure, Category="Story")
+	float GetPlayTimeSeconds() const;
+
+	/** Copie de tout ce qui se sauvegarde (sans la position, ajoutée par UPokemonSaveLibrary) */
+	FPlayerSaveData MakeSaveData() const;
+
+	/** Vrai si l'objet a un effet hors combat sur ce Pokémon (Potion sur un Pokémon blessé...) */
+	static bool CanUseItemOnPokemon(const FItemRow& Item, const FPokemonInstance& Pokemon);
 
 	UFUNCTION(BlueprintPure, Category="Story")
 	bool HasFlag(FName Flag) const { return StoryFlags.Contains(Flag); }
@@ -93,6 +122,24 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Pokedex")
 	void MarkCaught(FName Species);
+
+	/** Échange deux Pokémon de l'équipe (menu Pokémon > Déplacer) */
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Pokemon")
+	bool SwapPartyPokemon(int32 IndexA, int32 IndexB);
+
+	/** Fait tenir un objet du sac (l'ancien objet tenu revient dans le sac). Faux si l'objet manque */
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Pokemon")
+	bool GiveHeldItem(int32 PartyIndex, FName Item);
+
+	/** Reprend l'objet tenu dans le sac */
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Pokemon")
+	bool TakeHeldItem(int32 PartyIndex);
+
+	/** Utilise un objet du sac sur un Pokémon de l'équipe, hors combat. Faux si sans effet (rien n'est retiré) */
+	bool UseItemOnPokemon(const UPokemonDatabase* Database, FName Item, int32 PartyIndex);
+
+	/** Remet une sauvegarde dans ce PlayerState (chargement) */
+	void ApplySaveData(const FPlayerSaveData& Data);
 
 	static constexpr int32 MaxPartySize = 6;
 };

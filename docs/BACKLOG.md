@@ -50,6 +50,7 @@ Objectif : marcher dans une version blockout de Bourg Palette et de la Route 1.
 - **EXP-5** Entrer et sortir des bâtiments (transition de niveau)
 - **EXP-6** Dialogue simple avec un PNJ
   - SCRUM-71 : textes de tous les dialogues de la V1 en Data Tables (`docs/DIALOGUES.md`)
+  - SCRUM-26 : boîte de dialogue en jeu, PNJ et volumes de scène (`docs/DIALOGUES.md`, « Boîte de dialogue en jeu »)
 
 ## Sprint 2 : les données Pokémon (semaines 5-6)
 
@@ -71,7 +72,7 @@ Objectif : un combat sauvage complet du début à la fin.
 - **CMB-1** Arène de combat : placement des Pokémon et caméra de combat
 - **CMB-2** Boucle de tour : choix d'action, ordre selon la Vitesse
 - **CMB-3** Formule de dégâts (STAB, types, coups critiques, aléatoire)
-- **CMB-4** UI de combat : barres de PV, menu Attaque / Sac / Pokémon / Fuite
+- **CMB-4** (SCRUM-36) UI de combat : barres de PV, menu Attaque / Sac / Pokémon / Fuite (`docs/MENU_POKEDEX.md`)
 - **CMB-5** IA simple de l'adversaire
 - **CMB-6** Changement de Pokémon, K.O., fin de combat et fuite
 
@@ -99,10 +100,11 @@ Objectif : farmer des niveaux et voir son Pokémon évoluer.
 
 Objectif : le joueur peut gérer son aventure et la reprendre plus tard.
 
-- **DEX-2** UI du Pokédex : liste, fiche, modèle 3D qui tourne, compteur vu / capturé
+- **UI-0** (SCRUM-64) Menu en jeu : le Pokédex 3D texturé de L'amie qu'on tourne à la souris, 10 boutons à icônes (Pokémon, Pokédex, Sac, Radio, Dresseur, Carte, Sauvegarder, En ligne, Options, Style), 4 écrans, voyants et sons ; objets tenus, lieux des espèces, carte de Kanto, volumes musique / bruitages (`docs/MENU_POKEDEX.md`). Reste : Radio, Style, changer les touches, échanges et combats en ligne (SCRUM-69)
+- **DEX-2** UI du Pokédex : liste, fiche, compteur vu / capturé (fait dans SCRUM-64 ; le modèle 3D du Pokémon dans la fiche reste à faire)
 - **UI-1** Menu équipe (ordre, détails, stats)
 - **UI-2** Sac : objets, Poké Balls, Potions
-- **UI-3** Sauvegarde et chargement
+- **UI-3** Sauvegarde et chargement (+ Options)
 - **UI-4** Centre Pokémon (soin) et Boutique (achat)
 
 ## Sprint 7 : jusqu'à Pierre, fin du MVP (semaines 15-16)
