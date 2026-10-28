@@ -313,6 +313,24 @@
   "bUsableInField": false
  },
  {
+  "Name": "PremierBall",
+  "DisplayName": "Honor Ball",
+  "Description": "Une Ball rare, offerte pour fêter un événement.",
+  "Category": "PokeBall",
+  "Price": 20,
+  "HealHP": 0,
+  "bHealFull": false,
+  "CuresStatus": [],
+  "ReviveHPPercent": 0,
+  "CatchRateMultiplier": 1.0,
+  "bGuaranteedCatch": false,
+  "HeldEffect": "None",
+  "HeldValue": 0,
+  "HeldBoostType": "None",
+  "bUsableInBattle": true,
+  "bUsableInField": false
+ },
+ {
   "Name": "MasterBall",
   "DisplayName": "Master Ball",
   "Description": "La meilleure Ball : elle capture à coup sûr.",

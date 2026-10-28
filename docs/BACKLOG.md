@@ -105,7 +105,7 @@ Objectif : le joueur peut gérer son aventure et la reprendre plus tard.
 - **UI-1** Menu équipe (ordre, détails, stats)
 - **UI-2** Sac : objets, Poké Balls, Potions
 - **UI-3** Sauvegarde et chargement (+ Options)
-- **UI-4** Centre Pokémon (soin) et Boutique (achat)
+- **UI-4** Centre Pokémon (soin) et Boutique (achat) : SCRUM-53, code dans `Source/PokemonNewAge/Town/`, doc `docs/CENTRE_ET_BOUTIQUE.md`
 
 ## Sprint 7 : jusqu'à Pierre, fin du MVP (semaines 15-16)
 

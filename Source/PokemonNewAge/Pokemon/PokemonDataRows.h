@@ -538,3 +538,46 @@ struct FItemRow : public FTableRowBase
 
 	bool IsPokeBall() const { return CatchRateMultiplier > 0.f || bGuaranteedCatch; }
 };
+
+// ---------------------------------------------------------------- Boutiques
+
+/** Un objet en rayon dans une boutique, avec ce qu'il faut pour qu'il apparaisse. */
+USTRUCT(BlueprintType)
+struct FShopEntry
+{
+	GENERATED_BODY()
+
+	/** Ligne de DT_Items (son prix d'achat est FItemRow::Price) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shop")
+	FName Item;
+
+	/** En rayon à partir de ce nombre de badges (comme Let's Go : le stock grandit avec l'aventure) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shop", meta=(ClampMin=0, ClampMax=8))
+	int32 MinBadges = 0;
+
+	/** Drapeau d'histoire nécessaire (GotPokedex...), None = toujours */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shop")
+	FName RequiredFlag;
+};
+
+/**
+ *  DT_Shops : une Boutique Pokémon par ville. Nom de ligne = celui du dialogue qui l'ouvre
+ *  (ViridianPokeMart, PewterPokeMart : EventParam de l'événement OpenShop). Généré par Tools/Data/build_shops.py.
+ */
+USTRUCT(BlueprintType)
+struct FShopRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** Titre affiché en haut de la boutique (« Boutique de Jadielle ») */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shop")
+	FText DisplayName;
+
+	/** Lieu (ViridianCity...) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shop")
+	FName Location;
+
+	/** Objets en rayon, dans l'ordre d'affichage */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shop")
+	TArray<FShopEntry> Stock;
+};

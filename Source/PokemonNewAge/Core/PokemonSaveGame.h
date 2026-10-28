@@ -51,6 +51,16 @@ struct FPlayerSaveData
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Save")
 	FName CurrentLocation;
 
+	/** Dernier Centre Pokémon où l'équipe a été soignée (APokemonCenterPoint), None = jamais */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Save")
+	FName LastHealPoint;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Save")
+	FVector LastHealLocation = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Save")
+	FRotator LastHealRotation = FRotator::ZeroRotator;
+
 	/** Position du personnage. bHasTransform faux = point de départ de la map */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Save")
 	bool bHasTransform = false;

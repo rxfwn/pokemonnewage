@@ -28,6 +28,8 @@ struct FPokemonBindableKey
 	FKey Key;
 };
 class UDialogueComponent;
+class UPokemonCenterComponent;
+class UShopComponent;
 
 /**
  *  Basic PlayerController class for a third person game
@@ -140,6 +142,15 @@ public:
 	/** Conversations de ce joueur et boîte de dialogue (docs/DIALOGUES.md) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Dialogue")
 	TObjectPtr<UDialogueComponent> DialogueComponent;
+
+	/** Centre Pokémon : point de retour après K.O., PC de Léo (docs/CENTRE_ET_BOUTIQUE.md) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Town")
+	TObjectPtr<UPokemonCenterComponent> PokemonCenterComponent;
+
+	/** Boutique Pokémon : achat et vente (docs/CENTRE_ET_BOUTIQUE.md) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Town")
+	TObjectPtr<UShopComponent> ShopComponent;
+
 	/** Capture, surnom, PC de Léo, lancer de Ball en 3D (docs/CAPTURE.md) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Capture")
 	TObjectPtr<UCaptureComponent> CaptureComponent;
@@ -318,6 +329,40 @@ public:
 	/** Affiche les drapeaux d'histoire du joueur */
 	UFUNCTION(Exec)
 	void Drapeaux();
+
+	// Commandes de test du Centre et de la Boutique (docs/CENTRE_ET_BOUTIQUE.md)
+
+	/** Boutique ViridianPokeMart : ouvre une boutique de DT_Shops sans parler au vendeur */
+	UFUNCTION(Exec)
+	void Boutique(FName ShopId);
+
+	/** Acheter PokeBall 10 : achat dans la boutique ouverte */
+	UFUNCTION(Exec)
+	void Acheter(FName Item, int32 Count = 1);
+
+	/** Vendre Potion 2 : vente dans la boutique ouverte */
+	UFUNCTION(Exec)
+	void Vendre(FName Item, int32 Count = 1);
+
+	/** Argent 5000 : fixe l'argent du joueur */
+	UFUNCTION(Exec)
+	void Argent(int32 Amount);
+
+	/** Badge BoulderBadge : donne un badge (le stock des boutiques grandit avec les badges) */
+	UFUNCTION(Exec)
+	void Badge(FName BadgeId);
+
+	/** Allume le PC de Léo sans aller au Centre */
+	UFUNCTION(Exec)
+	void AllumerPC();
+
+	/** Retient le Centre le plus proche comme point de retour (comme un soin de Joëlle) */
+	UFUNCTION(Exec)
+	void NoterCentre();
+
+	/** Renvoie au dernier Centre visité, comme quand toute l'équipe est K.O. */
+	UFUNCTION(Exec)
+	void RetourCentre();
 
 
 private:
