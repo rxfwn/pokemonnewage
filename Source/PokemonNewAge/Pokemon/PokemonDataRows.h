@@ -472,3 +472,57 @@ struct FTrainerRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Trainer")
 	TArray<FTrainerPokemon> Party;
 };
+
+// ---------------------------------------------------------------- Objets
+
+/** DT_Items : objets du sac (soins, Poké Balls, objets rares). Nom de ligne = PokeBall, Potion. */
+USTRUCT(BlueprintType)
+struct FItemRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Item")
+	FText DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Item", meta=(MultiLine=true))
+	FText Description;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Item")
+	EItemCategory Category = EItemCategory::Other;
+
+	/** Prix d'achat en boutique (revente : moitié), 0 = ne se vend pas */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Item")
+	int32 Price = 0;
+
+	/** PV rendus (Potion : 20) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Medicine")
+	int32 HealHP = 0;
+
+	/** Rend tous les PV (Potion Max) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Medicine")
+	bool bHealFull = false;
+
+	/** Statuts soignés (Antidote : Poison et BadlyPoisoned) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Medicine")
+	TArray<EMajorStatus> CuresStatus;
+
+	/** Ranime un Pokémon K.O. avec ce % de ses PV max (Rappel : 50), 0 = ne ranime pas */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Medicine")
+	int32 ReviveHPPercent = 0;
+
+	/** Multiplicateur de la formule de capture (Poké Ball 1, Super Ball 1,5, Hyper Ball 2), 0 = pas une Ball */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="PokeBall")
+	float CatchRateMultiplier = 0.f;
+
+	/** Capture à coup sûr (Master Ball) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="PokeBall")
+	bool bGuaranteedCatch = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Item")
+	bool bUsableInBattle = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Item")
+	bool bUsableInField = true;
+
+	bool IsPokeBall() const { return CatchRateMultiplier > 0.f || bGuaranteedCatch; }
+};

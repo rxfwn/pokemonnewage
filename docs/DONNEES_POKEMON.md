@@ -16,6 +16,7 @@ Toutes les données du jeu vivent dans des Data Tables, jamais en dur dans le co
 | `DT_Experience` | XP totale par niveau pour les 6 courbes | 100 |
 | `DT_Encounters` | Rencontres sauvages de Rouge Feu, tout Kanto et îles Sevii, par lieu et méthode (herbes, cannes, surf, Éclate-Roc) | 295 |
 | `DT_Trainers` | Dresseurs de la V1 : rival (labo, Route 22), 5 Scouts de la Forêt de Jade, Campeur Liam, Pierre | 13 |
+| `DT_Items` | Objets de la V1 : soins, Poké Balls, objets rares (généré par `Tools/Data/build_items.py`, voir `docs/COMBAT.md`) | 20 |
 
 **Pokémon jouables en V1** (20, colonne `bAvailableInV1`) : les 3 starters et leur première évolution, Roucool, Rattata, Piafabec, Férosinge, Chenipan, Chrysacier, Papilusion, Aspicot, Coconfort, Dardargnan, Pikachu, Racaillou, Sabelette, Onix.
 
