@@ -13,6 +13,7 @@
 #include "Battle/BattleComponent.h"
 #include "Battle/BattleSubsystem.h"
 #include "Core/PokemonPlayerState.h"
+#include "Dialogue/DialogueComponent.h"
 #include "Pokemon/PokemonDatabase.h"
 #include "Pokemon/PokemonDataSubsystem.h"
 #include "Engine/Engine.h"
@@ -23,6 +24,7 @@
 APokemonNewAgePlayerController::APokemonNewAgePlayerController()
 {
 	BattleComponent = CreateDefaultSubobject<UBattleComponent>(TEXT("BattleComponent"));
+	DialogueComponent = CreateDefaultSubobject<UDialogueComponent>(TEXT("DialogueComponent"));
 }
 
 void APokemonNewAgePlayerController::BeginPlay()
@@ -300,5 +302,40 @@ void APokemonNewAgePlayerController::Equipe()
 		PrintDebug(FString::Printf(TEXT("%d. %s N.%d PV %d/%d XP %d -%s"), Index + 1,
 			*UPokemonLibrary::GetDisplayName(Database, Pokemon).ToString(), Pokemon.Level, Pokemon.CurrentHP, Pokemon.GetMaxHP(),
 			Pokemon.Experience, *Moves));
+	}
+}
+
+void APokemonNewAgePlayerController::Parler(FName Npc)
+{
+	DialogueComponent->TalkTo(Npc);
+}
+
+void APokemonNewAgePlayerController::Dialogue(FName ConversationId)
+{
+	if (HasAuthority())
+	{
+		DialogueComponent->PlayConversation(ConversationId);
+	}
+}
+
+void APokemonNewAgePlayerController::Drapeau(FName Flag)
+{
+	if (APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>(); State && HasAuthority())
+	{
+		State->AddFlag(Flag);
+		Drapeaux();
+	}
+}
+
+void APokemonNewAgePlayerController::Drapeaux()
+{
+	if (const APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>())
+	{
+		FString Flags;
+		for (const FName& Flag : State->StoryFlags)
+		{
+			Flags += Flag.ToString() + TEXT(" ");
+		}
+		PrintDebug(FString::Printf(TEXT("Drapeaux : %s"), Flags.IsEmpty() ? TEXT("(aucun)") : *Flags));
 	}
 }
