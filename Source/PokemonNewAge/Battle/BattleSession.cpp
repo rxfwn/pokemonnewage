@@ -249,6 +249,10 @@ bool UBattleSession::ValidateAction(int32 Side, const FBattleAction& Action, EBa
 			{
 				OutError = EBattleActionError::CannotCatchTrainerPokemon;
 			}
+			else if (!S.bCanStoreCaughtPokemon)
+			{
+				OutError = EBattleActionError::NoRoomForPokemon;
+			}
 		}
 		else if (!S.Party.IsValidIndex(Action.PartyIndex) || !S.Party[Action.PartyIndex].IsValid())
 		{
@@ -446,6 +450,12 @@ void UBattleSession::ResolveTurn()
 				? Active->Moves[Queued.Action.MoveSlot].Move : BattleMoves::Struggle;
 			const FMoveRow* Move = Database->FindMove(MoveId);
 			Queued.Bracket = Move ? Move->Priority : 0;
+			// Vive Griffe : passe devant tout le monde de la même priorité
+			if (const FItemRow* Claw = GetHeldItem(Side, EHeldItemEffect::QuickClaw); Claw && Roll(Claw->HeldValue))
+			{
+				Queued.Speed = TNumericLimits<int32>::Max();
+				ActivateHeldItem(Side, false);
+			}
 			break;
 		}
 		}
@@ -469,6 +479,7 @@ void UBattleSession::ResolveTurn()
 		}
 		ExecuteAction(Queued);
 		CheckFainted();
+		CheckHeldBerries();
 	}
 
 	if (Phase != EBattlePhase::Ended && PendingOutcome == EBattleOutcome::None)
@@ -547,6 +558,17 @@ void UBattleSession::Finish(EBattleOutcome Outcome)
 	{
 		const FTrainerRow* Trainer = Database->FindTrainer(Sides[1].TrainerId);
 		Result.MoneyDelta = Trainer ? Trainer->PrizeMoney : 0;
+		// Pièce Rune tenue par un Pokémon qui a combattu
+		for (const int32 Index : Participants[PlayerSideIndex])
+		{
+			const FName Held = Player.Party.IsValidIndex(Index) ? Player.Party[Index].HeldItem : NAME_None;
+			const FItemRow* Coin = Held.IsNone() ? nullptr : Database->FindItem(Held);
+			if (Coin && Coin->HeldEffect == EHeldItemEffect::MoneyBoost)
+			{
+				Result.MoneyDelta = Result.MoneyDelta * Coin->HeldValue / 100;
+				break;
+			}
+		}
 		FBattleEvent Event = MakeEvent(EBattleEventType::MoneyWon, PlayerSideIndex);
 		Event.Amount = Result.MoneyDelta;
 		Emit(Event);
@@ -1083,6 +1105,11 @@ void UBattleSession::DoDamagingMove(int32 Side, FName MoveId, const FMoveRow& Mo
 			Emit(MakeEvent(EBattleEventType::NothingHappened, Side));
 			return;
 		}
+		// Objet tenu qui renforce un type (Charbon : Feu...)
+		if (const FItemRow* Booster = GetHeldItem(Side, EHeldItemEffect::TypeBoost); Booster && Booster->HeldBoostType == Move.Type)
+		{
+			Power = FMath::Max(1, Power * Booster->HeldValue / 100);
+		}
 
 		const bool bPhysical = Move.Category == EMoveCategory::Physical;
 		const EPokemonStat AttackStat = bPhysical ? EPokemonStat::Attack : EPokemonStat::SpecialAttack;
@@ -1145,6 +1172,12 @@ void UBattleSession::DoDamagingMove(int32 Side, FName MoveId, const FMoveRow& Mo
 	else if (Move.Drain < 0 && TotalDamage > 0)
 	{
 		DealDamage(Side, FMath::Max(1, TotalDamage * -Move.Drain / 100), EBattleEventType::Recoil, MoveId);
+	}
+	// Grelot Coque : rend une part des dégâts infligés
+	if (const FItemRow* Bell = GetHeldItem(Side, EHeldItemEffect::DamageHeal); Bell && TotalDamage > 0 && User.CurrentHP > 0 && User.CurrentHP < User.GetMaxHP())
+	{
+		ActivateHeldItem(Side, false);
+		Heal(Side, FMath::Max(1, TotalDamage * Bell->HeldValue / 100), MoveId);
 	}
 	// Contrecoup en % des PV max (Lutte : -25)
 	if (Move.Healing < 0 && User.CurrentHP > 0)
@@ -1250,13 +1283,27 @@ int32 UBattleSession::DealDamage(int32 Side, int32 Amount, EBattleEventType Even
 	{
 		return 0;
 	}
-	const int32 Dealt = FMath::Min(Amount, Pokemon->CurrentHP);
+	int32 Dealt = FMath::Min(Amount, Pokemon->CurrentHP);
+	// Bandeau : une attaque qui devait le mettre K.O. le laisse à 1 PV
+	bool bHeldOn = false;
+	if (EventType == EBattleEventType::Damage && Dealt >= Pokemon->CurrentHP)
+	{
+		if (const FItemRow* Band = GetHeldItem(Side, EHeldItemEffect::FocusBand); Band && Roll(Band->HeldValue))
+		{
+			Dealt = Pokemon->CurrentHP - 1;
+			bHeldOn = true;
+		}
+	}
 	Pokemon->CurrentHP -= Dealt;
 
 	FBattleEvent Event = MakeEvent(EventType, Side);
 	Event.Move = MoveId;
 	Event.Amount = Dealt;
 	Emit(Event);
+	if (bHeldOn)
+	{
+		ActivateHeldItem(Side, false);
+	}
 	return Dealt;
 }
 
@@ -1467,11 +1514,83 @@ void UBattleSession::EndOfTurn()
 			}
 		}
 
+		// Restes
+		if (const FItemRow* Leftovers = GetHeldItem(Side, EHeldItemEffect::EndTurnHeal); Leftovers && Pokemon.CurrentHP > 0 && Pokemon.CurrentHP < MaxHP)
+		{
+			ActivateHeldItem(Side, false);
+			Heal(Side, FMath::Max(1, MaxHP * Leftovers->HeldValue / 100));
+		}
+
 		if (!V.bUsedProtectThisTurn)
 		{
 			V.ProtectChain = 0;
 		}
 		CheckFainted();
+	}
+	CheckHeldBerries();
+}
+
+const FItemRow* UBattleSession::GetHeldItem(int32 Side, EHeldItemEffect Effect) const
+{
+	const FPokemonInstance* Active = (Side == 0 || Side == 1) ? Sides[Side].GetActive() : nullptr;
+	if (!Active || Active->HeldItem.IsNone() || !Database)
+	{
+		return nullptr;
+	}
+	const FItemRow* Item = Database->FindItem(Active->HeldItem);
+	return Item && Item->HeldEffect == Effect ? Item : nullptr;
+}
+
+void UBattleSession::ActivateHeldItem(int32 Side, bool bConsume)
+{
+	FPokemonInstance* Active = Sides[Side].GetActive();
+	if (!Active || Active->HeldItem.IsNone())
+	{
+		return;
+	}
+	FBattleEvent Event = MakeEvent(EBattleEventType::HeldItemActivated, Side);
+	Event.Item = Active->HeldItem;
+	Emit(Event);
+	if (bConsume)
+	{
+		Active->HeldItem = NAME_None;
+	}
+}
+
+void UBattleSession::CheckHeldBerries()
+{
+	for (int32 Side = 0; Side < 2; ++Side)
+	{
+		if (!IsActiveAlive(Side))
+		{
+			continue;
+		}
+		FPokemonInstance& Pokemon = *Sides[Side].GetActive();
+		const int32 MaxHP = Pokemon.GetMaxHP();
+
+		if (const FItemRow* Berry = GetHeldItem(Side, EHeldItemEffect::BerryCure); Berry && Berry->CuresStatus.Contains(Pokemon.Status))
+		{
+			ActivateHeldItem(Side, true);
+			Pokemon.Status = EMajorStatus::None;
+			Pokemon.SleepTurns = 0;
+			Sides[Side].Volatile.ToxicCounter = 0;
+			Emit(MakeEvent(EBattleEventType::StatusCured, Side));
+		}
+
+		if (Pokemon.CurrentHP * 2 > MaxHP)
+		{
+			continue;
+		}
+		if (const FItemRow* Berry = GetHeldItem(Side, EHeldItemEffect::BerryHeal))
+		{
+			ActivateHeldItem(Side, true);
+			Heal(Side, Berry->HeldValue);
+		}
+		else if (const FItemRow* PercentBerry = GetHeldItem(Side, EHeldItemEffect::BerryHealPercent))
+		{
+			ActivateHeldItem(Side, true);
+			Heal(Side, FMath::Max(1, MaxHP * PercentBerry->HeldValue / 100));
+		}
 	}
 }
 
@@ -1532,8 +1651,14 @@ void UBattleSession::GiveExperience(int32 WinnerSide, const FPokemonInstance& Fa
 			continue;
 		}
 		const bool bParticipated = Participants[WinnerSide].Contains(Index);
-		const int32 Experience = UBattleRules::GetExperienceGain(Species->BaseExperience, Fainted.Level, Pokemon.Level,
+		int32 Experience = UBattleRules::GetExperienceGain(Species->BaseExperience, Fainted.Level, Pokemon.Level,
 			BattleType == EBattleType::Trainer, bParticipated);
+		// Œuf Chance (le Pokémon n'a pas besoin d'être au combat)
+		const FItemRow* Egg = Pokemon.HeldItem.IsNone() ? nullptr : Database->FindItem(Pokemon.HeldItem);
+		if (Egg && Egg->HeldEffect == EHeldItemEffect::ExpBoost)
+		{
+			Experience = Experience * Egg->HeldValue / 100;
+		}
 
 		UPokemonLibrary::AddEVs(Pokemon, Species->EVYield);
 

@@ -164,6 +164,22 @@ FText UBattleText::MakeEventText(const UPokemonDatabase* Database, const FBattle
 	case EBattleEventType::TrapEnded:      Text = FString::Printf(TEXT("%s est libéré !"), *Name); break;
 	case EBattleEventType::Fainted:        Text = FString::Printf(TEXT("%s est K.O. !"), *Name); break;
 	case EBattleEventType::ItemUsed:       Text = FString::Printf(TEXT("Utilisation de %s !"), *ItemName(Database, Event.Item)); break;
+	case EBattleEventType::HeldItemActivated:
+	{
+		const FItemRow* Held = Database ? Database->FindItem(Event.Item) : nullptr;
+		const FString Item = ItemName(Database, Event.Item);
+		switch (Held ? Held->HeldEffect : EHeldItemEffect::None)
+		{
+		case EHeldItemEffect::BerryHeal:
+		case EHeldItemEffect::BerryHealPercent:
+		case EHeldItemEffect::BerryCure:   Text = FString::Printf(TEXT("%s mange sa %s !"), *Name, *Item); break;
+		case EHeldItemEffect::EndTurnHeal: Text = FString::Printf(TEXT("%s profite de ses %s."), *Name, *Item); break;
+		case EHeldItemEffect::QuickClaw:   Text = FString::Printf(TEXT("%s est plus rapide grâce à sa %s !"), *Name, *Item); break;
+		case EHeldItemEffect::FocusBand:   Text = FString::Printf(TEXT("%s tient bon grâce à son %s !"), *Name, *Item); break;
+		default:                           Text = FString::Printf(TEXT("%s utilise son objet : %s !"), *Name, *Item); break;
+		}
+		break;
+	}
 	case EBattleEventType::BallShake:      Text = Event.Amount == 1 ? TEXT("...") : Event.Amount == 2 ? TEXT("... ...") : TEXT("... ... ..."); break;
 	case EBattleEventType::Caught:         Text = FString::Printf(TEXT("Et hop ! %s est attrapé !"), *Name.Replace(TEXT(" sauvage"), TEXT(""))); break;
 	case EBattleEventType::BrokeFree:      Text = TEXT("Oh non ! Le Pokémon s'est libéré !"); break;
@@ -207,6 +223,7 @@ FText UBattleText::GetActionErrorText(EBattleActionError Error)
 	case EBattleActionError::ItemNotUsable:             return FText::FromString(TEXT("Ce n'est pas le moment d'utiliser ça !"));
 	case EBattleActionError::ItemHasNoEffect:           return FText::FromString(TEXT("Ça n'aura aucun effet."));
 	case EBattleActionError::CannotCatchTrainerPokemon: return FText::FromString(TEXT("Le dresseur dévie la Ball ! Voler, c'est mal !"));
+	case EBattleActionError::NoRoomForPokemon:          return FText::FromString(TEXT("Plus de place dans l'équipe ni dans le PC ! Libérez de la place avant de capturer."));
 	case EBattleActionError::None:                      return FText::GetEmpty();
 	default:                                            return FText::FromString(TEXT("Impossible pour l'instant."));
 	}

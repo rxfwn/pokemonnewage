@@ -6,6 +6,7 @@
 #include "Battle/BattleAI.h"
 #include "Battle/BattleRules.h"
 #include "Battle/BattleSession.h"
+#include "Capture/PokemonStorage.h"
 #include "Pokemon/PokemonDatabase.h"
 #include "Pokemon/PokemonInstance.h"
 #include "Engine/DataTable.h"
@@ -135,6 +136,14 @@ namespace BattleTest
 		Potion.Category = EItemCategory::Medicine;
 		Potion.HealHP = 20;
 		Db->Items->AddRow(TEXT("Potion"), Potion);
+		FItemRow OranBerry;
+		OranBerry.HeldEffect = EHeldItemEffect::BerryHeal;
+		OranBerry.HeldValue = 10;
+		Db->Items->AddRow(TEXT("OranBerry"), OranBerry);
+		FItemRow Leftovers;
+		Leftovers.HeldEffect = EHeldItemEffect::EndTurnHeal;
+		Leftovers.HeldValue = 6;
+		Db->Items->AddRow(TEXT("Leftovers"), Leftovers);
 
 		FTrainerRow Brock;
 		Brock.PrizeMoney = 1400;
@@ -191,6 +200,115 @@ namespace BattleTest
 }
 
 using namespace BattleTest;
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCaptureStorageTest, "PokemonNewAge.Capture.Storage", BattleTest::TestFlags)
+bool FCaptureStorageTest::RunTest(const FString& Parameters)
+{
+	UPokemonDatabase* Db = MakeDatabase();
+	TArray<FPokemonInstance> Party;
+	TArray<FPokemonInstance> Storage;
+	bool bInParty = false;
+	int32 Index = INDEX_NONE;
+
+	// 6 dans l'équipe, le 7e part au PC, soigné
+	for (int32 I = 0; I < UPokemonStorage::MaxPartySize; ++I)
+	{
+		TestTrue(TEXT("rangé dans l'équipe"), UPokemonStorage::Store(Party, Storage, Make(Db, TEXT("Rattata"), 3), bInParty, Index) && bInParty);
+	}
+	FPokemonInstance Hurt = Make(Db, TEXT("Onix"), 5);
+	Hurt.CurrentHP = 1;
+	TestTrue(TEXT("7e rangé"), UPokemonStorage::Store(Party, Storage, Hurt, bInParty, Index));
+	TestFalse(TEXT("7e au PC"), bInParty);
+	TestEqual(TEXT("place au PC"), Index, 0);
+	TestEqual(TEXT("soigné au PC"), Storage[0].CurrentHP, Storage[0].GetMaxHP());
+	TestFalse(TEXT("Pokémon vide refusé"), UPokemonStorage::Store(Party, Storage, FPokemonInstance(), bInParty, Index));
+
+	// Retirer : équipe pleine
+	EPokemonStorageError Error;
+	TestFalse(TEXT("retirer, équipe pleine"), UPokemonStorage::Withdraw(Party, Storage, 0, Error));
+	TestEqual(TEXT("raison équipe pleine"), Error, EPokemonStorageError::PartyFull);
+
+	// Échange : Onix arrive dans l'équipe, Rattata part au PC
+	TestTrue(TEXT("échange"), UPokemonStorage::Swap(Party, Storage, 2, 0, Error));
+	TestEqual(TEXT("Onix dans l'équipe"), Party[2].Species, FName(TEXT("Onix")));
+	TestEqual(TEXT("Rattata au PC"), Storage[0].Species, FName(TEXT("Rattata")));
+
+	// Déposer : jamais le dernier Pokémon en forme
+	TArray<FPokemonInstance> Two = { Make(Db, TEXT("Bulbasaur"), 5), Make(Db, TEXT("Rattata"), 3) };
+	Two[1].CurrentHP = 0;
+	TestFalse(TEXT("dernier en forme"), UPokemonStorage::Deposit(Two, Storage, 0, Error));
+	TestEqual(TEXT("raison dernier en forme"), Error, EPokemonStorageError::LastAblePokemon);
+	TestTrue(TEXT("déposer le K.O."), UPokemonStorage::Deposit(Two, Storage, 1, Error));
+	TestEqual(TEXT("équipe d'un seul"), Two.Num(), 1);
+	TestEqual(TEXT("K.O. soigné au PC"), Storage.Last().CurrentHP, Storage.Last().GetMaxHP());
+	TestTrue(TEXT("retirer"), UPokemonStorage::Withdraw(Two, Storage, Storage.Num() - 1, Error));
+	TestEqual(TEXT("équipe de deux"), Two.Num(), 2);
+
+	// Relâcher
+	const int32 Before = Storage.Num();
+	TestTrue(TEXT("relâcher"), UPokemonStorage::Release(Storage, 0, Error));
+	TestEqual(TEXT("un de moins"), Storage.Num(), Before - 1);
+	TestFalse(TEXT("relâcher une case vide"), UPokemonStorage::Release(Storage, 99, Error));
+
+	// PC plein : plus de place pour capturer
+	TArray<FPokemonInstance> FullStorage;
+	for (int32 I = 0; I < UPokemonStorage::MaxStorageSize; ++I)
+	{
+		FullStorage.Add(Make(Db, TEXT("Rattata"), 2));
+	}
+	TestFalse(TEXT("plus de place"), UPokemonStorage::HasRoom(Party, FullStorage));
+	TestFalse(TEXT("rangement refusé"), UPokemonStorage::Store(Party, FullStorage, Make(Db, TEXT("Rattata"), 2), bInParty, Index));
+
+	// Surnoms
+	FString Nickname;
+	TestTrue(TEXT("surnom simple"), UPokemonStorage::CleanNickname(TEXT("  Bulbi  "), Nickname) && Nickname == FString(TEXT("Bulbi")));
+	TestTrue(TEXT("surnom vide = nom de l'espèce"), UPokemonStorage::CleanNickname(TEXT(""), Nickname) && Nickname.IsEmpty());
+	TestTrue(TEXT("12 caractères"), UPokemonStorage::CleanNickname(TEXT("Mr Rattatata"), Nickname));
+	TestFalse(TEXT("13 caractères"), UPokemonStorage::CleanNickname(TEXT("Mr Rattatatat"), Nickname));
+	TestFalse(TEXT("balise refusée"), UPokemonStorage::CleanNickname(TEXT("<b>Bulbi"), Nickname));
+	TestFalse(TEXT("double espace"), UPokemonStorage::CleanNickname(TEXT("Bul  bi"), Nickname));
+
+	// Messages après capture
+	FCaughtPokemonInfo Info;
+	Info.Pokemon = Make(Db, TEXT("Onix"), 5);
+	Info.bInParty = false;
+	Info.Index = 31;
+	Info.bNewInPokedex = true;
+	const TArray<FText> Messages = UPokemonStorage::GetCaughtMessages(Db, Info);
+	TestEqual(TEXT("3 messages"), Messages.Num(), 3);
+	int32 Found = INDEX_NONE;
+	TestTrue(TEXT("boîte 2"), Messages.Num() == 3 && Messages[1].ToString().FindChar(TEXT('2'), Found));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCaptureBattleTest, "PokemonNewAge.Capture.Battle", BattleTest::TestFlags)
+bool FCaptureBattleTest::RunTest(const FString& Parameters)
+{
+	UPokemonDatabase* Db = MakeDatabase();
+
+	// Équipe et PC pleins : la Ball est refusée et n'est pas consommée
+	FBattleSide Side = PlayerSide({ Make(Db, TEXT("Bulbasaur"), 5, { TEXT("Tackle") }) });
+	Side.bCanStoreCaughtPokemon = false;
+	UBattleSession* Session = NewObject<UBattleSession>();
+	Session->InitWildBattle(Db, Side, Make(Db, TEXT("Rattata"), 3, { TEXT("Tackle") }), 31);
+	Session->Start();
+	EBattleActionError Error;
+	TestFalse(TEXT("Ball refusée"), Session->SubmitAction(0, FBattleAction::MakeItem(TEXT("MasterBall")), Error));
+	TestEqual(TEXT("raison plus de place"), Error, EBattleActionError::NoRoomForPokemon);
+	TestEqual(TEXT("Ball gardée"), Session->GetSide(0).GetItemCount(TEXT("MasterBall")), 1);
+
+	// Hautes herbes : environ 11,7 % par pas avec le taux 21 des routes
+	TestTrue(TEXT("taux 21"), FMath::Abs(UBattleRules::GetEncounterChancePerStep(21) - 336.f / 2880.f) < 0.0001f);
+	TestEqual(TEXT("taux 0 = jamais"), UBattleRules::GetEncounterChancePerStep(0), 0.f);
+	FRandomStream Stream(7);
+	int32 Encounters = 0;
+	for (int32 Step = 0; Step < 20000; ++Step)
+	{
+		Encounters += UBattleRules::RollEncounterStep(21, Stream) ? 1 : 0;
+	}
+	TestTrue(TEXT("fréquence des rencontres"), FMath::Abs(Encounters / 20000.f - UBattleRules::GetEncounterChancePerStep(21)) < 0.01f);
+	return true;
+}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleDamageFormulaTest, "PokemonNewAge.Battle.Rules.DamageFormula", BattleTest::TestFlags)
 bool FBattleDamageFormulaTest::RunTest(const FString& Parameters)
@@ -601,6 +719,43 @@ bool FBattleAITest::RunTest(const FString& Parameters)
 		VineWhip += FBattleAI::ChooseAction(*Session, 1, Stream).MoveSlot == 1 ? 1 : 0;
 	}
 	TestTrue(TEXT("choisit surtout la meilleure attaque"), VineWhip > 150);
+	return true;
+}
+
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleHeldItemTest, "PokemonNewAge.Battle.Session.HeldItems", BattleTest::TestFlags)
+bool FBattleHeldItemTest::RunTest(const FString& Parameters)
+{
+	UPokemonDatabase* Db = MakeDatabase();
+
+	// Baie Oran : mangée dès que les PV sont à la moitié, puis plus d'objet
+	{
+		FPokemonInstance Bulbasaur = Make(Db, TEXT("Bulbasaur"), 20, { TEXT("Growl") });
+		Bulbasaur.HeldItem = TEXT("OranBerry");
+		Bulbasaur.CurrentHP = Bulbasaur.GetMaxHP() / 2;
+		UBattleSession* Session = NewObject<UBattleSession>();
+		Session->InitWildBattle(Db, PlayerSide({ Bulbasaur }), Make(Db, TEXT("Rattata"), 2, { TEXT("Tackle") }), 31);
+		Session->Start();
+		EBattleActionError Error;
+		Session->SubmitAction(0, FBattleAction::MakeMove(0), Error);
+		TestTrue(TEXT("baie annoncée"), HasEvent(Session, EBattleEventType::HeldItemActivated, 0));
+		TestTrue(TEXT("baie mangée"), Session->GetSide(0).Party[0].HeldItem.IsNone());
+		TestTrue(TEXT("PV rendus"), HasEvent(Session, EBattleEventType::Heal, 0));
+	}
+
+	// Restes : soin en fin de tour, l'objet reste
+	{
+		FPokemonInstance Bulbasaur = Make(Db, TEXT("Bulbasaur"), 20, { TEXT("Growl") });
+		Bulbasaur.HeldItem = TEXT("Leftovers");
+		Bulbasaur.CurrentHP = Bulbasaur.GetMaxHP() - 10;
+		UBattleSession* Session = NewObject<UBattleSession>();
+		Session->InitWildBattle(Db, PlayerSide({ Bulbasaur }), Make(Db, TEXT("Rattata"), 2, { TEXT("Tackle") }), 32);
+		Session->Start();
+		EBattleActionError Error;
+		Session->SubmitAction(0, FBattleAction::MakeMove(0), Error);
+		TestTrue(TEXT("restes annoncés"), HasEvent(Session, EBattleEventType::HeldItemActivated, 0));
+		TestEqual(TEXT("restes gardés"), Session->GetSide(0).Party[0].HeldItem, FName(TEXT("Leftovers")));
+	}
 	return true;
 }
 

@@ -4,13 +4,30 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "Core/PokemonSaveGame.h"
+#include "Battle/BattleTypes.h"
 #include "PokemonNewAgePlayerController.generated.h"
 
+class UCaptureComponent;
 class UInputMappingContext;
 class UUserWidget;
 class UInputAction;
 class UGameMenuWidget;
 class UBattleComponent;
+class UBattleHUDWidget;
+class APokedexDevice;
+
+/** Une commande dont on peut changer la touche (Options > Commandes du Pokédex). */
+struct FPokemonBindableKey
+{
+	/** Forward_Key, Jump_Pad... (clé de UPokemonOptionsSave::KeyBindings) */
+	FName Id;
+	FText Name;
+	bool bGamepad = false;
+	FKey DefaultKey;
+	FKey Key;
+};
+class UDialogueComponent;
 
 /**
  *  Basic PlayerController class for a third person game
@@ -67,6 +84,42 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UGameMenuWidget> GameMenu;
 
+	/** Le menu est le Pokédex 3D (SCRUM-64). Sans DA_PokedexModel, le menu à plat prend le relais */
+	UPROPERTY(EditAnywhere, Category="UI")
+	bool bUsePokedex3D = true;
+
+	/** Classe du Pokédex 3D (un Blueprint enfant de PokedexDevice pour régler lumières, flou...) */
+	UPROPERTY(EditAnywhere, Category="UI")
+	TSubclassOf<APokedexDevice> PokedexDeviceClass;
+
+	/** Pokédex 3D ouvert, sinon nul */
+	UPROPERTY(Transient)
+	TObjectPtr<APokedexDevice> PokedexDevice;
+
+	/** Écran de combat (SCRUM-36), un Widget Blueprint enfant de BattleHUDWidget pour l'habiller */
+	UPROPERTY(EditAnywhere, Category="UI")
+	TSubclassOf<UBattleHUDWidget> BattleHUDClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBattleHUDWidget> BattleHUD;
+
+	/** Charge la sauvegarde au lancement s'il y en a une (SCRUM-52) */
+	UPROPERTY(EditAnywhere, Category="Save")
+	bool bLoadSaveOnStart = true;
+
+	/** Serveur : position chargée à donner au personnage dès qu'il existe */
+	bool bHasPendingTransform = false;
+	FVector PendingLocation = FVector::ZeroVector;
+	FRotator PendingRotation = FRotator::ZeroRotator;
+
+	/** Serveur : place le personnage à la position sauvegardée */
+	void ApplyPendingTransform();
+
+	virtual void OnPossess(APawn* InPawn) override;
+
+	UFUNCTION()
+	void HandleBattleStarted(const FBattleSnapshot& Snapshot);
+
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
 
@@ -84,6 +137,14 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Battle")
 	TObjectPtr<UBattleComponent> BattleComponent;
 
+	/** Capture, surnom, PC de Léo, lancer de Ball en 3D (docs/CAPTURE.md) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Capture")
+	TObjectPtr<UCaptureComponent> CaptureComponent;
+
+	/** Conversations de ce joueur et boîte de dialogue (docs/DIALOGUES.md) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Dialogue")
+	TObjectPtr<UDialogueComponent> DialogueComponent;
+
 	/** Ouvre le menu en jeu s'il est fermé, sinon le ferme */
 	UFUNCTION(BlueprintCallable, Category="UI")
 	void ToggleGameMenu();
@@ -98,7 +159,64 @@ public:
 
 	/** Vrai si le menu en jeu est ouvert */
 	UFUNCTION(BlueprintPure, Category="UI")
-	bool IsGameMenuOpen() const { return GameMenu != nullptr; }
+	bool IsGameMenuOpen() const { return GameMenu != nullptr || PokedexDevice != nullptr; }
+
+	/** Appelé par le Pokédex 3D à la fin de son animation de fermeture */
+	void OnPokedexClosed(APokedexDevice* Device);
+
+	/** Appelé par l'écran de combat quand il se retire */
+	void OnBattleHUDClosed();
+
+	/** Réglages du joueur (Options) : volume, sensibilité et sens de la caméra */
+	void ApplyGameOptions();
+
+	// ------------------------------------------------ Touches (Options > Commandes)
+
+	/** Commandes qu'on peut changer, clavier puis manette, avec leur touche actuelle */
+	TArray<FPokemonBindableKey> GetBindableKeys() const;
+
+	/** Change la touche d'une commande (si une autre commande l'avait, elles échangent) et l'enregistre */
+	void SetKeyBinding(FName Id, const FKey& Key);
+
+	/** Remet toutes les touches d'origine */
+	void ResetKeyBindings();
+
+	/** Remplace les contextes d'entrée par des copies avec les touches choisies (au lancement et après un changement) */
+	void ApplyKeyBindings();
+
+	/** Lus par le personnage pour la caméra */
+	float CameraSensitivity = 1.f;
+	bool bInvertCameraY = false;
+
+	// ------------------------------------------------ Demandes au serveur depuis les menus (SCRUM-68)
+
+	/** Menu Pokémon > Déplacer */
+	UFUNCTION(Server, Reliable)
+	void ServerSwapPartyPokemon(int32 IndexA, int32 IndexB);
+
+	/** Sac > objet de soin hors combat */
+	UFUNCTION(Server, Reliable)
+	void ServerUseFieldItem(FName Item, int32 PartyIndex);
+
+	/** Menu Pokémon > Donner un objet */
+	UFUNCTION(Server, Reliable)
+	void ServerGiveHeldItem(int32 PartyIndex, FName Item);
+
+	/** Menu Pokémon > Reprendre l'objet */
+	UFUNCTION(Server, Reliable)
+	void ServerTakeHeldItem(int32 PartyIndex);
+
+	/** Au lancement : la sauvegarde du joueur (lue sur son PC) est remise dans son PlayerState */
+	UFUNCTION(Server, Reliable)
+	void ServerLoadSave(const FPlayerSaveData& Data);
+
+	/** Sauvegarde tout de suite (console) */
+	UFUNCTION(Exec)
+	void Sauvegarder();
+
+	/** Efface la sauvegarde : le prochain lancement repart de zéro (console) */
+	UFUNCTION(Exec)
+	void NouvellePartie();
 
 	// Commandes de test du combat, à taper dans la console (touche ²) tant que l'UI n'existe pas.
 	// Voir docs/COMBAT.md. Les numéros commencent à 1 comme à l'écran.
@@ -138,6 +256,36 @@ public:
 	UFUNCTION(Exec)
 	void Evoluer(int32 PartySlot, int32 bAccept = 1);
 
+	// Commandes de test de la capture et du PC (docs/CAPTURE.md)
+
+	/** Surnom Bulbi : surnom du Pokémon qui vient d'être capturé (sans cette commande, il garde son nom) */
+	UFUNCTION(Exec)
+	void Surnom(const FString& Nickname);
+
+	/** Affiche le contenu du PC de Léo */
+	UFUNCTION(Exec)
+	void VoirPC();
+
+	/** Deposer 2 : dépose le 2e Pokémon de l'équipe au PC */
+	UFUNCTION(Exec)
+	void Deposer(int32 PartySlot);
+
+	/** Retirer 1 : prend le 1er Pokémon du PC dans l'équipe */
+	UFUNCTION(Exec)
+	void Retirer(int32 StorageSlot);
+
+	/** Echanger 2 1 : échange le 2e de l'équipe et le 1er du PC */
+	UFUNCTION(Exec)
+	void Echanger(int32 PartySlot, int32 StorageSlot);
+
+	/** Relacher 1 : relâche le 1er Pokémon du PC (définitif) */
+	UFUNCTION(Exec)
+	void Relacher(int32 StorageSlot);
+
+	/** Rencontres 0 : plus de Pokémon sauvages dans les herbes (Rencontres 1 pour les remettre) */
+	UFUNCTION(Exec)
+	void Rencontres(int32 bEnabled);
+
 	/** DonnerPokemon Bulbasaur 5 */
 	UFUNCTION(Exec)
 	void DonnerPokemon(FName Species, int32 Level);
@@ -154,4 +302,33 @@ public:
 	UFUNCTION(Exec)
 	void Equipe();
 
+	// Commandes de test des dialogues (docs/DIALOGUES.md)
+
+	/** Parler ProfOak : comme si le joueur parlait à ce PNJ */
+	UFUNCTION(Exec)
+	void Parler(FName Npc);
+
+	/** Dialogue OaksLab_ChooseBulbasaur : joue une conversation par son nom, sans vérifier les drapeaux */
+	UFUNCTION(Exec)
+	void Dialogue(FName ConversationId);
+
+	/** Drapeau GotStarter : donne un drapeau d'histoire */
+	UFUNCTION(Exec)
+	void Drapeau(FName Flag);
+
+	/** Affiche les drapeaux d'histoire du joueur */
+	UFUNCTION(Exec)
+	void Drapeaux();
+
+private:
+
+	/** Commande d'une association touche -> action (Forward_Key...), None si on ne la change pas */
+	FName GetBindingId(const struct FEnhancedActionKeyMapping& Mapping) const;
+
+	/** Contextes d'entrée d'origine du joueur et leur priorité */
+	void GetSourceContexts(TArray<TPair<UInputMappingContext*, int32>>& OutContexts) const;
+
+	/** Copie avec les touches du joueur, pour chaque contexte d'origine */
+	UPROPERTY(Transient)
+	TMap<TObjectPtr<UInputMappingContext>, TObjectPtr<UInputMappingContext>> BoundContexts;
 };

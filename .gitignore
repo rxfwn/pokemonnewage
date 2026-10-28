@@ -35,9 +35,16 @@ Thumbs.db
 
 __pycache__/
 
+# Sorties des scripts de Tools/Capture (modèle de Ball, sons) : livrées à part, recréées par les scripts
+Tools/Capture/Generated/
+
 # Cache des CSV PokeAPI (Tools/Data/build_pokemon_data.py)
 Tools/Data/.cache/
 
 # Modèles des Pokémon convertis (Tools/Pokemon/convert_pokemon_glb.py), livrés en zip hors Git
 Tools/Pokemon/Generated/
 Tools/Pokemon/.glb/
+
+# Modèle et sons du Pokédex 3D générés (Tools/Pokedex/)
+Tools/Pokedex/Generated/
+Tools/Pokedex/Source/*.blend

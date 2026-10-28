@@ -57,6 +57,11 @@ public:
 		while (!F.empty() && (Pos = R.find(F, Pos)) != std::wstring::npos) { R.replace(Pos, F.size(), T); Pos += T.size(); }
 		return FString(R);
 	}
+	FString TrimStartAndEnd() const
+	{
+		size_t A = S.find_first_not_of(L" \t\r\n"), B = S.find_last_not_of(L" \t\r\n");
+		return A == std::wstring::npos ? FString() : FString(S.substr(A, B - A + 1));
+	}
 	static FString FromInt(int32 V) { return FString(std::to_wstring(V)); }
 	static FString Printf(const TCHAR* Fmt, ...)
 	{
@@ -67,7 +72,11 @@ public:
 	}
 	std::string Narrow() const { std::string R; for (wchar_t C : S) R += C < 128 ? (char)C : '?'; return R; }
 };
-struct FChar { static TCHAR ToUpper(TCHAR C) { return (TCHAR)towupper(C); } };
+struct FChar
+{
+	static TCHAR ToUpper(TCHAR C) { return (TCHAR)towupper(C); }
+	static bool IsWhitespace(TCHAR C) { return iswspace(C) != 0; }
+};
 
 class FName
 {
@@ -120,6 +129,7 @@ public:
 	template <typename P> int32 RemoveAll(P Pred) { size_t B = V.size(); V.erase(std::remove_if(V.begin(), V.end(), Pred), V.end()); return (int32)(B - V.size()); }
 	int32 Remove(const T& X) { return RemoveAll([&X](const T& Y) { return Y == X; }); }
 	void RemoveAt(int32 I) { V.erase(V.begin() + I); }
+	void Insert(const T& X, int32 I) { V.insert(V.begin() + I, X); }
 	void Reset() { V.clear(); }
 	void Empty() { V.clear(); }
 	T& Last() { return V.back(); }
