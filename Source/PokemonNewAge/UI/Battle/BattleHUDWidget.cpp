@@ -127,7 +127,7 @@ TSharedRef<SWidget> UBattleHUDWidget::RebuildWidget()
 		UOverlay* Root = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("Root"));
 		WidgetTree->RootWidget = Root;
 
-		// Cadre de l'adversaire en haut à gauche, celui du joueur à droite au-dessus du texte
+		// Cadre de l'adversaire en haut à gauche, celui du joueur à gauche au-dessus du texte (le menu des choix prend la droite)
 		BuildInfoBox(Boxes[1], false);
 		UOverlaySlot* EnemySlot = Root->AddChildToOverlay(Boxes[1].Frame);
 		EnemySlot->SetHorizontalAlignment(HAlign_Left);
@@ -136,9 +136,9 @@ TSharedRef<SWidget> UBattleHUDWidget::RebuildWidget()
 
 		BuildInfoBox(Boxes[0], true);
 		UOverlaySlot* PlayerSlot = Root->AddChildToOverlay(Boxes[0].Frame);
-		PlayerSlot->SetHorizontalAlignment(HAlign_Right);
+		PlayerSlot->SetHorizontalAlignment(HAlign_Left);
 		PlayerSlot->SetVerticalAlignment(VAlign_Bottom);
-		PlayerSlot->SetPadding(FMargin(0.f, 0.f, 60.f, 250.f));
+		PlayerSlot->SetPadding(FMargin(60.f, 0.f, 0.f, 250.f));
 
 		// Boîte de texte en bas
 		UBorder* MessageFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MessageFrame"));
