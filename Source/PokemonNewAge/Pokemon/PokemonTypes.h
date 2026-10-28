@@ -175,6 +175,33 @@ enum class EMajorStatus : uint8
 	BadlyPoisoned
 };
 
+/** Effet d'un objet tenu par un Pokémon en combat (DT_Items, HeldEffect et HeldValue). */
+UENUM(BlueprintType)
+enum class EHeldItemEffect : uint8
+{
+	None,
+	/** Baie mangée à la moitié des PV : rend HeldValue PV (Baie Oran) */
+	BerryHeal,
+	/** Baie mangée à la moitié des PV : rend HeldValue % des PV max (Baie Sitrus) */
+	BerryHealPercent,
+	/** Baie mangée dès que le Pokémon a un des statuts de CuresStatus (Baie Ceriz, Baie Prine...) */
+	BerryCure,
+	/** Rend HeldValue % des PV max à chaque fin de tour (Restes) */
+	EndTurnHeal,
+	/** Rend HeldValue % des dégâts infligés (Grelot Coque) */
+	DamageHeal,
+	/** Attaques du type HeldBoostType : puissance × HeldValue % (Charbon, Eau Mystique...) */
+	TypeBoost,
+	/** HeldValue % de chances d'attaquer en premier (Vive Griffe) */
+	QuickClaw,
+	/** HeldValue % de chances de tenir avec 1 PV (Bandeau) */
+	FocusBand,
+	/** Expérience × HeldValue % (Œuf Chance) */
+	ExpBoost,
+	/** Argent gagné contre un dresseur × HeldValue % (Pièce Rune) */
+	MoneyBoost
+};
+
 /** Poche du sac où range un objet (DT_Items). */
 UENUM(BlueprintType)
 enum class EItemCategory : uint8

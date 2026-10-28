@@ -1,5 +1,8 @@
 #include "Core/PokemonPlayerState.h"
 #include "Net/UnrealNetwork.h"
+#include "Engine/World.h"
+#include "GameFramework/GameStateBase.h"
+#include "Pokemon/PokemonDatabase.h"
 
 void APokemonPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -15,6 +18,77 @@ void APokemonPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME_CONDITION(APokemonPlayerState, PokedexSeen, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(APokemonPlayerState, PokedexCaught, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(APokemonPlayerState, CurrentLocation, COND_OwnerOnly);
+	DOREPLIFETIME(APokemonPlayerState, TrainerNumber);
+	DOREPLIFETIME_CONDITION(APokemonPlayerState, PlayTimeBeforeSession, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(APokemonPlayerState, SessionStartServerTime, COND_OwnerOnly);
+}
+
+void APokemonPlayerState::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (HasAuthority())
+	{
+		if (TrainerNumber == 0)
+		{
+			TrainerNumber = FMath::RandRange(10000, 65535);
+		}
+		SessionStartServerTime = GetWorld()->GetTimeSeconds();
+	}
+}
+
+float APokemonPlayerState::GetPlayTimeSeconds() const
+{
+	const UWorld* World = GetWorld();
+	const AGameStateBase* GameState = World ? World->GetGameState() : nullptr;
+	const float Now = GameState ? GameState->GetServerWorldTimeSeconds() : (World ? World->GetTimeSeconds() : 0.f);
+	return PlayTimeBeforeSession + FMath::Max(0.f, Now - SessionStartServerTime);
+}
+
+FPlayerSaveData APokemonPlayerState::MakeSaveData() const
+{
+	FPlayerSaveData Data;
+	Data.TrainerName = GetPlayerName();
+	Data.TrainerNumber = TrainerNumber;
+	Data.Party = Party;
+	Data.StoragePC = StoragePC;
+	Data.Inventory = Inventory;
+	Data.Money = Money;
+	Data.Badges = Badges;
+	Data.StoryFlags = StoryFlags;
+	Data.PokedexSeen = PokedexSeen;
+	Data.PokedexCaught = PokedexCaught;
+	Data.CurrentLocation = CurrentLocation;
+	Data.PlayTimeSeconds = GetPlayTimeSeconds();
+	return Data;
+}
+
+void APokemonPlayerState::ApplySaveData(const FPlayerSaveData& Data)
+{
+	if (!Data.TrainerName.IsEmpty())
+	{
+		SetPlayerName(Data.TrainerName);
+	}
+	if (Data.TrainerNumber > 0)
+	{
+		TrainerNumber = Data.TrainerNumber;
+	}
+	Party = Data.Party;
+	if (Party.Num() > MaxPartySize)
+	{
+		Party.SetNum(MaxPartySize);
+	}
+	StoragePC = Data.StoragePC;
+	Inventory = Data.Inventory;
+	Inventory.RemoveAll([](const FItemStack& S) { return S.Item.IsNone() || S.Count <= 0; });
+	Money = FMath::Clamp(Data.Money, 0, 999999);
+	Badges = Data.Badges;
+	StoryFlags = Data.StoryFlags;
+	PokedexSeen = Data.PokedexSeen;
+	PokedexCaught = Data.PokedexCaught;
+	CurrentLocation = Data.CurrentLocation;
+	PlayTimeBeforeSession = FMath::Max(0.f, Data.PlayTimeSeconds);
+	SessionStartServerTime = GetWorld()->GetTimeSeconds();
 }
 
 int32 APokemonPlayerState::GetItemCount(FName Item) const
@@ -100,6 +174,85 @@ void APokemonPlayerState::MarkSeen(FName Species)
 	{
 		PokedexSeen.AddUnique(Species);
 	}
+}
+
+bool APokemonPlayerState::SwapPartyPokemon(int32 IndexA, int32 IndexB)
+{
+	if (!Party.IsValidIndex(IndexA) || !Party.IsValidIndex(IndexB) || IndexA == IndexB)
+	{
+		return false;
+	}
+	Party.Swap(IndexA, IndexB);
+	return true;
+}
+
+bool APokemonPlayerState::GiveHeldItem(int32 PartyIndex, FName Item)
+{
+	if (!Party.IsValidIndex(PartyIndex) || Item.IsNone() || !RemoveItem(Item, 1))
+	{
+		return false;
+	}
+	TakeHeldItem(PartyIndex);
+	Party[PartyIndex].HeldItem = Item;
+	return true;
+}
+
+bool APokemonPlayerState::TakeHeldItem(int32 PartyIndex)
+{
+	if (!Party.IsValidIndex(PartyIndex) || Party[PartyIndex].HeldItem.IsNone())
+	{
+		return false;
+	}
+	AddItem(Party[PartyIndex].HeldItem, 1);
+	Party[PartyIndex].HeldItem = NAME_None;
+	return true;
+}
+
+bool APokemonPlayerState::CanUseItemOnPokemon(const FItemRow& Item, const FPokemonInstance& Pokemon)
+{
+	if (!Item.bUsableInField || Item.IsPokeBall() || !Pokemon.IsValid())
+	{
+		return false;
+	}
+	if (Pokemon.IsFainted())
+	{
+		return Item.ReviveHPPercent > 0;
+	}
+	const bool bHeals = (Item.HealHP > 0 || Item.bHealFull) && Pokemon.CurrentHP < Pokemon.GetMaxHP();
+	const bool bCures = Pokemon.Status != EMajorStatus::None && Item.CuresStatus.Contains(Pokemon.Status);
+	return bHeals || bCures;
+}
+
+bool APokemonPlayerState::UseItemOnPokemon(const UPokemonDatabase* Database, FName ItemId, int32 PartyIndex)
+{
+	const FItemRow* Item = Database ? Database->FindItem(ItemId) : nullptr;
+	if (!Item || !Party.IsValidIndex(PartyIndex) || GetItemCount(ItemId) <= 0 || !CanUseItemOnPokemon(*Item, Party[PartyIndex]))
+	{
+		return false;
+	}
+
+	// Mêmes règles que les objets en combat (UBattleSession::ExecuteItem)
+	FPokemonInstance& Pokemon = Party[PartyIndex];
+	if (Pokemon.IsFainted())
+	{
+		Pokemon.CurrentHP = FMath::Max(1, Pokemon.GetMaxHP() * Item->ReviveHPPercent / 100);
+		Pokemon.Status = EMajorStatus::None;
+		Pokemon.SleepTurns = 0;
+	}
+	else
+	{
+		if (Item->HealHP > 0 || Item->bHealFull)
+		{
+			Pokemon.CurrentHP = Item->bHealFull ? Pokemon.GetMaxHP() : FMath::Min(Pokemon.GetMaxHP(), Pokemon.CurrentHP + Item->HealHP);
+		}
+		if (Pokemon.Status != EMajorStatus::None && Item->CuresStatus.Contains(Pokemon.Status))
+		{
+			Pokemon.Status = EMajorStatus::None;
+			Pokemon.SleepTurns = 0;
+		}
+	}
+	RemoveItem(ItemId, 1);
+	return true;
 }
 
 void APokemonPlayerState::MarkCaught(FName Species)

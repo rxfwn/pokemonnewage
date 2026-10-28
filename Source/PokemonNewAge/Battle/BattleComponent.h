@@ -9,6 +9,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBattleStarted, const FBattleSnaps
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBattleEvents, const TArray<FBattleEvent>&, Events, const FBattleSnapshot&, Snapshot);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBattleEnded, const FBattleResult&, Result);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBattleActionRefused, EBattleActionError, Error);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMovesToLearn, int32, PartyIndex, const TArray<FName>&, Moves);
 
 /**
  *  Le lien entre un joueur et son combat (sur son PlayerController, créé par le code).
@@ -68,6 +69,10 @@ public:
 	/** Le serveur a refusé l'action (fuite impossible, plus de PP...) : afficher le message et rechoisir */
 	UPROPERTY(BlueprintAssignable, Category="Battle")
 	FOnBattleActionRefused OnActionRefused;
+
+	/** Après une évolution : le Pokémon veut apprendre des attaques mais en connaît déjà 4 (proposer, puis LearnPendingMove) */
+	UPROPERTY(BlueprintAssignable, Category="Battle")
+	FOnMovesToLearn OnMovesToLearn;
 
 	/** Après une évolution : attaques que le Pokémon peut apprendre (proposer au joueur, puis LearnPendingMove) */
 	UPROPERTY(BlueprintReadOnly, Category="Battle")

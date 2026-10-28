@@ -132,6 +132,14 @@ private:
 	void ApplyStatChanges(int32 TargetSide, const FMoveRow& Move, FName MoveId, bool bReportFailure);
 	void EndOfTurn();
 
+	// Objets tenus
+	/** Objet tenu par le Pokémon actif du camp s'il a cet effet, sinon nul */
+	const FItemRow* GetHeldItem(int32 Side, EHeldItemEffect Effect) const;
+	/** Annonce l'objet tenu ; une baie est mangée (bConsume) */
+	void ActivateHeldItem(int32 Side, bool bConsume);
+	/** Baies des deux Pokémon actifs : soin sous la moitié des PV, statut soigné */
+	void CheckHeldBerries();
+
 	// K.O. et expérience
 	void CheckFainted();
 	void OnFainted(int32 Side);

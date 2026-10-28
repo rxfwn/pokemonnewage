@@ -37,3 +37,7 @@ __pycache__/
 
 # Cache des CSV PokeAPI (Tools/Data/build_pokemon_data.py)
 Tools/Data/.cache/
+
+# Modèle et sons du Pokédex 3D générés (Tools/Pokedex/)
+Tools/Pokedex/Generated/
+Tools/Pokedex/Source/*.blend
