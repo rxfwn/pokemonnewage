@@ -170,8 +170,8 @@ FText UShopRules::GetReceiptText(const UPokemonDatabase* Database, const FShopRe
 {
 	const FString Name = GetItemName(Database, Receipt.Item);
 	FString Text = Receipt.bPurchase
-		? FString::Printf(TEXT("Voici %d x %s pour %d ₽. Merci !"), Receipt.Count, *Name, Receipt.Money)
-		: FString::Printf(TEXT("%d x %s vendu pour %d ₽."), Receipt.Count, *Name, Receipt.Money);
+		? FString::Printf(TEXT("Voici %d x %s pour %d P. Merci !"), Receipt.Count, *Name, Receipt.Money)
+		: FString::Printf(TEXT("%d x %s vendu pour %d P."), Receipt.Count, *Name, Receipt.Money);
 	if (Receipt.BonusCount > 0)
 	{
 		Text += FString::Printf(TEXT(" En cadeau, %d x %s !"), Receipt.BonusCount, *GetItemName(Database, Receipt.BonusItem));

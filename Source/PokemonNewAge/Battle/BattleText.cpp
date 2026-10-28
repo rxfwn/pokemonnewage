@@ -197,8 +197,8 @@ FText UBattleText::MakeEventText(const UPokemonDatabase* Database, const FBattle
 		Text = FString::Printf(TEXT("%s veut apprendre %s, mais il connaît déjà quatre capacités. Faut-il en oublier une ?"), *Name, *MoveName(Database, Event.Move));
 		break;
 	case EBattleEventType::MoveNotLearned: Text = FString::Printf(TEXT("%s n'a pas appris %s."), *Name, *MoveName(Database, Event.Move)); break;
-	case EBattleEventType::MoneyWon:       Text = FString::Printf(TEXT("Vous remportez %d ₽ !"), Event.Amount); break;
-	case EBattleEventType::MoneyLost:      Text = FString::Printf(TEXT("Vous n'avez plus de Pokémon en forme ! Vous perdez %d ₽..."), Event.Amount); break;
+	case EBattleEventType::MoneyWon:       Text = FString::Printf(TEXT("Vous remportez %d P !"), Event.Amount); break;
+	case EBattleEventType::MoneyLost:      Text = FString::Printf(TEXT("Vous n'avez plus de Pokémon en forme ! Vous perdez %d P..."), Event.Amount); break;
 	case EBattleEventType::NothingHappened: Text = TEXT("Mais rien ne se passe !"); break;
 	case EBattleEventType::BattleEnded:
 		Text = Event.Outcome == EBattleOutcome::Won && Snapshot.BattleType == EBattleType::Trainer

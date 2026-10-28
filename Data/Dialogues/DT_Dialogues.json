@@ -4183,7 +4183,7 @@
       },
       {
         "Speaker": "PewterMuseum_Receptionist",
-        "Text": "L'entrée coûte 50 ₽. Voulez-vous visiter le musée ?",
+        "Text": "L'entrée coûte 50 P. Voulez-vous visiter le musée ?",
         "Event": "None",
         "EventParam": "None",
         "EventAmount": 0,
@@ -4213,7 +4213,7 @@
     "Lines": [
       {
         "Speaker": "Narrator",
-        "Text": "{PlayerName} paie 50 ₽.",
+        "Text": "{PlayerName} paie 50 P.",
         "Event": "TakeMoney",
         "EventParam": "None",
         "EventAmount": 50,
@@ -5063,7 +5063,7 @@
       },
       {
         "Speaker": "Narrator",
-        "Text": "{PlayerName} perd {MoneyLost} ₽...",
+        "Text": "{PlayerName} perd {MoneyLost} P...",
         "Event": "None",
         "EventParam": "None",
         "EventAmount": 0,

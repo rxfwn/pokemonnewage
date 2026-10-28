@@ -78,6 +78,9 @@ private:
 	TObjectPtr<UTextBlock> ListTitle;
 
 	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> ListPriceTitle;
+
+	UPROPERTY(Transient)
 	TObjectPtr<UVerticalBox> ItemList;
 
 	UPROPERTY(Transient)
