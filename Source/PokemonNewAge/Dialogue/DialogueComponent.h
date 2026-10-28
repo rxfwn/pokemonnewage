@@ -76,7 +76,8 @@ public:
 	FOnDialogueLineShown OnLineShown;
 
 	/**
-	 *  Événement pas encore géré en C++ (OpenShop, OpenPC, PlayCutscene, OfferNickname, ReturnToLastHeal).
+	 *  Événement pas encore géré en C++ (PlayCutscene, OfferNickname ; OpenShop, OpenPC et ReturnToLastHeal
+	 *  seulement si le PlayerController n'a pas de ShopComponent / PokemonCenterComponent).
 	 *  Diffusé sur le serveur ET sur le client du joueur, pour qu'un Blueprint puisse le brancher en attendant.
 	 */
 	UPROPERTY(BlueprintAssignable, Category="Dialogue")

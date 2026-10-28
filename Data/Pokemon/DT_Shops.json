@@ -1,0 +1,156 @@
+[
+ {
+  "Name": "ViridianPokeMart",
+  "DisplayName": "Boutique de Jadielle",
+  "Location": "ViridianCity",
+  "Stock": [
+   {
+    "Item": "PokeBall",
+    "MinBadges": 0,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "Potion",
+    "MinBadges": 0,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "Antidote",
+    "MinBadges": 0,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "ParalyzeHeal",
+    "MinBadges": 0,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "BurnHeal",
+    "MinBadges": 0,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "SuperPotion",
+    "MinBadges": 1,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "GreatBall",
+    "MinBadges": 3,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "Revive",
+    "MinBadges": 3,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "FullHeal",
+    "MinBadges": 4,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "HyperPotion",
+    "MinBadges": 5,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "UltraBall",
+    "MinBadges": 5,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "MaxPotion",
+    "MinBadges": 7,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "FullRestore",
+    "MinBadges": 8,
+    "RequiredFlag": "None"
+   }
+  ]
+ },
+ {
+  "Name": "PewterPokeMart",
+  "DisplayName": "Boutique d'Argenta",
+  "Location": "PewterCity",
+  "Stock": [
+   {
+    "Item": "PokeBall",
+    "MinBadges": 0,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "Potion",
+    "MinBadges": 0,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "Antidote",
+    "MinBadges": 0,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "ParalyzeHeal",
+    "MinBadges": 0,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "Awakening",
+    "MinBadges": 0,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "BurnHeal",
+    "MinBadges": 0,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "IceHeal",
+    "MinBadges": 0,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "SuperPotion",
+    "MinBadges": 1,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "GreatBall",
+    "MinBadges": 3,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "Revive",
+    "MinBadges": 3,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "FullHeal",
+    "MinBadges": 4,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "HyperPotion",
+    "MinBadges": 5,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "UltraBall",
+    "MinBadges": 5,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "MaxPotion",
+    "MinBadges": 7,
+    "RequiredFlag": "None"
+   },
+   {
+    "Item": "FullRestore",
+    "MinBadges": 8,
+    "RequiredFlag": "None"
+   }
+  ]
+ }
+]

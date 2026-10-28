@@ -55,6 +55,8 @@ ITEMS = [
     item("PokeBall", "Poké Ball", "PokeBall", 200, "Un objet pour capturer les Pokémon sauvages.", catch=1.0, field=False),
     item("GreatBall", "Super Ball", "PokeBall", 600, "Une Ball plus efficace que la Poké Ball.", catch=1.5, field=False),
     item("UltraBall", "Hyper Ball", "PokeBall", 1200, "Une Ball très efficace, meilleure que la Super Ball.", catch=2.0, field=False),
+    # Honor Ball : pas en rayon, offerte par la Boutique pour 10 Balls achetées d'un coup (revente 10 ₽)
+    item("PremierBall", "Honor Ball", "PokeBall", 20, "Une Ball rare, offerte pour fêter un événement.", catch=1.0, field=False),
     item("MasterBall", "Master Ball", "PokeBall", 0, "La meilleure Ball : elle capture à coup sûr.", catch=255.0, master=True, field=False),
     # Objets à tenir (menu Pokémon > Donner un objet) : poche « Baies et matériaux »
     item("OranBerry", "Baie Oran", "Other", 100, "À tenir. Le Pokémon la mange quand ses PV tombent à la moitié : rend 10 PV.",

@@ -221,6 +221,12 @@ conv("PlayerHouse_Mom_AfterBadge", "Mom", [
     heal_line("@Narrator Toute l'équipe est en pleine forme."),
 ], prio=30, req=["GotBoulderBadge"])
 
+conv("PlayerHouse_Mom_AfterBlackout", "Mom", [
+    "{PlayerName} ! Te voilà ! Tes Pokémon avaient l'air à bout de forces...",
+    "@Narrator Toute l'équipe a repris des forces.",
+    "Ne force pas trop, d'accord ? Je suis toujours là si besoin.",
+], trigger="Script")
+
 sign("PlayerHouse_TV", "Un film passe à la télé. Quatre garçons marchent le long d'une voie ferrée...\nBon, il est temps d'y aller.")
 sign("PlayerHouse_Console", "Une vieille console de jeux.\nPas le temps de jouer, l'aventure attend !")
 conv("PlayerHouse_PC_Use", "PlayerHouse_PC", [
@@ -486,6 +492,12 @@ conv("PokemonCenter_Nurse_Heal", "PokemonCenterNurse", [
 ], trigger="Script")
 conv("PokemonCenter_Nurse_Decline", "PokemonCenterNurse", [
     "À bientôt !",
+], trigger="Script")
+# Retour après un K.O. de toute l'équipe (UPokemonCenterComponent, équipe déjà soignée)
+conv("PokemonCenter_Nurse_AfterBlackout", "PokemonCenterNurse", [
+    "Oh ! Vos Pokémon étaient à bout de forces...",
+    "Nous les avons soignés. Ils sont de nouveau en pleine forme !",
+    "Faites bien attention à vous sur la route. À bientôt !",
 ], trigger="Script")
 conv("PokemonCenter_PC_Use", "PokemonCenter_PC", [
     L("@Narrator {PlayerName} allume le PC.", ev="OpenPC"),

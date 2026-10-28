@@ -93,6 +93,14 @@ Légende : *Parler* = en parlant au PNJ ; *Scène* = déclenchée par le jeu (vo
 - *Toute l'équipe est en pleine forme.*
   - ⚙ HealParty
 
+### `PlayerHouse_Mom_AfterBlackout`
+
+*Scène*
+
+- **Maman** : {PlayerName} ! Te voilà ! Tes Pokémon avaient l'air à bout de forces...
+- *Toute l'équipe a repris des forces.*
+- **Maman** : Ne force pas trop, d'accord ? Je suis toujours là si besoin.
+
 ### `PlayerHouse_TV_Read`
 
 *Parler*
@@ -1172,6 +1180,14 @@ Légende : *Parler* = en parlant au PNJ ; *Scène* = déclenchée par le jeu (vo
 *Scène*
 
 - **Infirmière Joëlle** : À bientôt !
+
+### `PokemonCenter_Nurse_AfterBlackout`
+
+*Scène*
+
+- **Infirmière Joëlle** : Oh ! Vos Pokémon étaient à bout de forces...
+- **Infirmière Joëlle** : Nous les avons soignés. Ils sont de nouveau en pleine forme !
+- **Infirmière Joëlle** : Faites bien attention à vous sur la route. À bientôt !
 
 ### `PokemonCenter_PC_Use`
 

@@ -18,6 +18,9 @@ void APokemonPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME_CONDITION(APokemonPlayerState, PokedexSeen, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(APokemonPlayerState, PokedexCaught, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(APokemonPlayerState, CurrentLocation, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(APokemonPlayerState, LastHealPoint, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(APokemonPlayerState, LastHealLocation, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(APokemonPlayerState, LastHealRotation, COND_OwnerOnly);
 	DOREPLIFETIME(APokemonPlayerState, TrainerNumber);
 	DOREPLIFETIME_CONDITION(APokemonPlayerState, PlayTimeBeforeSession, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(APokemonPlayerState, SessionStartServerTime, COND_OwnerOnly);
@@ -59,6 +62,9 @@ FPlayerSaveData APokemonPlayerState::MakeSaveData() const
 	Data.PokedexSeen = PokedexSeen;
 	Data.PokedexCaught = PokedexCaught;
 	Data.CurrentLocation = CurrentLocation;
+	Data.LastHealPoint = LastHealPoint;
+	Data.LastHealLocation = LastHealLocation;
+	Data.LastHealRotation = LastHealRotation;
 	Data.PlayTimeSeconds = GetPlayTimeSeconds();
 	return Data;
 }
@@ -87,6 +93,9 @@ void APokemonPlayerState::ApplySaveData(const FPlayerSaveData& Data)
 	PokedexSeen = Data.PokedexSeen;
 	PokedexCaught = Data.PokedexCaught;
 	CurrentLocation = Data.CurrentLocation;
+	LastHealPoint = Data.LastHealPoint;
+	LastHealLocation = Data.LastHealLocation;
+	LastHealRotation = Data.LastHealRotation;
 	PlayTimeBeforeSession = FMath::Max(0.f, Data.PlayTimeSeconds);
 	SessionStartServerTime = GetWorld()->GetTimeSeconds();
 }

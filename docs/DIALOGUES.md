@@ -76,9 +76,12 @@ Les tables sont identiques sur toutes les machines. Les drapeaux d'histoire appa
 |---|---|---|
 | `GiveItem`, `TakeItem`, `TakeMoney` | à l'affichage de la réplique | Sac ou argent du joueur. Pas assez d'argent : on passe à `FailConversation` (musée d'Argenta). |
 | `GivePokemon` | à l'affichage | Crée le Pokémon (niveau `EventAmount`, Poké Ball, lieu de rencontre), l'ajoute à l'équipe ou au PC, et au Pokédex. |
-| `GiveBadge`, `HealParty` | à l'affichage | Badge ajouté, équipe soignée. |
+| `GiveBadge`, `HealParty` | à l'affichage | Badge ajouté, équipe soignée (et, près d'un Centre ou à la maison, nouveau point de retour). |
 | `StartTrainerBattle` | quand le joueur a lu la réplique | La boîte se ferme, le combat commence. À la fin, la réplique `Trainer_<Dresseur>_PlayerWins` / `_PlayerLoses` s'affiche (1,5 s après, le temps que l'écran de combat se ferme), puis son `NextConversation`. Équipe K.O. contre un sauvage : `Battle_PlayerBlackout`. |
-| `OpenShop`, `OpenPC`, `PlayCutscene`, `OfferNickname`, `ReturnToLastHeal` | | Pas encore codés : la conversation continue, et l'événement **On Unhandled Event** du DialogueComponent est envoyé pour qu'un Blueprint puisse s'y brancher. `ReturnToLastHeal` soigne déjà l'équipe (le retour au Centre viendra avec les Centres Pokémon). |
+| `OpenShop` | quand on a lu la réplique | Ouvre la boutique `EventParam` (DT_Shops) une fois la boîte fermée. Voir `docs/CENTRE_ET_BOUTIQUE.md`. |
+| `OpenPC` | quand on a lu la réplique | Allume le PC de Léo (écran du PC). |
+| `ReturnToLastHeal` | quand on a lu la réplique | Écran noir, retour au dernier Centre Pokémon (ou à la maison), équipe soignée, puis Joëlle ou maman parle. |
+| `PlayCutscene`, `OfferNickname` | | Pas encore codés : la conversation continue, et l'événement **On Unhandled Event** du DialogueComponent est envoyé pour qu'un Blueprint puisse s'y brancher. |
 
 Variables remplacées : `{PlayerName}` (nom du joueur dans la partie, en solo c'est le nom du PC tant que le choix du nom n'existe pas), `{StarterName}` (surnom ou espèce du starter), `{RivalStarterName}` (d'après `RivalLab_*` de `DT_Trainers`, déjà juste dans la scène du choix), `{SeenCount}`, `{CaughtCount}`, `{MoneyLost}` (argent perdu au dernier combat).
 

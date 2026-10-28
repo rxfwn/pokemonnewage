@@ -14,6 +14,7 @@
 #include <optional>
 #include <initializer_list>
 #include <type_traits>
+#include <limits>
 
 typedef int32_t int32; typedef uint8_t uint8; typedef int64_t int64; typedef uint32_t uint32; typedef wchar_t TCHAR;
 #define TEXT(x) L##x
@@ -171,6 +172,8 @@ struct FMath
 	static double Pow(double A, double B) { return std::pow(A, B); }
 	static int32 Rand() { return std::rand(); }
 };
+
+template <typename T> struct TNumericLimits { static constexpr T Max() { return std::numeric_limits<T>::max(); } static constexpr T Min() { return std::numeric_limits<T>::min(); } };
 
 struct FRandomStream
 {

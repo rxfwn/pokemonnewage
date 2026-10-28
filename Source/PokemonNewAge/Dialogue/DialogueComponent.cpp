@@ -15,6 +15,8 @@
 #include "PokemonNewAge.h"
 #include "Sound/SoundBase.h"
 #include "TimerManager.h"
+#include "Town/PokemonCenterComponent.h"
+#include "Town/ShopComponent.h"
 #include "UI/DialogueWidget.h"
 
 namespace
@@ -337,11 +339,35 @@ bool UDialogueComponent::ApplyEvent(const FDialogueLine& Line)
 
 	case EDialogueEvent::HealParty:
 		State->HealParty();
+		// Joëlle ou maman : ce lieu devient le point de retour (équipe K.O.)
+		if (UPokemonCenterComponent* Center = GetOwner()->FindComponentByClass<UPokemonCenterComponent>())
+		{
+			Center->RecordHealPoint();
+		}
 		return true;
 
 	case EDialogueEvent::ReturnToLastHeal:
-		// Le téléport au dernier Centre viendra avec les Centres Pokémon ; l'équipe est déjà soignée
+		if (UPokemonCenterComponent* Center = GetOwner()->FindComponentByClass<UPokemonCenterComponent>(); Center && Center->ReturnToLastHealPoint())
+		{
+			return true;
+		}
+		// Pas de point de retour dans la map : au moins, l'équipe est soignée
 		State->HealParty();
+		break;
+
+	case EDialogueEvent::OpenShop:
+		if (UShopComponent* Shop = GetOwner()->FindComponentByClass<UShopComponent>(); Shop && Shop->OpenShop(Line.EventParam))
+		{
+			return true;
+		}
+		break;
+
+	case EDialogueEvent::OpenPC:
+		if (UPokemonCenterComponent* Center = GetOwner()->FindComponentByClass<UPokemonCenterComponent>())
+		{
+			Center->OpenPC();
+			return true;
+		}
 		break;
 
 	default:

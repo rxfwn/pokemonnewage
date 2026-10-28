@@ -376,6 +376,45 @@
     "NextConversation": "None"
   },
   {
+    "Name": "PlayerHouse_Mom_AfterBlackout",
+    "Npc": "Mom",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Mom",
+        "Text": "{PlayerName} ! Te voilà ! Tes Pokémon avaient l'air à bout de forces...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "Toute l'équipe a repris des forces.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Mom",
+        "Text": "Ne force pas trop, d'accord ? Je suis toujours là si besoin.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
     "Name": "PlayerHouse_TV_Read",
     "Npc": "PlayerHouse_TV",
     "Trigger": "Talk",
@@ -2879,6 +2918,45 @@
       {
         "Speaker": "PokemonCenterNurse",
         "Text": "À bientôt !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
+    "Name": "PokemonCenter_Nurse_AfterBlackout",
+    "Npc": "PokemonCenterNurse",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PokemonCenterNurse",
+        "Text": "Oh ! Vos Pokémon étaient à bout de forces...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PokemonCenterNurse",
+        "Text": "Nous les avons soignés. Ils sont de nouveau en pleine forme !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PokemonCenterNurse",
+        "Text": "Faites bien attention à vous sur la route. À bientôt !",
         "Event": "None",
         "EventParam": "None",
         "EventAmount": 0,

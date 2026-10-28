@@ -23,6 +23,8 @@
 #include "Capture/CaptureComponent.h"
 #include "Core/PokemonPlayerState.h"
 #include "Dialogue/DialogueComponent.h"
+#include "Town/PokemonCenterComponent.h"
+#include "Town/ShopComponent.h"
 #include "Pokemon/PokemonDatabase.h"
 #include "Pokemon/PokemonDataSubsystem.h"
 #include "Engine/Engine.h"
@@ -36,6 +38,8 @@ APokemonNewAgePlayerController::APokemonNewAgePlayerController()
 	BattleComponent = CreateDefaultSubobject<UBattleComponent>(TEXT("BattleComponent"));
 	PokedexDeviceClass = APokedexDevice::StaticClass();
 	DialogueComponent = CreateDefaultSubobject<UDialogueComponent>(TEXT("DialogueComponent"));
+	PokemonCenterComponent = CreateDefaultSubobject<UPokemonCenterComponent>(TEXT("PokemonCenterComponent"));
+	ShopComponent = CreateDefaultSubobject<UShopComponent>(TEXT("ShopComponent"));
 }
 
 void APokemonNewAgePlayerController::BeginPlay()
@@ -870,5 +874,72 @@ void APokemonNewAgePlayerController::Drapeaux()
 			Flags += Flag.ToString() + TEXT(" ");
 		}
 		PrintDebug(FString::Printf(TEXT("Drapeaux : %s"), Flags.IsEmpty() ? TEXT("(aucun)") : *Flags));
+	}
+}
+
+// ---------------------------------------------------------------- Commandes de test du Centre et de la Boutique (console)
+
+void APokemonNewAgePlayerController::Boutique(FName ShopId)
+{
+	if (HasAuthority())
+	{
+		PrintDebug(ShopComponent->OpenShop(ShopId) ? FString::Printf(TEXT("Boutique %s ouverte"), *ShopId.ToString())
+			: FString::Printf(TEXT("Boutique %s introuvable dans DT_Shops"), *ShopId.ToString()));
+	}
+}
+
+void APokemonNewAgePlayerController::Acheter(FName Item, int32 Count)
+{
+	ShopComponent->Buy(Item, Count);
+}
+
+void APokemonNewAgePlayerController::Vendre(FName Item, int32 Count)
+{
+	ShopComponent->Sell(Item, Count);
+}
+
+void APokemonNewAgePlayerController::Argent(int32 Amount)
+{
+	if (APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>(); State && HasAuthority())
+	{
+		State->AddMoney(Amount - State->Money);
+		PrintDebug(FString::Printf(TEXT("Argent : %d"), State->Money));
+	}
+}
+
+void APokemonNewAgePlayerController::Badge(FName BadgeId)
+{
+	if (APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>(); State && HasAuthority() && !BadgeId.IsNone())
+	{
+		State->Badges.AddUnique(BadgeId);
+		PrintDebug(FString::Printf(TEXT("Badges : %d"), State->Badges.Num()));
+	}
+}
+
+void APokemonNewAgePlayerController::AllumerPC()
+{
+	if (HasAuthority())
+	{
+		PokemonCenterComponent->OpenPC();
+	}
+}
+
+void APokemonNewAgePlayerController::NoterCentre()
+{
+	if (HasAuthority())
+	{
+		PokemonCenterComponent->RecordHealPoint();
+		if (const APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>())
+		{
+			PrintDebug(FString::Printf(TEXT("Point de retour : %s"), State->LastHealPoint.IsNone() ? TEXT("(aucun Centre proche)") : *State->LastHealPoint.ToString()));
+		}
+	}
+}
+
+void APokemonNewAgePlayerController::RetourCentre()
+{
+	if (HasAuthority() && !PokemonCenterComponent->ReturnToLastHealPoint())
+	{
+		PrintDebug(TEXT("Aucun PokemonCenterPoint ni Player Start dans la map"));
 	}
 }
