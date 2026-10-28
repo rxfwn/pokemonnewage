@@ -542,6 +542,12 @@ void APokedexDevice::Open()
 	FocusLid();
 }
 
+void APokedexDevice::OpenOnMenu(EPokedexMenu Menu)
+{
+	Open();
+	PressMenuButton(int32(Menu));
+}
+
 void APokedexDevice::Close(bool bImmediate)
 {
 	if (!bClosing)

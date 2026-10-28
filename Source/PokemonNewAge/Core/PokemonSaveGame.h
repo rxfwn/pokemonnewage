@@ -129,6 +129,10 @@ public:
 	UPROPERTY()
 	bool bInvertCameraY = false;
 
+	/** Barre des icônes de menu (avec leur raccourci) en bas de l'écran */
+	UPROPERTY()
+	bool bShowShortcutBar = true;
+
 	/** Touches changées dans Options > Commandes : commande (Jump_Key, Forward_Key, Interact_Pad...) -> touche */
 	UPROPERTY()
 	TMap<FName, FKey> KeyBindings;

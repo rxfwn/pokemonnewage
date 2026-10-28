@@ -82,9 +82,9 @@ def make_fbx():
         return True
     blender = find_blender()
     if not blender or not os.path.exists(BLEND_PATH):
-        unreal.log_error(
-            "Pokedex.fbx introuvable. Dézipper pokedex/Pokedex_Generated.zip (fichiers du projet) dans Tools/Pokedex/ "
-            "pour avoir Tools/Pokedex/Generated/Pokedex.fbx, puis relancer ce script.")
+        unreal.log_warning(
+            "Pokedex.fbx introuvable : seul le menu (icônes, carte, sons) est importé, sans le Pokédex 3D. "
+            "Pour le 3D : dézipper pokedex/Pokedex_Generated.zip (fichiers du projet) dans Tools/Pokedex/, puis relancer.")
         return False
     unreal.log("Préparation du modèle avec Blender : " + blender)
     subprocess.run([blender, "--background", "--python", os.path.join(TOOLS_DIR, "prepare_pokedex_model.py"), "--",
@@ -388,11 +388,13 @@ def make_data_asset(meshes, material, sounds, icons, map_texture, map_data):
         factory.set_editor_property("data_asset_class", model_class)
         model = asset_tools.create_asset("DA_PokedexModel", CONTENT_DIR, model_class, factory)
 
-    parts = unreal.Map(unreal.Name, unreal.StaticMesh)
-    for key, mesh in meshes.items():
-        parts[unreal.Name(key)] = mesh
-    model.set_editor_property("parts", parts)
-    model.set_editor_property("material", material)
+    # Sans modèle 3D, on garde les pièces d'un import précédent
+    if meshes:
+        parts = unreal.Map(unreal.Name, unreal.StaticMesh)
+        for key, mesh in meshes.items():
+            parts[unreal.Name(key)] = mesh
+        model.set_editor_property("parts", parts)
+        model.set_editor_property("material", material)
     model.set_editor_property("menu_icons", icons)
     model.set_editor_property("map_texture", map_texture)
     kinds = {"town": unreal.PokedexPlaceKind.TOWN, "route": unreal.PokedexPlaceKind.ROUTE, "place": unreal.PokedexPlaceKind.PLACE}
@@ -414,20 +416,22 @@ def make_data_asset(meshes, material, sounds, icons, map_texture, map_data):
 
 def main():
     os.makedirs(GENERATED_DIR, exist_ok=True)
-    if not make_fbx():
-        return
+    # Sans le modèle 3D, on importe quand même ce que le menu PC classique utilise (icônes, carte, sons)
+    with_model = make_fbx()
 
-    with unreal.ScopedSlowTask(6, "Import du Pokédex 3D") as task:
+    with unreal.ScopedSlowTask(6, "Import du menu") as task:
         task.make_dialog(True)
-        task.enter_progress_frame(1, "Textures")
-        textures = import_textures()
-        task.enter_progress_frame(1, "Matériaux")
-        material = make_material()
-        instances = make_material_instances(make_textured_material(textures), textures)
-        task.enter_progress_frame(1, "Pièces 3D")
-        import_files([FBX_PATH], MESH_DIR)
-        meshes = collect_meshes()
-        assign_materials(meshes, instances)
+        textures, material, meshes = {}, None, {}
+        if with_model:
+            task.enter_progress_frame(1, "Textures")
+            textures = import_textures()
+            task.enter_progress_frame(1, "Matériaux")
+            material = make_material()
+            instances = make_material_instances(make_textured_material(textures), textures)
+            task.enter_progress_frame(1, "Pièces 3D")
+            import_files([FBX_PATH], MESH_DIR)
+            meshes = collect_meshes()
+            assign_materials(meshes, instances)
         task.enter_progress_frame(1, "Icônes et carte")
         icons, map_texture, map_data = import_ui_textures()
         task.enter_progress_frame(1, "Sons")
@@ -437,15 +441,14 @@ def main():
         model = make_data_asset(meshes, material, sounds, icons, map_texture, map_data)
 
     missing = [key for key in PARTS if key not in meshes]
-    if missing:
+    if with_model and missing:
         unreal.log_warning("Pièces manquantes : " + ", ".join(missing))
     if not audio_ok:
         unreal.log_warning("Réglages de volume (Content/Audio) pas créés : options Musique et Bruitages sans effet.")
     if model:
-        unreal.log("Pokédex 3D prêt : %d pièces sur %d, %d textures, %d icônes, %d lieux sur la carte, %d sons. "
+        unreal.log("Menu prêt : %d pièces 3D sur %d, %d textures, %d icônes, %d lieux sur la carte, %d sons. "
                    "Lancer le jeu et appuyer sur Tab." % (len(meshes), len(PARTS), sum(len(v) for v in textures.values()),
                                                            len([i for i in icons if i]), len(map_data.get("places", [])),
                                                            len(sounds)))
-
 
 main()

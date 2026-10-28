@@ -6,17 +6,18 @@
 
 class UButton;
 class UTextBlock;
-class UVerticalBox;
-class UBorder;
+class UImage;
+class UTexture2D;
 class UOverlay;
 class UPokedexScreenWidget;
 enum class EPokedexMenu : uint8;
 
 /**
- *  Menu en jeu à plat, comme le menu X des jeux Pokémon : Pokédex, Pokémon, Sac, Dresseur,
- *  Carte, En ligne, Sauvegarder, Options, Reprendre, Quitter.
- *  C'est le menu de secours : le vrai menu est le Pokédex 3D (APokedexDevice, SCRUM-64). Celui-ci sert
- *  tant que DA_PokedexModel n'est pas importé, et ouvre les mêmes pages (UPokedexScreenWidget) à plat.
+ *  Menu en jeu PC classique (choix de L'amie le 2026-10-28) : plein écran, onglets à icônes en haut
+ *  (Pokémon, Pokédex, Sac, Dresseur, Carte, Sauvegarder, En ligne, Options), la page de l'onglet au centre.
+ *  Les pages sont celles du Pokédex (UPokedexScreenWidget, à plat), sauf l'onglet Pokédex qui sort le Pokédex 3D
+ *  (APokedexDevice). Tab ou Échap ferme, LB/RB ou Page préc./suiv.
+ *  change d'onglet, et le raccourci d'un onglet (P Pokédex, B Sac...) y va directement. Voir docs/MENU_POKEDEX.md.
  */
 UCLASS()
 class UGameMenuWidget : public UUserWidget
@@ -25,7 +26,16 @@ class UGameMenuWidget : public UUserWidget
 
 public:
 
-	/** Met le focus sur « Reprendre » (clavier et manette) */
+	/** Onglets du menu, dans l'ordre */
+	static TArray<EPokedexMenu> GetTabs();
+
+	/** Icône d'un menu (planche de L'amie, importée par Tools/Pokedex/import_pokedex_unreal.py), nulle si absente */
+	static UTexture2D* GetMenuIcon(EPokedexMenu Menu);
+
+	/** Affiche un onglet */
+	void OpenTab(EPokedexMenu Menu);
+
+	/** Rend le clavier et la manette à la page en cours */
 	void FocusDefaultEntry();
 
 protected:
@@ -33,48 +43,44 @@ protected:
 	/** Construit l'arbre de widgets la première fois */
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 
-	/** Donne le focus à « Reprendre » pour naviguer au clavier ou à la manette */
 	virtual void NativeConstruct() override;
 
-	/** Tab, Échap, Retour arrière, B ou Start ferment le menu */
+	/** Touches que la page n'a pas prises : fermer, changer d'onglet, raccourcis */
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
-	UFUNCTION()
-	void OnResumeClicked();
+	UFUNCTION() void OnResumeClicked();
+	UFUNCTION() void OnQuitClicked();
 
-	UFUNCTION()
-	void OnQuitClicked();
-
-	UFUNCTION() void OnPokedexClicked();
-	UFUNCTION() void OnPokemonClicked();
-	UFUNCTION() void OnBagClicked();
-	UFUNCTION() void OnTrainerClicked();
-	UFUNCTION() void OnSaveClicked();
-	UFUNCTION() void OnOptionsClicked();
-	UFUNCTION() void OnMapClicked();
-	UFUNCTION() void OnOnlineClicked();
+	UFUNCTION() void OnTab0Clicked();
+	UFUNCTION() void OnTab1Clicked();
+	UFUNCTION() void OnTab2Clicked();
+	UFUNCTION() void OnTab3Clicked();
+	UFUNCTION() void OnTab4Clicked();
+	UFUNCTION() void OnTab5Clicked();
+	UFUNCTION() void OnTab6Clicked();
+	UFUNCTION() void OnTab7Clicked();
 
 private:
 
-	/** Ajoute une ligne au menu. Sans action, elle est grisée (« bientôt ») */
-	UButton* AddEntry(UVerticalBox* List, const FText& Label, bool bAvailable);
+	UButton* AddButton(class UHorizontalBox* Bar, const FText& Label);
 
 	/** Ferme le menu via le PlayerController */
 	void CloseMenu();
 
-	/** Affiche une page des menus à la place de la liste */
-	void OpenScreen(EPokedexMenu Menu);
-	void CloseScreen();
+	/** Onglet précédent (-1) ou suivant (+1) */
+	void CycleTab(int32 Delta);
 
-	UPROPERTY(Transient)
-	TObjectPtr<UButton> ResumeButton;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UOverlay> RootOverlay;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UBorder> ListPanel;
+	/** Couleurs des onglets et touches affichées */
+	void RefreshTabs();
 
 	UPROPERTY(Transient)
 	TObjectPtr<UPokedexScreenWidget> Screen;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UButton>> TabButtons;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UTextBlock>> TabKeys;
+
+	int32 CurrentTab = 0;
 };

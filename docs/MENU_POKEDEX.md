@@ -1,8 +1,26 @@
-# Menu Pokédex 3D (SCRUM-64) et écran de combat (SCRUM-36)
+# Menu en jeu (menu PC classique + Pokédex 3D, SCRUM-64) et écran de combat (SCRUM-36)
 
-Quand on appuie sur **Tab**, le Pokédex rouge modélisé par L'amie sort du bas de l'écran (sans mains), s'ouvre sur sa charnière et le décor se floute derrière. Les **10 boutons à icônes** du volet ouvrent les menus. Tout ce qui s'affiche vient des vraies données (équipe, sac, Pokédex et badges du PlayerState, Data Tables des espèces, attaques, objets et rencontres).
+Choix de L'amie le 2026-10-28 : un **menu PC classique** comme dans n'importe quel jeu PC, avec ses icônes, mais le **Pokédex reste en 3D**.
 
-Pendant un combat, Tab ne fait rien : c'est l'écran de combat qui s'affiche.
+- **Tab** (ou Start) ouvre le menu plein écran : le décor se floute, les **onglets à icônes** sont en haut (Pokémon, Pokédex, Sac, Dresseur, Carte, Sauvegarder, En ligne, Options), la page de l'onglet au centre. Clic sur un onglet, **LB / RB** ou **Page préc. / Page suiv.** pour changer d'onglet, **Échap** pour revenir en arrière puis fermer, **Tab** pour fermer. Boutons **Reprendre** et **Quitter le jeu** en bas.
+- **Raccourcis** directs, modifiables dans Options > Commandes :
+
+| Touche | Onglet |
+|---|---|
+| R | Pokémon (équipe) |
+| P | Pokédex (en 3D) |
+| B | Sac |
+| C | Dresseur |
+| M | Carte |
+| F5 | Sauvegarder |
+| L | En ligne |
+| O | Options |
+
+  Menu ouvert, le raccourci d'un autre onglet y va, celui de l'onglet ouvert ferme le menu.
+- **Barre d'icônes** en bas à droite de l'écran, avec la touche de chaque raccourci. Elle se cache pendant les combats et quand un menu est ouvert. Options > **Icônes de menu à l'écran** : Oui / Non (on choisira plus tard entre HUD et raccourcis seuls).
+- **Pokédex 3D** : l'onglet Pokédex (ou P) fait sortir le Pokédex rouge modélisé par L'amie, ouvert directement sur l'encyclopédie. Ses 10 boutons à icônes marchent toujours. Décocher `Use Pokedex 3D` dans le PlayerController pour avoir le Pokédex à plat dans le menu classique.
+
+Les pages viennent des vraies données (équipe, sac, Pokédex et badges du PlayerState, Data Tables des espèces, attaques, objets et rencontres). Pendant un combat, Tab et les raccourcis ne font rien : c'est l'écran de combat qui s'affiche.
 
 ## 1. Compiler (Unreal fermé)
 
@@ -17,13 +35,15 @@ Le modèle de L'amie (`Pokedex.blend`) a été découpé en 33 pièces par `Tool
 1. Prendre `Pokedex_Generated.zip` dans les fichiers du projet (dossier **pokedex/**) et le dézipper dans `Tools/Pokedex/`. On doit avoir `Tools/Pokedex/Generated/Pokedex.fbx` et `Tools/Pokedex/Generated/textures/` (16 images).
    Autre possibilité, si Blender est installé dans `C:\Program Files\Blender Foundation\` : mettre `Pokedex.blend` (dossier **pokedex/source/**) dans `Tools/Pokedex/Source/`, le script le prépare tout seul.
 2. Dans Unreal : **Outils > Exécuter un script Python** (Tools > Execute Python Script), choisir `Tools/Pokedex/import_pokedex_unreal.py`.
-3. Attendre la fin. Le journal (**Fenêtre > Journal de sortie**) doit afficher « Pokédex 3D prêt : 33 pièces sur 33, 16 textures, 10 icônes, 41 lieux sur la carte, 7 sons ».
+3. Attendre la fin. Le journal (**Fenêtre > Journal de sortie**) doit afficher « Menu prêt : 33 pièces 3D sur 33, 16 textures, 10 icônes, 41 lieux sur la carte, 7 sons ».
+
+Sans le dossier `Generated` (ni Blender), le script importe quand même les icônes, la carte et les sons du menu classique, sans le Pokédex 3D (un avertissement le dit dans le journal).
 
 Le script crée dans `Content/UI/Pokedex/` : les pièces (`Meshes/`), les textures (`Textures/`), les matériaux `M_PokedexTextured` + `MI_Pokedex_Udim0001` à `0005` (les textures de L'amie) et `M_Pokedex` (uni, sous les icônes), les icônes (`Icons/`), la carte (`Map/`), les sons (`Sounds/`) et `DA_PokedexModel`. Il crée aussi `Content/Audio/SC_Music`, `SC_Effects` et `SM_Options` pour les volumes. On peut le relancer, il remplace tout.
 
 Pour changer une icône : remplacer l'image dans `Tools/Pokedex/Assets/icons/` (ou relancer `make_pokedex_icons.py` sur une nouvelle planche) puis relancer le script d'import. La carte se refait avec `make_pokedex_map.py` (elle suit `Tools/Blockout/kanto_v1_layout.py`).
 
-Sans `DA_PokedexModel`, Tab ouvre l'ancien menu à plat (mêmes pages, sans le 3D).
+Sans `DA_PokedexModel`, le menu classique marche sans icônes (noms seuls) et le Pokédex s'affiche à plat.
 
 ## 3. Tester
 

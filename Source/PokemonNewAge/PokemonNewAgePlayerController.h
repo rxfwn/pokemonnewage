@@ -16,6 +16,9 @@ class UGameMenuWidget;
 class UBattleComponent;
 class UBattleHUDWidget;
 class APokedexDevice;
+class UShortcutBarWidget;
+struct FInputActionInstance;
+enum class EPokedexMenu : uint8;
 
 /** Une commande dont on peut changer la touche (Options > Commandes du Pokédex). */
 struct FPokemonBindableKey
@@ -86,7 +89,28 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UGameMenuWidget> GameMenu;
 
-	/** Le menu est le Pokédex 3D (SCRUM-64). Sans DA_PokedexModel, le menu à plat prend le relais */
+	/** Raccourcis du menu (P Pokédex, B Sac...), créés par le code, modifiables dans Options > Commandes */
+	UPROPERTY(Transient)
+	UInputMappingContext* ShortcutContext;
+
+	/** Une action par raccourci, dans l'ordre de PokemonKeys::Shortcuts */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UInputAction>> ShortcutActions;
+
+	/** Barre des icônes de menu en bas de l'écran (un Widget Blueprint enfant de ShortcutBarWidget pour l'habiller) */
+	UPROPERTY(EditAnywhere, Category="UI")
+	TSubclassOf<UShortcutBarWidget> ShortcutBarClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UShortcutBarWidget> ShortcutBar;
+
+	/** Sort le Pokédex 3D, ouvert sur le Pokédex. Faux sans DA_PokedexModel ou si bUsePokedex3D est décoché */
+	bool SpawnPokedexDevice();
+
+	/** Un raccourci du menu est pressé en jeu */
+	void HandleShortcut(const FInputActionInstance& Instance);
+
+	/** Menu PC classique (choix de L'amie le 2026-10-28), mais l'onglet Pokédex s'ouvre en 3D (SCRUM-64). Décoché : Pokédex à plat */
 	UPROPERTY(EditAnywhere, Category="UI")
 	bool bUsePokedex3D = true;
 
@@ -163,6 +187,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category="UI")
 	void OpenGameMenu();
 
+	/** Ouvre le menu en jeu directement sur un onglet (raccourcis, barre d'icônes) */
+	void OpenGameMenuAt(EPokedexMenu Menu);
+
+	/** Menu classique ouvert : le remplace par le Pokédex 3D. Faux si le 3D n'est pas disponible */
+	bool SwitchToPokedex3D();
+
 	/** Ferme le menu en jeu et relance le jeu */
 	UFUNCTION(BlueprintCallable, Category="UI")
 	void CloseGameMenu();
@@ -190,6 +220,15 @@ public:
 
 	/** Remet toutes les touches d'origine */
 	void ResetKeyBindings();
+
+	/** Touche clavier actuelle du raccourci d'un onglet (invalide s'il n'en a pas) */
+	FKey GetShortcutKey(EPokedexMenu Menu) const;
+
+	/** Onglet dont le raccourci est cette touche */
+	bool FindShortcut(const FKey& Key, EPokedexMenu& OutMenu) const;
+
+	/** Touche qui ouvre et ferme le menu (Tab, Start ou celle choisie) */
+	bool IsMenuKey(const FKey& Key) const;
 
 	/** Remplace les contextes d'entrée par des copies avec les touches choisies (au lancement et après un changement) */
 	void ApplyKeyBindings();

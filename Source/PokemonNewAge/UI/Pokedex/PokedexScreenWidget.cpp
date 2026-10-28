@@ -109,7 +109,7 @@ namespace PokedexScreen
 	enum EOption : int32
 	{
 		OptTextSpeed, OptMasterVolume, OptMusicVolume, OptEffectsVolume, OptSensitivity, OptInvertY,
-		OptQuality, OptWindowMode, OptVSync, OptControls, OptDelete, OptionCount
+		OptShortcutBar, OptQuality, OptWindowMode, OptVSync, OptControls, OptDelete, OptionCount
 	};
 
 	/** Taille de l'image de la carte sur l'écran (pixels) */
@@ -1345,6 +1345,7 @@ void UPokedexScreenWidget::BuildOptions()
 		LOCTEXT("OptEffects", "Bruitages"),
 		LOCTEXT("OptSensitivity", "Sensibilité caméra"),
 		LOCTEXT("OptInvert", "Inverser haut/bas"),
+		LOCTEXT("OptShortcutBar", "Icônes de menu à l'écran"),
 		LOCTEXT("OptQuality", "Qualité graphique"),
 		LOCTEXT("OptWindow", "Affichage"),
 		LOCTEXT("OptVSync", "Synchro verticale"),
@@ -1358,6 +1359,7 @@ void UPokedexScreenWidget::BuildOptions()
 		Percent(Options->EffectsVolume),
 		FText::FromString(FString::Printf(TEXT("x %.1f"), Options->CameraSensitivity)),
 		Options->bInvertCameraY ? LOCTEXT("Yes", "Oui") : LOCTEXT("No", "Non"),
+		Options->bShowShortcutBar ? LOCTEXT("Yes", "Oui") : LOCTEXT("No", "Non"),
 		Quality >= 0 && Quality <= 4 ? Qualities[Quality] : LOCTEXT("Custom", "Perso"),
 		WindowMode == EWindowMode::Fullscreen ? LOCTEXT("Fullscreen", "Plein écran")
 			: (WindowMode == EWindowMode::WindowedFullscreen ? LOCTEXT("Borderless", "Plein écran fenêtré") : LOCTEXT("Windowed", "Fenêtré")),
@@ -1744,6 +1746,7 @@ void UPokedexScreenWidget::ChangeOption(int32 Option, int32 Delta)
 	case OptEffectsVolume: Options->EffectsVolume = Step(Options->EffectsVolume); break;
 	case OptSensitivity:   Options->CameraSensitivity = FMath::Clamp(FMath::RoundToFloat(Options->CameraSensitivity * 10.f + Delta) / 10.f, 0.5f, 2.f); break;
 	case OptInvertY:       Options->bInvertCameraY = !Options->bInvertCameraY; break;
+	case OptShortcutBar:   Options->bShowShortcutBar = !Options->bShowShortcutBar; break;
 	case OptQuality:
 		if (Settings)
 		{
@@ -1772,7 +1775,7 @@ void UPokedexScreenWidget::ChangeOption(int32 Option, int32 Delta)
 	{
 		return;
 	}
-	if (Option <= OptInvertY)
+	if (Option <= OptShortcutBar)
 	{
 		UPokemonSaveLibrary::SaveOptions(Options);
 		UPokemonSaveLibrary::ApplyOptions(this, Options);
