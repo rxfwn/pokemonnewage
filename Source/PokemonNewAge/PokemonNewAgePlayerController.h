@@ -8,6 +8,7 @@
 #include "Battle/BattleTypes.h"
 #include "PokemonNewAgePlayerController.generated.h"
 
+class UCaptureComponent;
 class UInputMappingContext;
 class UUserWidget;
 class UInputAction;
@@ -139,6 +140,9 @@ public:
 	/** Conversations de ce joueur et boîte de dialogue (docs/DIALOGUES.md) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Dialogue")
 	TObjectPtr<UDialogueComponent> DialogueComponent;
+	/** Capture, surnom, PC de Léo, lancer de Ball en 3D (docs/CAPTURE.md) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Capture")
+	TObjectPtr<UCaptureComponent> CaptureComponent;
 
 	/** Ouvre le menu en jeu s'il est fermé, sinon le ferme */
 	UFUNCTION(BlueprintCallable, Category="UI")
@@ -250,6 +254,36 @@ public:
 	/** Évolution après le combat : Evoluer 1 (Evoluer 1 0 pour l'annuler) */
 	UFUNCTION(Exec)
 	void Evoluer(int32 PartySlot, int32 bAccept = 1);
+
+	// Commandes de test de la capture et du PC (docs/CAPTURE.md)
+
+	/** Surnom Bulbi : surnom du Pokémon qui vient d'être capturé (sans cette commande, il garde son nom) */
+	UFUNCTION(Exec)
+	void Surnom(const FString& Nickname);
+
+	/** Affiche le contenu du PC de Léo */
+	UFUNCTION(Exec)
+	void VoirPC();
+
+	/** Deposer 2 : dépose le 2e Pokémon de l'équipe au PC */
+	UFUNCTION(Exec)
+	void Deposer(int32 PartySlot);
+
+	/** Retirer 1 : prend le 1er Pokémon du PC dans l'équipe */
+	UFUNCTION(Exec)
+	void Retirer(int32 StorageSlot);
+
+	/** Echanger 2 1 : échange le 2e de l'équipe et le 1er du PC */
+	UFUNCTION(Exec)
+	void Echanger(int32 PartySlot, int32 StorageSlot);
+
+	/** Relacher 1 : relâche le 1er Pokémon du PC (définitif) */
+	UFUNCTION(Exec)
+	void Relacher(int32 StorageSlot);
+
+	/** Rencontres 0 : plus de Pokémon sauvages dans les herbes (Rencontres 1 pour les remettre) */
+	UFUNCTION(Exec)
+	void Rencontres(int32 bEnabled);
 
 	/** DonnerPokemon Bulbasaur 5 */
 	UFUNCTION(Exec)

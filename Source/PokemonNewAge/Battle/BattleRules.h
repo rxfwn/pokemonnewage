@@ -100,6 +100,15 @@ public:
 	static bool RollCapture(float CatchValue, bool bGuaranteed, FRandomStream& Stream, int32& OutShakes);
 
 	/**
+	 *  Rencontre dans les hautes herbes (SCRUM-39), à chaque pas : chance = taux x 16 / 2880 comme en 3G.
+	 *  Taux du lieu : 21 sur la plupart des routes de Rouge Feu (environ 12 % par pas), 14 dans la Forêt de Jade.
+	 */
+	UFUNCTION(BlueprintPure, Category="Battle|Rules")
+	static float GetEncounterChancePerStep(int32 EncounterRate);
+
+	static bool RollEncounterStep(int32 EncounterRate, FRandomStream& Stream);
+
+	/**
 	 *  XP gagnée en battant un Pokémon (formule de la 5G et plus, qui avantage les Pokémon de plus bas niveau).
 	 *  x1,5 contre un dresseur ; moitié pour ceux qui n'ont pas combattu (Multi Exp moderne).
 	 */

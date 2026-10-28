@@ -20,6 +20,7 @@
 #include "TimerManager.h"
 #include "Battle/BattleComponent.h"
 #include "Battle/BattleSubsystem.h"
+#include "Capture/CaptureComponent.h"
 #include "Core/PokemonPlayerState.h"
 #include "Dialogue/DialogueComponent.h"
 #include "Pokemon/PokemonDatabase.h"
@@ -31,6 +32,7 @@
 
 APokemonNewAgePlayerController::APokemonNewAgePlayerController()
 {
+	CaptureComponent = CreateDefaultSubobject<UCaptureComponent>(TEXT("CaptureComponent"));
 	BattleComponent = CreateDefaultSubobject<UBattleComponent>(TEXT("BattleComponent"));
 	PokedexDeviceClass = APokedexDevice::StaticClass();
 	DialogueComponent = CreateDefaultSubobject<UDialogueComponent>(TEXT("DialogueComponent"));
@@ -462,6 +464,54 @@ void APokemonNewAgePlayerController::Oublier(int32 Slot)
 void APokemonNewAgePlayerController::Evoluer(int32 PartySlot, int32 bAccept)
 {
 	BattleComponent->ConfirmEvolution(PartySlot - 1, bAccept != 0);
+}
+
+void APokemonNewAgePlayerController::Surnom(const FString& Nickname)
+{
+	CaptureComponent->SetCaughtNickname(Nickname);
+}
+
+void APokemonNewAgePlayerController::VoirPC()
+{
+	const APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>();
+	const UPokemonDatabase* Database = UPokemonDataSubsystem::GetDatabase(this);
+	if (!State)
+	{
+		return;
+	}
+	PrintDebug(FString::Printf(TEXT("PC de Leo : %d Pokemon"), State->StoragePC.Num()));
+	for (int32 Index = 0; Index < State->StoragePC.Num(); ++Index)
+	{
+		const FPokemonInstance& Pokemon = State->StoragePC[Index];
+		PrintDebug(FString::Printf(TEXT("%d. (boite %d) %s N.%d"), Index + 1, Index / UPokemonStorage::BoxSize + 1,
+			*UPokemonLibrary::GetDisplayName(Database, Pokemon).ToString(), Pokemon.Level));
+	}
+}
+
+void APokemonNewAgePlayerController::Deposer(int32 PartySlot)
+{
+	CaptureComponent->DepositPokemon(PartySlot - 1);
+}
+
+void APokemonNewAgePlayerController::Retirer(int32 StorageSlot)
+{
+	CaptureComponent->WithdrawPokemon(StorageSlot - 1);
+}
+
+void APokemonNewAgePlayerController::Echanger(int32 PartySlot, int32 StorageSlot)
+{
+	CaptureComponent->SwapWithStorage(PartySlot - 1, StorageSlot - 1);
+}
+
+void APokemonNewAgePlayerController::Relacher(int32 StorageSlot)
+{
+	CaptureComponent->ReleasePokemon(StorageSlot - 1);
+}
+
+void APokemonNewAgePlayerController::Rencontres(int32 bEnabled)
+{
+	CaptureComponent->SetEncountersEnabled(bEnabled != 0);
+	PrintDebug(bEnabled != 0 ? TEXT("Rencontres dans les herbes : oui") : TEXT("Rencontres dans les herbes : non"));
 }
 
 void APokemonNewAgePlayerController::DonnerPokemon(FName Species, int32 Level)
