@@ -26,6 +26,7 @@ struct FPokemonBindableKey
 	FKey DefaultKey;
 	FKey Key;
 };
+class UDialogueComponent;
 
 /**
  *  Basic PlayerController class for a third person game
@@ -134,6 +135,10 @@ public:
 	/** Combats de ce joueur : envoie ses choix au serveur et reçoit les événements (docs/COMBAT.md) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Battle")
 	TObjectPtr<UBattleComponent> BattleComponent;
+
+	/** Conversations de ce joueur et boîte de dialogue (docs/DIALOGUES.md) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Dialogue")
+	TObjectPtr<UDialogueComponent> DialogueComponent;
 
 	/** Ouvre le menu en jeu s'il est fermé, sinon le ferme */
 	UFUNCTION(BlueprintCallable, Category="UI")
@@ -261,6 +266,25 @@ public:
 	/** Affiche l'équipe dans le journal et à l'écran */
 	UFUNCTION(Exec)
 	void Equipe();
+
+	// Commandes de test des dialogues (docs/DIALOGUES.md)
+
+	/** Parler ProfOak : comme si le joueur parlait à ce PNJ */
+	UFUNCTION(Exec)
+	void Parler(FName Npc);
+
+	/** Dialogue OaksLab_ChooseBulbasaur : joue une conversation par son nom, sans vérifier les drapeaux */
+	UFUNCTION(Exec)
+	void Dialogue(FName ConversationId);
+
+	/** Drapeau GotStarter : donne un drapeau d'histoire */
+	UFUNCTION(Exec)
+	void Drapeau(FName Flag);
+
+	/** Affiche les drapeaux d'histoire du joueur */
+	UFUNCTION(Exec)
+	void Drapeaux();
+
 
 private:
 
