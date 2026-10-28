@@ -43,7 +43,7 @@ namespace PokedexDevice
 	constexpr float PanelGap = 0.015f;
 
 	template <size_t N>
-	bool IsIn(FName Key, const TCHAR* const (&List)[N])
+	bool IsInList(FName Key, const TCHAR* const (&List)[N])
 	{
 		for (const TCHAR* Name : List)
 		{
@@ -1059,7 +1059,7 @@ void APokedexDevice::SetHovered(UPrimitiveComponent* Component)
 	auto Highlight = [this](UPrimitiveComponent* Part, bool bOn)
 	{
 		const FName Key = GetPartKey(Part);
-		if (!IsIn(Key, PushButtons) || Key == TEXT("Lens"))
+		if (!IsInList(Key, PushButtons) || Key == TEXT("Lens"))
 		{
 			return;
 		}
@@ -1088,7 +1088,7 @@ void APokedexDevice::SetHovered(UPrimitiveComponent* Component)
 	PanelTimer = 0.f;
 
 	const FName Key = GetPartKey(Component);
-	const bool bClickable = Component && !IsIn(Key, GripParts);
+	const bool bClickable = Component && !IsInList(Key, GripParts);
 	if (InputWidget)
 	{
 		InputWidget->SetCursor(bClickable ? EMouseCursor::Hand : EMouseCursor::Default);

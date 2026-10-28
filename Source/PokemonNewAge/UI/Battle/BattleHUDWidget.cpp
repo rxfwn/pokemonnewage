@@ -663,16 +663,16 @@ void UBattleHUDWidget::ShowMoves()
 	Grid->SetSlotPadding(FMargin(5.f));
 	Grid->SetMinDesiredSlotWidth(260.f);
 	MenuBox->AddChildToVerticalBox(Grid);
-	for (int32 Slot = 0; Slot < 4; ++Slot)
+	for (int32 MoveIndex = 0; MoveIndex < 4; ++MoveIndex)
 	{
-		if (!Active->Moves.IsValidIndex(Slot) || Active->Moves[Slot].Move.IsNone())
+		if (!Active->Moves.IsValidIndex(MoveIndex) || Active->Moves[MoveIndex].Move.IsNone())
 		{
-			AddMenuButton(Grid, FText::FromString(TEXT("-")), EBattleHUDAction::Move, Slot, FLinearColor(0.2f, 0.2f, 0.2f), false);
+			AddMenuButton(Grid, FText::FromString(TEXT("-")), EBattleHUDAction::Move, MoveIndex, FLinearColor(0.2f, 0.2f, 0.2f), false);
 			continue;
 		}
-		const FPokemonMoveSlot& MoveSlot = Active->Moves[Slot];
+		const FPokemonMoveSlot& MoveSlot = Active->Moves[MoveIndex];
 		const FMoveRow* Move = Database ? Database->FindMove(MoveSlot.Move) : nullptr;
-		AddMenuButton(Grid, Move ? Move->DisplayName : FText::FromName(MoveSlot.Move), EBattleHUDAction::Move, Slot,
+		AddMenuButton(Grid, Move ? Move->DisplayName : FText::FromName(MoveSlot.Move), EBattleHUDAction::Move, MoveIndex,
 			Move ? TypeColor(Move->Type) : FLinearColor::Gray, true,
 			FText::FromString(FString::Printf(TEXT("PP %d/%d"), MoveSlot.CurrentPP, MoveSlot.MaxPP)));
 	}
@@ -781,10 +781,10 @@ void UBattleHUDWidget::ShowForgetMove(int32 PartyIndex, FName NewMove, bool bAft
 		Pokemon ? UPokemonLibrary::GetDisplayName(Database, *Pokemon) : FText::GetEmpty(), MoveName));
 	MessageArrow->SetVisibility(ESlateVisibility::Hidden);
 
-	for (int32 Slot = 0; Pokemon && Slot < Pokemon->Moves.Num(); ++Slot)
+	for (int32 MoveIndex = 0; Pokemon && MoveIndex < Pokemon->Moves.Num(); ++MoveIndex)
 	{
-		const FMoveRow* Known = Database ? Database->FindMove(Pokemon->Moves[Slot].Move) : nullptr;
-		AddMenuButton(MenuBox, Known ? Known->DisplayName : FText::FromName(Pokemon->Moves[Slot].Move), EBattleHUDAction::ForgetMove, Slot,
+		const FMoveRow* Known = Database ? Database->FindMove(Pokemon->Moves[MoveIndex].Move) : nullptr;
+		AddMenuButton(MenuBox, Known ? Known->DisplayName : FText::FromName(Pokemon->Moves[MoveIndex].Move), EBattleHUDAction::ForgetMove, MoveIndex,
 			Known ? TypeColor(Known->Type) : FLinearColor::Gray);
 	}
 	AddMenuButton(MenuBox, FText::Format(LOCTEXT("DontLearn", "Ne pas apprendre {0}"), MoveName), EBattleHUDAction::KeepMoves, 0, FLinearColor(0.3f, 0.3f, 0.35f));
