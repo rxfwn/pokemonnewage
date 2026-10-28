@@ -42,7 +42,7 @@ namespace PokedexScreen
 	const FLinearColor Dim(0.42f, 0.5f, 0.56f, 1.f);
 	const FLinearColor Accent(0.3f, 0.8f, 1.f, 1.f);
 	const FLinearColor Selected(0.06f, 0.32f, 0.5f, 0.9f);
-	const FLinearColor Error(1.f, 0.32f, 0.3f, 1.f);
+	const FLinearColor ErrorColor(1.f, 0.32f, 0.3f, 1.f);
 	const FLinearColor Good(0.35f, 0.92f, 0.45f, 1.f);
 	const FLinearColor Gold(1.f, 0.78f, 0.25f, 1.f);
 
@@ -849,7 +849,7 @@ void UPokedexScreenWidget::BuildHome()
 	const UPokemonDatabase* Database = GetDatabase();
 	if (!State)
 	{
-		AddLine(LOCTEXT("NoState", "Pas de données de dresseur (GameMode du jeu ?)"), 20, Error);
+		AddLine(LOCTEXT("NoState", "Pas de données de dresseur (GameMode du jeu ?)"), 20, ErrorColor);
 		return;
 	}
 
@@ -898,13 +898,13 @@ void UPokedexScreenWidget::BuildParty()
 		const FPokemonInstance& Pokemon = State->Party[Index];
 		UHorizontalBox* Row = AddRow(Index);
 		AddRowText(Row, FText::FromString(Index == MovingFrom ? TEXT("<> ") : FString::Printf(TEXT("%d  "), Index + 1)), 18, Index == MovingFrom ? Gold : Dim);
-		AddRowText(Row, UPokemonLibrary::GetDisplayName(Database, Pokemon), 21, Pokemon.IsFainted() ? Error : Text, true, true);
+		AddRowText(Row, UPokemonLibrary::GetDisplayName(Database, Pokemon), 21, Pokemon.IsFainted() ? ErrorColor : Text, true, true);
 		// Losange doré : il tient un objet
 		AddRowText(Row, FText::FromString(Pokemon.HeldItem.IsNone() ? TEXT("    ") : TEXT(" <> ")), 16, Gold, false, true);
 		AddRowText(Row, FText::Format(LOCTEXT("Level", "N.{0} "), Pokemon.Level), 18, Dim);
 		AddRowHPBar(Row, Pokemon.CurrentHP, Pokemon.GetMaxHP(), 120.f);
 		AddRowText(Row, FText::FromString(FString::Printf(TEXT(" %d/%d "), Pokemon.CurrentHP, Pokemon.GetMaxHP())), 16, Text);
-		AddRowText(Row, Pokemon.IsFainted() ? LOCTEXT("KO", "K.O.") : GetStatusShort(Pokemon.Status), 15, Error, false, true);
+		AddRowText(Row, Pokemon.IsFainted() ? LOCTEXT("KO", "K.O.") : GetStatusShort(Pokemon.Status), 15, ErrorColor, false, true);
 	}
 }
 
@@ -946,7 +946,7 @@ void UPokedexScreenWidget::BuildSummary()
 	const UPokemonDatabase* Database = GetDatabase();
 	if (!State || !State->Party.IsValidIndex(PartyIndex) || !Database)
 	{
-		AddLine(LOCTEXT("NoSummary", "Pokémon introuvable."), 20, Error);
+		AddLine(LOCTEXT("NoSummary", "Pokémon introuvable."), 20, ErrorColor);
 		return;
 	}
 	const FPokemonInstance& Pokemon = State->Party[PartyIndex];
@@ -963,7 +963,7 @@ void UPokedexScreenWidget::BuildSummary()
 	UHorizontalBox* Header2 = AddRow(-1, false);
 	AddRowHPBar(Header2, Pokemon.CurrentHP, Pokemon.GetMaxHP(), 200.f);
 	AddRowText(Header2, FText::FromString(FString::Printf(TEXT("  PV %d/%d  "), Pokemon.CurrentHP, Pokemon.GetMaxHP())), 17, Text);
-	AddRowText(Header2, Pokemon.IsFainted() ? LOCTEXT("KO", "K.O.") : GetStatusShort(Pokemon.Status), 17, Error, false, true);
+	AddRowText(Header2, Pokemon.IsFainted() ? LOCTEXT("KO", "K.O.") : GetStatusShort(Pokemon.Status), 17, ErrorColor, false, true);
 
 	// Onglets
 	UHorizontalBox* Tabs = AddRow(-1, false);
@@ -1029,8 +1029,8 @@ void UPokedexScreenWidget::BuildSummary()
 			const bool bUp = !bNeutral && Nature->IncreasedStat == Line.Stat;
 			const bool bDown = !bNeutral && Nature->DecreasedStat == Line.Stat;
 			UHorizontalBox* Row = AddRow(-1, false);
-			AddRowText(Row, Line.Name, 20, bUp ? Error : (bDown ? Accent : Text), true);
-			AddRowText(Row, FText::FromString(bUp ? TEXT("+ ") : (bDown ? TEXT("- ") : TEXT("  "))), 20, bUp ? Error : Accent, false, true);
+			AddRowText(Row, Line.Name, 20, bUp ? ErrorColor : (bDown ? Accent : Text), true);
+			AddRowText(Row, FText::FromString(bUp ? TEXT("+ ") : (bDown ? TEXT("- ") : TEXT("  "))), 20, bUp ? ErrorColor : Accent, false, true);
 			AddRowText(Row, FText::AsNumber(Line.Value), 20, Text, false, true);
 		}
 		AddSpacer(6.f);
@@ -1038,15 +1038,15 @@ void UPokedexScreenWidget::BuildSummary()
 	}
 	else
 	{
-		for (int32 Slot = 0; Slot < 4; ++Slot)
+		for (int32 MoveIndex = 0; MoveIndex < 4; ++MoveIndex)
 		{
 			UHorizontalBox* Row = AddRow(-1, false);
-			if (!Pokemon.Moves.IsValidIndex(Slot) || Pokemon.Moves[Slot].Move.IsNone())
+			if (!Pokemon.Moves.IsValidIndex(MoveIndex) || Pokemon.Moves[MoveIndex].Move.IsNone())
 			{
 				AddRowText(Row, LOCTEXT("NoMove", "-"), 20, Dim, true);
 				continue;
 			}
-			const FPokemonMoveSlot& MoveSlot = Pokemon.Moves[Slot];
+			const FPokemonMoveSlot& MoveSlot = Pokemon.Moves[MoveIndex];
 			const FMoveRow* Move = Database->FindMove(MoveSlot.Move);
 			if (Move)
 			{
@@ -1054,7 +1054,7 @@ void UPokedexScreenWidget::BuildSummary()
 			}
 			AddRowText(Row, Move ? Move->DisplayName : FText::FromName(MoveSlot.Move), 20, Text, true, true);
 			AddRowText(Row, FText::FromString(FString::Printf(TEXT("PP %d/%d"), MoveSlot.CurrentPP, MoveSlot.MaxPP)), 17,
-				MoveSlot.CurrentPP == 0 ? Error : Text);
+				MoveSlot.CurrentPP == 0 ? ErrorColor : Text);
 			if (Move)
 			{
 				UHorizontalBox* Details = AddRow(-1, false);
@@ -1076,7 +1076,7 @@ void UPokedexScreenWidget::BuildPokedex()
 	const APokemonPlayerState* State = GetPlayerState();
 	if (!State || SpeciesList.Num() == 0)
 	{
-		AddLine(LOCTEXT("NoDexData", "Données Pokémon introuvables (DA_PokemonDatabase ?)"), 20, Error);
+		AddLine(LOCTEXT("NoDexData", "Données Pokémon introuvables (DA_PokemonDatabase ?)"), 20, ErrorColor);
 		return;
 	}
 
@@ -1131,7 +1131,7 @@ void UPokedexScreenWidget::BuildPokedexEntry()
 	const FSpeciesRow* Species = (Database && SpeciesList.IsValidIndex(DexIndex)) ? Database->FindSpecies(SpeciesList[DexIndex]) : nullptr;
 	if (!State || !Species)
 	{
-		AddLine(LOCTEXT("NoEntry", "Fiche introuvable."), 20, Error);
+		AddLine(LOCTEXT("NoEntry", "Fiche introuvable."), 20, ErrorColor);
 		return;
 	}
 	const bool bCaught = State->PokedexCaught.Contains(SpeciesList[DexIndex]);
@@ -1243,10 +1243,10 @@ void UPokedexScreenWidget::BuildBagTarget()
 	{
 		const FPokemonInstance& Pokemon = State->Party[Index];
 		UHorizontalBox* Row = AddRow(Index);
-		AddRowText(Row, UPokemonLibrary::GetDisplayName(Database, Pokemon), 20, Pokemon.IsFainted() ? Error : Text, true, true);
+		AddRowText(Row, UPokemonLibrary::GetDisplayName(Database, Pokemon), 20, Pokemon.IsFainted() ? ErrorColor : Text, true, true);
 		AddRowHPBar(Row, Pokemon.CurrentHP, Pokemon.GetMaxHP(), 120.f);
 		AddRowText(Row, FText::FromString(FString::Printf(TEXT(" %d/%d "), Pokemon.CurrentHP, Pokemon.GetMaxHP())), 16, Text);
-		AddRowText(Row, Pokemon.IsFainted() ? LOCTEXT("KO", "K.O.") : GetStatusShort(Pokemon.Status), 15, Error, false, true);
+		AddRowText(Row, Pokemon.IsFainted() ? LOCTEXT("KO", "K.O.") : GetStatusShort(Pokemon.Status), 15, ErrorColor, false, true);
 	}
 }
 
@@ -1368,7 +1368,7 @@ void UPokedexScreenWidget::BuildOptions()
 	for (int32 Index = 0; Index < OptionCount; ++Index)
 	{
 		UHorizontalBox* Row = AddRow(Index);
-		AddRowText(Row, Names[Index], 19, Index == OptDelete ? Error : Text, true);
+		AddRowText(Row, Names[Index], 19, Index == OptDelete ? ErrorColor : Text, true);
 		if (!Values[Index].IsEmpty())
 		{
 			AddRowText(Row, FText::Format(LOCTEXT("OptionValue", "<  {0}  >"), Values[Index]), 18, Accent, false, true);
@@ -1387,7 +1387,7 @@ void UPokedexScreenWidget::BuildConfirmDelete()
 	AddLine(LOCTEXT("DeleteQuestion", "Effacer la sauvegarde de ce PC ?\nLa partie en cours continue, mais le prochain lancement repartira de zéro."), 20, Text, true);
 	AddSpacer(8.f);
 	AddRowText(AddRow(0), LOCTEXT("DeleteNo", "Non"), 22, Text, true, true);
-	AddRowText(AddRow(1), LOCTEXT("DeleteYes", "Oui, effacer"), 22, Error, true, true);
+	AddRowText(AddRow(1), LOCTEXT("DeleteYes", "Oui, effacer"), 22, ErrorColor, true, true);
 }
 
 void UPokedexScreenWidget::BuildGiveItem()
@@ -1446,7 +1446,7 @@ void UPokedexScreenWidget::BuildMap()
 	const UPokedexModel* Model = GetModel();
 	if (!Model || !Model->MapTexture)
 	{
-		AddLine(LOCTEXT("NoMap", "Carte introuvable : lancer Tools/Pokedex/import_pokedex_unreal.py dans Unreal."), 20, Error);
+		AddLine(LOCTEXT("NoMap", "Carte introuvable : lancer Tools/Pokedex/import_pokedex_unreal.py dans Unreal."), 20, ErrorColor);
 		return;
 	}
 
@@ -1622,7 +1622,7 @@ void UPokedexScreenWidget::BuildControls()
 	{
 		if (Index == Keys.Num())
 		{
-			AddRowText(AddRow(Index), LOCTEXT("ResetKeys", "Remettre les touches d'origine"), 18, Error, true, true);
+			AddRowText(AddRow(Index), LOCTEXT("ResetKeys", "Remettre les touches d'origine"), 18, ErrorColor, true, true);
 			continue;
 		}
 		const FPokemonBindableKey& Entry = Keys[Index];
@@ -1794,7 +1794,7 @@ void UPokedexScreenWidget::ShowStatus(const FText& Message, bool bError)
 	if (StatusText)
 	{
 		StatusText->SetText(Message);
-		StatusText->SetColorAndOpacity(FSlateColor(bError ? Error : Gold));
+		StatusText->SetColorAndOpacity(FSlateColor(bError ? ErrorColor : Gold));
 		StatusTimeLeft = 3.5f;
 	}
 }
@@ -1878,7 +1878,7 @@ void UPokedexScreenWidget::AddRowHPBar(UHorizontalBox* Row, int32 HP, int32 MaxH
 	const float Ratio = MaxHP > 0 ? FMath::Clamp(float(HP) / float(MaxHP), 0.f, 1.f) : 0.f;
 	UProgressBar* Bar = WidgetTree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass());
 	Bar->SetPercent(Ratio);
-	Bar->SetFillColorAndOpacity(Ratio > 0.5f ? Good : (Ratio > 0.2f ? Gold : Error));
+	Bar->SetFillColorAndOpacity(Ratio > 0.5f ? Good : (Ratio > 0.2f ? Gold : ErrorColor));
 	USizeBox* Box = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
 	Box->SetWidthOverride(Width);
 	Box->SetHeightOverride(10.f);
@@ -2187,7 +2187,7 @@ TArray<FText> UPokedexScreenWidget::GetSpeciesLocations(FName Species) const
 	for (const TPair<FName, uint8*>& Pair : Database->Encounters->GetRowMap())
 	{
 		const FEncounterTableRow* Table = reinterpret_cast<const FEncounterTableRow*>(Pair.Value);
-		const bool bLivesHere = Table->Slots.ContainsByPredicate([Species](const FEncounterSlot& Slot) { return Slot.Species == Species; });
+		const bool bLivesHere = Table->Slots.ContainsByPredicate([Species](const FEncounterSlot& EncounterSlot) { return EncounterSlot.Species == Species; });
 		if (!bLivesHere)
 		{
 			continue;
