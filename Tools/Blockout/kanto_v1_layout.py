@@ -462,6 +462,7 @@ FOREST_PATH = _forest_path()
 # Hautes herbes : relevées automatiquement sur la carte FRLG par make_frlg_mask.py
 # (kanto_herbes.json, rectangles en cases : colonne, ligne, largeur, hauteur).
 # On garde celles des routes, pas les taches trouvées par erreur dans les villes.
+# Chaque carré : (table de DT_Encounters, x, y, profondeur, largeur, taux de rencontre).
 def _tall_grass():
     with open(os.path.join(HERE, "kanto_herbes.json"), encoding="utf-8") as handle:
         rectangles = json.load(handle)
@@ -472,8 +473,42 @@ def _tall_grass():
                and abs(y - from_frlg(c, r)[1]) < (wide * CELL / 2 + he + 20)
                for name, c, r, he, hn, _ in AREAS if name != "Forêt de Jade"):
             continue
-        result.append(("Herbes", x, y, high * CELL, wide * CELL))
+        table, rate = _encounter_table(x, y)
+        result.append((table, x, y, high * CELL, wide * CELL, rate))
     return result
+
+
+def _encounter_table(x, y):
+    """Table de DT_Encounters et taux de rencontre (3G) des herbes au point (x, y) : la Forêt de Jade
+    si on est dedans, sinon la route dont le chemin passe le plus près."""
+    fx, fy = area_center("Forêt de Jade")
+    _, _, _, half_ew, half_ns, _ = next(a for a in AREAS if a[0] == "Forêt de Jade")
+    if ((x - fx) / half_ns) ** 2 + ((y - fy) / half_ew) ** 2 <= 1.0:
+        return "ViridianForest_Walk", 14
+    best, best_distance = "Route1_Walk", float("inf")
+    for name, points in PATHS:
+        table = ROUTE_TABLES.get(name)
+        if table is None:
+            continue
+        for (x0, y0), (x1, y1) in zip(points, points[1:]):
+            dx, dy = x1 - x0, y1 - y0
+            t = max(0.0, min(1.0, ((x - x0) * dx + (y - y0) * dy) / max(dx * dx + dy * dy, 1e-6)))
+            distance = math.hypot(x - (x0 + dx * t), y - (y0 + dy * t))
+            if distance < best_distance:
+                best, best_distance = table, distance
+    return best, 21
+
+
+# Chemin -> table des hautes herbes de DT_Encounters (Rouge Feu). Les chemins des villes n'en ont pas ;
+# les routes de mer (19, 20, 21) n'ont pas de chemin à terre.
+ROUTE_TABLES = {f"Chemin Route {n}": f"Route{n}_Walk"
+                for n in (1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 22, 23, 24, 25)}
+ROUTE_TABLES.update({
+    "Chemin Route 2": "Route2_SouthTowardsViridianCity_Walk",
+    "Chemin Route 2 nord": "Route2_SouthTowardsViridianCity_Walk",
+    "Piste cyclable": "Route17_Walk",
+    "Chemin du Plateau Indigo": "Route23_Walk",
+})
 
 
 TALL_GRASS = _tall_grass()

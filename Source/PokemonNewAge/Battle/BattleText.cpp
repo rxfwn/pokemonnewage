@@ -207,6 +207,7 @@ FText UBattleText::GetActionErrorText(EBattleActionError Error)
 	case EBattleActionError::ItemNotUsable:             return FText::FromString(TEXT("Ce n'est pas le moment d'utiliser ça !"));
 	case EBattleActionError::ItemHasNoEffect:           return FText::FromString(TEXT("Ça n'aura aucun effet."));
 	case EBattleActionError::CannotCatchTrainerPokemon: return FText::FromString(TEXT("Le dresseur dévie la Ball ! Voler, c'est mal !"));
+	case EBattleActionError::NoRoomForPokemon:          return FText::FromString(TEXT("Plus de place dans l'équipe ni dans le PC ! Libérez de la place avant de capturer."));
 	case EBattleActionError::None:                      return FText::GetEmpty();
 	default:                                            return FText::FromString(TEXT("Impossible pour l'instant."));
 	}

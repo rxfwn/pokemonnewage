@@ -71,7 +71,9 @@ enum class EBattleActionError : uint8
 	NoItem,
 	ItemNotUsable,
 	ItemHasNoEffect,
-	CannotCatchTrainerPokemon
+	CannotCatchTrainerPokemon,
+	/** Équipe et PC pleins : plus de place pour un Pokémon capturé */
+	NoRoomForPokemon
 };
 
 /** Ce qu'un côté fait pendant le tour. */
@@ -331,6 +333,10 @@ struct FBattleSide
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Battle")
 	int32 BadgeCount = 0;
+
+	/** Faux si l'équipe et le PC sont pleins : les Poké Balls sont refusées (SCRUM-42) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Battle")
+	bool bCanStoreCaughtPokemon = true;
 
 	const FPokemonInstance* GetActive() const { return Party.IsValidIndex(ActiveIndex) ? &Party[ActiveIndex] : nullptr; }
 	FPokemonInstance* GetActive() { return Party.IsValidIndex(ActiveIndex) ? &Party[ActiveIndex] : nullptr; }

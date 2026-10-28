@@ -249,6 +249,10 @@ bool UBattleSession::ValidateAction(int32 Side, const FBattleAction& Action, EBa
 			{
 				OutError = EBattleActionError::CannotCatchTrainerPokemon;
 			}
+			else if (!S.bCanStoreCaughtPokemon)
+			{
+				OutError = EBattleActionError::NoRoomForPokemon;
+			}
 		}
 		else if (!S.Party.IsValidIndex(Action.PartyIndex) || !S.Party[Action.PartyIndex].IsValid())
 		{

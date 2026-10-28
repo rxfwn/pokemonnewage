@@ -344,7 +344,8 @@ def build_gates():
 
 
 def build_tall_grass():
-    for index, (zone, x, y, depth, width) in enumerate(layout.TALL_GRASS):
+    # Les zones de rencontres (SCRUM-39) sont posées à part : Tools/Capture/place_grass_zones.py
+    for index, (zone, x, y, depth, width, _rate) in enumerate(layout.TALL_GRASS):
         # Herbe haute de 70 cm, traversable.
         box_on_ground(f"Herbes_{zone}_{index}", "Hautes herbes", x, y, (depth, width, 0.7),
                       "TallGrass", sink=0.4, collision=False)

@@ -191,6 +191,16 @@ bool UBattleRules::RollCapture(float CatchValue, bool bGuaranteed, FRandomStream
 	return true;
 }
 
+float UBattleRules::GetEncounterChancePerStep(int32 EncounterRate)
+{
+	return FMath::Clamp(EncounterRate * 16, 0, 2880) / 2880.f;
+}
+
+bool UBattleRules::RollEncounterStep(int32 EncounterRate, FRandomStream& Stream)
+{
+	return Stream.RandRange(0, 2879) < FMath::Clamp(EncounterRate * 16, 0, 2880);
+}
+
 int32 UBattleRules::GetExperienceGain(int32 BaseExperience, int32 FaintedLevel, int32 WinnerLevel, bool bTrainerBattle, bool bParticipated)
 {
 	const double Base = static_cast<double>(BaseExperience) * FaintedLevel / 5.0;
