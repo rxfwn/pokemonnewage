@@ -29,6 +29,8 @@
 #include "Pokemon/PokemonDataSubsystem.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
+#include "Engine/GameViewportClient.h"
+#include "GameFramework/InputSettings.h"
 #include "PokemonNewAge.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
@@ -268,18 +270,30 @@ void APokemonNewAgePlayerController::HandleBattleStarted(const FBattleSnapshot& 
 	BattleHUD->AddToPlayerScreen(5);
 	BattleHUD->Begin(BattleComponent, Snapshot);
 
+	// Le joueur ne bouge pas, mais la caméra tourne : clic droit maintenu à la souris, stick droit à la manette
 	SetShowMouseCursor(true);
-	FInputModeUIOnly InputMode;
+	SetIgnoreMoveInput(true);
+	FInputModeGameAndUI InputMode;
 	InputMode.SetWidgetToFocus(BattleHUD->TakeWidget());
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputMode.SetHideCursorDuringCapture(true);
 	SetInputMode(InputMode);
+	if (UGameViewportClient* Viewport = GetWorld()->GetGameViewport())
+	{
+		Viewport->SetMouseCaptureMode(EMouseCaptureMode::CaptureDuringRightMouseDown);
+	}
 }
 
 void APokemonNewAgePlayerController::OnBattleHUDClosed()
 {
 	BattleHUD = nullptr;
 	SetShowMouseCursor(false);
+	SetIgnoreMoveInput(false);
 	SetInputMode(FInputModeGameOnly());
+	if (UGameViewportClient* Viewport = GetWorld()->GetGameViewport())
+	{
+		Viewport->SetMouseCaptureMode(GetDefault<UInputSettings>()->DefaultViewportMouseCaptureMode);
+	}
 }
 
 void APokemonNewAgePlayerController::ApplyGameOptions()
