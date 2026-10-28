@@ -4,6 +4,9 @@
 #include "Camera/PlayerCameraManager.h"
 #include "Components/PointLightComponent.h"
 #include "Components/PostProcessComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Animation/AnimSequence.h"
+#include "Engine/SkeletalMesh.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Components/WidgetInteractionComponent.h"
@@ -133,6 +136,21 @@ APokedexDevice::APokedexDevice()
 	PostProcess->Priority = 50.f;
 	PostProcess->BlendWeight = 0.f;
 
+	// Figurine du Pokémon (accrochée au volet à l'initialisation), éclairée par les lumières du Pokédex
+	FigureRoot = CreateDefaultSubobject<USceneComponent>(TEXT("FigureRoot"));
+	FigureRoot->SetupAttachment(Hinge);
+	FigureSkeletal = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FigureSkeletal"));
+	FigureStatic = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FigureStatic"));
+	for (UPrimitiveComponent* Figure : { static_cast<UPrimitiveComponent*>(FigureSkeletal), static_cast<UPrimitiveComponent*>(FigureStatic) })
+	{
+		Figure->SetupAttachment(FigureRoot);
+		Figure->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Figure->SetLightingChannels(false, true, false);
+		Figure->SetVisibility(false);
+		Figure->PrimaryComponentTick.bTickEvenWhenPaused = true;
+	}
+	FigureSkeletal->SetTickGroup(TG_PrePhysics);
+
 	ModelAsset = TSoftObjectPtr<UPokedexModel>(FSoftObjectPath(UPokedexModel::AssetPath));
 }
 
@@ -202,6 +220,14 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 	Panels.Add(ScreenComponent);
 
 	CreatePanels();
+
+	// Figurine : debout au-dessus de l'écran du volet, un peu devant
+	FVector LidCenter;
+	FVector2D LidSize;
+	if (GetPartFace(TEXT("LidScreen"), LidCenter, LidSize))
+	{
+		FigureRoot->SetRelativeLocation(FVector(LidCenter.X - 1.5f, LidCenter.Y, LidCenter.Z + LidSize.Y * 0.5f + 0.3f));
+	}
 
 	// Calque qui reçoit la souris et le clavier
 	InputWidget = CreateWidget<UPokedexInputWidget>(InController, UPokedexInputWidget::StaticClass());
@@ -556,6 +582,7 @@ void APokedexDevice::Tick(float DeltaSeconds)
 	{
 		UpdateLights(DeltaSeconds);
 		UpdatePanels(DeltaSeconds);
+		UpdateFigure(DeltaSeconds);
 	}
 }
 
@@ -747,6 +774,83 @@ void APokedexDevice::UpdatePanels(float DeltaSeconds)
 		MiniWidgets[2]->SetValues(State ? FText::FromString(FString::Printf(TEXT("%d / 8"), State->Badges.Num())) : FText::GetEmpty(),
 			LOCTEXT("MiniBadges", "BADGES"));
 	}
+}
+
+void APokedexDevice::UpdateFigure(float DeltaSeconds)
+{
+	WantedFigureSpecies = (Screen && !bLidFocus && !bClosing) ? Screen->GetFeaturedSpecies() : NAME_None;
+
+	// L'ancienne figurine rentre avant que la nouvelle sorte
+	if (WantedFigureSpecies != FigureSpecies)
+	{
+		FigureAlpha = FMath::Max(0.f, FigureAlpha - DeltaSeconds * 6.f);
+		if (FigureAlpha <= 0.f)
+		{
+			LoadFigure(WantedFigureSpecies);
+		}
+	}
+	else if (bFigureLoaded)
+	{
+		FigureAlpha = FMath::Min(1.f, FigureAlpha + DeltaSeconds * 3.f);
+	}
+
+	FigureYaw = FMath::Fmod(FigureYaw + DeltaSeconds * 35.f, 360.f);
+	const float Pop = EaseOutBack(FigureAlpha) * OpenAlpha;
+	FigureRoot->SetRelativeRotation(FRotator(0.f, FigureYaw, 0.f));
+	FigureRoot->SetRelativeScale3D(FVector(FMath::Max(Pop, 0.001f)));
+	const bool bVisible = bFigureLoaded && FigureAlpha > 0.f;
+	FigureSkeletal->SetVisibility(bVisible && FigureSkeletal->GetSkeletalMeshAsset() != nullptr);
+	FigureStatic->SetVisibility(bVisible && FigureStatic->GetStaticMesh() != nullptr);
+}
+
+void APokedexDevice::LoadFigure(FName Species)
+{
+	FigureSpecies = Species;
+	bFigureLoaded = false;
+	FigureSkeletal->SetSkeletalMesh(nullptr);
+	FigureStatic->SetStaticMesh(nullptr);
+	if (Species.IsNone())
+	{
+		return;
+	}
+
+	// Modèles importés par le fil « modèles 3D » : <dossier>/<Espèce>/SK_<Espèce> ou SM_<Espèce>
+	const FString Id = Species.ToString();
+	const FString Folder = FigureFolder / Id;
+	auto Load = [&Folder](const FString& Name) -> UObject*
+	{
+		return StaticLoadObject(UObject::StaticClass(), nullptr, *FString::Printf(TEXT("%s/%s.%s"), *Folder, *Name, *Name), nullptr, LOAD_NoWarn | LOAD_Quiet);
+	};
+
+	FBoxSphereBounds Bounds;
+	USceneComponent* Figure = nullptr;
+	if (USkeletalMesh* Skeletal = Cast<USkeletalMesh>(Load(TEXT("SK_") + Id)))
+	{
+		FigureSkeletal->SetSkeletalMesh(Skeletal);
+		if (UAnimSequence* Idle = Cast<UAnimSequence>(Load(TEXT("A_") + Id + TEXT("_Idle"))))
+		{
+			FigureSkeletal->PlayAnimation(Idle, true);
+		}
+		Bounds = Skeletal->GetBounds();
+		Figure = FigureSkeletal;
+	}
+	else if (UStaticMesh* Static = Cast<UStaticMesh>(Load(TEXT("SM_") + Id)))
+	{
+		FigureStatic->SetStaticMesh(Static);
+		Bounds = Static->GetBounds();
+		Figure = FigureStatic;
+	}
+	if (!Figure)
+	{
+		return;
+	}
+
+	// Même hauteur pour tous, posé sur le socle et centré sur l'axe de rotation
+	const float Height = FMath::Max(Bounds.BoxExtent.Z * 2.f, 0.01f);
+	const float Scale = FigureHeight / Height;
+	Figure->SetRelativeScale3D(FVector(Scale));
+	Figure->SetRelativeLocation(FVector(-Bounds.Origin.X, -Bounds.Origin.Y, Bounds.BoxExtent.Z - Bounds.Origin.Z) * Scale);
+	bFigureLoaded = true;
 }
 
 // ---------------------------------------------------------------- Souris
@@ -1043,6 +1147,12 @@ FIntPoint APokedexDevice::GetDirection(const FKey& Key)
 
 bool APokedexDevice::HandleKey(const FKey& Key)
 {
+	// Options > Commandes : la touche suivante est la nouvelle touche choisie, même Tab
+	if (Screen && Screen->IsCapturingKey() && !bClosing)
+	{
+		Screen->HandleKey(Key);
+		return true;
+	}
 	if (Key == EKeys::Tab || Key == EKeys::Gamepad_Special_Right)
 	{
 		Close();

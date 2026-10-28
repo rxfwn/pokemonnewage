@@ -6,6 +6,8 @@
 #include "Engine/LocalPlayer.h"
 #include "Camera/PlayerCameraManager.h"
 #include "InputMappingContext.h"
+#include "InputModifiers.h"
+#include "PokemonNewAgeCharacter.h"
 #include "Blueprint/UserWidget.h"
 #include "EnhancedInputComponent.h"
 #include "InputAction.h"
@@ -526,4 +528,260 @@ void APokemonNewAgePlayerController::NouvellePartie()
 {
 	UPokemonSaveLibrary::DeleteSaveGame();
 	PrintDebug(TEXT("Sauvegarde effacee : relance le jeu pour une nouvelle partie"));
+}
+
+// ---------------------------------------------------------------- Touches (Options > Commandes)
+
+namespace PokemonKeys
+{
+	/** Commandes, dans l'ordre de la page Commandes */
+	struct FCommand { const TCHAR* Id; const TCHAR* Name; };
+	const FCommand Commands[] = {
+		{ TEXT("Forward"), TEXT("Avancer") },
+		{ TEXT("Back"), TEXT("Reculer") },
+		{ TEXT("Left"), TEXT("Aller à gauche") },
+		{ TEXT("Right"), TEXT("Aller à droite") },
+		{ TEXT("Sprint"), TEXT("Courir") },
+		{ TEXT("Jump"), TEXT("Sauter") },
+		{ TEXT("Interact"), TEXT("Parler, ouvrir") },
+		{ TEXT("Menu"), TEXT("Pokédex (menu)") },
+	};
+
+	/** Sens donné par une touche de déplacement : on rejoue ses modificateurs (Inverser, Échanger les axes) sur (1, 0, 0) */
+	FVector GetMoveDirection(const FEnhancedActionKeyMapping& Mapping)
+	{
+		FVector Value(1.f, 0.f, 0.f);
+		for (const UInputModifier* Modifier : Mapping.Modifiers)
+		{
+			if (const UInputModifierSwizzleAxis* Swizzle = Cast<UInputModifierSwizzleAxis>(Modifier))
+			{
+				switch (Swizzle->Order)
+				{
+				case EInputAxisSwizzle::YXZ: Value = FVector(Value.Y, Value.X, Value.Z); break;
+				case EInputAxisSwizzle::ZYX: Value = FVector(Value.Z, Value.Y, Value.X); break;
+				case EInputAxisSwizzle::XZY: Value = FVector(Value.X, Value.Z, Value.Y); break;
+				case EInputAxisSwizzle::YZX: Value = FVector(Value.Y, Value.Z, Value.X); break;
+				case EInputAxisSwizzle::ZXY: Value = FVector(Value.Z, Value.X, Value.Y); break;
+				default: break;
+				}
+			}
+			else if (const UInputModifierNegate* Negate = Cast<UInputModifierNegate>(Modifier))
+			{
+				Value = FVector(Negate->bX ? -Value.X : Value.X, Negate->bY ? -Value.Y : Value.Y, Negate->bZ ? -Value.Z : Value.Z);
+			}
+		}
+		return Value;
+	}
+
+	int32 CommandOrder(FName Id)
+	{
+		const FString Base = Id.ToString().LeftChop(4);
+		for (int32 Index = 0; Index < UE_ARRAY_COUNT(Commands); ++Index)
+		{
+			if (Base == Commands[Index].Id)
+			{
+				return Index;
+			}
+		}
+		return UE_ARRAY_COUNT(Commands);
+	}
+}
+
+void APokemonNewAgePlayerController::GetSourceContexts(TArray<TPair<UInputMappingContext*, int32>>& OutContexts) const
+{
+	for (UInputMappingContext* Context : DefaultMappingContexts)
+	{
+		if (Context)
+		{
+			OutContexts.Emplace(Context, 0);
+		}
+	}
+	if (!ShouldUseTouchControls())
+	{
+		for (UInputMappingContext* Context : MobileExcludedMappingContexts)
+		{
+			if (Context)
+			{
+				OutContexts.Emplace(Context, 0);
+			}
+		}
+	}
+	if (DefaultMenuContext)
+	{
+		OutContexts.Emplace(DefaultMenuContext, 1);
+	}
+	if (const APokemonNewAgeCharacter* Hero = Cast<APokemonNewAgeCharacter>(GetPawn()); Hero && Hero->GetInteractContext())
+	{
+		OutContexts.Emplace(Hero->GetInteractContext(), 1);
+	}
+}
+
+FName APokemonNewAgePlayerController::GetBindingId(const FEnhancedActionKeyMapping& Mapping) const
+{
+	const FKey& Key = Mapping.Key;
+	const UInputAction* Action = Mapping.Action;
+	if (!Action || !Key.IsValid() || Key.IsAnalog() || Key.IsMouseButton() || Key.IsTouch()
+		|| Key.ToString().Contains(TEXT("Stick_")))
+	{
+		return NAME_None;
+	}
+
+	FString Base;
+	const APokemonNewAgeCharacter* Hero = Cast<APokemonNewAgeCharacter>(GetPawn());
+	if (Action == MenuAction)
+	{
+		Base = TEXT("Menu");
+	}
+	else if (Hero && Action == Hero->GetJumpAction())
+	{
+		Base = TEXT("Jump");
+	}
+	else if (Hero && Action == Hero->GetSprintAction())
+	{
+		Base = TEXT("Sprint");
+	}
+	else if (Hero && Action == Hero->GetInteractAction())
+	{
+		Base = TEXT("Interact");
+	}
+	else if (Hero && Action == Hero->GetMoveAction())
+	{
+		// Déplacement : X = droite, Y = avant (APokemonNewAgeCharacter::Move)
+		const FVector Direction = PokemonKeys::GetMoveDirection(Mapping);
+		Base = FMath::Abs(Direction.Y) > FMath::Abs(Direction.X)
+			? (Direction.Y > 0.f ? TEXT("Forward") : TEXT("Back"))
+			: (Direction.X > 0.f ? TEXT("Right") : TEXT("Left"));
+	}
+	if (Base.IsEmpty())
+	{
+		return NAME_None;
+	}
+	return FName(Base + (Key.IsGamepadKey() ? TEXT("_Pad") : TEXT("_Key")));
+}
+
+TArray<FPokemonBindableKey> APokemonNewAgePlayerController::GetBindableKeys() const
+{
+	TArray<FPokemonBindableKey> Keys;
+	const UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
+	TArray<TPair<UInputMappingContext*, int32>> Contexts;
+	GetSourceContexts(Contexts);
+
+	// La première touche trouvée pour chaque commande est celle qu'on change (les flèches restent en plus de ZQSD)
+	for (const TPair<UInputMappingContext*, int32>& Context : Contexts)
+	{
+		for (const FEnhancedActionKeyMapping& Mapping : Context.Key->GetMappings())
+		{
+			const FName Id = GetBindingId(Mapping);
+			if (Id.IsNone() || Keys.ContainsByPredicate([Id](const FPokemonBindableKey& Existing) { return Existing.Id == Id; }))
+			{
+				continue;
+			}
+			FPokemonBindableKey& Entry = Keys.AddDefaulted_GetRef();
+			Entry.Id = Id;
+			Entry.bGamepad = Mapping.Key.IsGamepadKey();
+			Entry.DefaultKey = Mapping.Key;
+			const FKey* Custom = Options ? Options->KeyBindings.Find(Id) : nullptr;
+			Entry.Key = Custom ? *Custom : Mapping.Key;
+			const int32 Order = PokemonKeys::CommandOrder(Id);
+			Entry.Name = Order < UE_ARRAY_COUNT(PokemonKeys::Commands) ? FText::FromString(PokemonKeys::Commands[Order].Name) : FText::FromName(Id);
+		}
+	}
+
+	Keys.Sort([](const FPokemonBindableKey& A, const FPokemonBindableKey& B)
+	{
+		if (A.bGamepad != B.bGamepad)
+		{
+			return !A.bGamepad;
+		}
+		return PokemonKeys::CommandOrder(A.Id) < PokemonKeys::CommandOrder(B.Id);
+	});
+	return Keys;
+}
+
+void APokemonNewAgePlayerController::SetKeyBinding(FName Id, const FKey& Key)
+{
+	UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
+	const TArray<FPokemonBindableKey> Keys = GetBindableKeys();
+	const FPokemonBindableKey* Changed = Keys.FindByPredicate([Id](const FPokemonBindableKey& Entry) { return Entry.Id == Id; });
+	if (!Changed || !Options)
+	{
+		return;
+	}
+
+	auto Store = [Options](const FPokemonBindableKey& Entry, const FKey& NewKey)
+	{
+		if (NewKey == Entry.DefaultKey)
+		{
+			Options->KeyBindings.Remove(Entry.Id);
+		}
+		else
+		{
+			Options->KeyBindings.Add(Entry.Id, NewKey);
+		}
+	};
+
+	// La commande qui avait déjà cette touche prend l'ancienne touche de celle qu'on change
+	for (const FPokemonBindableKey& Other : Keys)
+	{
+		if (Other.Id != Id && Other.bGamepad == Changed->bGamepad && Other.Key == Key)
+		{
+			Store(Other, Changed->Key);
+		}
+	}
+	Store(*Changed, Key);
+	UPokemonSaveLibrary::SaveOptions(Options);
+	ApplyKeyBindings();
+}
+
+void APokemonNewAgePlayerController::ResetKeyBindings()
+{
+	UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
+	Options->KeyBindings.Reset();
+	UPokemonSaveLibrary::SaveOptions(Options);
+	ApplyKeyBindings();
+}
+
+void APokemonNewAgePlayerController::ApplyKeyBindings()
+{
+	UEnhancedInputLocalPlayerSubsystem* Subsystem = IsLocalPlayerController() && GetLocalPlayer()
+		? ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()) : nullptr;
+	if (!Subsystem)
+	{
+		return;
+	}
+	const UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
+	TArray<TPair<UInputMappingContext*, int32>> Contexts;
+	GetSourceContexts(Contexts);
+
+	// On ne touche jamais aux assets (IMC_Default...) : chaque contexte est recopié avec les touches du joueur
+	TSet<FName> Done;
+	for (const TPair<UInputMappingContext*, int32>& Context : Contexts)
+	{
+		UInputMappingContext* Original = Context.Key;
+		UInputMappingContext* Copy = NewObject<UInputMappingContext>(this);
+		for (const FEnhancedActionKeyMapping& Mapping : Original->GetMappings())
+		{
+			FKey Key = Mapping.Key;
+			const FName Id = GetBindingId(Mapping);
+			if (!Id.IsNone() && !Done.Contains(Id))
+			{
+				Done.Add(Id);
+				if (const FKey* Custom = Options->KeyBindings.Find(Id))
+				{
+					Key = *Custom;
+				}
+			}
+			FEnhancedActionKeyMapping& NewMapping = Copy->MapKey(Mapping.Action, Key);
+			NewMapping.Modifiers = Mapping.Modifiers;
+			NewMapping.Triggers = Mapping.Triggers;
+		}
+
+		if (const TObjectPtr<UInputMappingContext>* Previous = BoundContexts.Find(Original))
+		{
+			Subsystem->RemoveMappingContext(*Previous);
+		}
+		Subsystem->RemoveMappingContext(Original);
+		Subsystem->AddMappingContext(Copy, Context.Value);
+		BoundContexts.Add(Original, Copy);
+	}
 }

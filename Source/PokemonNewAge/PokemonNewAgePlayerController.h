@@ -16,6 +16,17 @@ class UBattleComponent;
 class UBattleHUDWidget;
 class APokedexDevice;
 
+/** Une commande dont on peut changer la touche (Options > Commandes du Pokédex). */
+struct FPokemonBindableKey
+{
+	/** Forward_Key, Jump_Pad... (clé de UPokemonOptionsSave::KeyBindings) */
+	FName Id;
+	FText Name;
+	bool bGamepad = false;
+	FKey DefaultKey;
+	FKey Key;
+};
+
 /**
  *  Basic PlayerController class for a third person game
  *  Manages input mappings
@@ -149,6 +160,20 @@ public:
 	/** Réglages du joueur (Options) : volume, sensibilité et sens de la caméra */
 	void ApplyGameOptions();
 
+	// ------------------------------------------------ Touches (Options > Commandes)
+
+	/** Commandes qu'on peut changer, clavier puis manette, avec leur touche actuelle */
+	TArray<FPokemonBindableKey> GetBindableKeys() const;
+
+	/** Change la touche d'une commande (si une autre commande l'avait, elles échangent) et l'enregistre */
+	void SetKeyBinding(FName Id, const FKey& Key);
+
+	/** Remet toutes les touches d'origine */
+	void ResetKeyBindings();
+
+	/** Remplace les contextes d'entrée par des copies avec les touches choisies (au lancement et après un changement) */
+	void ApplyKeyBindings();
+
 	/** Lus par le personnage pour la caméra */
 	float CameraSensitivity = 1.f;
 	bool bInvertCameraY = false;
@@ -237,4 +262,15 @@ public:
 	UFUNCTION(Exec)
 	void Equipe();
 
+private:
+
+	/** Commande d'une association touche -> action (Forward_Key...), None si on ne la change pas */
+	FName GetBindingId(const struct FEnhancedActionKeyMapping& Mapping) const;
+
+	/** Contextes d'entrée d'origine du joueur et leur priorité */
+	void GetSourceContexts(TArray<TPair<UInputMappingContext*, int32>>& OutContexts) const;
+
+	/** Copie avec les touches du joueur, pour chaque contexte d'origine */
+	UPROPERTY(Transient)
+	TMap<TObjectPtr<UInputMappingContext>, TObjectPtr<UInputMappingContext>> BoundContexts;
 };

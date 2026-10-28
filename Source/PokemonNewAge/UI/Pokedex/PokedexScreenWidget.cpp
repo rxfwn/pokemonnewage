@@ -285,6 +285,11 @@ FReply UPokedexScreenWidget::NativeOnKeyDown(const FGeometry& InGeometry, const 
 
 bool UPokedexScreenWidget::HandleKey(const FKey& Key)
 {
+	if (IsCapturingKey())
+	{
+		CaptureKey(Key);
+		return true;
+	}
 	if (Key == EKeys::Up || Key == EKeys::Z || Key == EKeys::W || Key == EKeys::Gamepad_DPad_Up || Key == EKeys::Gamepad_LeftStick_Up)
 	{
 		Navigate(FIntPoint(0, -1));
@@ -688,6 +693,29 @@ void UPokedexScreenWidget::Confirm()
 		return;
 
 	case EPokedexPage::Controls:
+	{
+		APokemonNewAgePlayerController* Player = Cast<APokemonNewAgePlayerController>(GetOwningPlayer());
+		const TArray<FPokemonBindableKey> Keys = Player ? Player->GetBindableKeys() : TArray<FPokemonBindableKey>();
+		if (Keys.IsValidIndex(Selection))
+		{
+			CapturingKey = Keys[Selection].Id;
+			Feedback(EPokedexFeedback::Confirm);
+			ShowStatus(FText::Format(Keys[Selection].bGamepad
+				? LOCTEXT("PressPad", "Appuie sur le bouton de la manette pour « {0} »   (Échap : annuler)")
+				: LOCTEXT("PressKey", "Appuie sur la nouvelle touche pour « {0} »   (Échap : annuler)"), Keys[Selection].Name));
+			StatusTimeLeft = 30.f;
+			Refresh();
+		}
+		else if (Player && Selection == Keys.Num())
+		{
+			Player->ResetKeyBindings();
+			Feedback(EPokedexFeedback::Saved);
+			ShowStatus(LOCTEXT("KeysReset", "Touches d'origine remises."));
+			Refresh();
+		}
+		return;
+	}
+
 	case EPokedexPage::ComingSoon:
 		Back();
 		return;
@@ -1347,7 +1375,7 @@ void UPokedexScreenWidget::BuildOptions()
 		}
 		else if (Index == OptControls)
 		{
-			AddRowText(Row, LOCTEXT("OptionOpen", "voir  >"), 18, Accent, false, true);
+			AddRowText(Row, LOCTEXT("OptionOpen", "changer  >"), 18, Accent, false, true);
 		}
 	}
 }
@@ -1566,38 +1594,80 @@ void UPokedexScreenWidget::BuildOnline()
 void UPokedexScreenWidget::BuildControls()
 {
 	TitleText->SetText(LOCTEXT("TitleControls", "COMMANDES"));
-	HintText->SetText(LOCTEXT("HintControls", "B : retour"));
+	HintText->SetText(IsCapturingKey() ? LOCTEXT("HintCapture", "Appuie sur une touche   Échap : annuler")
+		: LOCTEXT("HintControls", "A : changer la touche   B : retour"));
 
-	struct FControlLine { FText Action; FText Keyboard; FText Gamepad; };
-	const FControlLine Lines[] = {
-		{ LOCTEXT("CtrlMove", "Se déplacer"), LOCTEXT("KeyMove", "Z Q S D"), LOCTEXT("PadMove", "Stick gauche") },
-		{ LOCTEXT("CtrlRun", "Courir"), LOCTEXT("KeyRun", "Maj gauche"), LOCTEXT("PadRun", "Stick gauche enfoncé") },
-		{ LOCTEXT("CtrlJump", "Sauter"), LOCTEXT("KeyJump", "Espace"), LOCTEXT("PadJump", "A") },
-		{ LOCTEXT("CtrlLook", "Caméra"), LOCTEXT("KeyLook", "Souris"), LOCTEXT("PadLook", "Stick droit") },
-		{ LOCTEXT("CtrlTalk", "Parler, ouvrir"), LOCTEXT("KeyTalk", "E"), LOCTEXT("PadTalk", "X") },
-		{ LOCTEXT("CtrlMenu", "Pokédex"), LOCTEXT("KeyMenu", "Tab"), LOCTEXT("PadMenu", "Start") },
-		{ LOCTEXT("CtrlOk", "Valider"), LOCTEXT("KeyOk", "Entrée, clic"), LOCTEXT("PadOk", "A") },
-		{ LOCTEXT("CtrlBack", "Retour"), LOCTEXT("KeyBack", "Échap"), LOCTEXT("PadBack", "B") },
-	};
-	UHorizontalBox* Header = AddRow(-1, false);
-	AddRowText(Header, FText::GetEmpty(), 16, Dim, true);
-	AddRowText(Header, LOCTEXT("Keyboard", "CLAVIER          "), 16, Accent, false, true);
-	AddRowText(Header, LOCTEXT("Gamepad", "MANETTE"), 16, Accent, false, true);
-	for (const FControlLine& Line : Lines)
+	const APokemonNewAgePlayerController* Player = Cast<APokemonNewAgePlayerController>(GetOwningPlayer());
+	const TArray<FPokemonBindableKey> Keys = Player ? Player->GetBindableKeys() : TArray<FPokemonBindableKey>();
+	if (Keys.Num() == 0)
 	{
-		UHorizontalBox* Row = AddRow(-1, false);
-		AddRowText(Row, Line.Action, 18, Text, true, true);
-		USizeBox* KeyBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
-		KeyBox->SetWidthOverride(220.f);
-		KeyBox->SetContent(MakeText(Line.Keyboard, 18, Text));
-		Row->AddChildToHorizontalBox(KeyBox)->SetVerticalAlignment(VAlign_Center);
-		USizeBox* PadBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
-		PadBox->SetWidthOverride(220.f);
-		PadBox->SetContent(MakeText(Line.Gamepad, 18, Text));
-		Row->AddChildToHorizontalBox(PadBox)->SetVerticalAlignment(VAlign_Center);
+		AddLine(LOCTEXT("NoKeys", "Aucune touche à changer (le personnage n'est pas encore là ?)"), 19, Dim);
+		return;
 	}
-	AddSpacer(8.f);
-	AddLine(LOCTEXT("RemapSoon", "Changer les touches : bientôt. Pour l'instant, ZQSD est prévu pour les claviers AZERTY."), 16, Dim);
+
+	// Une ligne par commande, puis « Touches d'origine » ; la liste défile
+	RowCount = Keys.Num() + 1;
+	Selection = FMath::Clamp(Selection, 0, RowCount - 1);
+	const int32 Window = ListWindow + 3;
+	if (Selection < ScrollOffset)
+	{
+		ScrollOffset = Selection;
+	}
+	else if (Selection >= ScrollOffset + Window)
+	{
+		ScrollOffset = Selection - Window + 1;
+	}
+
+	for (int32 Index = ScrollOffset; Index < FMath::Min(RowCount, ScrollOffset + Window); ++Index)
+	{
+		if (Index == Keys.Num())
+		{
+			AddRowText(AddRow(Index), LOCTEXT("ResetKeys", "Remettre les touches d'origine"), 18, Error, true, true);
+			continue;
+		}
+		const FPokemonBindableKey& Entry = Keys[Index];
+		if (Index == 0 || Entry.bGamepad != Keys[Index - 1].bGamepad)
+		{
+			AddLine(Entry.bGamepad ? LOCTEXT("Gamepad", "MANETTE") : LOCTEXT("Keyboard", "CLAVIER"), 15, Accent, true);
+		}
+		UHorizontalBox* Row = AddRow(Index);
+		AddRowText(Row, Entry.Name, 18, Text, true, true);
+		const bool bWaiting = CapturingKey == Entry.Id;
+		const bool bChanged = Entry.Key != Entry.DefaultKey;
+		AddRowText(Row, bWaiting ? LOCTEXT("Waiting", "...") : Entry.Key.GetDisplayName(), 18, bWaiting ? Gold : (bChanged ? Good : Accent), false, true);
+	}
+}
+
+void UPokedexScreenWidget::CaptureKey(const FKey& Key)
+{
+	APokemonNewAgePlayerController* Player = Cast<APokemonNewAgePlayerController>(GetOwningPlayer());
+	const TArray<FPokemonBindableKey> Keys = Player ? Player->GetBindableKeys() : TArray<FPokemonBindableKey>();
+	const FPokemonBindableKey* Entry = Keys.FindByPredicate([this](const FPokemonBindableKey& Candidate) { return Candidate.Id == CapturingKey; });
+
+	if (!Entry || Key == EKeys::Escape || Key == EKeys::Gamepad_Special_Left)
+	{
+		CapturingKey = NAME_None;
+		Feedback(EPokedexFeedback::Back);
+		ShowStatus(LOCTEXT("CaptureCancelled", "Touche inchangée."));
+		Refresh();
+		return;
+	}
+	// Une touche du bon appareil, et pas un stick ni la souris
+	const bool bRightDevice = Key.IsGamepadKey() == Entry->bGamepad;
+	if (!bRightDevice || Key.IsAnalog() || Key.IsMouseButton() || Key.ToString().Contains(TEXT("Stick_")))
+	{
+		Feedback(EPokedexFeedback::Error);
+		ShowStatus(Entry->bGamepad ? LOCTEXT("NeedPad", "Il faut un bouton de la manette (Échap : annuler).")
+			: LOCTEXT("NeedKey", "Il faut une touche du clavier (Échap : annuler)."), true);
+		StatusTimeLeft = 30.f;
+		return;
+	}
+
+	CapturingKey = NAME_None;
+	Player->SetKeyBinding(Entry->Id, Key);
+	Feedback(EPokedexFeedback::Saved);
+	ShowStatus(FText::Format(LOCTEXT("KeyChanged", "« {0} » : {1}"), Entry->Name, Key.GetDisplayName()));
+	Refresh();
 }
 
 void UPokedexScreenWidget::BuildComingSoon()
@@ -2045,6 +2115,34 @@ void UPokedexScreenWidget::GetInfo(FText& OutTitle, FText& OutText) const
 	}
 	OutTitle = GetMenuName(CurrentMenu);
 	OutText = GetMenuDescription(CurrentMenu);
+}
+
+FName UPokedexScreenWidget::GetFeaturedSpecies() const
+{
+	const APokemonPlayerState* State = GetPlayerState();
+	if (!State)
+	{
+		return NAME_None;
+	}
+	auto IfSeen = [State](FName Species)
+	{
+		return State->PokedexSeen.Contains(Species) || State->PokedexCaught.Contains(Species) ? Species : NAME_None;
+	};
+	switch (Page)
+	{
+	case EPokedexPage::PokedexEntry:
+		return SpeciesList.IsValidIndex(DexIndex) ? IfSeen(SpeciesList[DexIndex]) : NAME_None;
+	case EPokedexPage::Pokedex:
+		return SpeciesList.IsValidIndex(Selection) ? IfSeen(SpeciesList[Selection]) : NAME_None;
+	case EPokedexPage::Party:
+		return State->Party.IsValidIndex(Selection) ? State->Party[Selection].Species : NAME_None;
+	case EPokedexPage::PartyActions:
+	case EPokedexPage::Summary:
+	case EPokedexPage::GiveItem:
+		return State->Party.IsValidIndex(PartyIndex) ? State->Party[PartyIndex].Species : NAME_None;
+	default:
+		return NAME_None;
+	}
 }
 
 const UPokedexModel* UPokedexScreenWidget::GetModel() const

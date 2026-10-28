@@ -118,6 +118,10 @@ public:
 
 	UPROPERTY()
 	bool bInvertCameraY = false;
+
+	/** Touches changées dans Options > Commandes : commande (Jump_Key, Forward_Key, Interact_Pad...) -> touche */
+	UPROPERTY()
+	TMap<FName, FKey> KeyBindings;
 };
 
 /** Sauvegarder, charger, et lire les réglages (C++ et Blueprint). */

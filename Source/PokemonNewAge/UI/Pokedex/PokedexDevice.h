@@ -15,6 +15,7 @@ class UPokedexMiniWidget;
 class UPokedexPanelWidget;
 class UPokedexModel;
 class UPostProcessComponent;
+class USkeletalMeshComponent;
 class USoundBase;
 class UStaticMeshComponent;
 class UWidgetComponent;
@@ -96,6 +97,14 @@ public:
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
 	float BackgroundBlurFstop = 2.8f;
 
+	/** Hauteur de la figurine du Pokémon (fiche du Pokédex, résumé), en cm */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Figurine", meta=(Units="Centimeters"))
+	float FigureHeight = 4.5f;
+
+	/** Dossier des modèles : <dossier>/<Espèce>/SK_<Espèce> (ou SM_<Espèce>), animation A_<Espèce>_Idle */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Figurine")
+	FString FigureFolder = TEXT("/Game/Pokemon/Models");
+
 	/** Vitesse de rotation à la souris (degrés par pixel) */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Commandes")
 	float DragSensitivity = 0.35f;
@@ -128,6 +137,9 @@ private:
 	void UpdateAnimation(float DeltaSeconds);
 	void UpdateLights(float DeltaSeconds);
 	void UpdatePanels(float DeltaSeconds);
+	/** Figurine 3D du Pokémon choisi, debout sur le haut du volet */
+	void UpdateFigure(float DeltaSeconds);
+	void LoadFigure(FName Species);
 
 	/** Trace sous la souris, seulement contre les pièces de l'appareil */
 	bool TraceParts(const FVector2D& Pixel, FHitResult& OutHit) const;
@@ -179,6 +191,16 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category="Pokedex")
 	TObjectPtr<UPostProcessComponent> PostProcess;
+
+	/** Figurine : socle (tourne), et le modèle animé ou fixe */
+	UPROPERTY(VisibleAnywhere, Category="Pokedex")
+	TObjectPtr<USceneComponent> FigureRoot;
+
+	UPROPERTY(VisibleAnywhere, Category="Pokedex")
+	TObjectPtr<USkeletalMeshComponent> FigureSkeletal;
+
+	UPROPERTY(VisibleAnywhere, Category="Pokedex")
+	TObjectPtr<UStaticMeshComponent> FigureStatic;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UPokedexModel> Model;
@@ -283,6 +305,13 @@ private:
 	float MenuFlash[PokedexMenuCount] = { -10.f, -10.f, -10.f, -10.f, -10.f, -10.f, -10.f, -10.f, -10.f, -10.f };
 
 	float PanelTimer = 0.f;
+
+	/** Espèce affichée en figurine, et son apparition (0 à 1) */
+	FName FigureSpecies;
+	FName WantedFigureSpecies;
+	float FigureAlpha = 0.f;
+	float FigureYaw = 0.f;
+	bool bFigureLoaded = false;
 
 	static constexpr int32 MenuCount = PokedexMenuCount;
 	static constexpr int32 MenuColumns = 5;

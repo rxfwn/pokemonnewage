@@ -116,6 +116,12 @@ void APokemonNewAgeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 		// Interaction (portes, PNJ...)
 		SetupDefaultInteractInput();
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APokemonNewAgeCharacter::DoInteract);
+
+		// Touches choisies par le joueur (Options > Commandes) : les actions du personnage sont connues maintenant
+		if (APokemonNewAgePlayerController* PokemonController = Cast<APokemonNewAgePlayerController>(GetController()))
+		{
+			PokemonController->ApplyKeyBindings();
+		}
 	}
 	else
 	{

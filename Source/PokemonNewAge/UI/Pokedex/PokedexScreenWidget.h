@@ -119,6 +119,9 @@ public:
 	/** Ce qu'affiche le petit écran du haut du volet pour la page en cours (fiche, objet, lieu...) */
 	void GetInfo(FText& OutTitle, FText& OutText) const;
 
+	/** Espèce à montrer en 3D à côté de l'écran (fiche, liste du Pokédex, résumé), None sinon */
+	FName GetFeaturedSpecies() const;
+
 	/** Pièces, icônes et carte (DA_PokedexModel), chargé à la demande */
 	const UPokedexModel* GetModel() const;
 
@@ -134,6 +137,9 @@ public:
 	bool Back();
 
 	bool IsAtHome() const { return Page == EPokedexPage::Home; }
+
+	/** Options > Commandes : attend la nouvelle touche d'une commande (toutes les touches vont à HandleKey) */
+	bool IsCapturingKey() const { return !CapturingKey.IsNone(); }
 
 	/** Touche du clavier ou de la manette ; vrai si utilisée */
 	bool HandleKey(const FKey& Key);
@@ -216,6 +222,8 @@ private:
 	void UseSelectedItemOn(int32 PartyIndex);
 	void DoSave();
 	void ChangeOption(int32 Option, int32 Delta);
+	/** Touche reçue pendant le choix d'une nouvelle touche */
+	void CaptureKey(const FKey& Key);
 	void Feedback(EPokedexFeedback Type);
 
 	// Arbre de widgets fixe
@@ -250,6 +258,8 @@ private:
 	/** Pokédex : espèces triées par numéro */
 	TArray<FName> SpeciesList;
 	int32 DexIndex = 0;
+	/** Commande dont on attend la nouvelle touche (page Commandes), None sinon */
+	FName CapturingKey;
 	/** Menu ouvert (titre des pages « bientôt ») */
 	EPokedexMenu CurrentMenu = EPokedexMenu::Pokemon;
 
