@@ -37,3 +37,7 @@ __pycache__/
 
 # Cache des CSV PokeAPI (Tools/Data/build_pokemon_data.py)
 Tools/Data/.cache/
+
+# Modèles des Pokémon convertis (Tools/Pokemon/convert_pokemon_glb.py), livrés en zip hors Git
+Tools/Pokemon/Generated/
+Tools/Pokemon/.glb/

@@ -61,7 +61,7 @@ Objectif : le jeu sait ce qu'est un Pokémon.
   - DAT-1 à DAT-3 (SCRUM-27, 28, 29) : données générées, plus apprentissages, CT, talents, natures, rencontres et dresseurs V1 (`docs/DONNEES_POKEMON.md`)
 - **DAT-4** Instance de Pokémon : niveau, IV/EV, nature, PV, attaques connues
 - **DAT-5** Équipe du joueur (6 max) et choix du starter au labo
-- **ART-2** Premier modèle 3D réaliste de test (un starter) avec animations idle et attaque
+- **ART-2** (SCRUM-32) Premier modèle 3D réaliste de test (un starter) avec animations idle et attaque ; modèles provisoires des 20 Pokémon V1 convertis depuis Pokemon-3D-api (`docs/MODELES_POKEMON.md`)
 - **ART-3** (SCRUM-65) Modèle temporaire du joueur : le Dresseur de Smash Bros Ultimate, animations du mannequin retargetées (`docs/PERSONNAGE_DRESSEUR.md`)
 
 ## Sprint 3 : le combat (semaines 7-8)
