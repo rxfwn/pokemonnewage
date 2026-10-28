@@ -40,3 +40,4 @@ Tools/Data/.cache/
 
 # Modèle et sons du Pokédex 3D générés (Tools/Pokedex/)
 Tools/Pokedex/Generated/
+Tools/Pokedex/Source/*.blend

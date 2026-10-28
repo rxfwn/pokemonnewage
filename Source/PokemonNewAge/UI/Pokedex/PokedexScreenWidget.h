@@ -13,20 +13,28 @@ class UVerticalBox;
 class UHorizontalBox;
 class APokemonPlayerState;
 class UPokemonDatabase;
+class UPokedexModel;
 class UPokedexScreenWidget;
+class UCanvasPanel;
 struct FPokemonInstance;
 
-/** Les 6 boutons du volet, dans l'ordre de la grille (gauche à droite, haut en bas). */
+/** Les 10 boutons du volet, dans l'ordre de la grille (gauche à droite, haut en bas) et des icônes. */
 UENUM(BlueprintType)
 enum class EPokedexMenu : uint8
 {
 	Pokemon,
 	Pokedex,
 	Bag,
+	Radio,
 	Trainer,
+	Map,
 	Save,
-	Options
+	Online,
+	Options,
+	Style
 };
+
+constexpr int32 PokedexMenuCount = 10;
 
 /** Pages de l'écran. */
 UENUM(BlueprintType)
@@ -44,7 +52,14 @@ enum class EPokedexPage : uint8
 	Trainer,
 	Save,
 	Options,
-	ConfirmDelete
+	ConfirmDelete,
+	/** Objet à faire tenir au Pokémon choisi */
+	GiveItem,
+	Map,
+	Online,
+	Controls,
+	/** Radio et Style : pas encore faits */
+	ComingSoon
 };
 
 /** Ce que l'appareil doit faire pour accompagner l'écran (son, voyants). */
@@ -79,7 +94,7 @@ public:
 };
 
 /**
- *  L'écran du Pokédex (SCRUM-49, 50, 51, 52) : toutes les pages des 6 menus, construites en C++ et remplies
+ *  L'écran du Pokédex (SCRUM-49, 50, 51, 52, 64) : toutes les pages des 10 menus, construites en C++ et remplies
  *  avec les vraies données (PlayerState du joueur local + DA_PokemonDatabase).
  *  Affiché sur l'écran 3D par APokedexDevice (Widget Component), ou à plat par le menu de secours.
  *  Commandes : Navigate (croix, ZQSD, flèches), Confirm (A, Entrée, clic), Back (B, Échap, clic droit sur rien).
@@ -91,12 +106,21 @@ class UPokedexScreenWidget : public UUserWidget
 
 public:
 
-	/** Taille de l'écran en pixels (le Widget Component l'affiche sur 6,8 × 6,4 cm) */
-	static constexpr float ScreenWidth = 680.f;
-	static constexpr float ScreenHeight = 640.f;
+	/** Taille de l'écran en pixels (le Widget Component l'affiche sur l'écran de 6,4 × 4,32 cm du modèle) */
+	static constexpr float ScreenWidth = 960.f;
+	static constexpr float ScreenHeight = 648.f;
 
-	/** Ouvre la page d'un des 6 menus */
+	/** Ouvre la page d'un des 10 menus */
 	void OpenMenu(EPokedexMenu Menu);
+
+	static FText GetMenuName(EPokedexMenu Menu);
+	static FText GetMenuDescription(EPokedexMenu Menu);
+
+	/** Ce qu'affiche le petit écran du haut du volet pour la page en cours (fiche, objet, lieu...) */
+	void GetInfo(FText& OutTitle, FText& OutText) const;
+
+	/** Pièces, icônes et carte (DA_PokedexModel), chargé à la demande */
+	const UPokedexModel* GetModel() const;
 
 	/** Revient à l'accueil */
 	void ShowHome();
@@ -154,6 +178,11 @@ private:
 	void BuildSave();
 	void BuildOptions();
 	void BuildConfirmDelete();
+	void BuildGiveItem();
+	void BuildMap();
+	void BuildOnline();
+	void BuildControls();
+	void BuildComingSoon();
 
 	// Briques d'interface
 	UTextBlock* MakeText(const FText& Text, int32 Size, const FLinearColor& Color, bool bBold = false);
@@ -171,7 +200,17 @@ private:
 	FText GetTypeName(EPokemonType Type) const;
 	FText GetStatusShort(EMajorStatus Status) const;
 	TArray<FName> GetBagPocketItems(int32 Pocket) const;
+	/** Objets du sac qu'un Pokémon peut tenir (tout sauf les objets rares) */
+	TArray<FName> GetHoldableItems() const;
 	void BuildSpeciesList();
+	/** Lieux où l'espèce vit à l'état sauvage (DT_Encounters) */
+	TArray<FText> GetSpeciesLocations(FName Species) const;
+	/** Position du joueur sur la carte (u, v de 0 à 1) ; faux sans Landscape */
+	bool GetPlayerMapPosition(FVector2D& OutUV) const;
+	/** Lieu le plus proche de la position (ville en priorité), -1 si aucun */
+	int32 FindPlaceAt(const FVector2D& UV) const;
+	/** Villes de la carte, pour la liste de la page Carte */
+	TArray<int32> GetMapTowns() const;
 
 	// Actions
 	void UseSelectedItemOn(int32 PartyIndex);
@@ -185,6 +224,8 @@ private:
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> HintText;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> StatusText;
 	UPROPERTY(Transient) TObjectPtr<UVerticalBox> Content;
+	/** Boîte où AddRow / AddLine ajoutent (Content, ou la colonne de droite de la carte) */
+	UPROPERTY(Transient) TObjectPtr<UVerticalBox> RowTarget;
 
 	/** Lignes cliquables de la page courante */
 	UPROPERTY(Transient) TArray<TObjectPtr<UPokedexRowBinding>> RowBindings;
@@ -203,12 +244,18 @@ private:
 	int32 MovingFrom = -1;
 	/** Résumé : 0 infos, 1 stats, 2 attaques */
 	int32 SummaryTab = 0;
-	/** Sac : poche 0 soins, 1 Poké Balls, 2 objets rares, 3 autres */
+	/** Sac : poche 0 soins, 1 capture, 2 baies et matériaux, 3 objets clés */
 	int32 BagPocket = 0;
 	FName SelectedItem;
 	/** Pokédex : espèces triées par numéro */
 	TArray<FName> SpeciesList;
 	int32 DexIndex = 0;
+	/** Menu ouvert (titre des pages « bientôt ») */
+	EPokedexMenu CurrentMenu = EPokedexMenu::Pokemon;
+
+	UPROPERTY(Transient)
+	mutable TObjectPtr<UPokedexModel> CachedModel;
+	mutable bool bModelLoaded = false;
 
 	float StatusTimeLeft = 0.f;
 	float RefreshTimer = 0.f;

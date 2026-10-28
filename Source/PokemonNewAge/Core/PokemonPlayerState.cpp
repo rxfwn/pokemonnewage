@@ -186,6 +186,28 @@ bool APokemonPlayerState::SwapPartyPokemon(int32 IndexA, int32 IndexB)
 	return true;
 }
 
+bool APokemonPlayerState::GiveHeldItem(int32 PartyIndex, FName Item)
+{
+	if (!Party.IsValidIndex(PartyIndex) || Item.IsNone() || !RemoveItem(Item, 1))
+	{
+		return false;
+	}
+	TakeHeldItem(PartyIndex);
+	Party[PartyIndex].HeldItem = Item;
+	return true;
+}
+
+bool APokemonPlayerState::TakeHeldItem(int32 PartyIndex)
+{
+	if (!Party.IsValidIndex(PartyIndex) || Party[PartyIndex].HeldItem.IsNone())
+	{
+		return false;
+	}
+	AddItem(Party[PartyIndex].HeldItem, 1);
+	Party[PartyIndex].HeldItem = NAME_None;
+	return true;
+}
+
 bool APokemonPlayerState::CanUseItemOnPokemon(const FItemRow& Item, const FPokemonInstance& Pokemon)
 {
 	if (!Item.bUsableInField || Item.IsPokeBall() || !Pokemon.IsValid())

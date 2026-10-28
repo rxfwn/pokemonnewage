@@ -44,6 +44,8 @@ TSharedRef<SWidget> UGameMenuWidget::RebuildWidget()
 		AddEntry(List, LOCTEXT("Pokemon", "Pokémon"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnPokemonClicked);
 		AddEntry(List, LOCTEXT("Bag", "Sac"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnBagClicked);
 		AddEntry(List, LOCTEXT("Trainer", "Dresseur"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTrainerClicked);
+		AddEntry(List, LOCTEXT("Map", "Carte"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnMapClicked);
+		AddEntry(List, LOCTEXT("Online", "En ligne"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnOnlineClicked);
 		AddEntry(List, LOCTEXT("Save", "Sauvegarder"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnSaveClicked);
 		AddEntry(List, LOCTEXT("Options", "Options"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnOptionsClicked);
 		ResumeButton = AddEntry(List, LOCTEXT("Resume", "Reprendre"), true);
@@ -115,6 +117,8 @@ void UGameMenuWidget::OnBagClicked() { OpenScreen(EPokedexMenu::Bag); }
 void UGameMenuWidget::OnTrainerClicked() { OpenScreen(EPokedexMenu::Trainer); }
 void UGameMenuWidget::OnSaveClicked() { OpenScreen(EPokedexMenu::Save); }
 void UGameMenuWidget::OnOptionsClicked() { OpenScreen(EPokedexMenu::Options); }
+void UGameMenuWidget::OnMapClicked() { OpenScreen(EPokedexMenu::Map); }
+void UGameMenuWidget::OnOnlineClicked() { OpenScreen(EPokedexMenu::Online); }
 
 void UGameMenuWidget::OpenScreen(EPokedexMenu Menu)
 {

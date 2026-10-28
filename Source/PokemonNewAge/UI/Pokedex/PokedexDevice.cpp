@@ -18,28 +18,39 @@
 
 namespace PokedexDevice
 {
-	/** Pièces du boîtier (accrochées à ModelRoot) et du volet (accrochées à la charnière) */
-	const TCHAR* BodyParts[] = { TEXT("Body"), TEXT("TopBand"), TEXT("Bezel"), TEXT("LensRing"), TEXT("Lens"), TEXT("LedRed"),
-		TEXT("LedYellow"), TEXT("LedGreen"), TEXT("ButtonRound"), TEXT("PillRed"), TEXT("PillBlue"), TEXT("DPad"), TEXT("Panel"), TEXT("Hinge") };
-	const TCHAR* LidParts[] = { TEXT("Lid"), TEXT("LidPanel") };
+	/** Pièces du boîtier (accrochées à ModelRoot) et du volet (accrochées à la charnière), voir prepare_pokedex_model.py */
+	const TCHAR* BodyParts[] = { TEXT("Body"), TEXT("Hinge"), TEXT("Lens"), TEXT("LensRing"), TEXT("LedRed"), TEXT("LedYellow"),
+		TEXT("LedGreen"), TEXT("ScreenLeds"), TEXT("Screen"), TEXT("MiniScreen0"), TEXT("BackButton"), TEXT("ConfirmButton"),
+		TEXT("HomeButton"), TEXT("DexButton"), TEXT("DPad") };
+	const TCHAR* LidParts[] = { TEXT("Lid"), TEXT("LidScreen"), TEXT("MiniScreen1"), TEXT("MiniScreen2"), TEXT("LidLeds"),
+		TEXT("PrevButton"), TEXT("NextButton"), TEXT("LidButton") };
 
-	/** Centre de l'écran dans le repère de la charnière (cm), voir make_pokedex_model.py */
-	const FVector ScreenLocation(0.70f, -6.4f, 1.2f);
-	/** Décalage du boîtier fermé pour qu'il reste au centre de l'écran */
-	constexpr float ClosedSlide = 6.4f;
-	/** Demi-largeur et demi-hauteur de l'appareil ouvert (cm) */
-	constexpr float HalfWidth = 12.6f;
-	constexpr float HalfHeight = 8.4f;
+	/** Boutons qui s'enfoncent */
+	const TCHAR* PushButtons[] = { TEXT("BackButton"), TEXT("ConfirmButton"), TEXT("HomeButton"), TEXT("DexButton"), TEXT("DPad"),
+		TEXT("Lens"), TEXT("PrevButton"), TEXT("NextButton"), TEXT("LidButton") };
 
-	/** Couleur du liseré et de l'étiquette des 6 boutons, comme sur l'image de référence */
-	const FLinearColor MenuColors[] = {
-		FLinearColor(0.25f, 0.55f, 1.f),   // Pokémon : bleu
-		FLinearColor(1.f, 0.2f, 0.25f),    // Pokédex : rouge
-		FLinearColor(0.2f, 0.8f, 1.f),     // Sac : cyan
-		FLinearColor(1.f, 0.8f, 0.15f),    // Dresseur : jaune
-		FLinearColor(0.9f, 0.25f, 1.f),    // Sauvegarder : magenta
-		FLinearColor(0.2f, 0.95f, 0.45f),  // Options : vert
-	};
+	/** Pièces sur lesquelles on ne clique pas (on les attrape pour tourner l'appareil) */
+	const TCHAR* GripParts[] = { TEXT("Body"), TEXT("Lid"), TEXT("LidScreen"), TEXT("MiniScreen0"), TEXT("MiniScreen1"), TEXT("MiniScreen2") };
+
+	/** Couleur des boutons du volet (sous les icônes), allumés quand on les choisit */
+	const FLinearColor TileColor(0.62f, 0.86f, 0.93f);
+	const FLinearColor TileGlow(0.35f, 0.85f, 1.f);
+
+	/** Petit écart devant une face pour que l'interface ne se mélange pas à la vitre (cm) */
+	constexpr float PanelGap = 0.015f;
+
+	template <size_t N>
+	bool IsIn(FName Key, const TCHAR* const (&List)[N])
+	{
+		for (const TCHAR* Name : List)
+		{
+			if (Key == Name)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 
 	float EaseOutCubic(float T) { T = FMath::Clamp(T, 0.f, 1.f); return 1.f - FMath::Pow(1.f - T, 3.f); }
 	float EaseOutBack(float T)
@@ -71,14 +82,13 @@ APokedexDevice::APokedexDevice()
 	Hinge = CreateDefaultSubobject<USceneComponent>(TEXT("HingeAxis"));
 	Hinge->SetupAttachment(ModelRoot);
 
-	// Écran : un widget de 680 × 640 px posé sur le cadre noir (1 px = 0,1 mm)
+	// Grand écran : l'interface des menus (960 × 648 px), posée sur la vitre de la pièce Screen à l'initialisation
 	ScreenComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("Screen"));
 	ScreenComponent->SetupAttachment(ModelRoot);
 	ScreenComponent->SetWidgetSpace(EWidgetSpace::World);
 	ScreenComponent->SetDrawSize(FVector2D(UPokedexScreenWidget::ScreenWidth, UPokedexScreenWidget::ScreenHeight));
-	ScreenComponent->SetRelativeLocation(ScreenLocation);
 	ScreenComponent->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
-	ScreenComponent->SetRelativeScale3D(FVector(0.01f));
+	ScreenComponent->SetRelativeScale3D(FVector(1.f / UPokedexPanelWidget::PixelsPerCm));
 	ScreenComponent->SetBlendMode(EWidgetBlendMode::Opaque);
 	ScreenComponent->SetTickWhenOffscreen(true);
 	ScreenComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -123,7 +133,7 @@ APokedexDevice::APokedexDevice()
 	PostProcess->Priority = 50.f;
 	PostProcess->BlendWeight = 0.f;
 
-	ModelAsset = TSoftObjectPtr<UPokedexModel>(FSoftObjectPath(TEXT("/Game/UI/Pokedex/DA_PokedexModel.DA_PokedexModel")));
+	ModelAsset = TSoftObjectPtr<UPokedexModel>(FSoftObjectPath(UPokedexModel::AssetPath));
 }
 
 // ---------------------------------------------------------------- Construction
@@ -151,13 +161,15 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 		MenuButtons.Add(AddPart(*FString::Printf(TEXT("MenuButton%d"), Index), Hinge));
 	}
 	FixImportAxes();
+	MenuGlows.SetNum(MenuCount);
 	for (const TPair<FName, TObjectPtr<UStaticMeshComponent>>& Pair : Parts)
 	{
 		ApplyMaterials(Pair.Value, Pair.Key);
 	}
+	MeasureModel();
 
 	// Pièces qui s'enfoncent
-	for (const TCHAR* Key : { TEXT("ButtonRound"), TEXT("PillRed"), TEXT("PillBlue"), TEXT("DPad"), TEXT("Lens") })
+	for (const TCHAR* Key : PushButtons)
 	{
 		if (UStaticMeshComponent* Part = Parts.FindRef(Key))
 		{
@@ -172,14 +184,24 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 		}
 	}
 
-	// Écran
+	// Grand écran
 	Screen = CreateWidget<UPokedexScreenWidget>(InController, UPokedexScreenWidget::StaticClass());
 	Screen->OnFeedback.AddUObject(this, &APokedexDevice::OnScreenFeedback);
 	ScreenComponent->SetOwnerPlayer(InController->GetLocalPlayer());
 	ScreenComponent->SetWidget(Screen);
 	ScreenComponent->SetTintColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.f));
+	FVector ScreenCenter;
+	FVector2D ScreenSize;
+	if (GetPartFace(TEXT("Screen"), ScreenCenter, ScreenSize))
+	{
+		// Toute la vitre, à la même échelle en largeur et en hauteur
+		ScreenComponent->SetRelativeLocation(ScreenCenter);
+		const float Scale = FMath::Min(ScreenSize.X / UPokedexScreenWidget::ScreenWidth, ScreenSize.Y / UPokedexScreenWidget::ScreenHeight);
+		ScreenComponent->SetRelativeScale3D(FVector(Scale));
+	}
+	Panels.Add(ScreenComponent);
 
-	CreateLabels();
+	CreatePanels();
 
 	// Calque qui reçoit la souris et le clavier
 	InputWidget = CreateWidget<UPokedexInputWidget>(InController, UPokedexInputWidget::StaticClass());
@@ -208,7 +230,8 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 
 	// Fermé, sous l'écran
 	Hinge->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
-	ModelRoot->SetRelativeLocation(FVector(0.f, ClosedSlide, 0.f));
+	ModelRoot->SetRelativeLocation(ClosedOffset);
+	UpdatePanels(1.f);
 	UpdateAnimation(0.f);
 	return true;
 }
@@ -239,7 +262,7 @@ UStaticMeshComponent* APokedexDevice::AddPart(FName Key, USceneComponent* Parent
 
 void APokedexDevice::FixImportAxes()
 {
-	// Le modèle est fait en cm, face avant vers -X, boîtier à gauche (Y < 0), objectif en haut (Z > 0).
+	// Le modèle est en cm, face avant vers -X, boîtier à gauche (Y < 0), objectif en haut (Z > 0).
 	// Si l'import a changé l'échelle ou retourné un axe, on corrige ici plutôt que de demander un réglage à la main.
 	const UStaticMesh* BodyMesh = Model->Parts.FindRef(TEXT("Body"));
 	const FBoxSphereBounds Body = BodyMesh->GetBounds();
@@ -252,23 +275,24 @@ void APokedexDevice::FixImportAxes()
 	{
 		Scale = 100.f;
 	}
-	if (Body.BoxExtent.Z < Body.BoxExtent.X || Body.BoxExtent.Z < Body.BoxExtent.Y)
+	if (Body.BoxExtent.Z < Body.BoxExtent.X || Body.BoxExtent.Z < Body.BoxExtent.Y * 0.8f)
 	{
 		UE_LOG(LogPokemonNewAge, Warning, TEXT("Pokedex 3D : le modele semble couche (axes de l'import FBX), voir docs/MENU_POKEDEX.md"));
 	}
 
+	// L'objectif dépasse devant (X le plus petit), à gauche (Y < 0) et en haut (Z > 0)
 	FVector Mirror(1.f);
-	if (Body.Origin.X < 0.f)
+	const UStaticMesh* LensMesh = Model->Parts.FindRef(TEXT("Lens"));
+	const FVector Lens = LensMesh ? LensMesh->GetBounds().Origin : Body.Origin + FVector(-1.f, -1.f, 1.f);
+	if (Lens.X > Body.Origin.X)
 	{
 		Mirror.X = -1.f;
 	}
-	const UStaticMesh* RingMesh = Model->Parts.FindRef(TEXT("LensRing"));
-	const FVector Ring = RingMesh ? RingMesh->GetBounds().Origin : Body.Origin + FVector(0.f, 0.f, 1.f);
-	if ((RingMesh ? Ring.Y : Body.Origin.Y) > 0.f)
+	if (Lens.Y > 0.f)
 	{
 		Mirror.Y = -1.f;
 	}
-	if (RingMesh && Ring.Z < 0.f)
+	if (Lens.Z < 0.f)
 	{
 		Mirror.Z = -1.f;
 	}
@@ -282,136 +306,180 @@ void APokedexDevice::FixImportAxes()
 	}
 }
 
+void APokedexDevice::MeasureModel()
+{
+	// Volet ouvert à plat : les pièces du volet sont déjà dans le repère de l'appareil (charnière à l'origine)
+	FBox OpenBox(ForceInit);
+	FBox ClosedBox(ForceInit);
+	for (const TPair<FName, TObjectPtr<UStaticMeshComponent>>& Pair : Parts)
+	{
+		const FBox Box = Pair.Value->CalcBounds(Pair.Value->GetRelativeTransform()).GetBox();
+		OpenBox += Box;
+		if (Pair.Value->GetAttachParent() == ModelRoot.Get())
+		{
+			ClosedBox += Box;
+		}
+	}
+	if (!OpenBox.IsValid || !ClosedBox.IsValid)
+	{
+		return;
+	}
+	HalfWidth = OpenBox.GetExtent().Y;
+	HalfHeight = OpenBox.GetExtent().Z;
+	OpenOffset = FVector(0.f, -OpenBox.GetCenter().Y, -OpenBox.GetCenter().Z);
+	ClosedOffset = FVector(0.f, -ClosedBox.GetCenter().Y, -ClosedBox.GetCenter().Z);
+}
+
 void APokedexDevice::ApplyMaterials(UStaticMeshComponent* Part, FName Key)
 {
-	// Rôle de chaque matériau, reconnu dans le nom de l'emplacement (MAT_RedPlastic...)
-	static const FMaterialLook Looks[] = {
-		{ TEXT("RedPlastic"), FLinearColor(0.5f, 0.035f, 0.025f), 0.f, 0.42f, FLinearColor::Black, 0.f },
-		{ TEXT("RedDark"), FLinearColor(0.28f, 0.02f, 0.015f), 0.f, 0.5f, FLinearColor::Black, 0.f },
-		{ TEXT("Black"), FLinearColor(0.012f, 0.012f, 0.014f), 0.f, 0.35f, FLinearColor::Black, 0.f },
-		{ TEXT("Metal"), FLinearColor(0.75f, 0.75f, 0.78f), 1.f, 0.2f, FLinearColor::Black, 0.f },
-		{ TEXT("LensGlass"), FLinearColor(0.03f, 0.12f, 0.45f), 0.f, 0.05f, FLinearColor(0.1f, 0.45f, 1.f), 0.3f },
-		{ TEXT("LedRed"), FLinearColor(0.6f, 0.03f, 0.03f), 0.f, 0.2f, FLinearColor(1.f, 0.05f, 0.04f), 0.3f },
-		{ TEXT("LedYellow"), FLinearColor(0.6f, 0.45f, 0.03f), 0.f, 0.2f, FLinearColor(1.f, 0.75f, 0.1f), 0.3f },
-		{ TEXT("LedGreen"), FLinearColor(0.05f, 0.5f, 0.12f), 0.f, 0.2f, FLinearColor(0.15f, 1.f, 0.3f), 1.f },
-		{ TEXT("PillRed"), FLinearColor(0.75f, 0.06f, 0.2f), 0.f, 0.35f, FLinearColor::Black, 0.f },
-		{ TEXT("PillBlue"), FLinearColor(0.15f, 0.45f, 0.9f), 0.f, 0.35f, FLinearColor::Black, 0.f },
-		{ TEXT("PanelGlass"), FLinearColor(0.4f, 0.35f, 0.85f), 0.f, 0.15f, FLinearColor(0.4f, 0.35f, 0.85f), 0.15f },
-		{ TEXT("Screen"), FLinearColor(0.01f, 0.012f, 0.015f), 0.f, 0.12f, FLinearColor::Black, 0.f },
-		{ TEXT("ButtonPlate"), FLinearColor(0.02f, 0.022f, 0.026f), 0.f, 0.3f, FLinearColor::Black, 0.f },
-		{ TEXT("Glow"), FLinearColor(0.2f, 0.4f, 0.8f), 0.f, 0.3f, FLinearColor(0.3f, 0.6f, 1.f), 1.5f },
-	};
-
+	// Le modèle garde ses textures (MI_Pokedex_* posés par le script d'import) : on en fait des copies animables.
+	// Les 10 boutons du volet prennent le matériau uni (M_Pokedex) : leurs icônes sont dessinées par-dessus.
 	const int32 MenuIndex = MenuButtons.IndexOfByKey(Part);
 	TArray<TWeakObjectPtr<UMaterialInstanceDynamic>>& Materials = PartMaterials.FindOrAdd(Part);
-	const TArray<FName> SlotNames = Part->GetMaterialSlotNames();
 
 	for (int32 Slot = 0; Slot < Part->GetNumMaterials(); ++Slot)
 	{
-		const FString SlotName = SlotNames.IsValidIndex(Slot) ? SlotNames[Slot].ToString() : FString();
-		const FString ImportedName = Part->GetMaterial(Slot) ? Part->GetMaterial(Slot)->GetName() : FString();
-		const FMaterialLook* Look = nullptr;
-		for (const FMaterialLook& Candidate : Looks)
+		UMaterialInterface* Parent = (MenuIndex >= 0 && Model->Material) ? Model->Material.Get() : Part->GetMaterial(Slot);
+		if (!Parent)
 		{
-			if (SlotName.Contains(Candidate.Token) || ImportedName.Contains(Candidate.Token))
-			{
-				Look = &Candidate;
-				break;
-			}
+			Parent = Model->Material;
 		}
-
-		UMaterialInterface* Parent = Model->Material ? Model->Material.Get() : Part->GetMaterial(Slot);
 		UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(Parent, this);
 		if (!Material)
 		{
 			continue;
 		}
-		if (Look)
+		if (MenuIndex >= 0)
 		{
-			const bool bGlow = FCString::Strcmp(Look->Token, TEXT("Glow")) == 0;
-			const FLinearColor Emissive = (bGlow && MenuIndex >= 0) ? MenuColors[MenuIndex] : Look->Emissive;
-			Material->SetVectorParameterValue(TEXT("BaseColor"), bGlow && MenuIndex >= 0 ? Emissive * 0.3f : Look->BaseColor);
-			Material->SetScalarParameterValue(TEXT("Metallic"), Look->Metallic);
-			Material->SetScalarParameterValue(TEXT("Roughness"), Look->Roughness);
-			Material->SetVectorParameterValue(TEXT("EmissiveColor"), Emissive);
-			Material->SetScalarParameterValue(TEXT("EmissiveStrength"), Look->EmissiveStrength);
-
-			if (bGlow && MenuIndex >= 0)
+			Material->SetVectorParameterValue(TEXT("BaseColor"), TileColor);
+			Material->SetScalarParameterValue(TEXT("Metallic"), 0.f);
+			Material->SetScalarParameterValue(TEXT("Roughness"), 0.3f);
+			Material->SetVectorParameterValue(TEXT("EmissiveColor"), TileGlow);
+			Material->SetScalarParameterValue(TEXT("EmissiveStrength"), 0.f);
+			MenuGlows[MenuIndex] = Material;
+		}
+		else
+		{
+			// Voyants : leur couleur s'ajoute à la texture quand ils s'allument
+			const TPair<const TCHAR*, FLinearColor> Leds[] = {
+				{ TEXT("LedRed"), FLinearColor(1.f, 0.05f, 0.04f) },
+				{ TEXT("LedYellow"), FLinearColor(1.f, 0.75f, 0.1f) },
+				{ TEXT("LedGreen"), FLinearColor(0.15f, 1.f, 0.3f) },
+				{ TEXT("Lens"), FLinearColor(0.1f, 0.45f, 1.f) },
+				{ TEXT("ScreenLeds"), FLinearColor(1.f, 0.08f, 0.06f) },
+				{ TEXT("LidLeds"), FLinearColor(0.1f, 1.f, 0.75f) },
+			};
+			for (const TPair<const TCHAR*, FLinearColor>& Led : Leds)
 			{
-				MenuGlows.SetNum(MenuCount);
-				MenuGlows[MenuIndex] = Material;
+				if (Key == Led.Key)
+				{
+					Material->SetVectorParameterValue(TEXT("EmissiveColor"), Led.Value);
+					Material->SetScalarParameterValue(TEXT("EmissiveStrength"), 0.f);
+				}
 			}
-			else if (Key == TEXT("Lens"))
-			{
-				LensMaterial = Material;
-			}
-			else if (Key == TEXT("LedRed"))
-			{
-				LedRedMaterial = Material;
-			}
-			else if (Key == TEXT("LedYellow"))
-			{
-				LedYellowMaterial = Material;
-			}
-			else if (Key == TEXT("LedGreen"))
-			{
-				LedGreenMaterial = Material;
-			}
+			if (Key == TEXT("Lens"))           { LensMaterial = Material; }
+			else if (Key == TEXT("LedRed"))     { LedRedMaterial = Material; }
+			else if (Key == TEXT("LedYellow"))  { LedYellowMaterial = Material; }
+			else if (Key == TEXT("LedGreen"))   { LedGreenMaterial = Material; }
+			else if (Key == TEXT("ScreenLeds")) { ScreenLedsMaterial = Material; }
+			else if (Key == TEXT("LidLeds"))    { LidLedsMaterial = Material; }
 		}
 		Part->SetMaterial(Slot, Material);
 		Materials.Add(Material);
 	}
 }
 
-void APokedexDevice::CreateLabels()
+bool APokedexDevice::GetPartFace(FName PartKey, FVector& OutCenter, FVector2D& OutSize) const
 {
-	const APokemonPlayerState* State = Controller.IsValid() ? Controller->GetPlayerState<APokemonPlayerState>() : nullptr;
-	const FText Names[MenuCount] = {
-		LOCTEXT("Pokemon", "POKÉMON"),
-		LOCTEXT("Pokedex", "POKÉDEX"),
-		LOCTEXT("Bag", "SAC"),
-		State && !State->GetPlayerName().IsEmpty() ? FText::FromString(State->GetPlayerName().ToUpper()) : LOCTEXT("Trainer", "DRESSEUR"),
-		LOCTEXT("Save", "SAUVEGARDE"),
-		LOCTEXT("Options", "OPTIONS"),
-	};
+	const UStaticMeshComponent* Part = Parts.FindRef(PartKey);
+	if (!Part)
+	{
+		return false;
+	}
+	// Repère du parent (boîtier ou charnière) : la face avant regarde vers -X
+	const FBoxSphereBounds Bounds = Part->CalcBounds(Part->GetRelativeTransform());
+	OutCenter = FVector(Bounds.Origin.X - Bounds.BoxExtent.X - PanelGap, Bounds.Origin.Y, Bounds.Origin.Z);
+	OutSize = FVector2D(Bounds.BoxExtent.Y * 2.f, Bounds.BoxExtent.Z * 2.f);
+	return OutSize.X > 0.1f && OutSize.Y > 0.1f;
+}
 
+UWidgetComponent* APokedexDevice::AddPanel(FName PartKey, UUserWidget* Widget, FVector2D PixelSize, bool bOpaque)
+{
+	UStaticMeshComponent* Part = Parts.FindRef(PartKey);
+	FVector Center;
+	FVector2D Size;
+	if (!Part || !Widget || !GetPartFace(PartKey, Center, Size))
+	{
+		return nullptr;
+	}
+	UWidgetComponent* Panel = NewObject<UWidgetComponent>(this, FName(*(TEXT("Panel_") + PartKey.ToString())));
+	Panel->SetupAttachment(Part->GetAttachParent());
+	Panel->SetWidgetSpace(EWidgetSpace::World);
+	Panel->SetDrawSize(PixelSize);
+	Panel->SetRelativeLocation(Center);
+	Panel->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
+	Panel->SetRelativeScale3D(FVector(1.f / UPokedexPanelWidget::PixelsPerCm));
+	Panel->SetBlendMode(bOpaque ? EWidgetBlendMode::Opaque : EWidgetBlendMode::Transparent);
+	Panel->SetBackgroundColor(bOpaque ? FLinearColor::Black : FLinearColor::Transparent);
+	Panel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Panel->SetTickWhenOffscreen(true);
+	Panel->PrimaryComponentTick.bTickEvenWhenPaused = true;
+	Panel->RegisterComponent();
+	Panel->SetOwnerPlayer(Controller->GetLocalPlayer());
+	Panel->SetWidget(Widget);
+	Panel->SetTintColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.f));
+	AddInstanceComponent(Panel);
+	Panels.Add(Panel);
+	return Panel;
+}
+
+void APokedexDevice::CreatePanels()
+{
+	APlayerController* PC = Controller.Get();
+	FVector Center;
+	FVector2D Size;
+
+	// Écran du haut du volet
+	if (GetPartFace(TEXT("LidScreen"), Center, Size))
+	{
+		InfoWidget = CreateWidget<UPokedexInfoWidget>(PC, UPokedexInfoWidget::StaticClass());
+		InfoWidget->SetPixelSize(Size * UPokedexPanelWidget::PixelsPerCm);
+		AddPanel(TEXT("LidScreen"), InfoWidget, InfoWidget->GetPixelSize(), true);
+	}
+
+	// Les 3 petits écrans
+	for (int32 Index = 0; Index < 3; ++Index)
+	{
+		const FName Key(*FString::Printf(TEXT("MiniScreen%d"), Index));
+		UPokedexMiniWidget* Mini = nullptr;
+		if (GetPartFace(Key, Center, Size))
+		{
+			Mini = CreateWidget<UPokedexMiniWidget>(PC, UPokedexMiniWidget::StaticClass());
+			Mini->SetPixelSize(Size * UPokedexPanelWidget::PixelsPerCm);
+			AddPanel(Key, Mini, Mini->GetPixelSize(), true);
+		}
+		MiniWidgets.Add(Mini);
+	}
+
+	// Icônes des 10 boutons du volet (planche d'icônes de L'amie)
 	for (int32 Index = 0; Index < MenuCount; ++Index)
 	{
-		UStaticMeshComponent* Button = MenuButtons.IsValidIndex(Index) ? MenuButtons[Index].Get() : nullptr;
-		if (!Button)
+		const FName Key(*FString::Printf(TEXT("MenuButton%d"), Index));
+		UPokedexIconWidget* Icon = nullptr;
+		UWidgetComponent* Panel = nullptr;
+		if (GetPartFace(Key, Center, Size))
 		{
-			MenuLabels.Add(nullptr);
-			MenuLabelWidgets.Add(nullptr);
-			continue;
+			Icon = CreateWidget<UPokedexIconWidget>(PC, UPokedexIconWidget::StaticClass());
+			Icon->SetPixelSize(Size * UPokedexPanelWidget::PixelsPerCm);
+			Icon->SetIcon(Model->MenuIcons.IsValidIndex(Index) ? Model->MenuIcons[Index].Get() : nullptr);
+			Panel = AddPanel(Key, Icon, Icon->GetPixelSize(), false);
+			if (Panel)
+			{
+				Pressables.Add({ Panel, Panel->GetRelativeLocation(), -1.f });
+			}
 		}
-
-		// Devant la plaque du bouton, dans le repère de la charnière
-		const FBoxSphereBounds Bounds = Button->CalcBounds(Button->GetRelativeTransform());
-		const FVector Location(Bounds.Origin.X - Bounds.BoxExtent.X - 0.03f, Bounds.Origin.Y, Bounds.Origin.Z - 0.12f);
-
-		UPokedexLabelWidget* LabelWidget = CreateWidget<UPokedexLabelWidget>(Controller.Get(), UPokedexLabelWidget::StaticClass());
-		LabelWidget->SetLabel(Names[Index], MenuColors[Index]);
-
-		UWidgetComponent* Label = NewObject<UWidgetComponent>(this, FName(*FString::Printf(TEXT("Label%d"), Index)));
-		Label->SetupAttachment(Hinge);
-		Label->SetWidgetSpace(EWidgetSpace::World);
-		Label->SetDrawSize(FVector2D(UPokedexLabelWidget::Width, UPokedexLabelWidget::Height));
-		Label->SetRelativeLocation(Location);
-		Label->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
-		Label->SetRelativeScale3D(FVector(0.01f));
-		Label->SetBlendMode(EWidgetBlendMode::Transparent);
-		Label->SetBackgroundColor(FLinearColor::Transparent);
-		Label->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		Label->SetTickWhenOffscreen(true);
-		Label->PrimaryComponentTick.bTickEvenWhenPaused = true;
-		Label->RegisterComponent();
-		Label->SetOwnerPlayer(Controller->GetLocalPlayer());
-		Label->SetWidget(LabelWidget);
-		AddInstanceComponent(Label);
-
-		MenuLabels.Add(Label);
-		MenuLabelWidgets.Add(LabelWidget);
-		Pressables.Add({ Label, Label->GetRelativeLocation(), -1.f });
+		MenuIcons.Add(Panel);
+		MenuIconWidgets.Add(Icon);
 	}
 }
 
@@ -487,6 +555,7 @@ void APokedexDevice::Tick(float DeltaSeconds)
 	if (!IsActorBeingDestroyed())
 	{
 		UpdateLights(DeltaSeconds);
+		UpdatePanels(DeltaSeconds);
 	}
 }
 
@@ -517,7 +586,7 @@ void APokedexDevice::UpdateAnimation(float DeltaSeconds)
 	const float LidT = FMath::Clamp((OpenAlpha - 0.3f) / 0.7f, 0.f, 1.f);
 	const float LidOpen = bClosing ? FMath::SmoothStep(0.f, 1.f, LidT) : EaseOutBack(LidT);
 	Hinge->SetRelativeRotation(FRotator(0.f, FMath::Lerp(180.f, OpenLidYaw, LidOpen), 0.f));
-	ModelRoot->SetRelativeLocation(FVector(0.f, FMath::Lerp(ClosedSlide, 0.f, FMath::SmoothStep(0.f, 1.f, LidT)), 0.f));
+	ModelRoot->SetRelativeLocation(FMath::Lerp(ClosedOffset, OpenOffset, FMath::SmoothStep(0.f, 1.f, LidT)));
 
 	// Rotation par le joueur : libre pendant qu'on le tient, retour en douceur ensuite
 	UserYaw += StickYaw * 140.f * DeltaSeconds;
@@ -556,8 +625,15 @@ void APokedexDevice::UpdateAnimation(float DeltaSeconds)
 		Component->SetRelativeLocation(Press.BaseLocation + FVector(PressDepth * FMath::Clamp(Depth, 0.f, 1.f), 0.f, 0.f));
 	}
 
-	// Écran qui s'allume, flou du décor (on l'enlève quand on tourne l'appareil, sinon ses bords seraient flous)
-	ScreenComponent->SetTintColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, FMath::Clamp((OpenAlpha - 0.65f) / 0.3f, 0.f, 1.f)));
+	// Écrans qui s'allument, flou du décor (on l'enlève quand on tourne l'appareil, sinon ses bords seraient flous)
+	const FLinearColor PanelTint(1.f, 1.f, 1.f, FMath::Clamp((OpenAlpha - 0.65f) / 0.3f, 0.f, 1.f));
+	for (UWidgetComponent* Panel : Panels)
+	{
+		if (Panel)
+		{
+			Panel->SetTintColorAndOpacity(PanelTint);
+		}
+	}
 	const float Turned = FMath::Clamp(FMath::Max(FMath::Abs(FRotator::NormalizeAxis(UserYaw)), FMath::Abs(FRotator::NormalizeAxis(UserPitch))) / 25.f, 0.f, 1.f);
 	PostProcess->BlendWeight = OpenAlpha * (1.f - Turned);
 	PostProcess->Settings.DepthOfFieldFocalDistance = Distance;
@@ -582,29 +658,94 @@ void APokedexDevice::UpdateLights(float DeltaSeconds)
 	{
 		LensMaterial->SetScalarParameterValue(TEXT("EmissiveStrength"), 0.3f + 8.f * Flash(Time, LensFlash, 4.f));
 	}
+	if (ScreenLedsMaterial)
+	{
+		// Clignotent quand l'écran change de page
+		ScreenLedsMaterial->SetScalarParameterValue(TEXT("EmissiveStrength"), OpenAlpha * (0.4f + 8.f * Flash(Time, ScreenFlash, 8.f)));
+	}
 
-	for (int32 Index = 0; Index < MenuGlows.Num(); ++Index)
+	float LastMenuFlash = -10.f;
+	for (int32 Index = 0; Index < MenuCount; ++Index)
 	{
 		const bool bSelected = Index == LidSelection;
 		const bool bHover = Hovered.IsValid() && MenuButtons.IsValidIndex(Index) && Hovered.Get() == MenuButtons[Index].Get();
-		float Strength = 1.2f;
+		float Strength = 0.f;
 		if (bSelected && bLidFocus)
 		{
-			Strength = 5.f + 2.f * FMath::Sin(Time * 6.f);
+			Strength = 0.6f + 0.3f * FMath::Sin(Time * 6.f);
 		}
 		else if (bSelected || bHover)
 		{
-			Strength = 4.f;
+			Strength = 0.4f;
 		}
-		Strength += 14.f * Flash(Time, MenuFlash[Index], 6.f);
-		if (MenuGlows[Index])
+		Strength += 3.f * Flash(Time, MenuFlash[Index], 6.f);
+		LastMenuFlash = FMath::Max(LastMenuFlash, MenuFlash[Index]);
+		if (MenuGlows.IsValidIndex(Index) && MenuGlows[Index])
 		{
 			MenuGlows[Index]->SetScalarParameterValue(TEXT("EmissiveStrength"), Strength * OpenAlpha);
 		}
-		if (MenuLabelWidgets.IsValidIndex(Index) && MenuLabelWidgets[Index])
+		if (MenuIconWidgets.IsValidIndex(Index) && MenuIconWidgets[Index])
 		{
-			MenuLabelWidgets[Index]->SetHighlighted(bSelected || bHover);
+			MenuIconWidgets[Index]->SetHighlighted(bSelected || bHover, bSelected && bLidFocus);
 		}
+	}
+	if (LidLedsMaterial)
+	{
+		// Respirent tant que le volet attend un choix, s'allument quand on appuie sur un bouton du volet
+		LidLedsMaterial->SetScalarParameterValue(TEXT("EmissiveStrength"),
+			OpenAlpha * ((bLidFocus ? 1.5f + FMath::Sin(Time * 3.f) : 0.5f) + 8.f * Flash(Time, LastMenuFlash, 5.f)));
+	}
+}
+
+void APokedexDevice::UpdatePanels(float DeltaSeconds)
+{
+	PanelTimer -= DeltaSeconds;
+	if (PanelTimer > 0.f || !Screen)
+	{
+		return;
+	}
+	PanelTimer = 0.2f;
+
+	// Écran du volet : le bouton choisi tant qu'on est sur le volet, sinon ce qui est choisi dans l'écran
+	if (InfoWidget)
+	{
+		FText Title, Text;
+		int32 MenuIndex = LidSelection;
+		for (int32 Index = 0; Index < MenuButtons.Num(); ++Index)
+		{
+			if (Hovered.IsValid() && Hovered.Get() == MenuButtons[Index].Get())
+			{
+				MenuIndex = Index;
+			}
+		}
+		if (bLidFocus || Screen->IsAtHome() || MenuIndex != LidSelection)
+		{
+			Title = UPokedexScreenWidget::GetMenuName(EPokedexMenu(MenuIndex));
+			Text = UPokedexScreenWidget::GetMenuDescription(EPokedexMenu(MenuIndex));
+		}
+		else
+		{
+			Screen->GetInfo(Title, Text);
+		}
+		InfoWidget->SetInfo(Title, Text);
+	}
+
+	// Petits écrans
+	const APokemonPlayerState* State = Controller.IsValid() ? Controller->GetPlayerState<APokemonPlayerState>() : nullptr;
+	if (MiniWidgets.IsValidIndex(0) && MiniWidgets[0])
+	{
+		MiniWidgets[0]->SetValues(FText::FromString(FDateTime::Now().ToString(TEXT("%H:%M"))),
+			State ? FText::Format(LOCTEXT("MiniMoney", "{0} P$"), FText::AsNumber(State->Money)) : FText::GetEmpty());
+	}
+	if (MiniWidgets.IsValidIndex(1) && MiniWidgets[1])
+	{
+		MiniWidgets[1]->SetValues(State ? FText::FromString(FString::Printf(TEXT("%d / %d"), State->PokedexCaught.Num(), State->PokedexSeen.Num())) : FText::GetEmpty(),
+			LOCTEXT("MiniDex", "CAPTURÉS / VUS"));
+	}
+	if (MiniWidgets.IsValidIndex(2) && MiniWidgets[2])
+	{
+		MiniWidgets[2]->SetValues(State ? FText::FromString(FString::Printf(TEXT("%d / 8"), State->Badges.Num())) : FText::GetEmpty(),
+			LOCTEXT("MiniBadges", "BADGES"));
 	}
 }
 
@@ -691,7 +832,7 @@ void APokedexDevice::HandlePointerDown(const FKey& Button, const FVector2D& Pixe
 
 	const FName Key = GetPartKey(Hit.GetComponent());
 	const FString KeyString = Key.ToString();
-	if (Key == TEXT("Screen"))
+	if (Key == TEXT("Screen") && Hit.GetComponent() == ScreenComponent.Get())
 	{
 		bLidFocus = false;
 		ScreenInteraction->SetCustomHitResult(Hit);
@@ -706,44 +847,50 @@ void APokedexDevice::HandlePointerDown(const FKey& Button, const FVector2D& Pixe
 	{
 		ClickDPad(Hit.ImpactPoint);
 	}
-	else if (Key == TEXT("ButtonRound"))
+	else if (Key == TEXT("ConfirmButton") || Key == TEXT("LidButton"))
 	{
 		PressPart(Hit.GetComponent());
 		HandleKey(EKeys::Enter);
 	}
-	else if (Key == TEXT("PillRed"))
+	else if (Key == TEXT("BackButton"))
 	{
 		PressPart(Hit.GetComponent());
 		HandleKey(EKeys::Escape);
 	}
-	else if (Key == TEXT("PillBlue"))
+	else if (Key == TEXT("HomeButton"))
 	{
 		PressPart(Hit.GetComponent());
 		PlaySound(Model ? Model->ClickSound : nullptr);
 		FocusLid();
 	}
-	else if (Key == TEXT("Lens") || Key == TEXT("LensRing"))
+	else if (Key == TEXT("PrevButton") || Key == TEXT("NextButton"))
+	{
+		PressPart(Hit.GetComponent());
+		CycleMenu(Key == TEXT("NextButton") ? 1 : -1);
+	}
+	else if (Key == TEXT("DexButton") || Key == TEXT("Lens") || Key == TEXT("LensRing"))
 	{
 		// L'objectif « scanne » : il s'allume et ouvre le Pokédex
-		PressPart(Parts.FindRef(TEXT("Lens")));
+		PressPart(Key == TEXT("DexButton") ? Hit.GetComponent() : Parts.FindRef(TEXT("Lens")));
 		LensFlash = Time;
 		PressMenuButton(int32(EPokedexMenu::Pokedex));
 	}
-	else if (Key == TEXT("LedRed") || Key == TEXT("LedYellow") || Key == TEXT("LedGreen"))
+	else if (Key == TEXT("LedRed") || Key == TEXT("LedYellow") || Key == TEXT("LedGreen") || Key == TEXT("ScreenLeds") || Key == TEXT("LidLeds"))
 	{
 		LedRedFlash = Time;
 		LedYellowFlash = Time + 0.12f;
 		LensFlash = Time + 0.24f;
+		ScreenFlash = Time + 0.36f;
 		PlaySound(Model ? Model->BeepSound : nullptr, 1.2f);
 	}
-	else if (Key == TEXT("Lid") || Key == TEXT("LidPanel"))
+	else if (Key == TEXT("Hinge"))
 	{
-		// Toucher le volet le referme
+		// La charnière referme l'appareil
 		Close();
 	}
 	else
 	{
-		// Boîtier : on l'attrape pour le tourner
+		// Boîtier, volet, petits écrans : on l'attrape pour le tourner
 		bDragging = true;
 	}
 }
@@ -804,11 +951,11 @@ void APokedexDevice::SetHovered(UPrimitiveComponent* Component)
 		return;
 	}
 
-	// Surbrillance des petits boutons du boîtier (les boutons du volet, l'objectif et les voyants ont leur propre lumière)
+	// Surbrillance des boutons du boîtier et du volet (les 10 boutons de menu, l'objectif et les voyants ont leur propre lumière)
 	auto Highlight = [this](UPrimitiveComponent* Part, bool bOn)
 	{
 		const FName Key = GetPartKey(Part);
-		if (Key != TEXT("ButtonRound") && Key != TEXT("PillRed") && Key != TEXT("PillBlue") && Key != TEXT("DPad") && Key != TEXT("LensRing"))
+		if (!IsIn(Key, PushButtons) || Key == TEXT("Lens"))
 		{
 			return;
 		}
@@ -834,9 +981,10 @@ void APokedexDevice::SetHovered(UPrimitiveComponent* Component)
 	{
 		Highlight(Component, true);
 	}
+	PanelTimer = 0.f;
 
 	const FName Key = GetPartKey(Component);
-	const bool bClickable = Component && Key != TEXT("Body") && Key != TEXT("TopBand") && Key != TEXT("Bezel") && Key != TEXT("Panel") && Key != TEXT("Hinge");
+	const bool bClickable = Component && !IsIn(Key, GripParts);
 	if (InputWidget)
 	{
 		InputWidget->SetCursor(bClickable ? EMouseCursor::Hand : EMouseCursor::Default);
@@ -909,7 +1057,7 @@ bool APokedexDevice::HandleKey(const FKey& Key)
 	// Gâchettes hautes : bouton du volet précédent / suivant
 	if (Key == EKeys::Gamepad_LeftShoulder || Key == EKeys::Gamepad_RightShoulder)
 	{
-		PressMenuButton((LidSelection + (Key == EKeys::Gamepad_RightShoulder ? 1 : MenuCount - 1)) % MenuCount);
+		CycleMenu(Key == EKeys::Gamepad_RightShoulder ? 1 : -1);
 		return true;
 	}
 
@@ -928,7 +1076,7 @@ bool APokedexDevice::HandleKey(const FKey& Key)
 	}
 	else
 	{
-		PressPart(Parts.FindRef(bConfirm ? TEXT("ButtonRound") : TEXT("PillRed")));
+		PressPart(Parts.FindRef(bConfirm ? TEXT("ConfirmButton") : TEXT("BackButton")));
 	}
 
 	if (bLidFocus)
@@ -989,13 +1137,20 @@ void APokedexDevice::SendToScreen(const FKey& Key)
 
 void APokedexDevice::MoveLidSelection(FIntPoint Direction)
 {
-	// Grille de 2 colonnes × 3 rangées
-	int32 Column = LidSelection % 2;
-	int32 Row = LidSelection / 2;
-	Column = (Column + Direction.X + 2) % 2;
-	Row = (Row + Direction.Y + 3) % 3;
-	LidSelection = Row * 2 + Column;
+	// Grille de 5 colonnes × 2 rangées, comme sur le volet
+	const int32 Rows = MenuCount / MenuColumns;
+	int32 Column = LidSelection % MenuColumns;
+	int32 Row = LidSelection / MenuColumns;
+	Column = (Column + Direction.X + MenuColumns) % MenuColumns;
+	Row = (Row + Direction.Y + Rows) % Rows;
+	LidSelection = Row * MenuColumns + Column;
+	PanelTimer = 0.f;
 	PlayFeedback(EPokedexFeedback::Navigate);
+}
+
+void APokedexDevice::CycleMenu(int32 Step)
+{
+	PressMenuButton((LidSelection + Step + MenuCount) % MenuCount);
 }
 
 void APokedexDevice::PressMenuButton(int32 Index)
@@ -1010,12 +1165,14 @@ void APokedexDevice::PressMenuButton(int32 Index)
 	{
 		PressPart(MenuButtons[Index]);
 	}
-	if (MenuLabels.IsValidIndex(Index))
+	if (MenuIcons.IsValidIndex(Index))
 	{
-		PressPart(MenuLabels[Index]);
+		PressPart(MenuIcons[Index]);
 	}
 	MenuFlash[Index] = Time;
 	LensFlash = Time;
+	ScreenFlash = Time;
+	PanelTimer = 0.f;
 	PlaySound(Model ? Model->ClickSound : nullptr);
 	if (Screen)
 	{
@@ -1060,10 +1217,13 @@ void APokedexDevice::PlayFeedback(EPokedexFeedback Type)
 	{
 	case EPokedexFeedback::Navigate:
 		LedYellowFlash = Time;
+		PanelTimer = 0.f;
 		PlaySound(Model->NavSound);
 		break;
 	case EPokedexFeedback::Confirm:
 		LensFlash = Time;
+		ScreenFlash = Time;
+		PanelTimer = 0.f;
 		PlaySound(Model->BeepSound);
 		break;
 	case EPokedexFeedback::Back:

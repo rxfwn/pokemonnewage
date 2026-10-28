@@ -105,6 +105,13 @@ public:
 	UPROPERTY()
 	float MasterVolume = 1.f;
 
+	/** Musique et bruitages, 0 à 1 (classes de son SC_Music et SC_Effects de Content/Audio) */
+	UPROPERTY()
+	float MusicVolume = 1.f;
+
+	UPROPERTY()
+	float EffectsVolume = 1.f;
+
 	/** Sensibilité de la caméra à la souris, 0,5 à 2 */
 	UPROPERTY()
 	float CameraSensitivity = 1.f;

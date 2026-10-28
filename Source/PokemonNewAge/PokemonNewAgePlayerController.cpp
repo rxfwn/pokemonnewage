@@ -296,6 +296,28 @@ void APokemonNewAgePlayerController::ServerUseFieldItem_Implementation(FName Ite
 	}
 }
 
+void APokemonNewAgePlayerController::ServerGiveHeldItem_Implementation(int32 PartyIndex, FName Item)
+{
+	if (APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>(); State && !BattleComponent->IsInBattle())
+	{
+		// Les objets rares ne se tiennent pas
+		const UPokemonDatabase* Database = UPokemonDataSubsystem::GetDatabase(this);
+		const FItemRow* Row = Database ? Database->FindItem(Item) : nullptr;
+		if (Row && Row->Category != EItemCategory::KeyItem)
+		{
+			State->GiveHeldItem(PartyIndex, Item);
+		}
+	}
+}
+
+void APokemonNewAgePlayerController::ServerTakeHeldItem_Implementation(int32 PartyIndex)
+{
+	if (APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>(); State && !BattleComponent->IsInBattle())
+	{
+		State->TakeHeldItem(PartyIndex);
+	}
+}
+
 void APokemonNewAgePlayerController::ServerLoadSave_Implementation(const FPlayerSaveData& Data)
 {
 	APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>();

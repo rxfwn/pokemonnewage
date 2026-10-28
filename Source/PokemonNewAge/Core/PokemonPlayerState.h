@@ -127,6 +127,14 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Pokemon")
 	bool SwapPartyPokemon(int32 IndexA, int32 IndexB);
 
+	/** Fait tenir un objet du sac (l'ancien objet tenu revient dans le sac). Faux si l'objet manque */
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Pokemon")
+	bool GiveHeldItem(int32 PartyIndex, FName Item);
+
+	/** Reprend l'objet tenu dans le sac */
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Pokemon")
+	bool TakeHeldItem(int32 PartyIndex);
+
 	/** Utilise un objet du sac sur un Pokémon de l'équipe, hors combat. Faux si sans effet (rien n'est retiré) */
 	bool UseItemOnPokemon(const UPokemonDatabase* Database, FName Item, int32 PartyIndex);
 

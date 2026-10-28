@@ -4,18 +4,27 @@
     Outils > Exécuter un script Python (Tools > Execute Python Script)
     -> choisir Tools/Pokedex/import_pokedex_unreal.py
 
+Avant : copier le dossier Generated (fichiers du projet : pokedex/Pokedex_Generated.zip, à dézipper)
+dans Tools/Pokedex/, pour avoir Tools/Pokedex/Generated/Pokedex.fbx et Tools/Pokedex/Generated/textures/.
+Ou bien : mettre Pokedex.blend dans Tools/Pokedex/Source/ avec Blender installé, le script le prépare tout seul.
+
 Ce qu'il fait, tout seul :
   1. cherche Tools/Pokedex/Generated/Pokedex.fbx ; s'il n'y est pas, lance Blender (s'il est installé)
-     avec make_pokedex_model.py pour le créer ;
-  2. importe les pièces dans /Game/UI/Pokedex/Meshes (une Static Mesh par pièce) ;
-  3. crée le matériau M_Pokedex (paramètres BaseColor, Metallic, Roughness, EmissiveColor, EmissiveStrength) ;
-  4. fabrique les sons (make_pokedex_sounds.py) et les importe dans /Game/UI/Pokedex/Sounds ;
-  5. crée ou met à jour DA_PokedexModel, que le Pokédex 3D charge à l'ouverture du menu.
+     avec prepare_pokedex_model.py sur Tools/Pokedex/Source/Pokedex.blend ;
+  2. importe les textures du modèle (Generated/textures) dans /Game/UI/Pokedex/Textures ;
+  3. crée les matériaux : M_PokedexTextured (+ une instance MI_Pokedex_Udim000N par matériau du modèle)
+     et M_Pokedex (uni, pour les 10 boutons du volet sous les icônes) ;
+  4. importe les pièces dans /Game/UI/Pokedex/Meshes (une Static Mesh par pièce) et leur pose les MI_Pokedex_* ;
+  5. importe les 10 icônes et la carte de Kanto (Tools/Pokedex/Assets) dans /Game/UI/Pokedex/Icons et /Map ;
+  6. fabrique les sons (make_pokedex_sounds.py), les importe dans /Game/UI/Pokedex/Sounds, et crée les réglages
+     de volume /Game/Audio/SC_Music, SC_Effects et SM_Options (options Musique et Bruitages) ;
+  7. crée ou met à jour DA_PokedexModel, que le Pokédex 3D charge à l'ouverture du menu.
 Relançable : les assets existants sont remplacés.
 """
 
 import glob
 import importlib.util
+import json
 import os
 import subprocess
 
@@ -24,14 +33,28 @@ import unreal
 CONTENT_DIR = "/Game/UI/Pokedex"
 MESH_DIR = CONTENT_DIR + "/Meshes"
 SOUND_DIR = CONTENT_DIR + "/Sounds"
+TEXTURE_DIR = CONTENT_DIR + "/Textures"
+ICON_DIR = CONTENT_DIR + "/Icons"
+MAP_DIR = CONTENT_DIR + "/Map"
+AUDIO_DIR = "/Game/Audio"
 PROJECT_DIR = unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir())
 TOOLS_DIR = os.path.join(PROJECT_DIR, "Tools", "Pokedex")
 GENERATED_DIR = os.path.join(TOOLS_DIR, "Generated")
 FBX_PATH = os.path.join(GENERATED_DIR, "Pokedex.fbx")
+TEXTURE_FILES_DIR = os.path.join(GENERATED_DIR, "textures")
+BLEND_PATH = os.path.join(TOOLS_DIR, "Source", "Pokedex.blend")
+ASSETS_DIR = os.path.join(TOOLS_DIR, "Assets")
 
-# Pièces attendues par APokedexDevice
-PARTS = ["Body", "TopBand", "Bezel", "LensRing", "Lens", "LedRed", "LedYellow", "LedGreen", "ButtonRound",
-         "PillRed", "PillBlue", "DPad", "Panel", "Hinge", "Lid", "LidPanel"] + ["MenuButton%d" % i for i in range(6)]
+# Pièces attendues par APokedexDevice (découpe de prepare_pokedex_model.py)
+PARTS = ["Body", "Hinge", "Lens", "LensRing", "LedRed", "LedYellow", "LedGreen", "ScreenLeds", "Screen", "MiniScreen0",
+         "BackButton", "ConfirmButton", "HomeButton", "DexButton", "DPad", "Lid", "LidScreen", "MiniScreen1",
+         "MiniScreen2", "LidLeds", "PrevButton", "NextButton", "LidButton"] + ["MenuButton%d" % i for i in range(10)]
+
+# Matériaux du modèle de L'amie (Udim0003 a aussi une carte émissive : voyants, objectif)
+UDIMS = ["Udim0001", "Udim0002", "Udim0003", "Udim0004", "Udim0005"]
+
+# Icônes des 10 boutons, dans l'ordre de EPokedexMenu (C++)
+ICONS = ["Pokemon", "Pokedex", "Bag", "Radio", "Trainer", "Map", "Save", "Online", "Options", "Style"]
 
 # Propriété de DA_PokedexModel -> son
 SOUNDS = {
@@ -58,14 +81,14 @@ def make_fbx():
     if os.path.exists(FBX_PATH):
         return True
     blender = find_blender()
-    if not blender:
+    if not blender or not os.path.exists(BLEND_PATH):
         unreal.log_error(
-            "Pokedex.fbx introuvable. Soit le copier dans Tools/Pokedex/Generated/ (fichiers du projet : pokedex/Pokedex.fbx), "
-            "soit installer Blender puis relancer ce script.")
+            "Pokedex.fbx introuvable. Dézipper pokedex/Pokedex_Generated.zip (fichiers du projet) dans Tools/Pokedex/ "
+            "pour avoir Tools/Pokedex/Generated/Pokedex.fbx, puis relancer ce script.")
         return False
-    unreal.log("Création du modèle avec Blender : " + blender)
-    subprocess.run([blender, "--background", "--python", os.path.join(TOOLS_DIR, "make_pokedex_model.py"), "--", GENERATED_DIR],
-                   check=False)
+    unreal.log("Préparation du modèle avec Blender : " + blender)
+    subprocess.run([blender, "--background", "--python", os.path.join(TOOLS_DIR, "prepare_pokedex_model.py"), "--",
+                    BLEND_PATH, GENERATED_DIR], check=False)
     return os.path.exists(FBX_PATH)
 
 
@@ -82,7 +105,8 @@ def import_files(files, destination):
             options = unreal.FbxImportUI()
             options.set_editor_property("import_mesh", True)
             options.set_editor_property("import_as_skeletal", False)
-            options.set_editor_property("import_materials", True)
+            # Les matériaux sont faits par ce script (MI_Pokedex_*), l'import FBX garde seulement les noms d'emplacements
+            options.set_editor_property("import_materials", False)
             options.set_editor_property("import_textures", False)
             options.set_editor_property("import_animations", False)
             mesh_data = options.get_editor_property("static_mesh_import_data")
@@ -114,31 +138,53 @@ def collect_meshes():
     return meshes
 
 
-def make_material():
-    path = CONTENT_DIR + "/M_Pokedex"
+mel = unreal.MaterialEditingLibrary
+
+
+def _vector(material, name, value, x, y):
+    node = mel.create_material_expression(material, unreal.MaterialExpressionVectorParameter, x, y)
+    node.set_editor_property("parameter_name", name)
+    node.set_editor_property("default_value", unreal.LinearColor(*value))
+    return node
+
+
+def _scalar(material, name, value, x, y):
+    node = mel.create_material_expression(material, unreal.MaterialExpressionScalarParameter, x, y)
+    node.set_editor_property("parameter_name", name)
+    node.set_editor_property("default_value", value)
+    return node
+
+
+def _texture(material, name, sampler, default, x, y):
+    node = mel.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, x, y)
+    node.set_editor_property("parameter_name", name)
+    # Texture par défaut obligatoire (sinon le matériau ne compile pas), du même type que celles des instances
+    if default:
+        node.set_editor_property("texture", default)
+        node.set_editor_property("sampler_type", sampler)
+    else:
+        node.set_editor_property("texture", unreal.load_asset("/Engine/EngineResources/DefaultTexture"))
+    return node
+
+
+def _new_material(name):
+    path = CONTENT_DIR + "/" + name
     if eal.does_asset_exist(path):
+        return path, None
+    return path, asset_tools.create_asset(name, CONTENT_DIR, unreal.Material, unreal.MaterialFactoryNew())
+
+
+def make_material():
+    """M_Pokedex : matériau uni à paramètres (boutons du volet, pièces sans texture)."""
+    path, material = _new_material("M_Pokedex")
+    if material is None:
         return eal.load_asset(path)
 
-    mel = unreal.MaterialEditingLibrary
-    material = asset_tools.create_asset("M_Pokedex", CONTENT_DIR, unreal.Material, unreal.MaterialFactoryNew())
-
-    def vector(name, value, x, y):
-        node = mel.create_material_expression(material, unreal.MaterialExpressionVectorParameter, x, y)
-        node.set_editor_property("parameter_name", name)
-        node.set_editor_property("default_value", unreal.LinearColor(*value))
-        return node
-
-    def scalar(name, value, x, y):
-        node = mel.create_material_expression(material, unreal.MaterialExpressionScalarParameter, x, y)
-        node.set_editor_property("parameter_name", name)
-        node.set_editor_property("default_value", value)
-        return node
-
-    base = vector("BaseColor", (0.5, 0.035, 0.025, 1.0), -500, -300)
-    metallic = scalar("Metallic", 0.0, -500, -100)
-    roughness = scalar("Roughness", 0.45, -500, 0)
-    emissive = vector("EmissiveColor", (0.0, 0.0, 0.0, 1.0), -700, 200)
-    strength = scalar("EmissiveStrength", 0.0, -700, 400)
+    base = _vector(material, "BaseColor", (0.5, 0.035, 0.025, 1.0), -500, -300)
+    metallic = _scalar(material, "Metallic", 0.0, -500, -100)
+    roughness = _scalar(material, "Roughness", 0.45, -500, 0)
+    emissive = _vector(material, "EmissiveColor", (0.0, 0.0, 0.0, 1.0), -700, 200)
+    strength = _scalar(material, "EmissiveStrength", 0.0, -700, 400)
     multiply = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -350, 250)
 
     mel.connect_material_property(base, "", unreal.MaterialProperty.MP_BASE_COLOR)
@@ -150,6 +196,163 @@ def make_material():
     mel.recompile_material(material)
     eal.save_asset(path)
     return material
+
+
+def make_textured_material(textures):
+    """M_PokedexTextured : textures du modèle (couleur, ORM, normales, émissif) + lumière ajoutée par le C++ (voyants)."""
+    path, material = _new_material("M_PokedexTextured")
+    if material is None:
+        return eal.load_asset(path)
+
+    def default(kind):
+        for udim in UDIMS:
+            if kind in textures.get(udim, {}):
+                return textures[udim][kind]
+        return None
+
+    color_map = _texture(material, "BaseColorMap", unreal.MaterialSamplerType.SAMPLERTYPE_COLOR, default("BaseColor"), -900, -400)
+    tint = _vector(material, "Tint", (1.0, 1.0, 1.0, 1.0), -900, -150)
+    tinted = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -600, -300)
+    mel.connect_material_expressions(color_map, "RGB", tinted, "A")
+    mel.connect_material_expressions(tint, "", tinted, "B")
+    mel.connect_material_property(tinted, "", unreal.MaterialProperty.MP_BASE_COLOR)
+
+    # ORM (glTF) : R occlusion, G rugosité, B métal
+    orm = _texture(material, "ORMMap", unreal.MaterialSamplerType.SAMPLERTYPE_MASKS, default("ORM"), -900, 50)
+    mel.connect_material_property(orm, "R", unreal.MaterialProperty.MP_AMBIENT_OCCLUSION)
+    mel.connect_material_property(orm, "G", unreal.MaterialProperty.MP_ROUGHNESS)
+    mel.connect_material_property(orm, "B", unreal.MaterialProperty.MP_METALLIC)
+
+    normal = _texture(material, "NormalMap", unreal.MaterialSamplerType.SAMPLERTYPE_NORMAL, default("Normal"), -900, 350)
+    mel.connect_material_property(normal, "RGB", unreal.MaterialProperty.MP_NORMAL)
+
+    # Émissif = carte émissive × force + couleur × force (les voyants s'allument depuis le C++)
+    emissive_map = _texture(material, "EmissiveMap", unreal.MaterialSamplerType.SAMPLERTYPE_COLOR, default("Emissive"), -900, 650)
+    map_strength = _scalar(material, "EmissiveMapStrength", 1.0, -900, 900)
+    map_emissive = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -600, 700)
+    mel.connect_material_expressions(emissive_map, "RGB", map_emissive, "A")
+    mel.connect_material_expressions(map_strength, "", map_emissive, "B")
+    color = _vector(material, "EmissiveColor", (0.0, 0.0, 0.0, 1.0), -900, 1050)
+    strength = _scalar(material, "EmissiveStrength", 0.0, -900, 1250)
+    color_emissive = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -600, 1100)
+    mel.connect_material_expressions(color, "", color_emissive, "A")
+    mel.connect_material_expressions(strength, "", color_emissive, "B")
+    total = mel.create_material_expression(material, unreal.MaterialExpressionAdd, -350, 850)
+    mel.connect_material_expressions(map_emissive, "", total, "A")
+    mel.connect_material_expressions(color_emissive, "", total, "B")
+    mel.connect_material_property(total, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+
+    mel.recompile_material(material)
+    eal.save_asset(path)
+    return material
+
+
+def import_textures():
+    """Textures du modèle -> {"Udim0001": {"BaseColor": Texture2D, ...}}"""
+    files = sorted(glob.glob(os.path.join(TEXTURE_FILES_DIR, "T_Pokedex_*.png")))
+    if not files:
+        unreal.log_warning("Pas de textures dans Tools/Pokedex/Generated/textures : le Pokédex sera uni.")
+        return {}
+    import_files(files, TEXTURE_DIR)
+    textures = {}
+    for path in files:
+        name = os.path.splitext(os.path.basename(path))[0]      # T_Pokedex_Udim0001_BaseColor
+        udim, kind = name.split("_")[2], name.split("_")[3]
+        texture = eal.load_asset(TEXTURE_DIR + "/" + name)
+        if not texture:
+            continue
+        if kind == "Normal":
+            # Cartes de normales OpenGL (Blender) : on retourne le vert pour Unreal
+            texture.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_NORMALMAP)
+            texture.set_editor_property("srgb", False)
+            texture.set_editor_property("flip_green_channel", True)
+        elif kind == "ORM":
+            texture.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_MASKS)
+            texture.set_editor_property("srgb", False)
+        eal.save_asset(TEXTURE_DIR + "/" + name)
+        textures.setdefault(udim, {})[kind] = texture
+    return textures
+
+
+def make_material_instances(parent, textures):
+    """MI_Pokedex_Udim000N : une instance de M_PokedexTextured par matériau du modèle."""
+    instances = {}
+    for udim in UDIMS:
+        name = "MI_Pokedex_" + udim
+        path = CONTENT_DIR + "/" + name
+        if eal.does_asset_exist(path):
+            instance = eal.load_asset(path)
+        else:
+            instance = asset_tools.create_asset(name, CONTENT_DIR, unreal.MaterialInstanceConstant,
+                                                unreal.MaterialInstanceConstantFactoryNew())
+        mel.set_material_instance_parent(instance, parent)
+        maps = textures.get(udim, {})
+        for kind, parameter in (("BaseColor", "BaseColorMap"), ("ORM", "ORMMap"), ("Normal", "NormalMap"), ("Emissive", "EmissiveMap")):
+            if kind in maps:
+                mel.set_material_instance_texture_parameter_value(instance, parameter, maps[kind])
+        mel.set_material_instance_scalar_parameter_value(instance, "EmissiveMapStrength", 1.0 if "Emissive" in maps else 0.0)
+        eal.save_asset(path)
+        instances[udim] = instance
+    return instances
+
+
+def assign_materials(meshes, instances):
+    """Pose MI_Pokedex_Udim000N sur chaque emplacement « MAT_Udim000N » des pièces."""
+    for mesh in meshes.values():
+        static_materials = mesh.get_editor_property("static_materials")
+        changed = False
+        for index, entry in enumerate(static_materials):
+            slot = str(entry.get_editor_property("material_slot_name"))
+            for udim, instance in instances.items():
+                if udim in slot:
+                    mesh.set_material(index, instance)
+                    changed = True
+        if changed:
+            eal.save_loaded_asset(mesh)
+
+
+def import_ui_textures():
+    """Icônes des boutons et carte de Kanto : textures d'interface (pas de mipmaps, pas de compression)."""
+    icon_files = [os.path.join(ASSETS_DIR, "icons", "T_PokedexIcon_%s.png" % name) for name in ICONS]
+    map_file = os.path.join(ASSETS_DIR, "map", "T_PokedexMap.png")
+    import_files([f for f in icon_files if os.path.exists(f)], ICON_DIR)
+    import_files([map_file], MAP_DIR)
+
+    def as_ui(path):
+        texture = eal.load_asset(path) if eal.does_asset_exist(path) else None
+        if texture:
+            texture.set_editor_property("lod_group", unreal.TextureGroup.TEXTUREGROUP_UI)
+            texture.set_editor_property("mip_gen_settings", unreal.TextureMipGenSettings.TMGS_NO_MIPMAPS)
+            texture.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_EDITOR_ICON)
+            eal.save_asset(path)
+        return texture
+
+    icons = [as_ui(ICON_DIR + "/T_PokedexIcon_" + name) for name in ICONS]
+    map_texture = as_ui(MAP_DIR + "/T_PokedexMap")
+    with open(os.path.join(ASSETS_DIR, "map", "pokedex_map.json"), encoding="utf-8") as handle:
+        map_data = json.load(handle)
+    return icons, map_texture, map_data
+
+
+def make_audio_mix(sounds):
+    """SC_Music, SC_Effects (enfants de la classe Master) et SM_Options : lus par les options Musique et Bruitages."""
+    def load_or_create(name, asset_class, factory):
+        path = AUDIO_DIR + "/" + name
+        if eal.does_asset_exist(path):
+            return eal.load_asset(path)
+        return asset_tools.create_asset(name, AUDIO_DIR, asset_class, factory)
+
+    music = load_or_create("SC_Music", unreal.SoundClass, unreal.SoundClassFactory())
+    effects = load_or_create("SC_Effects", unreal.SoundClass, unreal.SoundClassFactory())
+    mix = load_or_create("SM_Options", unreal.SoundMix, unreal.SoundMixFactory())
+    for asset in (music, effects, mix):
+        eal.save_loaded_asset(asset)
+    # Les sons du Pokédex sont des bruitages
+    for sound in sounds.values():
+        if isinstance(sound, unreal.SoundWave):
+            sound.set_editor_property("sound_class_object", effects)
+            eal.save_loaded_asset(sound)
+    return music is not None and effects is not None and mix is not None
 
 
 def import_sounds():
@@ -172,7 +375,7 @@ def import_sounds():
     return sounds
 
 
-def make_data_asset(meshes, material, sounds):
+def make_data_asset(meshes, material, sounds, icons, map_texture, map_data):
     model_class = unreal.load_class(None, "/Script/PokemonNewAge.PokedexModel")
     if model_class is None:
         unreal.log_error("Classe PokedexModel introuvable : compiler le C++ d'abord.")
@@ -190,6 +393,19 @@ def make_data_asset(meshes, material, sounds):
         parts[unreal.Name(key)] = mesh
     model.set_editor_property("parts", parts)
     model.set_editor_property("material", material)
+    model.set_editor_property("menu_icons", icons)
+    model.set_editor_property("map_texture", map_texture)
+    kinds = {"town": unreal.PokedexPlaceKind.TOWN, "route": unreal.PokedexPlaceKind.ROUTE, "place": unreal.PokedexPlaceKind.PLACE}
+    places = []
+    for entry in map_data.get("places", []):
+        place = unreal.PokedexMapPlace()
+        place.set_editor_property("name", entry["name"])
+        place.set_editor_property("kind", kinds.get(entry["kind"], unreal.PokedexPlaceKind.PLACE))
+        place.set_editor_property("uv", unreal.Vector2D(entry["u"], entry["v"]))
+        place.set_editor_property("radius", entry["radius"])
+        places.append(place)
+    model.set_editor_property("map_places", places)
+    model.set_editor_property("map_heightmap_size", int(map_data.get("heightmap_size", 4033)))
     for prop, sound in sounds.items():
         model.set_editor_property(prop, sound)
     eal.save_asset(path)
@@ -201,23 +417,35 @@ def main():
     if not make_fbx():
         return
 
-    with unreal.ScopedSlowTask(4, "Import du Pokédex 3D") as task:
+    with unreal.ScopedSlowTask(6, "Import du Pokédex 3D") as task:
         task.make_dialog(True)
+        task.enter_progress_frame(1, "Textures")
+        textures = import_textures()
+        task.enter_progress_frame(1, "Matériaux")
+        material = make_material()
+        instances = make_material_instances(make_textured_material(textures), textures)
         task.enter_progress_frame(1, "Pièces 3D")
         import_files([FBX_PATH], MESH_DIR)
         meshes = collect_meshes()
-        task.enter_progress_frame(1, "Matériau")
-        material = make_material()
+        assign_materials(meshes, instances)
+        task.enter_progress_frame(1, "Icônes et carte")
+        icons, map_texture, map_data = import_ui_textures()
         task.enter_progress_frame(1, "Sons")
         sounds = import_sounds()
+        audio_ok = make_audio_mix(sounds)
         task.enter_progress_frame(1, "DA_PokedexModel")
-        model = make_data_asset(meshes, material, sounds)
+        model = make_data_asset(meshes, material, sounds, icons, map_texture, map_data)
 
     missing = [key for key in PARTS if key not in meshes]
     if missing:
         unreal.log_warning("Pièces manquantes : " + ", ".join(missing))
+    if not audio_ok:
+        unreal.log_warning("Réglages de volume (Content/Audio) pas créés : options Musique et Bruitages sans effet.")
     if model:
-        unreal.log("Pokédex 3D prêt : %d pièces sur %d, %d sons. Lancer le jeu et appuyer sur Tab." % (len(meshes), len(PARTS), len(sounds)))
+        unreal.log("Pokédex 3D prêt : %d pièces sur %d, %d textures, %d icônes, %d lieux sur la carte, %d sons. "
+                   "Lancer le jeu et appuyer sur Tab." % (len(meshes), len(PARTS), sum(len(v) for v in textures.values()),
+                                                           len([i for i in icons if i]), len(map_data.get("places", [])),
+                                                           len(sounds)))
 
 
 main()

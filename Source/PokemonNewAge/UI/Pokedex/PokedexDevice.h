@@ -8,8 +8,11 @@
 class APokemonNewAgePlayerController;
 class UMaterialInstanceDynamic;
 class UPointLightComponent;
+class UPokedexIconWidget;
+class UPokedexInfoWidget;
 class UPokedexInputWidget;
-class UPokedexLabelWidget;
+class UPokedexMiniWidget;
+class UPokedexPanelWidget;
 class UPokedexModel;
 class UPostProcessComponent;
 class USoundBase;
@@ -18,17 +21,20 @@ class UWidgetComponent;
 class UWidgetInteractionComponent;
 
 /**
- *  Le Pokédex rouge du menu en jeu (SCRUM-64) : un vrai objet 3D tenu devant la caméra.
+ *  Le Pokédex rouge du menu en jeu (SCRUM-64) : le modèle 3D texturé de L'amie, tenu devant la caméra (sans mains).
  *  - Il sort du bas de l'écran, s'ouvre sur sa charnière, le décor se floute derrière.
- *  - Clic droit maintenu (ou clic gauche dans le vide, ou stick droit) : on le tourne ; il revient en place au relâché.
- *    Molette : plus près / plus loin.
- *  - Clic gauche sur une pièce : les 6 boutons du volet ouvrent les menus, la croix navigue, le bouton rond valide,
- *    le bouton rouge revient en arrière, le bleu revient à l'accueil, l'objectif ouvre le Pokédex, le volet le ferme.
- *    Chaque pièce s'enfonce, clique, et les voyants réagissent. L'écran est cliquable lui aussi.
+ *  - Clic droit maintenu (ou clic gauche sur le boîtier, ou stick droit) : on le tourne ; il revient en place au relâché.
+ *    Molette : plus près / plus loin (sur l'écran : fait défiler la liste).
+ *  - Clic gauche : les 10 boutons du volet ouvrent les menus, < et > passent au menu précédent / suivant, la croix
+ *    navigue, le bouton noir et le bouton jaune du volet valident, le petit bouton rouge revient en arrière,
+ *    la languette jaune revient à l'accueil, la bleue (ou l'objectif) ouvre le Pokédex, la charnière ferme.
+ *    Chaque pièce s'enfonce, clique, et les voyants réagissent. Le grand écran est cliquable lui aussi.
+ *  - Les autres écrans : en haut du volet, le nom et la description de ce qui est choisi ; les 3 petits écrans
+ *    affichent l'heure et l'argent, le Pokédex, les badges.
  *  - Clavier / manette : flèches ou ZQSD pour choisir un bouton du volet puis naviguer dans l'écran,
  *    Entrée/A pour valider, Échap/B pour revenir, Tab/Start pour fermer.
  *  Local au joueur (jamais répliqué) ; le jeu ne se met en pause qu'en solo (SCRUM-68).
- *  Pièces 3D et sons : DA_PokedexModel (Tools/Pokedex/import_pokedex_unreal.py), voir docs/MENU_POKEDEX.md.
+ *  Pièces 3D, textures, icônes et sons : DA_PokedexModel (Tools/Pokedex/import_pokedex_unreal.py), voir docs/MENU_POKEDEX.md.
  */
 UCLASS()
 class APokedexDevice : public AActor
@@ -69,7 +75,7 @@ public:
 
 	/** Angle du volet ouvert (0 = à plat ; un peu tourné vers la caméra comme un livre) */
 	UPROPERTY(EditAnywhere, Category="Pokedex", meta=(Units="Degrees"))
-	float OpenLidYaw = 14.f;
+	float OpenLidYaw = 10.f;
 
 	/** Marge autour de l'appareil ouvert quand on calcule la distance à la caméra (1 = bord à bord) */
 	UPROPERTY(EditAnywhere, Category="Pokedex")
@@ -108,24 +114,20 @@ private:
 		float PressTime = -1.f;
 	};
 
-	/** Couleur d'un rôle de matériau (MAT_RedPlastic...) */
-	struct FMaterialLook
-	{
-		const TCHAR* Token;
-		FLinearColor BaseColor;
-		float Metallic;
-		float Roughness;
-		FLinearColor Emissive;
-		float EmissiveStrength;
-	};
-
 	UStaticMeshComponent* AddPart(FName Key, USceneComponent* Parent);
 	void ApplyMaterials(UStaticMeshComponent* Part, FName Key);
 	void FixImportAxes();
-	void CreateLabels();
+	/** Taille de l'appareil et recentrage, d'après les pièces */
+	void MeasureModel();
+	/** Écrans et icônes posés sur les pièces (Widget Components) */
+	void CreatePanels();
+	UWidgetComponent* AddPanel(FName PartKey, UUserWidget* Widget, FVector2D PixelSize, bool bOpaque);
+	/** Taille en cm (largeur, hauteur) et centre de la face avant d'une pièce, dans le repère de son parent */
+	bool GetPartFace(FName PartKey, FVector& OutCenter, FVector2D& OutSize) const;
 	void PlaceInFrontOfCamera();
 	void UpdateAnimation(float DeltaSeconds);
 	void UpdateLights(float DeltaSeconds);
+	void UpdatePanels(float DeltaSeconds);
 
 	/** Trace sous la souris, seulement contre les pièces de l'appareil */
 	bool TraceParts(const FVector2D& Pixel, FHitResult& OutHit) const;
@@ -135,6 +137,8 @@ private:
 	void PressMenuButton(int32 Index);
 	void ClickDPad(const FVector& WorldHit);
 	void MoveLidSelection(FIntPoint Direction);
+	/** Bouton < ou > : menu précédent / suivant */
+	void CycleMenu(int32 Step);
 	void SendToScreen(const FKey& Key);
 	void FocusLid();
 	void SetHovered(UPrimitiveComponent* Component);
@@ -191,13 +195,26 @@ private:
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UStaticMeshComponent>> MenuButtons;
 
+	/** Icônes posées sur les 10 boutons du volet */
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<UWidgetComponent>> MenuLabels;
+	TArray<TObjectPtr<UWidgetComponent>> MenuIcons;
 
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<UPokedexLabelWidget>> MenuLabelWidgets;
+	TArray<TObjectPtr<UPokedexIconWidget>> MenuIconWidgets;
 
-	/** Matériaux animés : liseré de chaque bouton du volet */
+	/** Écran du haut du volet */
+	UPROPERTY(Transient)
+	TObjectPtr<UPokedexInfoWidget> InfoWidget;
+
+	/** Petits écrans : 0 sous l'écran (heure, argent), 1 et 2 sur le volet (Pokédex, badges) */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UPokedexMiniWidget>> MiniWidgets;
+
+	/** Écrans à allumer avec l'appareil (fondu d'ouverture) */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UWidgetComponent>> Panels;
+
+	/** Matériaux animés : chaque bouton du volet */
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UMaterialInstanceDynamic>> MenuGlows;
 
@@ -212,6 +229,14 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> LedGreenMaterial;
+
+	/** Deux petits voyants rouges au-dessus de l'écran */
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> ScreenLedsMaterial;
+
+	/** Deux voyants verts du volet */
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> LidLedsMaterial;
 
 	/** Tous les matériaux, pour la surbrillance au survol */
 	TMap<TWeakObjectPtr<UPrimitiveComponent>, TArray<TWeakObjectPtr<UMaterialInstanceDynamic>>> PartMaterials;
@@ -243,15 +268,26 @@ private:
 	FRotator CameraRotation = FRotator::ZeroRotator;
 	float ViewDistance = 32.f;
 
+	// Taille du modèle (MeasureModel)
+	float HalfWidth = 9.3f;
+	float HalfHeight = 7.6f;
+	/** Décalage pour garder l'appareil au centre : fermé (boîtier seul) et ouvert */
+	FVector ClosedOffset = FVector(0.f, 4.3f, 0.f);
+	FVector OpenOffset = FVector::ZeroVector;
+
 	// Voyants : moment du dernier éclair
 	float LedRedFlash = -10.f;
 	float LedYellowFlash = -10.f;
 	float LensFlash = -10.f;
-	float MenuFlash[6] = { -10.f, -10.f, -10.f, -10.f, -10.f, -10.f };
+	float ScreenFlash = -10.f;
+	float MenuFlash[PokedexMenuCount] = { -10.f, -10.f, -10.f, -10.f, -10.f, -10.f, -10.f, -10.f, -10.f, -10.f };
 
-	static constexpr int32 MenuCount = 6;
+	float PanelTimer = 0.f;
+
+	static constexpr int32 MenuCount = PokedexMenuCount;
+	static constexpr int32 MenuColumns = 5;
 	static constexpr float PressDuration = 0.2f;
-	static constexpr float PressDepth = 0.32f;
+	static constexpr float PressDepth = 0.08f;
 	static constexpr float OpenDuration = 0.95f;
 	static constexpr float CloseDuration = 0.6f;
 };

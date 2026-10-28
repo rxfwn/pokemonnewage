@@ -5,7 +5,10 @@
 #include "PokedexWidgets.generated.h"
 
 class APokedexDevice;
+class UBorder;
+class UImage;
 class UTextBlock;
+class UTexture2D;
 
 /**
  *  Calque invisible plein écran pendant que le Pokédex 3D est ouvert : il reçoit la souris, le clavier
@@ -36,22 +39,37 @@ private:
 	FVector2D ToViewportPixels(const FPointerEvent& InMouseEvent);
 };
 
-/** Étiquette lumineuse posée sur un des 6 boutons du volet (« POKÉMON », « SAC »...). */
-UCLASS()
-class UPokedexLabelWidget : public UUserWidget
+/** Taille en pixels d'un écran du Pokédex (1 cm du modèle = PixelsPerCm pixels). */
+UCLASS(Abstract)
+class UPokedexPanelWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
 public:
 
-	/** Taille en pixels = taille du bouton en centimètres × 100 */
-	static constexpr float Width = 470.f;
-	static constexpr float Height = 270.f;
+	static constexpr float PixelsPerCm = 150.f;
 
-	void SetLabel(const FText& Text, const FLinearColor& Color);
+	/** À appeler avant de donner le widget au Widget Component */
+	void SetPixelSize(const FVector2D& InSize) { PixelSize = InSize; }
+	FVector2D GetPixelSize() const { return PixelSize; }
 
-	/** Bouton choisi au clavier ou survolé : texte plus clair */
-	void SetHighlighted(bool bHighlighted);
+protected:
+
+	FVector2D PixelSize = FVector2D(400.f, 200.f);
+};
+
+/** Icône posée sur un des 10 boutons du volet (Poké Ball, Pokédex, sac...). */
+UCLASS()
+class UPokedexIconWidget : public UPokedexPanelWidget
+{
+	GENERATED_BODY()
+
+public:
+
+	void SetIcon(UTexture2D* Icon);
+
+	/** Bouton choisi au clavier ou survolé : halo et icône un peu plus grande */
+	void SetHighlighted(bool bHighlighted, bool bFocused);
 
 protected:
 
@@ -60,8 +78,63 @@ protected:
 private:
 
 	UPROPERTY(Transient)
+	TObjectPtr<UImage> IconImage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBorder> Halo;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTexture2D> PendingIcon;
+};
+
+/** Écran du haut du volet : nom du bouton choisi, description de la fiche ou de l'objet. */
+UCLASS()
+class UPokedexInfoWidget : public UPokedexPanelWidget
+{
+	GENERATED_BODY()
+
+public:
+
+	void SetInfo(const FText& Title, const FText& Text);
+
+protected:
+
+	virtual TSharedRef<SWidget> RebuildWidget() override;
+
+private:
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> TitleText;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> BodyText;
+
+	FText PendingTitle;
+	FText PendingText;
+};
+
+/** Petit écran : une valeur en gros et son nom (heure, Pokédex, badges). */
+UCLASS()
+class UPokedexMiniWidget : public UPokedexPanelWidget
+{
+	GENERATED_BODY()
+
+public:
+
+	void SetValues(const FText& Value, const FText& Label);
+
+protected:
+
+	virtual TSharedRef<SWidget> RebuildWidget() override;
+
+private:
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> ValueText;
+
+	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> LabelText;
 
-	FLinearColor BaseColor = FLinearColor::White;
-	FText PendingText;
+	FText PendingValue;
+	FText PendingLabel;
 };

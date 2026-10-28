@@ -99,7 +99,7 @@ Objectif : farmer des niveaux et voir son Pokémon évoluer.
 
 Objectif : le joueur peut gérer son aventure et la reprendre plus tard.
 
-- **UI-0** (SCRUM-64) Menu en jeu : un Pokédex rouge en 3D qu'on tourne à la souris, 6 boutons (Pokémon, Pokédex, Sac, Dresseur, Sauvegarder, Options), voyants et sons (`docs/MENU_POKEDEX.md`)
+- **UI-0** (SCRUM-64) Menu en jeu : le Pokédex 3D texturé de L'amie qu'on tourne à la souris, 10 boutons à icônes (Pokémon, Pokédex, Sac, Radio, Dresseur, Carte, Sauvegarder, En ligne, Options, Style), 4 écrans, voyants et sons ; objets tenus, lieux des espèces, carte de Kanto, volumes musique / bruitages (`docs/MENU_POKEDEX.md`). Reste : Radio, Style, changer les touches, échanges et combats en ligne (SCRUM-69)
 - **DEX-2** UI du Pokédex : liste, fiche, compteur vu / capturé (fait dans SCRUM-64 ; le modèle 3D du Pokémon dans la fiche reste à faire)
 - **UI-1** Menu équipe (ordre, détails, stats)
 - **UI-2** Sac : objets, Poké Balls, Potions

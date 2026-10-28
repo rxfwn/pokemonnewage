@@ -163,6 +163,14 @@ public:
 	UFUNCTION(Server, Reliable)
 	void ServerUseFieldItem(FName Item, int32 PartyIndex);
 
+	/** Menu Pokémon > Donner un objet */
+	UFUNCTION(Server, Reliable)
+	void ServerGiveHeldItem(int32 PartyIndex, FName Item);
+
+	/** Menu Pokémon > Reprendre l'objet */
+	UFUNCTION(Server, Reliable)
+	void ServerTakeHeldItem(int32 PartyIndex);
+
 	/** Au lancement : la sauvegarde du joueur (lue sur son PC) est remise dans son PlayerState */
 	UFUNCTION(Server, Reliable)
 	void ServerLoadSave(const FPlayerSaveData& Data);

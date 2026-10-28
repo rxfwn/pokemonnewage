@@ -14,7 +14,7 @@ enum class EPokedexMenu : uint8;
 
 /**
  *  Menu en jeu à plat, comme le menu X des jeux Pokémon : Pokédex, Pokémon, Sac, Dresseur,
- *  Sauvegarder, Options, Reprendre, Quitter.
+ *  Carte, En ligne, Sauvegarder, Options, Reprendre, Quitter.
  *  C'est le menu de secours : le vrai menu est le Pokédex 3D (APokedexDevice, SCRUM-64). Celui-ci sert
  *  tant que DA_PokedexModel n'est pas importé, et ouvre les mêmes pages (UPokedexScreenWidget) à plat.
  */
@@ -51,6 +51,8 @@ protected:
 	UFUNCTION() void OnTrainerClicked();
 	UFUNCTION() void OnSaveClicked();
 	UFUNCTION() void OnOptionsClicked();
+	UFUNCTION() void OnMapClicked();
+	UFUNCTION() void OnOnlineClicked();
 
 private:
 

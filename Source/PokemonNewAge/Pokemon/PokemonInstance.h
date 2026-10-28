@@ -90,6 +90,10 @@ struct FPokemonInstance
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pokemon")
 	int32 Friendship = 70;
 
+	/** Objet tenu (ligne de DT_Items), None si rien. Pas encore d'effet en combat */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pokemon")
+	FName HeldItem;
+
 	/** Poké Ball où il a été capturé (ligne de DT_Items) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pokemon")
 	FName Ball;

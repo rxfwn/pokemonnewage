@@ -1,11 +1,13 @@
 #include "UI/Pokedex/PokedexScreenWidget.h"
 #include "Blueprint/WidgetTree.h"
+#include "Brushes/SlateRoundedBoxBrush.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
+#include "Components/Image.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
 #include "Components/ProgressBar.h"
@@ -17,11 +19,17 @@
 #include "Core/PokemonPlayerState.h"
 #include "Core/PokemonSaveGame.h"
 #include "Engine/DataTable.h"
-#include "GameFramework/GameUserSettings.h"
 #include "Engine/Engine.h"
+#include "Engine/Texture2D.h"
+#include "EngineUtils.h"
+#include "GameFramework/GameStateBase.h"
+#include "GameFramework/GameUserSettings.h"
+#include "GameFramework/Pawn.h"
+#include "Landscape.h"
 #include "Pokemon/PokemonDatabase.h"
 #include "Pokemon/PokemonDataSubsystem.h"
 #include "PokemonNewAgePlayerController.h"
+#include "UI/Pokedex/PokedexModel.h"
 
 #define LOCTEXT_NAMESPACE "PokedexScreen"
 
@@ -91,13 +99,21 @@ namespace PokedexScreen
 		switch (Pocket)
 		{
 		case 0:  return LOCTEXT("PocketMedicine", "SOINS");
-		case 1:  return LOCTEXT("PocketBalls", "POKÉ BALLS");
-		case 2:  return LOCTEXT("PocketKey", "OBJETS RARES");
-		default: return LOCTEXT("PocketOther", "AUTRES");
+		case 1:  return LOCTEXT("PocketBalls", "CAPTURE");
+		case 2:  return LOCTEXT("PocketOther", "BAIES ET MATÉRIAUX");
+		default: return LOCTEXT("PocketKey", "OBJETS CLÉS");
 		}
 	}
 
-	constexpr int32 OptionCount = 8;
+	/** Options, dans l'ordre de la page */
+	enum EOption : int32
+	{
+		OptTextSpeed, OptMasterVolume, OptMusicVolume, OptEffectsVolume, OptSensitivity, OptInvertY,
+		OptQuality, OptWindowMode, OptVSync, OptControls, OptDelete, OptionCount
+	};
+
+	/** Taille de l'image de la carte sur l'écran (pixels) */
+	constexpr float MapSize = 470.f;
 }
 
 using namespace PokedexScreen;
@@ -248,6 +264,8 @@ void UPokedexScreenWidget::NativeTick(const FGeometry& MyGeometry, float InDelta
 		case EPokedexPage::Bag:
 		case EPokedexPage::BagTarget:
 		case EPokedexPage::Trainer:
+		case EPokedexPage::Map:
+		case EPokedexPage::Online:
 			Refresh();
 			break;
 		default:
@@ -305,15 +323,56 @@ bool UPokedexScreenWidget::HandleKey(const FKey& Key)
 
 void UPokedexScreenWidget::OpenMenu(EPokedexMenu Menu)
 {
+	CurrentMenu = Menu;
 	switch (Menu)
 	{
 	case EPokedexMenu::Pokemon: MovingFrom = -1; SetPage(EPokedexPage::Party); break;
 	case EPokedexMenu::Pokedex: BuildSpeciesList(); SetPage(EPokedexPage::Pokedex); break;
 	case EPokedexMenu::Bag:     SetPage(EPokedexPage::Bag); break;
 	case EPokedexMenu::Trainer: SetPage(EPokedexPage::Trainer); break;
+	case EPokedexMenu::Map:     SetPage(EPokedexPage::Map); break;
 	case EPokedexMenu::Save:    SetPage(EPokedexPage::Save); break;
+	case EPokedexMenu::Online:  SetPage(EPokedexPage::Online); break;
 	case EPokedexMenu::Options: SetPage(EPokedexPage::Options); break;
+	case EPokedexMenu::Radio:
+	case EPokedexMenu::Style:   SetPage(EPokedexPage::ComingSoon); break;
 	}
+}
+
+FText UPokedexScreenWidget::GetMenuName(EPokedexMenu Menu)
+{
+	switch (Menu)
+	{
+	case EPokedexMenu::Pokemon: return LOCTEXT("MenuPokemon", "POKÉMON");
+	case EPokedexMenu::Pokedex: return LOCTEXT("MenuPokedex", "POKÉDEX");
+	case EPokedexMenu::Bag:     return LOCTEXT("MenuBag", "SAC");
+	case EPokedexMenu::Radio:   return LOCTEXT("MenuRadio", "RADIO");
+	case EPokedexMenu::Trainer: return LOCTEXT("MenuTrainer", "CARTE DRESSEUR");
+	case EPokedexMenu::Map:     return LOCTEXT("MenuMap", "CARTE");
+	case EPokedexMenu::Save:    return LOCTEXT("MenuSave", "SAUVEGARDER");
+	case EPokedexMenu::Online:  return LOCTEXT("MenuOnline", "EN LIGNE");
+	case EPokedexMenu::Options: return LOCTEXT("MenuOptions", "OPTIONS");
+	case EPokedexMenu::Style:   return LOCTEXT("MenuStyle", "STYLE");
+	}
+	return FText::GetEmpty();
+}
+
+FText UPokedexScreenWidget::GetMenuDescription(EPokedexMenu Menu)
+{
+	switch (Menu)
+	{
+	case EPokedexMenu::Pokemon: return LOCTEXT("DescPokemon", "Ton équipe : stats, attaques, ordre de combat et objets tenus.");
+	case EPokedexMenu::Pokedex: return LOCTEXT("DescPokedex", "Toutes les espèces vues ou capturées : description, types et où les trouver.");
+	case EPokedexMenu::Bag:     return LOCTEXT("DescBag", "Soins, capture, baies et matériaux, objets clés.");
+	case EPokedexMenu::Radio:   return LOCTEXT("DescRadio", "Musiques et émissions de Kanto. Bientôt !");
+	case EPokedexMenu::Trainer: return LOCTEXT("DescTrainer", "Ton nom, ton argent, ton temps de jeu, tes badges et tes exploits.");
+	case EPokedexMenu::Map:     return LOCTEXT("DescMap", "La carte de Kanto et l'endroit où tu te trouves.");
+	case EPokedexMenu::Save:    return LOCTEXT("DescSave", "Enregistre ta progression maintenant.");
+	case EPokedexMenu::Online:  return LOCTEXT("DescOnline", "Les joueurs connectés, les échanges et les combats entre amis.");
+	case EPokedexMenu::Options: return LOCTEXT("DescOptions", "Texte, son, caméra, graphismes et commandes.");
+	case EPokedexMenu::Style:   return LOCTEXT("DescStyle", "Personnalise ton dresseur. Bientôt !");
+	}
+	return FText::GetEmpty();
 }
 
 void UPokedexScreenWidget::ShowHome()
@@ -483,6 +542,28 @@ void UPokedexScreenWidget::Confirm()
 			ShowStatus(LOCTEXT("MoveWhere", "Échanger avec quel Pokémon ?"));
 			Refresh();
 		}
+		else if (Selection == 2 && State && State->Party.IsValidIndex(PartyIndex))
+		{
+			const FPokemonInstance& Pokemon = State->Party[PartyIndex];
+			if (!Pokemon.HeldItem.IsNone())
+			{
+				// Il tient déjà un objet : on le reprend dans le sac
+				const FItemRow* Held = GetDatabase() ? GetDatabase()->FindItem(Pokemon.HeldItem) : nullptr;
+				if (Controller)
+				{
+					Controller->ServerTakeHeldItem(PartyIndex);
+				}
+				ShowStatus(FText::Format(LOCTEXT("TookItem", "{0} rangé dans le sac."), Held ? Held->DisplayName : FText::FromName(Pokemon.HeldItem)));
+				Page = EPokedexPage::Party;
+				Selection = PartyIndex;
+				RefreshTimer = 0.1f;
+				Refresh();
+			}
+			else
+			{
+				SetPage(EPokedexPage::GiveItem);
+			}
+		}
 		else
 		{
 			Page = EPokedexPage::Party;
@@ -490,6 +571,26 @@ void UPokedexScreenWidget::Confirm()
 			Refresh();
 		}
 		return;
+
+	case EPokedexPage::GiveItem:
+	{
+		const TArray<FName> Items = GetHoldableItems();
+		if (!Items.IsValidIndex(Selection) || !Controller || !State || !State->Party.IsValidIndex(PartyIndex))
+		{
+			Feedback(EPokedexFeedback::Error);
+			return;
+		}
+		const FItemRow* Item = GetDatabase() ? GetDatabase()->FindItem(Items[Selection]) : nullptr;
+		Controller->ServerGiveHeldItem(PartyIndex, Items[Selection]);
+		Feedback(EPokedexFeedback::Confirm);
+		ShowStatus(FText::Format(LOCTEXT("GaveItem", "{0} tient maintenant : {1}."),
+			UPokemonLibrary::GetDisplayName(GetDatabase(), State->Party[PartyIndex]), Item ? Item->DisplayName : FText::FromName(Items[Selection])));
+		Page = EPokedexPage::Party;
+		Selection = PartyIndex;
+		RefreshTimer = 0.1f;
+		Refresh();
+		return;
+	}
 
 	case EPokedexPage::Summary:
 		Back();
@@ -561,15 +662,34 @@ void UPokedexScreenWidget::Confirm()
 		return;
 
 	case EPokedexPage::Options:
-		if (Selection == OptionCount - 1)
+		if (Selection == OptDelete)
 		{
 			Feedback(EPokedexFeedback::Confirm);
 			SetPage(EPokedexPage::ConfirmDelete);
+		}
+		else if (Selection == OptControls)
+		{
+			Feedback(EPokedexFeedback::Confirm);
+			SetPage(EPokedexPage::Controls);
 		}
 		else
 		{
 			ChangeOption(Selection, 1);
 		}
+		return;
+
+	case EPokedexPage::Online:
+		Feedback(EPokedexFeedback::Error);
+		ShowStatus(LOCTEXT("OnlineSoon", "Les échanges et les combats entre joueurs arrivent avec le jeu à 4 en ligne (SCRUM-69)."));
+		return;
+
+	case EPokedexPage::Map:
+		Feedback(EPokedexFeedback::Navigate);
+		return;
+
+	case EPokedexPage::Controls:
+	case EPokedexPage::ComingSoon:
+		Back();
 		return;
 
 	case EPokedexPage::ConfirmDelete:
@@ -581,7 +701,7 @@ void UPokedexScreenWidget::Confirm()
 				: LOCTEXT("NothingToDelete", "Il n'y a pas de sauvegarde."), !bDeleted);
 		}
 		Page = EPokedexPage::Options;
-		Selection = OptionCount - 1;
+		Selection = OptDelete;
 		Refresh();
 		return;
 	}
@@ -604,6 +724,7 @@ bool UPokedexScreenWidget::Back()
 		break;
 	case EPokedexPage::PartyActions:
 	case EPokedexPage::Summary:
+	case EPokedexPage::GiveItem:
 		Feedback(EPokedexFeedback::Back);
 		Page = EPokedexPage::Party;
 		Selection = PartyIndex;
@@ -624,9 +745,10 @@ bool UPokedexScreenWidget::Back()
 		return true;
 	}
 	case EPokedexPage::ConfirmDelete:
+	case EPokedexPage::Controls:
 		Feedback(EPokedexFeedback::Back);
+		Selection = Page == EPokedexPage::Controls ? int32(OptControls) : int32(OptDelete);
 		Page = EPokedexPage::Options;
-		Selection = OptionCount - 1;
 		Refresh();
 		return true;
 	default:
@@ -653,6 +775,7 @@ void UPokedexScreenWidget::Refresh()
 	}
 	const int32 SelectionBefore = Selection;
 	Content->ClearChildren();
+	RowTarget = Content;
 	RowBindings.Reset();
 	RowBackgrounds.Reset();
 	RowCount = 0;
@@ -671,6 +794,11 @@ void UPokedexScreenWidget::Refresh()
 	case EPokedexPage::Save:          BuildSave(); break;
 	case EPokedexPage::Options:       BuildOptions(); break;
 	case EPokedexPage::ConfirmDelete: BuildConfirmDelete(); break;
+	case EPokedexPage::GiveItem:      BuildGiveItem(); break;
+	case EPokedexPage::Map:           BuildMap(); break;
+	case EPokedexPage::Online:        BuildOnline(); break;
+	case EPokedexPage::Controls:      BuildControls(); break;
+	case EPokedexPage::ComingSoon:    BuildComingSoon(); break;
 	}
 
 	// La liste a raccourci (objet épuisé...) : on recolle la sélection et on redessine la surbrillance
@@ -687,7 +815,7 @@ void UPokedexScreenWidget::Refresh()
 void UPokedexScreenWidget::BuildHome()
 {
 	TitleText->SetText(LOCTEXT("TitleHome", "POKÉDEX"));
-	HintText->SetText(LOCTEXT("HintHome", "Choisis un bouton sur le volet.   Clic droit maintenu : tourner   Molette : zoom"));
+	HintText->SetText(LOCTEXT("HintHome", "Choisis un des 10 boutons du volet.   Clic droit maintenu : tourner   Molette : zoom   Tab : fermer"));
 
 	const APokemonPlayerState* State = GetPlayerState();
 	const UPokemonDatabase* Database = GetDatabase();
@@ -743,6 +871,8 @@ void UPokedexScreenWidget::BuildParty()
 		UHorizontalBox* Row = AddRow(Index);
 		AddRowText(Row, FText::FromString(Index == MovingFrom ? TEXT("<> ") : FString::Printf(TEXT("%d  "), Index + 1)), 18, Index == MovingFrom ? Gold : Dim);
 		AddRowText(Row, UPokemonLibrary::GetDisplayName(Database, Pokemon), 21, Pokemon.IsFainted() ? Error : Text, true, true);
+		// Losange doré : il tient un objet
+		AddRowText(Row, FText::FromString(Pokemon.HeldItem.IsNone() ? TEXT("    ") : TEXT(" <> ")), 16, Gold, false, true);
 		AddRowText(Row, FText::Format(LOCTEXT("Level", "N.{0} "), Pokemon.Level), 18, Dim);
 		AddRowHPBar(Row, Pokemon.CurrentHP, Pokemon.GetMaxHP(), 120.f);
 		AddRowText(Row, FText::FromString(FString::Printf(TEXT(" %d/%d "), Pokemon.CurrentHP, Pokemon.GetMaxHP())), 16, Text);
@@ -764,7 +894,15 @@ void UPokedexScreenWidget::BuildPartyActions()
 	}
 	AddLine(FText::Format(LOCTEXT("WhatToDo", "Que faire avec {0} ?"), UPokemonLibrary::GetDisplayName(GetDatabase(), State->Party[PartyIndex])), 22, Text, true);
 	AddSpacer(8.f);
-	const FText Actions[] = { LOCTEXT("ActionSummary", "Résumé"), LOCTEXT("ActionMove", "Déplacer"), LOCTEXT("ActionCancel", "Annuler") };
+	const FPokemonInstance& Pokemon = State->Party[PartyIndex];
+	const FItemRow* Held = (GetDatabase() && !Pokemon.HeldItem.IsNone()) ? GetDatabase()->FindItem(Pokemon.HeldItem) : nullptr;
+	const FText Actions[] = {
+		LOCTEXT("ActionSummary", "Résumé"),
+		LOCTEXT("ActionMove", "Déplacer"),
+		Pokemon.HeldItem.IsNone() ? LOCTEXT("ActionGive", "Donner un objet")
+			: FText::Format(LOCTEXT("ActionTake", "Reprendre l'objet ({0})"), Held ? Held->DisplayName : FText::FromName(Pokemon.HeldItem)),
+		LOCTEXT("ActionCancel", "Annuler")
+	};
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Actions); ++Index)
 	{
 		AddRowText(AddRow(Index), Actions[Index], 22, Text, true);
@@ -820,6 +958,9 @@ void UPokedexScreenWidget::BuildSummary()
 		AddLabelValue(LOCTEXT("Ability", "Talent"), Ability ? Ability->DisplayName : FText::FromName(Pokemon.Ability));
 		AddLabelValue(LOCTEXT("Gender", "Sexe"), (Species && Species->bGenderless) ? LOCTEXT("Genderless", "Inconnu")
 			: (Pokemon.bIsFemale ? LOCTEXT("Female", "Femelle") : LOCTEXT("Male", "Mâle")));
+		const FItemRow* Held = Pokemon.HeldItem.IsNone() ? nullptr : Database->FindItem(Pokemon.HeldItem);
+		AddLabelValue(LOCTEXT("HeldItem", "Objet tenu"), Pokemon.HeldItem.IsNone() ? LOCTEXT("NoHeldItem", "aucun")
+			: (Held ? Held->DisplayName : FText::FromName(Pokemon.HeldItem)));
 		const FItemRow* Ball = Database->FindItem(Pokemon.Ball);
 		AddLabelValue(LOCTEXT("Met", "Rencontré"), FText::Format(LOCTEXT("MetFormat", "{0}, N.{1}{2}"),
 			Pokemon.MetLocation.IsNone() ? LOCTEXT("Unknown", "?") : FText::FromName(Pokemon.MetLocation), Pokemon.MetLevel,
@@ -838,7 +979,7 @@ void UPokedexScreenWidget::BuildSummary()
 			USizeBox* ExpBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
 			ExpBox->SetHeightOverride(8.f);
 			ExpBox->SetContent(ExpBar);
-			UVerticalBoxSlot* ExpSlot = Content->AddChildToVerticalBox(ExpBox);
+			UVerticalBoxSlot* ExpSlot = RowTarget->AddChildToVerticalBox(ExpBox);
 			ExpSlot->SetPadding(FMargin(0.f, 4.f, 0.f, 0.f));
 		}
 	}
@@ -989,6 +1130,17 @@ void UPokedexScreenWidget::BuildPokedexEntry()
 		AddSpacer(8.f);
 		AddLine(LOCTEXT("CatchToKnow", "Capture ce Pokémon pour compléter sa fiche."), 19, Dim);
 	}
+
+	// Où le trouver (tables de rencontres)
+	AddSpacer(8.f);
+	const TArray<FText> Locations = GetSpeciesLocations(SpeciesList[DexIndex]);
+	FString LocationList;
+	for (const FText& Location : Locations)
+	{
+		LocationList += (LocationList.IsEmpty() ? TEXT("") : TEXT(", ")) + Location.ToString();
+	}
+	AddLabelValue(LOCTEXT("Habitat", "Où le trouver"), Locations.Num() > 0 ? FText::FromString(LocationList)
+		: LOCTEXT("NoHabitat", "pas à l'état sauvage dans la V1"));
 }
 
 void UPokedexScreenWidget::BuildBag()
@@ -1102,6 +1254,24 @@ void UPokedexScreenWidget::BuildTrainer()
 		CellSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 		CellSlot->SetPadding(FMargin(2.f));
 	}
+
+	// Exploits : calculés depuis la progression (pas encore de système de quêtes)
+	AddSpacer(8.f);
+	AddLine(LOCTEXT("Achievements", "EXPLOITS"), 18, Accent, true);
+	struct FAchievement { FText Name; bool bDone; };
+	const FAchievement Achievements[] = {
+		{ LOCTEXT("AchFirstPokemon", "Recevoir son premier Pokémon"), State->Party.Num() + State->StoragePC.Num() > 0 },
+		{ LOCTEXT("AchCatch10", "Capturer 10 Pokémon"), State->PokedexCaught.Num() >= 10 },
+		{ LOCTEXT("AchSee50", "Voir 50 Pokémon"), State->PokedexSeen.Num() >= 50 },
+		{ LOCTEXT("AchBoulder", "Battre Pierre, champion d'Argenta"), State->Badges.Contains(FName(TEXT("BoulderBadge"))) },
+		{ LOCTEXT("AchAllBadges", "Obtenir les 8 badges de Kanto"), State->Badges.Num() >= 8 },
+	};
+	for (const FAchievement& Achievement : Achievements)
+	{
+		UHorizontalBox* Row = AddRow(-1, false);
+		AddRowText(Row, FText::FromString(Achievement.bDone ? TEXT("[X]  ") : TEXT("[  ]  ")), 17, Achievement.bDone ? Good : Dim, false, true);
+		AddRowText(Row, Achievement.Name, 17, Achievement.bDone ? Text : Dim, true);
+	}
 }
 
 void UPokedexScreenWidget::BuildSave()
@@ -1139,19 +1309,25 @@ void UPokedexScreenWidget::BuildOptions()
 	const int32 Quality = Settings ? Settings->GetOverallScalabilityLevel() : -1;
 	const EWindowMode::Type WindowMode = Settings ? Settings->GetFullscreenMode() : EWindowMode::Windowed;
 
+	auto Percent = [](float Value) { return FText::FromString(FString::Printf(TEXT("%d %%"), FMath::RoundToInt(Value * 100.f))); };
 	const FText Names[OptionCount] = {
 		LOCTEXT("OptTextSpeed", "Vitesse du texte"),
 		LOCTEXT("OptVolume", "Volume général"),
+		LOCTEXT("OptMusic", "Musique"),
+		LOCTEXT("OptEffects", "Bruitages"),
 		LOCTEXT("OptSensitivity", "Sensibilité caméra"),
 		LOCTEXT("OptInvert", "Inverser haut/bas"),
 		LOCTEXT("OptQuality", "Qualité graphique"),
 		LOCTEXT("OptWindow", "Affichage"),
 		LOCTEXT("OptVSync", "Synchro verticale"),
+		LOCTEXT("OptControls", "Commandes"),
 		LOCTEXT("OptDelete", "Effacer la sauvegarde"),
 	};
 	const FText Values[OptionCount] = {
 		Speeds[FMath::Clamp(Options->TextSpeed, 0, 2)],
-		FText::FromString(FString::Printf(TEXT("%d %%"), FMath::RoundToInt(Options->MasterVolume * 100.f))),
+		Percent(Options->MasterVolume),
+		Percent(Options->MusicVolume),
+		Percent(Options->EffectsVolume),
 		FText::FromString(FString::Printf(TEXT("x %.1f"), Options->CameraSensitivity)),
 		Options->bInvertCameraY ? LOCTEXT("Yes", "Oui") : LOCTEXT("No", "Non"),
 		Quality >= 0 && Quality <= 4 ? Qualities[Quality] : LOCTEXT("Custom", "Perso"),
@@ -1159,14 +1335,19 @@ void UPokedexScreenWidget::BuildOptions()
 			: (WindowMode == EWindowMode::WindowedFullscreen ? LOCTEXT("Borderless", "Plein écran fenêtré") : LOCTEXT("Windowed", "Fenêtré")),
 		Settings && Settings->IsVSyncEnabled() ? LOCTEXT("Yes", "Oui") : LOCTEXT("No", "Non"),
 		FText::GetEmpty(),
+		FText::GetEmpty(),
 	};
 	for (int32 Index = 0; Index < OptionCount; ++Index)
 	{
 		UHorizontalBox* Row = AddRow(Index);
-		AddRowText(Row, Names[Index], 20, Index == OptionCount - 1 ? Error : Text, true);
+		AddRowText(Row, Names[Index], 19, Index == OptDelete ? Error : Text, true);
 		if (!Values[Index].IsEmpty())
 		{
-			AddRowText(Row, FText::Format(LOCTEXT("OptionValue", "<  {0}  >"), Values[Index]), 19, Accent, false, true);
+			AddRowText(Row, FText::Format(LOCTEXT("OptionValue", "<  {0}  >"), Values[Index]), 18, Accent, false, true);
+		}
+		else if (Index == OptControls)
+		{
+			AddRowText(Row, LOCTEXT("OptionOpen", "voir  >"), 18, Accent, false, true);
 		}
 	}
 }
@@ -1179,6 +1360,254 @@ void UPokedexScreenWidget::BuildConfirmDelete()
 	AddSpacer(8.f);
 	AddRowText(AddRow(0), LOCTEXT("DeleteNo", "Non"), 22, Text, true, true);
 	AddRowText(AddRow(1), LOCTEXT("DeleteYes", "Oui, effacer"), 22, Error, true, true);
+}
+
+void UPokedexScreenWidget::BuildGiveItem()
+{
+	TitleText->SetText(LOCTEXT("TitleParty", "POKÉMON"));
+	HintText->SetText(LOCTEXT("HintGive", "A : donner   B : retour"));
+
+	const APokemonPlayerState* State = GetPlayerState();
+	const UPokemonDatabase* Database = GetDatabase();
+	if (!State || !State->Party.IsValidIndex(PartyIndex))
+	{
+		Page = EPokedexPage::Party;
+		BuildParty();
+		return;
+	}
+	AddLine(FText::Format(LOCTEXT("GiveWhat", "Que doit tenir {0} ?"), UPokemonLibrary::GetDisplayName(Database, State->Party[PartyIndex])), 22, Text, true);
+	AddSpacer(6.f);
+
+	const TArray<FName> Items = GetHoldableItems();
+	if (Items.Num() == 0)
+	{
+		AddLine(LOCTEXT("NothingToHold", "Aucun objet du sac ne peut être tenu."), 20, Dim);
+		return;
+	}
+
+	RowCount = Items.Num();
+	Selection = FMath::Clamp(Selection, 0, RowCount - 1);
+	const int32 Window = ListWindow - 2;
+	if (Selection < ScrollOffset)
+	{
+		ScrollOffset = Selection;
+	}
+	else if (Selection >= ScrollOffset + Window)
+	{
+		ScrollOffset = Selection - Window + 1;
+	}
+	for (int32 Index = ScrollOffset; Index < FMath::Min(RowCount, ScrollOffset + Window); ++Index)
+	{
+		const FItemRow* Item = Database ? Database->FindItem(Items[Index]) : nullptr;
+		UHorizontalBox* Row = AddRow(Index);
+		AddRowText(Row, Item ? Item->DisplayName : FText::FromName(Items[Index]), 21, Text, true, true);
+		AddRowText(Row, FText::FromString(FString::Printf(TEXT("x%d"), State->GetItemCount(Items[Index]))), 19, Text);
+	}
+	if (const FItemRow* Item = Database ? Database->FindItem(Items[Selection]) : nullptr)
+	{
+		AddSpacer(6.f);
+		AddLine(Item->Description, 17, Dim);
+	}
+}
+
+void UPokedexScreenWidget::BuildMap()
+{
+	TitleText->SetText(LOCTEXT("TitleMap", "CARTE DE KANTO"));
+	HintText->SetText(LOCTEXT("HintMap", "Haut/bas : choisir une ville   B : retour"));
+
+	const UPokedexModel* Model = GetModel();
+	if (!Model || !Model->MapTexture)
+	{
+		AddLine(LOCTEXT("NoMap", "Carte introuvable : lancer Tools/Pokedex/import_pokedex_unreal.py dans Unreal."), 20, Error);
+		return;
+	}
+
+	auto MakeDot = [this](const FLinearColor& Color, float Size, const FLinearColor& Outline)
+	{
+		UBorder* Dot = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass());
+		Dot->SetBrush(FSlateRoundedBoxBrush(Color, Size * 0.5f, Outline, 2.f));
+		return Dot;
+	};
+
+	UHorizontalBox* Layout = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+	Content->AddChildToVerticalBox(Layout);
+
+	// Carte à gauche, avec les villes et le joueur par-dessus
+	USizeBox* MapBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+	MapBox->SetWidthOverride(MapSize);
+	MapBox->SetHeightOverride(MapSize);
+	UCanvasPanel* Canvas = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass());
+	MapBox->SetContent(Canvas);
+	Layout->AddChildToHorizontalBox(MapBox)->SetVerticalAlignment(VAlign_Top);
+
+	UImage* MapImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+	MapImage->SetBrushFromTexture(Model->MapTexture);
+	UCanvasPanelSlot* ImageSlot = Canvas->AddChildToCanvas(MapImage);
+	ImageSlot->SetPosition(FVector2D::ZeroVector);
+	ImageSlot->SetSize(FVector2D(MapSize, MapSize));
+
+	const TArray<int32> Towns = GetMapTowns();
+	if (Towns.Num() > 0)
+	{
+		Selection = FMath::Clamp(Selection, 0, Towns.Num() - 1);
+	}
+	auto AddMarker = [Canvas](UWidget* Marker, const FVector2D& UV, float Size)
+	{
+		UCanvasPanelSlot* MarkerSlot = Canvas->AddChildToCanvas(Marker);
+		MarkerSlot->SetSize(FVector2D(Size, Size));
+		MarkerSlot->SetPosition(UV * MapSize - FVector2D(Size * 0.5f, Size * 0.5f));
+	};
+	for (int32 Index = 0; Index < Towns.Num(); ++Index)
+	{
+		const FPokedexMapPlace& Place = Model->MapPlaces[Towns[Index]];
+		const bool bSelected = Index == Selection;
+		AddMarker(MakeDot(bSelected ? Gold : Accent, bSelected ? 16.f : 9.f, Background), Place.UV, bSelected ? 16.f : 9.f);
+	}
+	if (Towns.IsValidIndex(Selection))
+	{
+		// Nom de la ville choisie à côté de son point
+		const FPokedexMapPlace& Place = Model->MapPlaces[Towns[Selection]];
+		UBorder* Label = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass());
+		Label->SetBrushColor(FLinearColor(0.f, 0.f, 0.f, 0.7f));
+		Label->SetPadding(FMargin(6.f, 1.f));
+		Label->SetContent(MakeText(Place.Name, 15, Gold, true));
+		UCanvasPanelSlot* LabelSlot = Canvas->AddChildToCanvas(Label);
+		LabelSlot->SetAutoSize(true);
+		const bool bLeft = Place.UV.X > 0.7f;
+		LabelSlot->SetAlignment(FVector2D(bLeft ? 1.f : 0.f, 0.5f));
+		LabelSlot->SetPosition(Place.UV * MapSize + FVector2D(bLeft ? -14.f : 14.f, 0.f));
+	}
+
+	FVector2D PlayerUV;
+	const bool bHasPlayer = GetPlayerMapPosition(PlayerUV);
+	if (bHasPlayer)
+	{
+		AddMarker(MakeDot(FLinearColor(0.95f, 0.12f, 0.1f), 18.f, FLinearColor::White), PlayerUV, 18.f);
+	}
+
+	// Colonne de droite : où on est, puis la liste des villes
+	UVerticalBox* Column = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
+	UHorizontalBoxSlot* ColumnSlot = Layout->AddChildToHorizontalBox(Column);
+	ColumnSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	ColumnSlot->SetPadding(FMargin(16.f, 0.f, 0.f, 0.f));
+	RowTarget = Column;
+
+	const int32 Here = bHasPlayer ? FindPlaceAt(PlayerUV) : -1;
+	AddLine(LOCTEXT("YouAreHere", "TU ES ICI"), 16, Dim, true);
+	AddLine(Here >= 0 ? Model->MapPlaces[Here].Name : (bHasPlayer ? LOCTEXT("Wild", "En pleine nature") : LOCTEXT("NoLandscape", "Hors de Kanto")),
+		21, Text, true);
+	AddSpacer(8.f);
+	AddLine(LOCTEXT("TownsTitle", "VILLES"), 16, Dim, true);
+
+	const int32 Window = ListWindow - 1;
+	if (Selection < ScrollOffset)
+	{
+		ScrollOffset = Selection;
+	}
+	else if (Selection >= ScrollOffset + Window)
+	{
+		ScrollOffset = Selection - Window + 1;
+	}
+	for (int32 Index = ScrollOffset; Index < FMath::Min(Towns.Num(), ScrollOffset + Window); ++Index)
+	{
+		UHorizontalBox* Row = AddRow(Index);
+		AddRowText(Row, Model->MapPlaces[Towns[Index]].Name, 18, Towns[Index] == Here ? Gold : Text, true, Index == Selection);
+	}
+	RowCount = Towns.Num();
+}
+
+void UPokedexScreenWidget::BuildOnline()
+{
+	TitleText->SetText(LOCTEXT("TitleOnline", "EN LIGNE"));
+	HintText->SetText(LOCTEXT("HintOnline", "A : choisir   B : retour"));
+
+	const UWorld* World = GetWorld();
+	const ENetMode NetMode = World ? World->GetNetMode() : NM_Standalone;
+	const FText Mode = NetMode == NM_Client ? LOCTEXT("ModeClient", "Connecté à la partie d'un ami")
+		: (NetMode == NM_ListenServer ? LOCTEXT("ModeHost", "Tu héberges la partie")
+		: (NetMode == NM_DedicatedServer ? LOCTEXT("ModeServer", "Serveur") : LOCTEXT("ModeSolo", "Partie solo")));
+	AddLabelValue(LOCTEXT("OnlineMode", "Mode"), Mode);
+	AddSpacer(6.f);
+
+	const AGameStateBase* GameState = World ? World->GetGameState() : nullptr;
+	const APlayerState* Mine = GetPlayerState();
+	AddLine(FText::Format(LOCTEXT("PlayersTitle", "JOUEURS ({0})"), GameState ? GameState->PlayerArray.Num() : 1), 18, Accent, true);
+	if (GameState)
+	{
+		for (const APlayerState* Player : GameState->PlayerArray)
+		{
+			if (!Player)
+			{
+				continue;
+			}
+			UHorizontalBox* Row = AddRow(-1, false);
+			AddRowText(Row, FText::FromString(Player->GetPlayerName()), 19, Player == Mine ? Gold : Text, true, true);
+			if (const APokemonPlayerState* Trainer = Cast<APokemonPlayerState>(Player))
+			{
+				AddRowText(Row, FText::Format(LOCTEXT("PlayerSummary", "{0} badge(s)   {1} capturés  "), Trainer->Badges.Num(), Trainer->PokedexCaught.Num()), 16, Dim);
+			}
+			if (Player == Mine)
+			{
+				AddRowText(Row, LOCTEXT("ItsYou", "(toi)"), 16, Gold);
+			}
+		}
+	}
+	AddSpacer(10.f);
+
+	const FText Actions[] = { LOCTEXT("Trade", "Échanger des Pokémon"), LOCTEXT("Duel", "Combattre un joueur") };
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Actions); ++Index)
+	{
+		UHorizontalBox* Row = AddRow(Index);
+		AddRowText(Row, Actions[Index], 20, Text, true, true);
+		AddRowText(Row, LOCTEXT("Soon", "bientôt"), 16, Dim);
+	}
+}
+
+void UPokedexScreenWidget::BuildControls()
+{
+	TitleText->SetText(LOCTEXT("TitleControls", "COMMANDES"));
+	HintText->SetText(LOCTEXT("HintControls", "B : retour"));
+
+	struct FControlLine { FText Action; FText Keyboard; FText Gamepad; };
+	const FControlLine Lines[] = {
+		{ LOCTEXT("CtrlMove", "Se déplacer"), LOCTEXT("KeyMove", "Z Q S D"), LOCTEXT("PadMove", "Stick gauche") },
+		{ LOCTEXT("CtrlRun", "Courir"), LOCTEXT("KeyRun", "Maj gauche"), LOCTEXT("PadRun", "Stick gauche enfoncé") },
+		{ LOCTEXT("CtrlJump", "Sauter"), LOCTEXT("KeyJump", "Espace"), LOCTEXT("PadJump", "A") },
+		{ LOCTEXT("CtrlLook", "Caméra"), LOCTEXT("KeyLook", "Souris"), LOCTEXT("PadLook", "Stick droit") },
+		{ LOCTEXT("CtrlTalk", "Parler, ouvrir"), LOCTEXT("KeyTalk", "E"), LOCTEXT("PadTalk", "X") },
+		{ LOCTEXT("CtrlMenu", "Pokédex"), LOCTEXT("KeyMenu", "Tab"), LOCTEXT("PadMenu", "Start") },
+		{ LOCTEXT("CtrlOk", "Valider"), LOCTEXT("KeyOk", "Entrée, clic"), LOCTEXT("PadOk", "A") },
+		{ LOCTEXT("CtrlBack", "Retour"), LOCTEXT("KeyBack", "Échap"), LOCTEXT("PadBack", "B") },
+	};
+	UHorizontalBox* Header = AddRow(-1, false);
+	AddRowText(Header, FText::GetEmpty(), 16, Dim, true);
+	AddRowText(Header, LOCTEXT("Keyboard", "CLAVIER          "), 16, Accent, false, true);
+	AddRowText(Header, LOCTEXT("Gamepad", "MANETTE"), 16, Accent, false, true);
+	for (const FControlLine& Line : Lines)
+	{
+		UHorizontalBox* Row = AddRow(-1, false);
+		AddRowText(Row, Line.Action, 18, Text, true, true);
+		USizeBox* KeyBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		KeyBox->SetWidthOverride(220.f);
+		KeyBox->SetContent(MakeText(Line.Keyboard, 18, Text));
+		Row->AddChildToHorizontalBox(KeyBox)->SetVerticalAlignment(VAlign_Center);
+		USizeBox* PadBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		PadBox->SetWidthOverride(220.f);
+		PadBox->SetContent(MakeText(Line.Gamepad, 18, Text));
+		Row->AddChildToHorizontalBox(PadBox)->SetVerticalAlignment(VAlign_Center);
+	}
+	AddSpacer(8.f);
+	AddLine(LOCTEXT("RemapSoon", "Changer les touches : bientôt. Pour l'instant, ZQSD est prévu pour les claviers AZERTY."), 16, Dim);
+}
+
+void UPokedexScreenWidget::BuildComingSoon()
+{
+	TitleText->SetText(GetMenuName(CurrentMenu));
+	HintText->SetText(LOCTEXT("HintSoon", "B : retour"));
+	AddSpacer(30.f);
+	AddLine(GetMenuDescription(CurrentMenu), 22, Text, true);
+	AddSpacer(10.f);
+	AddLine(LOCTEXT("ComingSoon", "Ce menu n'est pas encore fait. Il arrivera dans une prochaine version."), 19, Dim);
 }
 
 // ---------------------------------------------------------------- Actions
@@ -1236,26 +1665,29 @@ void UPokedexScreenWidget::ChangeOption(int32 Option, int32 Delta)
 	UGameUserSettings* Settings = GEngine ? GEngine->GetGameUserSettings() : nullptr;
 	bool bChanged = true;
 
+	auto Step = [Delta](float Value) { return FMath::Clamp(FMath::RoundToFloat(Value * 10.f + Delta) / 10.f, 0.f, 1.f); };
 	switch (Option)
 	{
-	case 0: Options->TextSpeed = (Options->TextSpeed + Delta + 3) % 3; break;
-	case 1: Options->MasterVolume = FMath::Clamp(FMath::RoundToFloat(Options->MasterVolume * 10.f + Delta) / 10.f, 0.f, 1.f); break;
-	case 2: Options->CameraSensitivity = FMath::Clamp(FMath::RoundToFloat(Options->CameraSensitivity * 10.f + Delta) / 10.f, 0.5f, 2.f); break;
-	case 3: Options->bInvertCameraY = !Options->bInvertCameraY; break;
-	case 4:
+	case OptTextSpeed:     Options->TextSpeed = (Options->TextSpeed + Delta + 3) % 3; break;
+	case OptMasterVolume:  Options->MasterVolume = Step(Options->MasterVolume); break;
+	case OptMusicVolume:   Options->MusicVolume = Step(Options->MusicVolume); break;
+	case OptEffectsVolume: Options->EffectsVolume = Step(Options->EffectsVolume); break;
+	case OptSensitivity:   Options->CameraSensitivity = FMath::Clamp(FMath::RoundToFloat(Options->CameraSensitivity * 10.f + Delta) / 10.f, 0.5f, 2.f); break;
+	case OptInvertY:       Options->bInvertCameraY = !Options->bInvertCameraY; break;
+	case OptQuality:
 		if (Settings)
 		{
 			Settings->SetOverallScalabilityLevel(FMath::Clamp(FMath::Max(Settings->GetOverallScalabilityLevel(), 0) + Delta, 0, 4));
 		}
 		break;
-	case 5:
+	case OptWindowMode:
 		if (Settings)
 		{
 			const int32 Mode = (int32(Settings->GetFullscreenMode()) + Delta + 3) % 3;
 			Settings->SetFullscreenMode(EWindowMode::ConvertIntToWindowMode(Mode));
 		}
 		break;
-	case 6:
+	case OptVSync:
 		if (Settings)
 		{
 			Settings->SetVSyncEnabled(!Settings->IsVSyncEnabled());
@@ -1270,7 +1702,7 @@ void UPokedexScreenWidget::ChangeOption(int32 Option, int32 Delta)
 	{
 		return;
 	}
-	if (Option <= 3)
+	if (Option <= OptInvertY)
 	{
 		UPokemonSaveLibrary::SaveOptions(Options);
 		UPokemonSaveLibrary::ApplyOptions(this, Options);
@@ -1326,7 +1758,7 @@ UHorizontalBox* UPokedexScreenWidget::AddRow(int32 Index, bool bSelectable)
 	if (!bSelectable || Index < 0)
 	{
 		Highlight->SetBrushColor(FLinearColor::Transparent);
-		UVerticalBoxSlot* RowSlot = Content->AddChildToVerticalBox(Highlight);
+		UVerticalBoxSlot* RowSlot = RowTarget->AddChildToVerticalBox(Highlight);
 		RowSlot->SetPadding(FMargin(0.f, 1.f));
 		return Row;
 	}
@@ -1354,7 +1786,7 @@ UHorizontalBox* UPokedexScreenWidget::AddRow(int32 Index, bool bSelectable)
 	RowBindings.Add(Binding);
 	RowBackgrounds.Add(Highlight);
 
-	UVerticalBoxSlot* RowSlot = Content->AddChildToVerticalBox(Button);
+	UVerticalBoxSlot* RowSlot = RowTarget->AddChildToVerticalBox(Button);
 	RowSlot->SetPadding(FMargin(0.f, 1.f));
 	RowSlot->SetHorizontalAlignment(HAlign_Fill);
 	return Row;
@@ -1389,7 +1821,7 @@ void UPokedexScreenWidget::AddLine(const FText& InText, int32 Size, const FLinea
 {
 	UTextBlock* Block = MakeText(InText, Size, Color, bBold);
 	Block->SetAutoWrapText(true);
-	UVerticalBoxSlot* LineSlot = Content->AddChildToVerticalBox(Block);
+	UVerticalBoxSlot* LineSlot = RowTarget->AddChildToVerticalBox(Block);
 	LineSlot->SetPadding(FMargin(8.f, 2.f));
 }
 
@@ -1408,7 +1840,7 @@ void UPokedexScreenWidget::AddSpacer(float Height)
 {
 	USpacer* Spacer = WidgetTree->ConstructWidget<USpacer>(USpacer::StaticClass());
 	Spacer->SetSize(FVector2D(1.f, Height));
-	Content->AddChildToVerticalBox(Spacer);
+	RowTarget->AddChildToVerticalBox(Spacer);
 }
 
 void UPokedexScreenWidget::AddTypeBadges(UHorizontalBox* Row, EPokemonType Type1, EPokemonType Type2)
@@ -1486,15 +1918,15 @@ TArray<FName> UPokedexScreenWidget::GetBagPocketItems(int32 Pocket) const
 			continue;
 		}
 		const FItemRow* Item = Database ? Database->FindItem(Stack.Item) : nullptr;
-		int32 ItemPocket = 3;
+		int32 ItemPocket = 2;
 		if (Item)
 		{
 			switch (Item->Category)
 			{
 			case EItemCategory::Medicine: ItemPocket = 0; break;
 			case EItemCategory::PokeBall: ItemPocket = 1; break;
-			case EItemCategory::KeyItem:  ItemPocket = 2; break;
-			default:                      ItemPocket = 3; break;
+			case EItemCategory::KeyItem:  ItemPocket = 3; break;
+			default:                      ItemPocket = 2; break;
 			}
 		}
 		if (ItemPocket == Pocket)
@@ -1524,6 +1956,218 @@ void UPokedexScreenWidget::BuildSpeciesList()
 	{
 		SpeciesList.Add(Pair.Value);
 	}
+}
+
+void UPokedexScreenWidget::GetInfo(FText& OutTitle, FText& OutText) const
+{
+	const APokemonPlayerState* State = GetPlayerState();
+	const UPokemonDatabase* Database = GetDatabase();
+
+	switch (Page)
+	{
+	case EPokedexPage::Party:
+	case EPokedexPage::PartyActions:
+	case EPokedexPage::Summary:
+	case EPokedexPage::BagTarget:
+	{
+		const int32 Index = (Page == EPokedexPage::Party || Page == EPokedexPage::BagTarget) ? Selection : PartyIndex;
+		if (State && State->Party.IsValidIndex(Index))
+		{
+			const FPokemonInstance& Pokemon = State->Party[Index];
+			const FItemRow* Held = (Database && !Pokemon.HeldItem.IsNone()) ? Database->FindItem(Pokemon.HeldItem) : nullptr;
+			OutTitle = UPokemonLibrary::GetDisplayName(Database, Pokemon);
+			OutText = FText::Format(LOCTEXT("InfoPokemon", "N.{0}   PV {1}/{2}\nObjet : {3}"), Pokemon.Level, Pokemon.CurrentHP, Pokemon.GetMaxHP(),
+				Pokemon.HeldItem.IsNone() ? LOCTEXT("NoHeldItem", "aucun") : (Held ? Held->DisplayName : FText::FromName(Pokemon.HeldItem)));
+			return;
+		}
+		break;
+	}
+	case EPokedexPage::Pokedex:
+	case EPokedexPage::PokedexEntry:
+	{
+		const int32 Index = Page == EPokedexPage::Pokedex ? Selection : DexIndex;
+		const FSpeciesRow* Species = (Database && SpeciesList.IsValidIndex(Index)) ? Database->FindSpecies(SpeciesList[Index]) : nullptr;
+		if (State && Species)
+		{
+			if (!State->PokedexSeen.Contains(SpeciesList[Index]) && !State->PokedexCaught.Contains(SpeciesList[Index]))
+			{
+				OutTitle = FText::FromString(FString::Printf(TEXT("N°%03d  ???"), Species->NationalDex));
+				OutText = LOCTEXT("InfoUnseen", "Pas encore rencontré.");
+				return;
+			}
+			FString Types = GetTypeName(Species->Type1).ToString();
+			if (Species->Type2 != EPokemonType::None)
+			{
+				Types += TEXT(" / ") + GetTypeName(Species->Type2).ToString();
+			}
+			OutTitle = FText::FromString(FString::Printf(TEXT("N°%03d  %s"), Species->NationalDex, *Species->DisplayName.ToString()));
+			OutText = FText::Format(LOCTEXT("InfoSpecies", "{0}\n{1}"), Species->Genus, FText::FromString(Types));
+			return;
+		}
+		break;
+	}
+	case EPokedexPage::Bag:
+	case EPokedexPage::GiveItem:
+	{
+		const TArray<FName> Items = Page == EPokedexPage::Bag ? GetBagPocketItems(BagPocket) : GetHoldableItems();
+		const FItemRow* Item = (Database && Items.IsValidIndex(Selection)) ? Database->FindItem(Items[Selection]) : nullptr;
+		if (Item)
+		{
+			OutTitle = Item->DisplayName;
+			OutText = Item->Description;
+			return;
+		}
+		break;
+	}
+	case EPokedexPage::Map:
+	{
+		const UPokedexModel* Model = GetModel();
+		const TArray<int32> Towns = GetMapTowns();
+		if (Model && Towns.IsValidIndex(Selection))
+		{
+			FVector2D PlayerUV;
+			const bool bHere = GetPlayerMapPosition(PlayerUV) && FindPlaceAt(PlayerUV) == Towns[Selection];
+			OutTitle = Model->MapPlaces[Towns[Selection]].Name;
+			OutText = bHere ? LOCTEXT("InfoHere", "Tu es ici.") : LOCTEXT("InfoTown", "Ville de Kanto.");
+			return;
+		}
+		break;
+	}
+	default:
+		break;
+	}
+
+	if (Page == EPokedexPage::Home)
+	{
+		OutTitle = LOCTEXT("TitleHome", "POKÉDEX");
+		OutText = LOCTEXT("InfoHome", "Choisis un menu sur le volet.");
+		return;
+	}
+	OutTitle = GetMenuName(CurrentMenu);
+	OutText = GetMenuDescription(CurrentMenu);
+}
+
+const UPokedexModel* UPokedexScreenWidget::GetModel() const
+{
+	if (!bModelLoaded)
+	{
+		bModelLoaded = true;
+		CachedModel = LoadObject<UPokedexModel>(nullptr, UPokedexModel::AssetPath, nullptr, LOAD_NoWarn | LOAD_Quiet);
+	}
+	return CachedModel;
+}
+
+TArray<FName> UPokedexScreenWidget::GetHoldableItems() const
+{
+	TArray<FName> Items;
+	const APokemonPlayerState* State = GetPlayerState();
+	const UPokemonDatabase* Database = GetDatabase();
+	if (!State)
+	{
+		return Items;
+	}
+	for (const FItemStack& Stack : State->Inventory)
+	{
+		const FItemRow* Item = Database ? Database->FindItem(Stack.Item) : nullptr;
+		if (Stack.Count > 0 && Item && Item->Category != EItemCategory::KeyItem)
+		{
+			Items.Add(Stack.Item);
+		}
+	}
+	return Items;
+}
+
+TArray<FText> UPokedexScreenWidget::GetSpeciesLocations(FName Species) const
+{
+	TArray<FText> Locations;
+	const UPokemonDatabase* Database = GetDatabase();
+	if (!Database || !Database->Encounters)
+	{
+		return Locations;
+	}
+	TSet<FString> Seen;
+	for (const TPair<FName, uint8*>& Pair : Database->Encounters->GetRowMap())
+	{
+		const FEncounterTableRow* Table = reinterpret_cast<const FEncounterTableRow*>(Pair.Value);
+		const bool bLivesHere = Table->Slots.ContainsByPredicate([Species](const FEncounterSlot& Slot) { return Slot.Species == Species; });
+		if (!bLivesHere)
+		{
+			continue;
+		}
+		const FText Name = Table->LocationDisplayName.IsEmpty() ? FText::FromName(Table->Location) : Table->LocationDisplayName;
+		bool bAlreadyIn = false;
+		Seen.Add(Name.ToString(), &bAlreadyIn);
+		if (!bAlreadyIn)
+		{
+			Locations.Add(Name);
+		}
+	}
+	return Locations;
+}
+
+bool UPokedexScreenWidget::GetPlayerMapPosition(FVector2D& OutUV) const
+{
+	const APlayerController* Controller = GetOwningPlayer();
+	const APawn* Pawn = Controller ? Controller->GetPawn() : nullptr;
+	UWorld* World = GetWorld();
+	if (!Pawn || !World)
+	{
+		return false;
+	}
+	const UPokedexModel* Model = GetModel();
+	const float Size = float(FMath::Max(2, Model ? Model->MapHeightmapSize : 4033) - 1);
+	for (TActorIterator<ALandscape> It(World); It; ++It)
+	{
+		// Repère du Landscape : un point de heightmap par unité, X = colonne = nord, Y = ligne = est
+		const FVector Local = It->GetActorTransform().InverseTransformPosition(Pawn->GetActorLocation());
+		OutUV = FVector2D(Local.Y / Size, 1.f - Local.X / Size);
+		return OutUV.X >= 0.f && OutUV.X <= 1.f && OutUV.Y >= 0.f && OutUV.Y <= 1.f;
+	}
+	return false;
+}
+
+int32 UPokedexScreenWidget::FindPlaceAt(const FVector2D& UV) const
+{
+	const UPokedexModel* Model = GetModel();
+	if (!Model)
+	{
+		return -1;
+	}
+	int32 Best = -1;
+	float BestScore = TNumericLimits<float>::Max();
+	for (int32 Index = 0; Index < Model->MapPlaces.Num(); ++Index)
+	{
+		const FPokedexMapPlace& Place = Model->MapPlaces[Index];
+		const float Distance = float(FVector2D::Distance(UV, Place.UV));
+		if (Distance > FMath::Max(Place.Radius, 0.002f))
+		{
+			continue;
+		}
+		// Les villes passent avant les routes qui y arrivent
+		const float Score = Distance / FMath::Max(Place.Radius, 0.002f) + (Place.Kind == EPokedexPlaceKind::Town ? 0.f : 10.f);
+		if (Score < BestScore)
+		{
+			BestScore = Score;
+			Best = Index;
+		}
+	}
+	return Best;
+}
+
+TArray<int32> UPokedexScreenWidget::GetMapTowns() const
+{
+	TArray<int32> Towns;
+	if (const UPokedexModel* Model = GetModel())
+	{
+		for (int32 Index = 0; Index < Model->MapPlaces.Num(); ++Index)
+		{
+			if (Model->MapPlaces[Index].Kind == EPokedexPlaceKind::Town)
+			{
+				Towns.Add(Index);
+			}
+		}
+	}
+	return Towns;
 }
 
 #undef LOCTEXT_NAMESPACE
