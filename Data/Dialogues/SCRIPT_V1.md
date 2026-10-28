@@ -949,7 +949,7 @@ Légende : *Parler* = en parlant au PNJ ; *Scène* = déclenchée par le jeu (vo
 *Parler* · sauf PaidMuseum
 
 - **Hôtesse** : Bienvenue au Musée des Sciences d'Argenta !
-- **Hôtesse** : L'entrée coûte 50 ₽. Voulez-vous visiter le musée ?
+- **Hôtesse** : L'entrée coûte 50 P. Voulez-vous visiter le musée ?
   - ▸ « Oui » → `PewterMuseum_Receptionist_Pay`
   - ▸ « Non » → `PewterMuseum_Receptionist_Decline`
 
@@ -957,7 +957,7 @@ Légende : *Parler* = en parlant au PNJ ; *Scène* = déclenchée par le jeu (vo
 
 *Scène*
 
-- *{PlayerName} paie 50 ₽.*
+- *{PlayerName} paie 50 P.*
   - ⚙ TakeMoney  ×50
 - **Hôtesse** : Merci ! Bonne visite !
 - ⚑ PaidMuseum
@@ -1201,6 +1201,6 @@ Légende : *Parler* = en parlant au PNJ ; *Scène* = déclenchée par le jeu (vo
 *Scène*
 
 - *{PlayerName} n'a plus de Pokémon en état de se battre !*
-- *{PlayerName} perd {MoneyLost} ₽...*
+- *{PlayerName} perd {MoneyLost} P...*
 - *... et se précipite au dernier Centre Pokémon visité.*
   - ⚙ ReturnToLastHeal

@@ -635,11 +635,11 @@ conv("PewterCity_Man_Talk", "PewterCity_Man", [
 # ----- Musée
 conv("PewterMuseum_Receptionist_Welcome", "PewterMuseum_Receptionist", [
     "Bienvenue au Musée des Sciences d'Argenta !",
-    L("L'entrée coûte 50 ₽. Voulez-vous visiter le musée ?",
+    L("L'entrée coûte 50 P. Voulez-vous visiter le musée ?",
       choices=[("Oui", "PewterMuseum_Receptionist_Pay"), ("Non", "PewterMuseum_Receptionist_Decline")]),
 ], block=["PaidMuseum"])
 conv("PewterMuseum_Receptionist_Pay", "PewterMuseum_Receptionist", [
-    L("@Narrator {PlayerName} paie 50 ₽.", ev="TakeMoney", n=50, fail="PewterMuseum_Receptionist_NoMoney"),
+    L("@Narrator {PlayerName} paie 50 P.", ev="TakeMoney", n=50, fail="PewterMuseum_Receptionist_NoMoney"),
     "Merci ! Bonne visite !",
 ], trigger="Script", sets=["PaidMuseum"])
 conv("PewterMuseum_Receptionist_NoMoney", "PewterMuseum_Receptionist", [
@@ -748,6 +748,6 @@ conv("PewterPokeMart_Customer_Talk", "PewterPokeMart_Customer", [
 # ================================================================== SYSTÈME
 conv("Battle_PlayerBlackout", "Narrator", [
     "{PlayerName} n'a plus de Pokémon en état de se battre !",
-    "{PlayerName} perd {MoneyLost} ₽...",
+    "{PlayerName} perd {MoneyLost} P...",
     L("... et se précipite au dernier Centre Pokémon visité.", ev="ReturnToLastHeal"),
 ], trigger="Script")

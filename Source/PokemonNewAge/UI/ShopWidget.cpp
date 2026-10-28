@@ -48,7 +48,7 @@ namespace
 
 	FText Money(int32 Amount)
 	{
-		return FText::Format(LOCTEXT("Money", "{0} ₽"), FText::AsNumber(Amount));
+		return FText::Format(LOCTEXT("Money", "{0} P"), FText::AsNumber(Amount));
 	}
 
 	const FItemRow* FindItem(const UObject* Context, FName Item)
@@ -119,8 +119,23 @@ TSharedRef<SWidget> UShopWidget::RebuildWidget()
 		ListSize->SetContent(ListBox);
 		UVerticalBox* ListColumn = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
 		ListBox->SetContent(ListColumn);
+		// En-tête aux mêmes largeurs de colonnes que les lignes de la liste
+		UHorizontalBox* TitleRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+		ListColumn->AddChildToVerticalBox(TitleRow)->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
 		ListTitle = MakeText(WidgetTree, 20, DimColor, TEXT("ListTitle"));
-		ListColumn->AddChildToVerticalBox(ListTitle)->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
+		TitleRow->AddChildToHorizontalBox(ListTitle)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+		UTextBlock* OwnedTitle = MakeText(WidgetTree, 20, DimColor);
+		OwnedTitle->SetText(LOCTEXT("OwnedTitle", "Sac"));
+		USizeBox* OwnedTitleSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		OwnedTitleSize->SetWidthOverride(110.f);
+		OwnedTitleSize->SetContent(OwnedTitle);
+		TitleRow->AddChildToHorizontalBox(OwnedTitleSize);
+		ListPriceTitle = MakeText(WidgetTree, 20, DimColor, TEXT("ListPriceTitle"));
+		ListPriceTitle->SetJustification(ETextJustify::Right);
+		USizeBox* PriceTitleSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		PriceTitleSize->SetWidthOverride(140.f);
+		PriceTitleSize->SetContent(ListPriceTitle);
+		TitleRow->AddChildToHorizontalBox(PriceTitleSize);
 		ItemList = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("ItemList"));
 		ListColumn->AddChildToVerticalBox(ItemList)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 		QuantityText = MakeText(WidgetTree, 26, AccentColor, TEXT("QuantityText"));
@@ -228,8 +243,8 @@ void UShopWidget::Refresh()
 	const EMode Shown = Mode == EMode::Menu ? (MenuSelection == 1 ? EMode::Sell : EMode::Buy) : ListMode;
 	const TArray<FShopOffer>& List = Shown == EMode::Buy ? Stock : Sellable;
 	const bool bListActive = Mode == EMode::Buy || Mode == EMode::Sell || Mode == EMode::Quantity;
-	ListTitle->SetText(Shown == EMode::Buy ? LOCTEXT("BuyTitle", "Article                                   Sac       Prix")
-		: LOCTEXT("SellTitle", "Objet                                     Sac   Reprise"));
+	ListTitle->SetText(Shown == EMode::Buy ? LOCTEXT("BuyTitle", "Article") : LOCTEXT("SellTitle", "Objet"));
+	ListPriceTitle->SetText(Shown == EMode::Buy ? LOCTEXT("PriceTitle", "Prix") : LOCTEXT("BuybackTitle", "Reprise"));
 	ItemList->ClearChildren();
 	if (bShowList && List.Num() == 0)
 	{
