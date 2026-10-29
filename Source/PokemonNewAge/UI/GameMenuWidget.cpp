@@ -14,7 +14,6 @@
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Engine/Texture2D.h"
-#include "Kismet/KismetSystemLibrary.h"
 #include "PokemonNewAgePlayerController.h"
 #include "UI/Pokedex/PokedexModel.h"
 #include "UI/Pokedex/PokedexScreenWidget.h"
@@ -29,8 +28,8 @@ namespace GameMenu
 	const FLinearColor KeyColor(1.f, 0.82f, 0.35f);
 
 	/** Noms des icônes, dans l'ordre de EPokedexMenu (comme ICONS dans import_pokedex_unreal.py) */
-	const TCHAR* IconNames[] = { TEXT("Pokemon"), TEXT("Pokedex"), TEXT("Bag"), TEXT("Radio"), TEXT("Trainer"),
-		TEXT("Map"), TEXT("Save"), TEXT("Online"), TEXT("Options"), TEXT("Style") };
+	const TCHAR* IconNames[] = { TEXT("Pokedex"), TEXT("Map"), TEXT("Bag"), TEXT("Pokemon"), TEXT("Trainer"),
+		TEXT("Radio"), TEXT("Online"), TEXT("Camera"), TEXT("Steps"), TEXT("Save") };
 
 	UTextBlock* MakeText(UWidgetTree* Tree, const FText& Value, int32 Size, const FLinearColor& Color)
 	{
@@ -49,8 +48,12 @@ using namespace GameMenu;
 
 TArray<EPokedexMenu> UGameMenuWidget::GetTabs()
 {
-	return { EPokedexMenu::Pokemon, EPokedexMenu::Pokedex, EPokedexMenu::Bag, EPokedexMenu::Trainer,
-		EPokedexMenu::Map, EPokedexMenu::Save, EPokedexMenu::Online, EPokedexMenu::Options };
+	TArray<EPokedexMenu> Tabs;
+	for (int32 Index = 0; Index < PokedexMenuCount; ++Index)
+	{
+		Tabs.Add(EPokedexMenu(Index));
+	}
+	return Tabs;
 }
 
 UTexture2D* UGameMenuWidget::GetMenuIcon(EPokedexMenu Menu)
@@ -102,7 +105,7 @@ TSharedRef<SWidget> UGameMenuWidget::RebuildWidget()
 		TabsSlot->SetPadding(FMargin(0.f, 0.f, 0.f, 16.f));
 
 		const TArray<EPokedexMenu> Menus = GetTabs();
-		for (int32 Index = 0; Index < Menus.Num() && Index < 8; ++Index)
+		for (int32 Index = 0; Index < Menus.Num() && Index < 10; ++Index)
 		{
 			UButton* Button = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass());
 			UVerticalBox* Content = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
@@ -133,7 +136,9 @@ TSharedRef<SWidget> UGameMenuWidget::RebuildWidget()
 			case 4: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab4Clicked); break;
 			case 5: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab5Clicked); break;
 			case 6: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab6Clicked); break;
-			default: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab7Clicked); break;
+			case 7: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab7Clicked); break;
+			case 8: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab8Clicked); break;
+			default: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab9Clicked); break;
 			}
 			UHorizontalBoxSlot* ButtonSlot = Tabs->AddChildToHorizontalBox(Button);
 			ButtonSlot->SetPadding(FMargin(4.f, 0.f));
@@ -164,7 +169,6 @@ TSharedRef<SWidget> UGameMenuWidget::RebuildWidget()
 		HelpSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 		HelpSlot->SetVerticalAlignment(VAlign_Center);
 		AddButton(Bottom, LOCTEXT("Resume", "Reprendre"))->OnClicked.AddDynamic(this, &UGameMenuWidget::OnResumeClicked);
-		AddButton(Bottom, LOCTEXT("Quit", "Quitter le jeu"))->OnClicked.AddDynamic(this, &UGameMenuWidget::OnQuitClicked);
 	}
 
 	return Super::RebuildWidget();
@@ -189,14 +193,6 @@ void UGameMenuWidget::NativeConstruct()
 
 void UGameMenuWidget::OpenTab(EPokedexMenu Menu)
 {
-	// Le Pokédex reste en 3D (demandé par L'amie) : le menu classique lui laisse la place
-	if (Menu == EPokedexMenu::Pokedex)
-	{
-		if (APokemonNewAgePlayerController* Controller = Cast<APokemonNewAgePlayerController>(GetOwningPlayer()); Controller && Controller->SwitchToPokedex3D())
-		{
-			return;
-		}
-	}
 	const int32 Index = GetTabs().IndexOfByKey(Menu);
 	CurrentTab = Index != INDEX_NONE ? Index : 0;
 	if (Screen)
@@ -275,10 +271,6 @@ void UGameMenuWidget::OnResumeClicked()
 	CloseMenu();
 }
 
-void UGameMenuWidget::OnQuitClicked()
-{
-	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, false);
-}
 
 void UGameMenuWidget::OnTab0Clicked() { OpenTab(GetTabs()[0]); }
 void UGameMenuWidget::OnTab1Clicked() { OpenTab(GetTabs()[1]); }
@@ -288,6 +280,8 @@ void UGameMenuWidget::OnTab4Clicked() { OpenTab(GetTabs()[4]); }
 void UGameMenuWidget::OnTab5Clicked() { OpenTab(GetTabs()[5]); }
 void UGameMenuWidget::OnTab6Clicked() { OpenTab(GetTabs()[6]); }
 void UGameMenuWidget::OnTab7Clicked() { OpenTab(GetTabs()[7]); }
+void UGameMenuWidget::OnTab8Clicked() { OpenTab(GetTabs()[8]); }
+void UGameMenuWidget::OnTab9Clicked() { OpenTab(GetTabs()[9]); }
 
 void UGameMenuWidget::CloseMenu()
 {

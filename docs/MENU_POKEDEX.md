@@ -1,26 +1,62 @@
-# Menu en jeu (menu PC classique + Pokédex 3D, SCRUM-64) et écran de combat (SCRUM-36)
+# Menu Échap, Pokédex 3D et HUD en jeu (SCRUM-64, SCRUM-36)
 
-Choix de L'amie le 2026-10-28 : un **menu PC classique** comme dans n'importe quel jeu PC, avec ses icônes, mais le **Pokédex reste en 3D**.
+Organisation voulue par L'amie le 2026-10-29 :
 
-- **Tab** (ou Start) ouvre le menu plein écran : le décor se floute, les **onglets à icônes** sont en haut (Pokémon, Pokédex, Sac, Dresseur, Carte, Sauvegarder, En ligne, Options), la page de l'onglet au centre. Clic sur un onglet, **LB / RB** ou **Page préc. / Page suiv.** pour changer d'onglet, **Échap** pour revenir en arrière puis fermer, **Tab** pour fermer. Boutons **Reprendre** et **Quitter le jeu** en bas.
-- **Raccourcis** directs, modifiables dans Options > Commandes :
+- **Échap** (ou Select) ouvre le menu **Paramètres** façon jeu PC : onglets **Audio**, **Vidéo**, **Commandes**, **Jeu**, et les boutons **OK** (appliquer et fermer), **Annuler** (revenir aux réglages enregistrés), **Appliquer**, **Retour** (fermer sans appliquer). Rien d'autre dans ce menu.
+- **Tab** (ou Start) sort le **Pokédex 3D** modélisé par L'amie. C'est lui qui a toutes les fonctions du jeu (voir la liste plus bas), dont **Sauvegarder** ; sinon le jeu sauvegarde tout seul.
+- Le **HUD** suit la maquette de L'amie (fichiers du projet `hud/maquette_hud_route1.png`) : icône du Pokédex en haut à droite, nom du lieu en grand à l'arrivée, et en bas à droite le lieu, l'heure, la température, la météo et la boussole.
 
-| Touche | Onglet |
+Pendant un combat, Tab, Échap et les raccourcis ne font rien : c'est l'écran de combat qui s'affiche.
+
+**Dans l'éditeur, Échap arrête le jeu (PIE).** Pour tester le menu Échap : lancer en **Jeu autonome** (Standalone Game, flèche à côté de Jouer), ou changer le raccourci de l'éditeur dans **Modifier > Préférences de l'éditeur > Général > Raccourcis clavier**, chercher **Arrêter** (Stop) dans **Jouer dans l'éditeur** et mettre Maj + Échap. Select à la manette marche aussi.
+
+## Le menu Échap (Paramètres)
+
+| Onglet | Réglages |
 |---|---|
-| R | Pokémon (équipe) |
-| P | Pokédex (en 3D) |
-| B | Sac |
-| C | Dresseur |
-| M | Carte |
-| F5 | Sauvegarder |
-| L | En ligne |
-| O | Options |
+| Audio | volume général, musique, bruitages |
+| Vidéo | résolution, mode d'affichage (plein écran, plein écran fenêtré, fenêtré), synchro verticale, images par seconde max., champ de vision, échelle de résolution, qualité globale, distance d'affichage, anticrénelage, ombres, textures, effets, post-traitement, végétation |
+| Commandes | sensibilité et inversion de la caméra, **toutes les touches** (clavier puis manette : clic sur la touche, puis appuyer sur la nouvelle ; si elle servait déjà, les deux commandes échangent), « Remettre les touches d'origine » |
+| Jeu | vitesse du texte, afficher le HUD, sauvegarde automatique, effacer la sauvegarde (deux clics), quitter le jeu |
 
-  Menu ouvert, le raccourci d'un autre onglet y va, celui de l'onglet ouvert ferme le menu.
-- **Barre d'icônes** en bas à droite de l'écran, avec la touche de chaque raccourci. Elle se cache pendant les combats et quand un menu est ouvert. Options > **Icônes de menu à l'écran** : Oui / Non (on choisira plus tard entre HUD et raccourcis seuls).
-- **Pokédex 3D** : l'onglet Pokédex (ou P) fait sortir le Pokédex rouge modélisé par L'amie, ouvert directement sur l'encyclopédie. Ses 10 boutons à icônes marchent toujours. Décocher `Use Pokedex 3D` dans le PlayerController pour avoir le Pokédex à plat dans le menu classique.
+Les réglages attendent **Appliquer** ou **OK** ; les touches changent tout de suite. Ils sont gardés dans `Saved/SaveGames/Options.sav` et `GameUserSettings.ini`. LB / RB changent d'onglet à la manette.
 
-Les pages viennent des vraies données (équipe, sac, Pokédex et badges du PlayerState, Data Tables des espèces, attaques, objets et rencontres). Pendant un combat, Tab et les raccourcis ne font rien : c'est l'écran de combat qui s'affiche.
+## Le Pokédex 3D (Tab)
+
+Les 10 boutons à icônes du volet, dans l'ordre de la grille :
+
+1. **Pokédex** : toutes les espèces par numéro, vu / capturé, fiche avec types, description, **où le trouver** et la figurine 3D du Pokémon.
+2. **Carte et GPS** : Kanto vu de haut, le point rouge est le joueur, « Tu es ici » donne le lieu. Valider sur une ville en fait la **destination du GPS** (point vert sur la carte, repère jaune et distance sur la boussole du HUD) ; valider encore l'arrête.
+3. **Sac** : 4 poches, **Soins**, **Capture**, **Baies et matériaux**, **Objets clés** ; utiliser un soin sur un Pokémon.
+4. **Équipe** : PV et objet tenu, la fiche en 3 onglets (infos, stats, attaques), **Déplacer**, **Donner un objet** / **Reprendre l'objet**.
+5. **Carte dresseur** : nom, numéro, argent, temps de jeu, Pokédex, les 8 badges et les exploits.
+6. **Radio** : bientôt.
+7. **Multijoueur** : mode de la partie et joueurs présents ; échanges et combats : bientôt (SCRUM-69).
+8. **Appareil photo** : le Pokédex se range, le HUD disparaît ; clic gauche, Entrée ou A prend une photo (sans l'interface, dans `Saved/Screenshots/Windows/Photo_<date>.png`), Échap ou B revient au jeu.
+9. **Compteur de pas** : les pas depuis le début (un pas = 75 cm marchés au sol, comptés par le serveur et sauvegardés) et la distance en km.
+10. **Sauvegarder** : enregistre la partie tout de suite.
+
+**Raccourcis** (modifiables dans Échap > Commandes) : P Pokédex, M Carte, B Sac, R Équipe, C Carte dresseur, L Multijoueur, V Appareil photo, F5 Sauvegarder. Ils ouvrent le Pokédex directement sur la fonction (l'appareil photo démarre sans le Pokédex).
+
+Les icônes **Appareil photo** et **Compteur de pas** sont provisoires (faites par `Tools/HUD/make_hud_assets.py`) : remplacer `Tools/Pokedex/Assets/icons/T_PokedexIcon_Camera.png` et `T_PokedexIcon_Steps.png` (256 × 256, fond transparent) puis relancer le script d'import.
+
+Sans `DA_PokedexModel` (ou avec `Use Pokedex 3D` décoché dans le PlayerController), Tab ouvre le même Pokédex à plat, ses 10 fonctions en onglets.
+
+## Sauvegarde automatique
+
+Toutes les 5 minutes et en arrivant dans un nouveau lieu, sauf en combat ou menu ouvert, et jamais deux fois en moins de 30 s. « Partie sauvegardée » s'affiche sous l'icône du Pokédex. Réglages `Auto Save Interval` et `Auto Save Min Gap` dans le PlayerController ; Échap > Jeu > Sauvegarde automatique pour la couper.
+
+## Le HUD
+
+Fait en C++ (`UGameHUDWidget`) aux mesures de la maquette (1920 × 1080, mis à l'échelle par Unreal) :
+
+- **Icône du Pokédex** en haut à droite (image de L'amie), avec la touche qui l'ouvre dessous.
+- **Nom du lieu** en Futura 95, centré en haut, avec le trait blanc dessous : il apparaît 4 s quand on entre dans une ville ou sur une route.
+- **En bas à droite** : le lieu (Inter 24), l'heure du PC, la température (17 °C de moyenne, plus chaud à 15 h, réglable : `Base Temperature`, `Temperature Swing`) et le picto météo (soleil par défaut, `SetWeather` pour nuage ou pluie en attendant un vrai système météo).
+- **Boussole** : disque gris translucide, N en haut (le nord de Kanto), point blanc du joueur, cône de vue qui tourne avec la caméra, repère jaune du GPS sur le bord et distance au centre.
+- Il se cache pendant les combats, les menus, la boutique, le PC et l'appareil photo, ou avec Échap > Jeu > Afficher le HUD.
+
+Images et polices : `Tools/HUD/Assets/` (icône du Pokédex, cône, pictos météo ; polices Inter et Futura en `FF_*.ttf`), importées dans `/Game/UI/HUD` par `Tools/HUD/import_hud_unreal.py`, lancé aussi à la fin du script du Pokédex.
 
 ## 1. Compiler (Unreal fermé)
 
@@ -35,7 +71,7 @@ Le modèle de L'amie (`Pokedex.blend`) a été découpé en 33 pièces par `Tool
 1. Prendre `Pokedex_Generated.zip` dans les fichiers du projet (dossier **pokedex/**) et le dézipper dans `Tools/Pokedex/`. On doit avoir `Tools/Pokedex/Generated/Pokedex.fbx` et `Tools/Pokedex/Generated/textures/` (16 images).
    Autre possibilité, si Blender est installé dans `C:\Program Files\Blender Foundation\` : mettre `Pokedex.blend` (dossier **pokedex/source/**) dans `Tools/Pokedex/Source/`, le script le prépare tout seul.
 2. Dans Unreal : **Outils > Exécuter un script Python** (Tools > Execute Python Script), choisir `Tools/Pokedex/import_pokedex_unreal.py`.
-3. Attendre la fin. Le journal (**Fenêtre > Journal de sortie**) doit afficher « Menu prêt : 33 pièces 3D sur 33, 16 textures, 10 icônes, 41 lieux sur la carte, 7 sons ».
+3. Attendre la fin. Le journal (**Fenêtre > Journal de sortie**) doit afficher « HUD prêt : 5 images, 3 polices » puis « Menu prêt : 33 pièces 3D sur 33, 16 textures, 10 icônes, 41 lieux sur la carte, 7 sons ».
 
 Sans le dossier `Generated` (ni Blender), le script importe quand même les icônes, la carte et les sons du menu classique, sans le Pokédex 3D (un avertissement le dit dans le journal).
 
@@ -72,25 +108,12 @@ Les pièces de l'appareil :
 | grand écran | cliquable directement (listes, onglets) |
 
 - **Tourner l'appareil** : clic droit maintenu, ou clic gauche sur le boîtier ou le volet. Il revient en place quand on lâche. La molette rapproche ou éloigne (sur l'écran, elle fait défiler la liste).
-- **Clavier** : flèches ou ZQSD (grille 5 × 2 sur le volet), Entrée pour valider, Échap pour revenir, Tab pour fermer.
+- **Clavier** : flèches ou ZQSD (grille 5 × 2 sur le volet), Entrée pour valider, Échap ou Retour arrière pour revenir, Tab pour fermer.
 - **Manette** : croix, A, B, gâchettes hautes pour changer de menu, stick droit pour tourner, Start pour fermer.
 
 Les autres écrans : celui du haut du volet donne le nom et la description de ce qui est choisi (menu, Pokémon, espèce, objet, ville). Les petits écrans affichent l'heure et l'argent (sous l'écran), le Pokédex capturés / vus et les badges (sur le volet).
 
-Ce que contient chaque menu (dans l'ordre des boutons) :
-
-1. **Pokémon (L'Équipe)** : l'équipe avec PV et objet tenu, la fiche en 3 onglets (infos, stats, attaques), **Déplacer** pour changer l'ordre de combat, **Donner un objet** / **Reprendre l'objet**.
-2. **Pokédex (L'Encyclopédie)** : toutes les espèces par numéro, vu / capturé, fiche avec types, description et **où le trouver** (tables de rencontres).
-3. **Sac** : 4 poches, **Soins**, **Capture**, **Baies et matériaux**, **Objets clés** ; utiliser un soin sur un Pokémon.
-4. **Radio** : bientôt.
-5. **Carte Dresseur** : nom, numéro, argent, temps de jeu, Pokédex, les 8 badges et les **exploits** (premier Pokémon, 10 capturés, 50 vus, badge de Pierre, 8 badges).
-6. **Carte** : Kanto vu de haut, le point rouge est le joueur, « Tu es ici » donne le lieu, la liste des villes les montre sur la carte.
-7. **Sauvegarder** : enregistre la partie (rechargée au lancement suivant).
-8. **En ligne** : mode de la partie (solo, hôte, connecté) et joueurs présents ; échanges et combats entre joueurs : bientôt (SCRUM-69).
-9. **Options** : vitesse du texte, volume général, **musique**, **bruitages**, sensibilité et inversion de la caméra, qualité, affichage, synchro verticale, **commandes** (changer les touches), effacer la sauvegarde.
-10. **Style** : bientôt.
-
-**Changer une touche** : Options > Commandes > « changer », puis Valider sur une commande (Avancer, Sauter, Courir, Interagir, Menu..., au clavier puis à la manette) et appuyer sur la nouvelle touche. Échap (ou Select à la manette) annule. Si la touche servait déjà à une autre commande, les deux échangent. « Remettre les touches d'origine » en bas de la liste. Les touches sont gardées dans la sauvegarde des options ; les contextes d'entrée (`IMC_Default`...) ne sont jamais modifiés, le jeu travaille sur des copies.
+Ce que contient chaque fonction : voir « Le Pokédex 3D (Tab) » plus haut.
 
 **Figurine 3D** : dans la fiche du Pokédex (espèce vue), la liste de l'équipe et le résumé d'un Pokémon, une petite figurine du Pokémon tourne au-dessus de l'écran du volet. Le code cherche `/Game/Pokemon/Models/<Espèce>/SK_<Espèce>` (ou `SM_<Espèce>` pour un modèle fixe) et joue `A_<Espèce>_Idle` s'il existe. Sans modèle importé, rien ne s'affiche. Réglages dans `PokedexDevice` : `Figure Height` (4,5 cm), `Figure Folder`.
 
@@ -114,10 +137,12 @@ Il s'ouvre tout seul quand un combat commence : cadres des deux Pokémon (nom, n
 
 ## Pas encore fait
 
-- **Radio** et **Style** : pages « bientôt ».
+- **Radio** : page « bientôt ».
 - **Échanges et combats entre joueurs** : SCRUM-69.
 - **Musique** : le réglage existe ; il agira sur les musiques dès qu'elles utiliseront la classe de son `SC_Music`.
 - **Figurine** : elle n'apparaît qu'une fois les modèles importés (fil des modèles 3D) ; la version chromatique (`SK_<Espèce>_Shiny`) n'est pas encore utilisée.
-- **Options proposées** (taille du texte, cris, résolution, mode daltonien...) : en attente de validation.
+- **Météo** : pas encore de système ; le picto et la température du HUD sont fixes ou calculés selon l'heure. Le picto pluie de la maquette (« Plan de travail 1 copie 2.png ») n'a pas été envoyé : les pictos sont provisoires.
+- **Icônes** Appareil photo et Compteur de pas : provisoires.
+- **Boussole** : disque vide comme la maquette ; une vraie mini-carte dedans est possible plus tard.
 - Les sons sont synthétiques : on pourra les remplacer en gardant les mêmes noms.
 - Le nom du joueur est celui donné par Unreal (pas encore d'écran pour le choisir).

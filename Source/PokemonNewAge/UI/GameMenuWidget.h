@@ -13,11 +13,10 @@ class UPokedexScreenWidget;
 enum class EPokedexMenu : uint8;
 
 /**
- *  Menu en jeu PC classique (choix de L'amie le 2026-10-28) : plein écran, onglets à icônes en haut
- *  (Pokémon, Pokédex, Sac, Dresseur, Carte, Sauvegarder, En ligne, Options), la page de l'onglet au centre.
- *  Les pages sont celles du Pokédex (UPokedexScreenWidget, à plat), sauf l'onglet Pokédex qui sort le Pokédex 3D
- *  (APokedexDevice). Tab ou Échap ferme, LB/RB ou Page préc./suiv.
- *  change d'onglet, et le raccourci d'un onglet (P Pokédex, B Sac...) y va directement. Voir docs/MENU_POKEDEX.md.
+ *  Le Pokédex à plat, quand le Pokédex 3D n'est pas disponible (DA_PokedexModel pas importé, ou bUsePokedex3D décoché) :
+ *  plein écran, ses 10 fonctions en onglets à icônes en haut, la page au centre (UPokedexScreenWidget).
+ *  Tab ferme, LB/RB ou Page préc./suiv. change d'onglet, le raccourci d'une fonction (P Pokédex, B Sac...) y va.
+ *  Les réglages sont dans le menu Échap (USettingsMenuWidget). Voir docs/MENU_POKEDEX.md.
  */
 UCLASS()
 class UGameMenuWidget : public UUserWidget
@@ -49,7 +48,6 @@ protected:
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 
 	UFUNCTION() void OnResumeClicked();
-	UFUNCTION() void OnQuitClicked();
 
 	UFUNCTION() void OnTab0Clicked();
 	UFUNCTION() void OnTab1Clicked();
@@ -59,6 +57,8 @@ protected:
 	UFUNCTION() void OnTab5Clicked();
 	UFUNCTION() void OnTab6Clicked();
 	UFUNCTION() void OnTab7Clicked();
+	UFUNCTION() void OnTab8Clicked();
+	UFUNCTION() void OnTab9Clicked();
 
 private:
 

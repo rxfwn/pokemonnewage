@@ -18,7 +18,8 @@ Ce qu'il fait, tout seul :
   5. importe les 10 icônes et la carte de Kanto (Tools/Pokedex/Assets) dans /Game/UI/Pokedex/Icons et /Map ;
   6. fabrique les sons (make_pokedex_sounds.py), les importe dans /Game/UI/Pokedex/Sounds, et crée les réglages
      de volume /Game/Audio/SC_Music, SC_Effects et SM_Options (options Musique et Bruitages) ;
-  7. crée ou met à jour DA_PokedexModel, que le Pokédex 3D charge à l'ouverture du menu.
+  7. crée ou met à jour DA_PokedexModel, que le Pokédex 3D charge à l'ouverture du menu ;
+  8. lance Tools/HUD/import_hud_unreal.py (images et polices du HUD en jeu).
 Relançable : les assets existants sont remplacés.
 """
 
@@ -53,8 +54,8 @@ PARTS = ["Body", "Hinge", "Lens", "LensRing", "LedRed", "LedYellow", "LedGreen",
 # Matériaux du modèle de L'amie (Udim0003 a aussi une carte émissive : voyants, objectif)
 UDIMS = ["Udim0001", "Udim0002", "Udim0003", "Udim0004", "Udim0005"]
 
-# Icônes des 10 boutons, dans l'ordre de EPokedexMenu (C++)
-ICONS = ["Pokemon", "Pokedex", "Bag", "Radio", "Trainer", "Map", "Save", "Online", "Options", "Style"]
+# Icônes des 10 boutons, dans l'ordre de EPokedexMenu (C++). Camera et Steps : provisoires (Tools/HUD/make_hud_assets.py)
+ICONS = ["Pokedex", "Map", "Bag", "Pokemon", "Trainer", "Radio", "Online", "Camera", "Steps", "Save"]
 
 # Propriété de DA_PokedexModel -> son
 SOUNDS = {
@@ -445,6 +446,14 @@ def main():
         unreal.log_warning("Pièces manquantes : " + ", ".join(missing))
     if not audio_ok:
         unreal.log_warning("Réglages de volume (Content/Audio) pas créés : options Musique et Bruitages sans effet.")
+    # Le HUD en jeu (icône du Pokédex, boussole, polices) va avec
+    hud_script = os.path.join(PROJECT_DIR, "Tools", "HUD", "import_hud_unreal.py")
+    if os.path.exists(hud_script):
+        spec = importlib.util.spec_from_file_location("import_hud_unreal", hud_script)
+        hud = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(hud)
+        hud.import_hud()
+
     if model:
         unreal.log("Menu prêt : %d pièces 3D sur %d, %d textures, %d icônes, %d lieux sur la carte, %d sons. "
                    "Lancer le jeu et appuyer sur Tab." % (len(meshes), len(PARTS), sum(len(v) for v in textures.values()),

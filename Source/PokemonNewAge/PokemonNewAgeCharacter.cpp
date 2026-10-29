@@ -121,6 +121,7 @@ void APokemonNewAgeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 		if (APokemonNewAgePlayerController* PokemonController = Cast<APokemonNewAgePlayerController>(GetController()))
 		{
 			PokemonController->ApplyKeyBindings();
+			PokemonController->ApplyGameOptions();
 		}
 	}
 	else

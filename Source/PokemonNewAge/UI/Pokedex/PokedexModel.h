@@ -103,4 +103,18 @@ public:
 
 	/** Chemin de l'asset créé par le script d'import */
 	static constexpr const TCHAR* AssetPath = TEXT("/Game/UI/Pokedex/DA_PokedexModel.DA_PokedexModel");
+
+	// ------------------------------------------------ Carte (Pokédex, HUD, GPS)
+
+	/** DA_PokedexModel, chargé une fois ; nul s'il n'est pas importé */
+	static const UPokedexModel* Get();
+
+	/** Position sur la carte (u vers l'est, v vers le sud) d'un point du monde. Faux hors du Landscape de Kanto */
+	bool WorldToMap(const UWorld* World, const FVector& Location, FVector2D& OutUV) const;
+
+	/** Point du monde (au niveau 0 du Landscape) d'une position de la carte. Faux sans Landscape */
+	bool MapToWorld(const UWorld* World, const FVector2D& UV, FVector& OutLocation) const;
+
+	/** Lieu de MapPlaces où se trouve ce point de la carte (les villes avant les routes), -1 en pleine nature */
+	int32 FindPlaceAt(const FVector2D& UV) const;
 };

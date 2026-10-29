@@ -1153,12 +1153,6 @@ FIntPoint APokedexDevice::GetDirection(const FKey& Key)
 
 bool APokedexDevice::HandleKey(const FKey& Key)
 {
-	// Options > Commandes : la touche suivante est la nouvelle touche choisie, même Tab
-	if (Screen && Screen->IsCapturingKey() && !bClosing)
-	{
-		Screen->HandleKey(Key);
-		return true;
-	}
 	if (Key == EKeys::Tab || Key == EKeys::Gamepad_Special_Right)
 	{
 		Close();

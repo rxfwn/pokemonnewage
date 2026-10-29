@@ -105,13 +105,6 @@ namespace PokedexScreen
 		}
 	}
 
-	/** Options, dans l'ordre de la page */
-	enum EOption : int32
-	{
-		OptTextSpeed, OptMasterVolume, OptMusicVolume, OptEffectsVolume, OptSensitivity, OptInvertY,
-		OptShortcutBar, OptQuality, OptWindowMode, OptVSync, OptControls, OptDelete, OptionCount
-	};
-
 	/** Taille de l'image de la carte sur l'écran (pixels) */
 	constexpr float MapSize = 470.f;
 }
@@ -266,6 +259,7 @@ void UPokedexScreenWidget::NativeTick(const FGeometry& MyGeometry, float InDelta
 		case EPokedexPage::Trainer:
 		case EPokedexPage::Map:
 		case EPokedexPage::Online:
+		case EPokedexPage::Steps:
 			Refresh();
 			break;
 		default:
@@ -285,11 +279,6 @@ FReply UPokedexScreenWidget::NativeOnKeyDown(const FGeometry& InGeometry, const 
 
 bool UPokedexScreenWidget::HandleKey(const FKey& Key)
 {
-	if (IsCapturingKey())
-	{
-		CaptureKey(Key);
-		return true;
-	}
 	if (Key == EKeys::Up || Key == EKeys::Z || Key == EKeys::W || Key == EKeys::Gamepad_DPad_Up || Key == EKeys::Gamepad_LeftStick_Up)
 	{
 		Navigate(FIntPoint(0, -1));
@@ -338,9 +327,15 @@ void UPokedexScreenWidget::OpenMenu(EPokedexMenu Menu)
 	case EPokedexMenu::Map:     SetPage(EPokedexPage::Map); break;
 	case EPokedexMenu::Save:    SetPage(EPokedexPage::Save); break;
 	case EPokedexMenu::Online:  SetPage(EPokedexPage::Online); break;
-	case EPokedexMenu::Options: SetPage(EPokedexPage::Options); break;
-	case EPokedexMenu::Radio:
-	case EPokedexMenu::Style:   SetPage(EPokedexPage::ComingSoon); break;
+	case EPokedexMenu::Steps:   SetPage(EPokedexPage::Steps); break;
+	case EPokedexMenu::Radio:   SetPage(EPokedexPage::ComingSoon); break;
+	case EPokedexMenu::Camera:
+		// Le Pokédex se range et l'appareil photo prend la place du HUD
+		if (APokemonNewAgePlayerController* Player = Cast<APokemonNewAgePlayerController>(GetOwningPlayer()))
+		{
+			Player->StartPhotoMode();
+		}
+		break;
 	}
 }
 
@@ -353,11 +348,11 @@ FText UPokedexScreenWidget::GetMenuName(EPokedexMenu Menu)
 	case EPokedexMenu::Bag:     return LOCTEXT("MenuBag", "SAC");
 	case EPokedexMenu::Radio:   return LOCTEXT("MenuRadio", "RADIO");
 	case EPokedexMenu::Trainer: return LOCTEXT("MenuTrainer", "CARTE DRESSEUR");
-	case EPokedexMenu::Map:     return LOCTEXT("MenuMap", "CARTE");
+	case EPokedexMenu::Map:     return LOCTEXT("MenuMap", "CARTE ET GPS");
 	case EPokedexMenu::Save:    return LOCTEXT("MenuSave", "SAUVEGARDER");
-	case EPokedexMenu::Online:  return LOCTEXT("MenuOnline", "EN LIGNE");
-	case EPokedexMenu::Options: return LOCTEXT("MenuOptions", "OPTIONS");
-	case EPokedexMenu::Style:   return LOCTEXT("MenuStyle", "STYLE");
+	case EPokedexMenu::Online:  return LOCTEXT("MenuOnline", "MULTIJOUEUR");
+	case EPokedexMenu::Camera:  return LOCTEXT("MenuCamera", "APPAREIL PHOTO");
+	case EPokedexMenu::Steps:   return LOCTEXT("MenuSteps", "COMPTEUR DE PAS");
 	}
 	return FText::GetEmpty();
 }
@@ -371,11 +366,11 @@ FText UPokedexScreenWidget::GetMenuDescription(EPokedexMenu Menu)
 	case EPokedexMenu::Bag:     return LOCTEXT("DescBag", "Soins, capture, baies et matériaux, objets clés.");
 	case EPokedexMenu::Radio:   return LOCTEXT("DescRadio", "Musiques et émissions de Kanto. Bientôt !");
 	case EPokedexMenu::Trainer: return LOCTEXT("DescTrainer", "Ton nom, ton argent, ton temps de jeu, tes badges et tes exploits.");
-	case EPokedexMenu::Map:     return LOCTEXT("DescMap", "La carte de Kanto et l'endroit où tu te trouves.");
-	case EPokedexMenu::Save:    return LOCTEXT("DescSave", "Enregistre ta progression maintenant.");
+	case EPokedexMenu::Map:     return LOCTEXT("DescMap", "La carte de Kanto, l'endroit où tu te trouves et le GPS : choisis une destination, la boussole t'y guide.");
+	case EPokedexMenu::Save:    return LOCTEXT("DescSave", "Enregistre ta progression maintenant (le jeu sauvegarde aussi tout seul).");
 	case EPokedexMenu::Online:  return LOCTEXT("DescOnline", "Les joueurs connectés, les échanges et les combats entre amis.");
-	case EPokedexMenu::Options: return LOCTEXT("DescOptions", "Texte, son, caméra, graphismes et commandes.");
-	case EPokedexMenu::Style:   return LOCTEXT("DescStyle", "Personnalise ton dresseur. Bientôt !");
+	case EPokedexMenu::Camera:  return LOCTEXT("DescCamera", "Range le Pokédex et prends des photos (sans le HUD).");
+	case EPokedexMenu::Steps:   return LOCTEXT("DescSteps", "Le nombre de pas faits depuis le début de l'aventure.");
 	}
 	return FText::GetEmpty();
 }
@@ -415,9 +410,6 @@ void UPokedexScreenWidget::Navigate(FIntPoint Direction)
 			ScrollOffset = 0;
 			Feedback(EPokedexFeedback::Navigate);
 			Refresh();
-			return;
-		case EPokedexPage::Options:
-			ChangeOption(Selection, Direction.X);
 			return;
 		case EPokedexPage::Pokedex:
 			// Gauche/droite : une page de liste d'un coup
@@ -666,51 +658,22 @@ void UPokedexScreenWidget::Confirm()
 		}
 		return;
 
-	case EPokedexPage::Options:
-		if (Selection == OptDelete)
-		{
-			Feedback(EPokedexFeedback::Confirm);
-			SetPage(EPokedexPage::ConfirmDelete);
-		}
-		else if (Selection == OptControls)
-		{
-			Feedback(EPokedexFeedback::Confirm);
-			SetPage(EPokedexPage::Controls);
-		}
-		else
-		{
-			ChangeOption(Selection, 1);
-		}
-		return;
-
 	case EPokedexPage::Online:
 		Feedback(EPokedexFeedback::Error);
 		ShowStatus(LOCTEXT("OnlineSoon", "Les échanges et les combats entre joueurs arrivent avec le jeu à 4 en ligne (SCRUM-69)."));
 		return;
 
 	case EPokedexPage::Map:
-		Feedback(EPokedexFeedback::Navigate);
-		return;
-
-	case EPokedexPage::Controls:
 	{
+		// GPS : la ville choisie devient la destination (la boussole du HUD la montre), ou ne l'est plus
+		const TArray<int32> Towns = GetMapTowns();
 		APokemonNewAgePlayerController* Player = Cast<APokemonNewAgePlayerController>(GetOwningPlayer());
-		const TArray<FPokemonBindableKey> Keys = Player ? Player->GetBindableKeys() : TArray<FPokemonBindableKey>();
-		if (Keys.IsValidIndex(Selection))
+		if (Player && Towns.IsValidIndex(Selection))
 		{
-			CapturingKey = Keys[Selection].Id;
+			const bool bAlready = Player->GetGpsTarget() == Towns[Selection];
+			Player->SetGpsTarget(bAlready ? INDEX_NONE : Towns[Selection]);
 			Feedback(EPokedexFeedback::Confirm);
-			ShowStatus(FText::Format(Keys[Selection].bGamepad
-				? LOCTEXT("PressPad", "Appuie sur le bouton de la manette pour « {0} »   (Échap : annuler)")
-				: LOCTEXT("PressKey", "Appuie sur la nouvelle touche pour « {0} »   (Échap : annuler)"), Keys[Selection].Name));
-			StatusTimeLeft = 30.f;
-			Refresh();
-		}
-		else if (Player && Selection == Keys.Num())
-		{
-			Player->ResetKeyBindings();
-			Feedback(EPokedexFeedback::Saved);
-			ShowStatus(LOCTEXT("KeysReset", "Touches d'origine remises."));
+			ShowStatus(bAlready ? LOCTEXT("GpsOff", "GPS arrêté.") : LOCTEXT("GpsOn", "Destination enregistrée : suis la boussole."));
 			Refresh();
 		}
 		return;
@@ -718,19 +681,6 @@ void UPokedexScreenWidget::Confirm()
 
 	case EPokedexPage::ComingSoon:
 		Back();
-		return;
-
-	case EPokedexPage::ConfirmDelete:
-		if (Selection == 1)
-		{
-			const bool bDeleted = UPokemonSaveLibrary::DeleteSaveGame();
-			Feedback(bDeleted ? EPokedexFeedback::Confirm : EPokedexFeedback::Error);
-			ShowStatus(bDeleted ? LOCTEXT("Deleted", "Sauvegarde effacée. Le prochain lancement commencera une nouvelle partie.")
-				: LOCTEXT("NothingToDelete", "Il n'y a pas de sauvegarde."), !bDeleted);
-		}
-		Page = EPokedexPage::Options;
-		Selection = OptDelete;
-		Refresh();
 		return;
 	}
 }
@@ -772,13 +722,6 @@ bool UPokedexScreenWidget::Back()
 		Refresh();
 		return true;
 	}
-	case EPokedexPage::ConfirmDelete:
-	case EPokedexPage::Controls:
-		Feedback(EPokedexFeedback::Back);
-		Selection = Page == EPokedexPage::Controls ? int32(OptControls) : int32(OptDelete);
-		Page = EPokedexPage::Options;
-		Refresh();
-		return true;
 	default:
 		break;
 	}
@@ -820,12 +763,10 @@ void UPokedexScreenWidget::Refresh()
 	case EPokedexPage::BagTarget:     BuildBagTarget(); break;
 	case EPokedexPage::Trainer:       BuildTrainer(); break;
 	case EPokedexPage::Save:          BuildSave(); break;
-	case EPokedexPage::Options:       BuildOptions(); break;
-	case EPokedexPage::ConfirmDelete: BuildConfirmDelete(); break;
 	case EPokedexPage::GiveItem:      BuildGiveItem(); break;
 	case EPokedexPage::Map:           BuildMap(); break;
 	case EPokedexPage::Online:        BuildOnline(); break;
-	case EPokedexPage::Controls:      BuildControls(); break;
+	case EPokedexPage::Steps:         BuildSteps(); break;
 	case EPokedexPage::ComingSoon:    BuildComingSoon(); break;
 	}
 
@@ -836,8 +777,13 @@ void UPokedexScreenWidget::Refresh()
 		if (SelectionBefore != Selection)
 		{
 			Refresh();
+			return;
 		}
 	}
+
+	// Mesure tout de suite les lignes recréées : sinon, pendant une image, elles s'affichent toutes
+	// les unes sur les autres en haut de l'écran (le clignotement vu toutes les 0,5 s)
+	ForceLayoutPrepass();
 }
 
 void UPokedexScreenWidget::BuildHome()
@@ -1324,74 +1270,6 @@ void UPokedexScreenWidget::BuildSave()
 	AddRowText(AddRow(1), LOCTEXT("No", "Non"), 22, Text, true, true);
 }
 
-void UPokedexScreenWidget::BuildOptions()
-{
-	TitleText->SetText(LOCTEXT("TitleOptions", "OPTIONS"));
-	HintText->SetText(LOCTEXT("HintOptions", "Gauche/droite : changer   B : retour"));
-
-	const UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
-	const UGameUserSettings* Settings = GEngine ? GEngine->GetGameUserSettings() : nullptr;
-
-	const FText Speeds[] = { LOCTEXT("Slow", "Lente"), LOCTEXT("Normal", "Normale"), LOCTEXT("Fast", "Rapide") };
-	const FText Qualities[] = { LOCTEXT("Low", "Basse"), LOCTEXT("Medium", "Moyenne"), LOCTEXT("High", "Haute"), LOCTEXT("Epic", "Épique"), LOCTEXT("Cinematic", "Cinéma") };
-	const int32 Quality = Settings ? Settings->GetOverallScalabilityLevel() : -1;
-	const EWindowMode::Type WindowMode = Settings ? Settings->GetFullscreenMode() : EWindowMode::Windowed;
-
-	auto Percent = [](float Value) { return FText::FromString(FString::Printf(TEXT("%d %%"), FMath::RoundToInt(Value * 100.f))); };
-	const FText Names[OptionCount] = {
-		LOCTEXT("OptTextSpeed", "Vitesse du texte"),
-		LOCTEXT("OptVolume", "Volume général"),
-		LOCTEXT("OptMusic", "Musique"),
-		LOCTEXT("OptEffects", "Bruitages"),
-		LOCTEXT("OptSensitivity", "Sensibilité caméra"),
-		LOCTEXT("OptInvert", "Inverser haut/bas"),
-		LOCTEXT("OptShortcutBar", "Icônes de menu à l'écran"),
-		LOCTEXT("OptQuality", "Qualité graphique"),
-		LOCTEXT("OptWindow", "Affichage"),
-		LOCTEXT("OptVSync", "Synchro verticale"),
-		LOCTEXT("OptControls", "Commandes"),
-		LOCTEXT("OptDelete", "Effacer la sauvegarde"),
-	};
-	const FText Values[OptionCount] = {
-		Speeds[FMath::Clamp(Options->TextSpeed, 0, 2)],
-		Percent(Options->MasterVolume),
-		Percent(Options->MusicVolume),
-		Percent(Options->EffectsVolume),
-		FText::FromString(FString::Printf(TEXT("x %.1f"), Options->CameraSensitivity)),
-		Options->bInvertCameraY ? LOCTEXT("Yes", "Oui") : LOCTEXT("No", "Non"),
-		Options->bShowShortcutBar ? LOCTEXT("Yes", "Oui") : LOCTEXT("No", "Non"),
-		Quality >= 0 && Quality <= 4 ? Qualities[Quality] : LOCTEXT("Custom", "Perso"),
-		WindowMode == EWindowMode::Fullscreen ? LOCTEXT("Fullscreen", "Plein écran")
-			: (WindowMode == EWindowMode::WindowedFullscreen ? LOCTEXT("Borderless", "Plein écran fenêtré") : LOCTEXT("Windowed", "Fenêtré")),
-		Settings && Settings->IsVSyncEnabled() ? LOCTEXT("Yes", "Oui") : LOCTEXT("No", "Non"),
-		FText::GetEmpty(),
-		FText::GetEmpty(),
-	};
-	for (int32 Index = 0; Index < OptionCount; ++Index)
-	{
-		UHorizontalBox* Row = AddRow(Index);
-		AddRowText(Row, Names[Index], 19, Index == OptDelete ? ErrorColor : Text, true);
-		if (!Values[Index].IsEmpty())
-		{
-			AddRowText(Row, FText::Format(LOCTEXT("OptionValue", "<  {0}  >"), Values[Index]), 18, Accent, false, true);
-		}
-		else if (Index == OptControls)
-		{
-			AddRowText(Row, LOCTEXT("OptionOpen", "changer  >"), 18, Accent, false, true);
-		}
-	}
-}
-
-void UPokedexScreenWidget::BuildConfirmDelete()
-{
-	TitleText->SetText(LOCTEXT("TitleOptions", "OPTIONS"));
-	HintText->SetText(LOCTEXT("HintActions", "A : valider   B : retour"));
-	AddLine(LOCTEXT("DeleteQuestion", "Effacer la sauvegarde de ce PC ?\nLa partie en cours continue, mais le prochain lancement repartira de zéro."), 20, Text, true);
-	AddSpacer(8.f);
-	AddRowText(AddRow(0), LOCTEXT("DeleteNo", "Non"), 22, Text, true, true);
-	AddRowText(AddRow(1), LOCTEXT("DeleteYes", "Oui, effacer"), 22, ErrorColor, true, true);
-}
-
 void UPokedexScreenWidget::BuildGiveItem()
 {
 	TitleText->SetText(LOCTEXT("TitleParty", "POKÉMON"));
@@ -1443,7 +1321,7 @@ void UPokedexScreenWidget::BuildGiveItem()
 void UPokedexScreenWidget::BuildMap()
 {
 	TitleText->SetText(LOCTEXT("TitleMap", "CARTE DE KANTO"));
-	HintText->SetText(LOCTEXT("HintMap", "Haut/bas : choisir une ville   B : retour"));
+	HintText->SetText(LOCTEXT("HintMap", "Haut/bas : choisir une ville   A : destination GPS   B : retour"));
 
 	const UPokedexModel* Model = GetModel();
 	if (!Model || !Model->MapTexture)
@@ -1523,6 +1401,12 @@ void UPokedexScreenWidget::BuildMap()
 	RowTarget = Column;
 
 	const int32 Here = bHasPlayer ? FindPlaceAt(PlayerUV) : -1;
+	const APokemonNewAgePlayerController* Player = Cast<APokemonNewAgePlayerController>(GetOwningPlayer());
+	const int32 GpsTarget = Player ? Player->GetGpsTarget() : INDEX_NONE;
+	if (Model->MapPlaces.IsValidIndex(GpsTarget))
+	{
+		AddMarker(MakeDot(Good, 14.f, Background), Model->MapPlaces[GpsTarget].UV, 14.f);
+	}
 	AddLine(LOCTEXT("YouAreHere", "TU ES ICI"), 16, Dim, true);
 	AddLine(Here >= 0 ? Model->MapPlaces[Here].Name : (bHasPlayer ? LOCTEXT("Wild", "En pleine nature") : LOCTEXT("NoLandscape", "Hors de Kanto")),
 		21, Text, true);
@@ -1542,6 +1426,10 @@ void UPokedexScreenWidget::BuildMap()
 	{
 		UHorizontalBox* Row = AddRow(Index);
 		AddRowText(Row, Model->MapPlaces[Towns[Index]].Name, 18, Towns[Index] == Here ? Gold : Text, true, Index == Selection);
+		if (Towns[Index] == GpsTarget)
+		{
+			AddRowText(Row, LOCTEXT("GpsMark", "GPS"), 14, Good, false, true);
+		}
 	}
 	RowCount = Towns.Num();
 }
@@ -1593,85 +1481,6 @@ void UPokedexScreenWidget::BuildOnline()
 	}
 }
 
-void UPokedexScreenWidget::BuildControls()
-{
-	TitleText->SetText(LOCTEXT("TitleControls", "COMMANDES"));
-	HintText->SetText(IsCapturingKey() ? LOCTEXT("HintCapture", "Appuie sur une touche   Échap : annuler")
-		: LOCTEXT("HintControls", "A : changer la touche   B : retour"));
-
-	const APokemonNewAgePlayerController* Player = Cast<APokemonNewAgePlayerController>(GetOwningPlayer());
-	const TArray<FPokemonBindableKey> Keys = Player ? Player->GetBindableKeys() : TArray<FPokemonBindableKey>();
-	if (Keys.Num() == 0)
-	{
-		AddLine(LOCTEXT("NoKeys", "Aucune touche à changer (le personnage n'est pas encore là ?)"), 19, Dim);
-		return;
-	}
-
-	// Une ligne par commande, puis « Touches d'origine » ; la liste défile
-	RowCount = Keys.Num() + 1;
-	Selection = FMath::Clamp(Selection, 0, RowCount - 1);
-	const int32 Window = ListWindow + 3;
-	if (Selection < ScrollOffset)
-	{
-		ScrollOffset = Selection;
-	}
-	else if (Selection >= ScrollOffset + Window)
-	{
-		ScrollOffset = Selection - Window + 1;
-	}
-
-	for (int32 Index = ScrollOffset; Index < FMath::Min(RowCount, ScrollOffset + Window); ++Index)
-	{
-		if (Index == Keys.Num())
-		{
-			AddRowText(AddRow(Index), LOCTEXT("ResetKeys", "Remettre les touches d'origine"), 18, ErrorColor, true, true);
-			continue;
-		}
-		const FPokemonBindableKey& Entry = Keys[Index];
-		if (Index == 0 || Entry.bGamepad != Keys[Index - 1].bGamepad)
-		{
-			AddLine(Entry.bGamepad ? LOCTEXT("Gamepad", "MANETTE") : LOCTEXT("Keyboard", "CLAVIER"), 15, Accent, true);
-		}
-		UHorizontalBox* Row = AddRow(Index);
-		AddRowText(Row, Entry.Name, 18, Text, true, true);
-		const bool bWaiting = CapturingKey == Entry.Id;
-		const bool bChanged = Entry.Key != Entry.DefaultKey;
-		AddRowText(Row, bWaiting ? LOCTEXT("Waiting", "...") : Entry.Key.GetDisplayName(), 18, bWaiting ? Gold : (bChanged ? Good : Accent), false, true);
-	}
-}
-
-void UPokedexScreenWidget::CaptureKey(const FKey& Key)
-{
-	APokemonNewAgePlayerController* Player = Cast<APokemonNewAgePlayerController>(GetOwningPlayer());
-	const TArray<FPokemonBindableKey> Keys = Player ? Player->GetBindableKeys() : TArray<FPokemonBindableKey>();
-	const FPokemonBindableKey* Entry = Keys.FindByPredicate([this](const FPokemonBindableKey& Candidate) { return Candidate.Id == CapturingKey; });
-
-	if (!Entry || Key == EKeys::Escape || Key == EKeys::Gamepad_Special_Left)
-	{
-		CapturingKey = NAME_None;
-		Feedback(EPokedexFeedback::Back);
-		ShowStatus(LOCTEXT("CaptureCancelled", "Touche inchangée."));
-		Refresh();
-		return;
-	}
-	// Une touche du bon appareil, et pas un stick ni la souris
-	const bool bRightDevice = Key.IsGamepadKey() == Entry->bGamepad;
-	if (!bRightDevice || Key.IsAnalog() || Key.IsMouseButton() || Key.ToString().Contains(TEXT("Stick_")))
-	{
-		Feedback(EPokedexFeedback::Error);
-		ShowStatus(Entry->bGamepad ? LOCTEXT("NeedPad", "Il faut un bouton de la manette (Échap : annuler).")
-			: LOCTEXT("NeedKey", "Il faut une touche du clavier (Échap : annuler)."), true);
-		StatusTimeLeft = 30.f;
-		return;
-	}
-
-	CapturingKey = NAME_None;
-	Player->SetKeyBinding(Entry->Id, Key);
-	Feedback(EPokedexFeedback::Saved);
-	ShowStatus(FText::Format(LOCTEXT("KeyChanged", "« {0} » : {1}"), Entry->Name, Key.GetDisplayName()));
-	Refresh();
-}
-
 void UPokedexScreenWidget::BuildComingSoon()
 {
 	TitleText->SetText(GetMenuName(CurrentMenu));
@@ -1680,6 +1489,30 @@ void UPokedexScreenWidget::BuildComingSoon()
 	AddLine(GetMenuDescription(CurrentMenu), 22, Text, true);
 	AddSpacer(10.f);
 	AddLine(LOCTEXT("ComingSoon", "Ce menu n'est pas encore fait. Il arrivera dans une prochaine version."), 19, Dim);
+}
+
+void UPokedexScreenWidget::BuildSteps()
+{
+	TitleText->SetText(GetMenuName(EPokedexMenu::Steps));
+	HintText->SetText(LOCTEXT("HintSteps", "B : retour"));
+
+	const APokemonPlayerState* State = GetPlayerState();
+	const int32 Steps = State ? State->StepCount : 0;
+	AddSpacer(40.f);
+	UTextBlock* Count = MakeText(FText::AsNumber(Steps), 72, Gold, true);
+	Count->SetJustification(ETextJustify::Center);
+	Content->AddChildToVerticalBox(Count);
+	UTextBlock* Label = MakeText(LOCTEXT("StepsLabel", "pas depuis le début de l'aventure"), 20, Dim);
+	Label->SetJustification(ETextJustify::Center);
+	Content->AddChildToVerticalBox(Label);
+	AddSpacer(24.f);
+	const float Kilometers = Steps * APokemonPlayerState::StepLength / 100000.f;
+	FNumberFormattingOptions OneDecimal;
+	OneDecimal.SetMinimumFractionalDigits(1).SetMaximumFractionalDigits(1);
+	UTextBlock* Distance = MakeText(FText::Format(LOCTEXT("StepsDistance", "Distance parcourue : {0} km"),
+		FText::AsNumber(Kilometers, &OneDecimal)), 20, Text);
+	Distance->SetJustification(ETextJustify::Center);
+	Content->AddChildToVerticalBox(Distance);
 }
 
 // ---------------------------------------------------------------- Actions
@@ -1729,67 +1562,6 @@ void UPokedexScreenWidget::DoSave()
 		Feedback(EPokedexFeedback::Error);
 		ShowStatus(LOCTEXT("SaveFailed", "La sauvegarde a échoué."), true);
 	}
-}
-
-void UPokedexScreenWidget::ChangeOption(int32 Option, int32 Delta)
-{
-	UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
-	UGameUserSettings* Settings = GEngine ? GEngine->GetGameUserSettings() : nullptr;
-	bool bChanged = true;
-
-	auto Step = [Delta](float Value) { return FMath::Clamp(FMath::RoundToFloat(Value * 10.f + Delta) / 10.f, 0.f, 1.f); };
-	switch (Option)
-	{
-	case OptTextSpeed:     Options->TextSpeed = (Options->TextSpeed + Delta + 3) % 3; break;
-	case OptMasterVolume:  Options->MasterVolume = Step(Options->MasterVolume); break;
-	case OptMusicVolume:   Options->MusicVolume = Step(Options->MusicVolume); break;
-	case OptEffectsVolume: Options->EffectsVolume = Step(Options->EffectsVolume); break;
-	case OptSensitivity:   Options->CameraSensitivity = FMath::Clamp(FMath::RoundToFloat(Options->CameraSensitivity * 10.f + Delta) / 10.f, 0.5f, 2.f); break;
-	case OptInvertY:       Options->bInvertCameraY = !Options->bInvertCameraY; break;
-	case OptShortcutBar:   Options->bShowShortcutBar = !Options->bShowShortcutBar; break;
-	case OptQuality:
-		if (Settings)
-		{
-			Settings->SetOverallScalabilityLevel(FMath::Clamp(FMath::Max(Settings->GetOverallScalabilityLevel(), 0) + Delta, 0, 4));
-		}
-		break;
-	case OptWindowMode:
-		if (Settings)
-		{
-			const int32 Mode = (int32(Settings->GetFullscreenMode()) + Delta + 3) % 3;
-			Settings->SetFullscreenMode(EWindowMode::ConvertIntToWindowMode(Mode));
-		}
-		break;
-	case OptVSync:
-		if (Settings)
-		{
-			Settings->SetVSyncEnabled(!Settings->IsVSyncEnabled());
-		}
-		break;
-	default:
-		bChanged = false;
-		break;
-	}
-
-	if (!bChanged)
-	{
-		return;
-	}
-	if (Option <= OptShortcutBar)
-	{
-		UPokemonSaveLibrary::SaveOptions(Options);
-		UPokemonSaveLibrary::ApplyOptions(this, Options);
-		if (APokemonNewAgePlayerController* Controller = Cast<APokemonNewAgePlayerController>(GetOwningPlayer()))
-		{
-			Controller->ApplyGameOptions();
-		}
-	}
-	else if (Settings)
-	{
-		Settings->ApplySettings(false);
-	}
-	Feedback(EPokedexFeedback::Navigate);
-	Refresh();
 }
 
 void UPokedexScreenWidget::ShowStatus(const FText& Message, bool bError)
@@ -2150,12 +1922,7 @@ FName UPokedexScreenWidget::GetFeaturedSpecies() const
 
 const UPokedexModel* UPokedexScreenWidget::GetModel() const
 {
-	if (!bModelLoaded)
-	{
-		bModelLoaded = true;
-		CachedModel = LoadObject<UPokedexModel>(nullptr, UPokedexModel::AssetPath, nullptr, LOAD_NoWarn | LOAD_Quiet);
-	}
-	return CachedModel;
+	return UPokedexModel::Get();
 }
 
 TArray<FName> UPokedexScreenWidget::GetHoldableItems() const
@@ -2210,49 +1977,14 @@ bool UPokedexScreenWidget::GetPlayerMapPosition(FVector2D& OutUV) const
 {
 	const APlayerController* Controller = GetOwningPlayer();
 	const APawn* Pawn = Controller ? Controller->GetPawn() : nullptr;
-	UWorld* World = GetWorld();
-	if (!Pawn || !World)
-	{
-		return false;
-	}
 	const UPokedexModel* Model = GetModel();
-	const float Size = float(FMath::Max(2, Model ? Model->MapHeightmapSize : 4033) - 1);
-	for (TActorIterator<ALandscape> It(World); It; ++It)
-	{
-		// Repère du Landscape : un point de heightmap par unité, X = colonne = nord, Y = ligne = est
-		const FVector Local = It->GetActorTransform().InverseTransformPosition(Pawn->GetActorLocation());
-		OutUV = FVector2D(Local.Y / Size, 1.f - Local.X / Size);
-		return OutUV.X >= 0.f && OutUV.X <= 1.f && OutUV.Y >= 0.f && OutUV.Y <= 1.f;
-	}
-	return false;
+	return Pawn && Model && Model->WorldToMap(GetWorld(), Pawn->GetActorLocation(), OutUV);
 }
 
 int32 UPokedexScreenWidget::FindPlaceAt(const FVector2D& UV) const
 {
 	const UPokedexModel* Model = GetModel();
-	if (!Model)
-	{
-		return -1;
-	}
-	int32 Best = -1;
-	float BestScore = TNumericLimits<float>::Max();
-	for (int32 Index = 0; Index < Model->MapPlaces.Num(); ++Index)
-	{
-		const FPokedexMapPlace& Place = Model->MapPlaces[Index];
-		const float Distance = float(FVector2D::Distance(UV, Place.UV));
-		if (Distance > FMath::Max(Place.Radius, 0.002f))
-		{
-			continue;
-		}
-		// Les villes passent avant les routes qui y arrivent
-		const float Score = Distance / FMath::Max(Place.Radius, 0.002f) + (Place.Kind == EPokedexPlaceKind::Town ? 0.f : 10.f);
-		if (Score < BestScore)
-		{
-			BestScore = Score;
-			Best = Index;
-		}
-	}
-	return Best;
+	return Model ? Model->FindPlaceAt(UV) : -1;
 }
 
 TArray<int32> UPokedexScreenWidget::GetMapTowns() const

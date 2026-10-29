@@ -24,6 +24,7 @@ void APokemonPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME(APokemonPlayerState, TrainerNumber);
 	DOREPLIFETIME_CONDITION(APokemonPlayerState, PlayTimeBeforeSession, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(APokemonPlayerState, SessionStartServerTime, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(APokemonPlayerState, StepCount, COND_OwnerOnly);
 }
 
 void APokemonPlayerState::BeginPlay()
@@ -66,6 +67,7 @@ FPlayerSaveData APokemonPlayerState::MakeSaveData() const
 	Data.LastHealLocation = LastHealLocation;
 	Data.LastHealRotation = LastHealRotation;
 	Data.PlayTimeSeconds = GetPlayTimeSeconds();
+	Data.StepCount = StepCount;
 	return Data;
 }
 
@@ -97,6 +99,7 @@ void APokemonPlayerState::ApplySaveData(const FPlayerSaveData& Data)
 	LastHealLocation = Data.LastHealLocation;
 	LastHealRotation = Data.LastHealRotation;
 	PlayTimeBeforeSession = FMath::Max(0.f, Data.PlayTimeSeconds);
+	StepCount = FMath::Max(0, Data.StepCount);
 	SessionStartServerTime = GetWorld()->GetTimeSeconds();
 }
 
