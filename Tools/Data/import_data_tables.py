@@ -30,6 +30,7 @@ TABLES = [
     ("DT_Encounters", "EncounterTableRow", "encounters"),
     ("DT_Trainers", "TrainerRow", "trainers"),
     ("DT_Items", "ItemRow", "items"),  # Tools/Data/build_items.py
+    ("DT_Shops", "ShopRow", "shops"),  # Tools/Data/build_shops.py
 ]
 
 # Dialogues (docs/DIALOGUES.md) : (asset, struct C++)

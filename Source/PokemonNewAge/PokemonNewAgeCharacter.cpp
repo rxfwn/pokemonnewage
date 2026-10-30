@@ -215,6 +215,12 @@ void APokemonNewAgeCharacter::DoLook(float Yaw, float Pitch)
 
 void APokemonNewAgeCharacter::DoJumpStart()
 {
+	// Pas de saut pendant un combat (le joueur reste sur place)
+	if (GetController() && GetController()->IsMoveInputIgnored())
+	{
+		return;
+	}
+
 	// signal the character to jump
 	Jump();
 }
@@ -239,6 +245,11 @@ void APokemonNewAgeCharacter::DoSprintEnd()
 
 void APokemonNewAgeCharacter::DoInteract()
 {
+	if (GetController() && GetController()->IsMoveInputIgnored())
+	{
+		return;
+	}
+
 	// Cherche dans une sphère un peu devant le personnage
 	const FVector Center = GetActorLocation() + GetActorForwardVector() * InteractRadius * 0.5f;
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(Interact), false, this);

@@ -60,6 +60,20 @@ public:
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category="Story")
 	FName CurrentLocation;
 
+	/**
+	 *  Dernier Centre Pokémon où l'équipe a été soignée (ou la maison), où le joueur revient si toute son équipe est K.O.
+	 *  Id d'un APokemonCenterPoint ; None = jamais soigné (on cherche le point de départ, voir UPokemonCenterComponent)
+	 */
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category="Story")
+	FName LastHealPoint;
+
+	/** Position de ce point, gardée au cas où l'acteur aurait disparu de la map */
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category="Story")
+	FVector LastHealLocation = FVector::ZeroVector;
+
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category="Story")
+	FRotator LastHealRotation = FRotator::ZeroRotator;
+
 	/** Numéro de dresseur (carte Dresseur), tiré au hasard à la première partie */
 	UPROPERTY(Replicated, EditAnywhere, BlueprintReadOnly, Category="Story")
 	int32 TrainerNumber = 0;

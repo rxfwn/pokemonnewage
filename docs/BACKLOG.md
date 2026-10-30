@@ -50,6 +50,7 @@ Objectif : marcher dans une version blockout de Bourg Palette et de la Route 1.
 - **EXP-5** Entrer et sortir des bâtiments (transition de niveau)
 - **EXP-6** Dialogue simple avec un PNJ
   - SCRUM-71 : textes de tous les dialogues de la V1 en Data Tables (`docs/DIALOGUES.md`)
+  - SCRUM-26 : boîte de dialogue en jeu, PNJ et volumes de scène (`docs/DIALOGUES.md`, « Boîte de dialogue en jeu »)
 
 ## Sprint 2 : les données Pokémon (semaines 5-6)
 
@@ -61,7 +62,7 @@ Objectif : le jeu sait ce qu'est un Pokémon.
   - DAT-1 à DAT-3 (SCRUM-27, 28, 29) : données générées, plus apprentissages, CT, talents, natures, rencontres et dresseurs V1 (`docs/DONNEES_POKEMON.md`)
 - **DAT-4** Instance de Pokémon : niveau, IV/EV, nature, PV, attaques connues
 - **DAT-5** Équipe du joueur (6 max) et choix du starter au labo
-- **ART-2** Premier modèle 3D réaliste de test (un starter) avec animations idle et attaque
+- **ART-2** (SCRUM-32) Premier modèle 3D réaliste de test (un starter) avec animations idle et attaque ; modèles provisoires des 20 Pokémon V1 convertis depuis Pokemon-3D-api (`docs/MODELES_POKEMON.md`)
 - **ART-3** (SCRUM-65) Modèle temporaire du joueur : le Dresseur de Smash Bros Ultimate, animations du mannequin retargetées (`docs/PERSONNAGE_DRESSEUR.md`)
 
 ## Sprint 3 : le combat (semaines 7-8)
@@ -104,7 +105,7 @@ Objectif : le joueur peut gérer son aventure et la reprendre plus tard.
 - **UI-1** Menu équipe (ordre, détails, stats)
 - **UI-2** Sac : objets, Poké Balls, Potions
 - **UI-3** Sauvegarde et chargement (+ Options)
-- **UI-4** Centre Pokémon (soin) et Boutique (achat)
+- **UI-4** Centre Pokémon (soin) et Boutique (achat) : SCRUM-53, code dans `Source/PokemonNewAge/Town/`, doc `docs/CENTRE_ET_BOUTIQUE.md`
 
 ## Sprint 7 : jusqu'à Pierre, fin du MVP (semaines 15-16)
 

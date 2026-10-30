@@ -22,19 +22,29 @@
 #include "Battle/BattleSubsystem.h"
 #include "Progression/ProgressionComponent.h"
 #include "Pokemon/PokemonProgression.h"
+#include "Capture/CaptureComponent.h"
 #include "Core/PokemonPlayerState.h"
+#include "Dialogue/DialogueComponent.h"
+#include "Town/PokemonCenterComponent.h"
+#include "Town/ShopComponent.h"
 #include "Pokemon/PokemonDatabase.h"
 #include "Pokemon/PokemonDataSubsystem.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
+#include "Engine/GameViewportClient.h"
+#include "GameFramework/InputSettings.h"
 #include "PokemonNewAge.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
 APokemonNewAgePlayerController::APokemonNewAgePlayerController()
 {
+	CaptureComponent = CreateDefaultSubobject<UCaptureComponent>(TEXT("CaptureComponent"));
 	BattleComponent = CreateDefaultSubobject<UBattleComponent>(TEXT("BattleComponent"));
 	ProgressionComponent = CreateDefaultSubobject<UProgressionComponent>(TEXT("ProgressionComponent"));
 	PokedexDeviceClass = APokedexDevice::StaticClass();
+	DialogueComponent = CreateDefaultSubobject<UDialogueComponent>(TEXT("DialogueComponent"));
+	PokemonCenterComponent = CreateDefaultSubobject<UPokemonCenterComponent>(TEXT("PokemonCenterComponent"));
+	ShopComponent = CreateDefaultSubobject<UShopComponent>(TEXT("ShopComponent"));
 }
 
 void APokemonNewAgePlayerController::BeginPlay()
@@ -263,11 +273,18 @@ void APokemonNewAgePlayerController::HandleBattleStarted(const FBattleSnapshot& 
 	BattleHUD->AddToPlayerScreen(5);
 	BattleHUD->Begin(BattleComponent, Snapshot);
 
+	// Le joueur ne bouge pas, mais la caméra tourne : clic droit maintenu à la souris, stick droit à la manette
 	SetShowMouseCursor(true);
-	FInputModeUIOnly InputMode;
+	SetIgnoreMoveInput(true);
+	FInputModeGameAndUI InputMode;
 	InputMode.SetWidgetToFocus(BattleHUD->TakeWidget());
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputMode.SetHideCursorDuringCapture(true);
 	SetInputMode(InputMode);
+	if (UGameViewportClient* Viewport = GetWorld()->GetGameViewport())
+	{
+		Viewport->SetMouseCaptureMode(EMouseCaptureMode::CaptureDuringRightMouseDown);
+	}
 }
 
 bool APokemonNewAgePlayerController::IsBattleHUDOpen() const
@@ -279,7 +296,12 @@ void APokemonNewAgePlayerController::OnBattleHUDClosed()
 {
 	BattleHUD = nullptr;
 	SetShowMouseCursor(false);
+	SetIgnoreMoveInput(false);
 	SetInputMode(FInputModeGameOnly());
+	if (UGameViewportClient* Viewport = GetWorld()->GetGameViewport())
+	{
+		Viewport->SetMouseCaptureMode(GetDefault<UInputSettings>()->DefaultViewportMouseCaptureMode);
+	}
 }
 
 void APokemonNewAgePlayerController::ApplyGameOptions()
@@ -505,6 +527,54 @@ void APokemonNewAgePlayerController::DonnerXP(int32 PartySlot, int32 Amount)
 void APokemonNewAgePlayerController::VoirEvolution(FName FromSpecies, FName ToSpecies)
 {
 	ProgressionComponent->PreviewEvolution(FromSpecies, ToSpecies);
+}
+
+void APokemonNewAgePlayerController::Surnom(const FString& Nickname)
+{
+	CaptureComponent->SetCaughtNickname(Nickname);
+}
+
+void APokemonNewAgePlayerController::VoirPC()
+{
+	const APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>();
+	const UPokemonDatabase* Database = UPokemonDataSubsystem::GetDatabase(this);
+	if (!State)
+	{
+		return;
+	}
+	PrintDebug(FString::Printf(TEXT("PC de Leo : %d Pokemon"), State->StoragePC.Num()));
+	for (int32 Index = 0; Index < State->StoragePC.Num(); ++Index)
+	{
+		const FPokemonInstance& Pokemon = State->StoragePC[Index];
+		PrintDebug(FString::Printf(TEXT("%d. (boite %d) %s N.%d"), Index + 1, Index / UPokemonStorage::BoxSize + 1,
+			*UPokemonLibrary::GetDisplayName(Database, Pokemon).ToString(), Pokemon.Level));
+	}
+}
+
+void APokemonNewAgePlayerController::Deposer(int32 PartySlot)
+{
+	CaptureComponent->DepositPokemon(PartySlot - 1);
+}
+
+void APokemonNewAgePlayerController::Retirer(int32 StorageSlot)
+{
+	CaptureComponent->WithdrawPokemon(StorageSlot - 1);
+}
+
+void APokemonNewAgePlayerController::Echanger(int32 PartySlot, int32 StorageSlot)
+{
+	CaptureComponent->SwapWithStorage(PartySlot - 1, StorageSlot - 1);
+}
+
+void APokemonNewAgePlayerController::Relacher(int32 StorageSlot)
+{
+	CaptureComponent->ReleasePokemon(StorageSlot - 1);
+}
+
+void APokemonNewAgePlayerController::Rencontres(int32 bEnabled)
+{
+	CaptureComponent->SetEncountersEnabled(bEnabled != 0);
+	PrintDebug(bEnabled != 0 ? TEXT("Rencontres dans les herbes : oui") : TEXT("Rencontres dans les herbes : non"));
 }
 
 void APokemonNewAgePlayerController::DonnerPokemon(FName Species, int32 Level)
@@ -828,5 +898,107 @@ void APokemonNewAgePlayerController::ApplyKeyBindings()
 		Subsystem->RemoveMappingContext(Original);
 		Subsystem->AddMappingContext(Copy, Context.Value);
 		BoundContexts.Add(Original, Copy);
+	}
+}
+
+void APokemonNewAgePlayerController::Parler(FName Npc)
+{
+	DialogueComponent->TalkTo(Npc);
+}
+
+void APokemonNewAgePlayerController::Dialogue(FName ConversationId)
+{
+	if (HasAuthority())
+	{
+		DialogueComponent->PlayConversation(ConversationId);
+	}
+}
+
+void APokemonNewAgePlayerController::Drapeau(FName Flag)
+{
+	if (APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>(); State && HasAuthority())
+	{
+		State->AddFlag(Flag);
+		Drapeaux();
+	}
+}
+
+void APokemonNewAgePlayerController::Drapeaux()
+{
+	if (const APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>())
+	{
+		FString Flags;
+		for (const FName& Flag : State->StoryFlags)
+		{
+			Flags += Flag.ToString() + TEXT(" ");
+		}
+		PrintDebug(FString::Printf(TEXT("Drapeaux : %s"), Flags.IsEmpty() ? TEXT("(aucun)") : *Flags));
+	}
+}
+
+// ---------------------------------------------------------------- Commandes de test du Centre et de la Boutique (console)
+
+void APokemonNewAgePlayerController::Boutique(FName ShopId)
+{
+	if (HasAuthority())
+	{
+		PrintDebug(ShopComponent->OpenShop(ShopId) ? FString::Printf(TEXT("Boutique %s ouverte"), *ShopId.ToString())
+			: FString::Printf(TEXT("Boutique %s introuvable dans DT_Shops"), *ShopId.ToString()));
+	}
+}
+
+void APokemonNewAgePlayerController::Acheter(FName Item, int32 Count)
+{
+	ShopComponent->Buy(Item, Count);
+}
+
+void APokemonNewAgePlayerController::Vendre(FName Item, int32 Count)
+{
+	ShopComponent->Sell(Item, Count);
+}
+
+void APokemonNewAgePlayerController::Argent(int32 Amount)
+{
+	if (APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>(); State && HasAuthority())
+	{
+		State->AddMoney(Amount - State->Money);
+		PrintDebug(FString::Printf(TEXT("Argent : %d"), State->Money));
+	}
+}
+
+void APokemonNewAgePlayerController::Badge(FName BadgeId)
+{
+	if (APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>(); State && HasAuthority() && !BadgeId.IsNone())
+	{
+		State->Badges.AddUnique(BadgeId);
+		PrintDebug(FString::Printf(TEXT("Badges : %d"), State->Badges.Num()));
+	}
+}
+
+void APokemonNewAgePlayerController::AllumerPC()
+{
+	if (HasAuthority())
+	{
+		PokemonCenterComponent->OpenPC();
+	}
+}
+
+void APokemonNewAgePlayerController::NoterCentre()
+{
+	if (HasAuthority())
+	{
+		PokemonCenterComponent->RecordHealPoint();
+		if (const APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>())
+		{
+			PrintDebug(FString::Printf(TEXT("Point de retour : %s"), State->LastHealPoint.IsNone() ? TEXT("(aucun Centre proche)") : *State->LastHealPoint.ToString()));
+		}
+	}
+}
+
+void APokemonNewAgePlayerController::RetourCentre()
+{
+	if (HasAuthority() && !PokemonCenterComponent->ReturnToLastHealPoint())
+	{
+		PrintDebug(TEXT("Aucun PokemonCenterPoint ni Player Start dans la map"));
 	}
 }

@@ -129,7 +129,7 @@ TSharedRef<SWidget> UBattleHUDWidget::RebuildWidget()
 		UOverlay* Root = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("Root"));
 		WidgetTree->RootWidget = Root;
 
-		// Cadre de l'adversaire en haut à gauche, celui du joueur à droite au-dessus du texte
+		// Cadre de l'adversaire en haut à gauche, celui du joueur à gauche au-dessus du texte (le menu des choix prend la droite)
 		BuildInfoBox(Boxes[1], false);
 		UOverlaySlot* EnemySlot = Root->AddChildToOverlay(Boxes[1].Frame);
 		EnemySlot->SetHorizontalAlignment(HAlign_Left);
@@ -138,9 +138,9 @@ TSharedRef<SWidget> UBattleHUDWidget::RebuildWidget()
 
 		BuildInfoBox(Boxes[0], true);
 		UOverlaySlot* PlayerSlot = Root->AddChildToOverlay(Boxes[0].Frame);
-		PlayerSlot->SetHorizontalAlignment(HAlign_Right);
+		PlayerSlot->SetHorizontalAlignment(HAlign_Left);
 		PlayerSlot->SetVerticalAlignment(VAlign_Bottom);
-		PlayerSlot->SetPadding(FMargin(0.f, 0.f, 60.f, 250.f));
+		PlayerSlot->SetPadding(FMargin(60.f, 0.f, 0.f, 250.f));
 
 		// Boîte de texte en bas
 		UBorder* MessageFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MessageFrame"));
@@ -735,16 +735,16 @@ void UBattleHUDWidget::ShowMoves()
 	Grid->SetSlotPadding(FMargin(5.f));
 	Grid->SetMinDesiredSlotWidth(260.f);
 	MenuBox->AddChildToVerticalBox(Grid);
-	for (int32 Slot = 0; Slot < 4; ++Slot)
+	for (int32 MoveIndex = 0; MoveIndex < 4; ++MoveIndex)
 	{
-		if (!Active->Moves.IsValidIndex(Slot) || Active->Moves[Slot].Move.IsNone())
+		if (!Active->Moves.IsValidIndex(MoveIndex) || Active->Moves[MoveIndex].Move.IsNone())
 		{
-			AddMenuButton(Grid, FText::FromString(TEXT("-")), EBattleHUDAction::Move, Slot, FLinearColor(0.2f, 0.2f, 0.2f), false);
+			AddMenuButton(Grid, FText::FromString(TEXT("-")), EBattleHUDAction::Move, MoveIndex, FLinearColor(0.2f, 0.2f, 0.2f), false);
 			continue;
 		}
-		const FPokemonMoveSlot& MoveSlot = Active->Moves[Slot];
+		const FPokemonMoveSlot& MoveSlot = Active->Moves[MoveIndex];
 		const FMoveRow* Move = Database ? Database->FindMove(MoveSlot.Move) : nullptr;
-		AddMenuButton(Grid, Move ? Move->DisplayName : FText::FromName(MoveSlot.Move), EBattleHUDAction::Move, Slot,
+		AddMenuButton(Grid, Move ? Move->DisplayName : FText::FromName(MoveSlot.Move), EBattleHUDAction::Move, MoveIndex,
 			Move ? TypeColor(Move->Type) : FLinearColor::Gray, true,
 			FText::FromString(FString::Printf(TEXT("PP %d/%d"), MoveSlot.CurrentPP, MoveSlot.MaxPP)));
 	}
@@ -853,10 +853,10 @@ void UBattleHUDWidget::ShowForgetMove(int32 PartyIndex, FName NewMove)
 		Pokemon ? UPokemonLibrary::GetDisplayName(Database, *Pokemon) : FText::GetEmpty(), MoveName));
 	MessageArrow->SetVisibility(ESlateVisibility::Hidden);
 
-	for (int32 Slot = 0; Pokemon && Slot < Pokemon->Moves.Num(); ++Slot)
+	for (int32 MoveIndex = 0; Pokemon && MoveIndex < Pokemon->Moves.Num(); ++MoveIndex)
 	{
-		const FMoveRow* Known = Database ? Database->FindMove(Pokemon->Moves[Slot].Move) : nullptr;
-		AddMenuButton(MenuBox, Known ? Known->DisplayName : FText::FromName(Pokemon->Moves[Slot].Move), EBattleHUDAction::ForgetMove, Slot,
+		const FMoveRow* Known = Database ? Database->FindMove(Pokemon->Moves[MoveIndex].Move) : nullptr;
+		AddMenuButton(MenuBox, Known ? Known->DisplayName : FText::FromName(Pokemon->Moves[MoveIndex].Move), EBattleHUDAction::ForgetMove, MoveIndex,
 			Known ? TypeColor(Known->Type) : FLinearColor::Gray);
 	}
 	AddMenuButton(MenuBox, FText::Format(LOCTEXT("DontLearn", "Ne pas apprendre {0}"), MoveName), EBattleHUDAction::KeepMoves, 0, FLinearColor(0.3f, 0.3f, 0.35f));

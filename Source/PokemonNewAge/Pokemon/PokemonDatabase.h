@@ -53,6 +53,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Tables", meta=(RequiredAssetDataTags="RowStructure=/Script/PokemonNewAge.ItemRow"))
 	TObjectPtr<UDataTable> Items;
 
+	/** Boutiques (Tools/Data/build_shops.py) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Tables", meta=(RequiredAssetDataTags="RowStructure=/Script/PokemonNewAge.ShopRow"))
+	TObjectPtr<UDataTable> Shops;
+
 	// Recherches par identifiant (C++). Renvoient nullptr si la ligne n'existe pas.
 	const FSpeciesRow* FindSpecies(FName Id) const;
 	const FMoveRow* FindMove(FName Id) const;
@@ -61,6 +65,7 @@ public:
 	const FEncounterTableRow* FindEncounterTable(FName Id) const;
 	const FTrainerRow* FindTrainer(FName Id) const;
 	const FItemRow* FindItem(FName Id) const;
+	const FShopRow* FindShop(FName Id) const;
 
 	/** Copie de la fiche d'une espèce (Blueprint) */
 	UFUNCTION(BlueprintCallable, Category="Pokemon|Data")

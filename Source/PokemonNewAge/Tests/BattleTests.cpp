@@ -6,6 +6,8 @@
 #include "Battle/BattleAI.h"
 #include "Battle/BattleRules.h"
 #include "Battle/BattleSession.h"
+#include "Capture/PokemonStorage.h"
+#include "Town/ShopRules.h"
 #include "Pokemon/PokemonDatabase.h"
 #include "Pokemon/PokemonInstance.h"
 #include "Engine/DataTable.h"
@@ -199,6 +201,115 @@ namespace BattleTest
 }
 
 using namespace BattleTest;
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCaptureStorageTest, "PokemonNewAge.Capture.Storage", BattleTest::TestFlags)
+bool FCaptureStorageTest::RunTest(const FString& Parameters)
+{
+	UPokemonDatabase* Db = MakeDatabase();
+	TArray<FPokemonInstance> Party;
+	TArray<FPokemonInstance> Storage;
+	bool bInParty = false;
+	int32 Index = INDEX_NONE;
+
+	// 6 dans l'équipe, le 7e part au PC, soigné
+	for (int32 I = 0; I < UPokemonStorage::MaxPartySize; ++I)
+	{
+		TestTrue(TEXT("rangé dans l'équipe"), UPokemonStorage::Store(Party, Storage, Make(Db, TEXT("Rattata"), 3), bInParty, Index) && bInParty);
+	}
+	FPokemonInstance Hurt = Make(Db, TEXT("Onix"), 5);
+	Hurt.CurrentHP = 1;
+	TestTrue(TEXT("7e rangé"), UPokemonStorage::Store(Party, Storage, Hurt, bInParty, Index));
+	TestFalse(TEXT("7e au PC"), bInParty);
+	TestEqual(TEXT("place au PC"), Index, 0);
+	TestEqual(TEXT("soigné au PC"), Storage[0].CurrentHP, Storage[0].GetMaxHP());
+	TestFalse(TEXT("Pokémon vide refusé"), UPokemonStorage::Store(Party, Storage, FPokemonInstance(), bInParty, Index));
+
+	// Retirer : équipe pleine
+	EPokemonStorageError Error;
+	TestFalse(TEXT("retirer, équipe pleine"), UPokemonStorage::Withdraw(Party, Storage, 0, Error));
+	TestEqual(TEXT("raison équipe pleine"), Error, EPokemonStorageError::PartyFull);
+
+	// Échange : Onix arrive dans l'équipe, Rattata part au PC
+	TestTrue(TEXT("échange"), UPokemonStorage::Swap(Party, Storage, 2, 0, Error));
+	TestEqual(TEXT("Onix dans l'équipe"), Party[2].Species, FName(TEXT("Onix")));
+	TestEqual(TEXT("Rattata au PC"), Storage[0].Species, FName(TEXT("Rattata")));
+
+	// Déposer : jamais le dernier Pokémon en forme
+	TArray<FPokemonInstance> Two = { Make(Db, TEXT("Bulbasaur"), 5), Make(Db, TEXT("Rattata"), 3) };
+	Two[1].CurrentHP = 0;
+	TestFalse(TEXT("dernier en forme"), UPokemonStorage::Deposit(Two, Storage, 0, Error));
+	TestEqual(TEXT("raison dernier en forme"), Error, EPokemonStorageError::LastAblePokemon);
+	TestTrue(TEXT("déposer le K.O."), UPokemonStorage::Deposit(Two, Storage, 1, Error));
+	TestEqual(TEXT("équipe d'un seul"), Two.Num(), 1);
+	TestEqual(TEXT("K.O. soigné au PC"), Storage.Last().CurrentHP, Storage.Last().GetMaxHP());
+	TestTrue(TEXT("retirer"), UPokemonStorage::Withdraw(Two, Storage, Storage.Num() - 1, Error));
+	TestEqual(TEXT("équipe de deux"), Two.Num(), 2);
+
+	// Relâcher
+	const int32 Before = Storage.Num();
+	TestTrue(TEXT("relâcher"), UPokemonStorage::Release(Storage, 0, Error));
+	TestEqual(TEXT("un de moins"), Storage.Num(), Before - 1);
+	TestFalse(TEXT("relâcher une case vide"), UPokemonStorage::Release(Storage, 99, Error));
+
+	// PC plein : plus de place pour capturer
+	TArray<FPokemonInstance> FullStorage;
+	for (int32 I = 0; I < UPokemonStorage::MaxStorageSize; ++I)
+	{
+		FullStorage.Add(Make(Db, TEXT("Rattata"), 2));
+	}
+	TestFalse(TEXT("plus de place"), UPokemonStorage::HasRoom(Party, FullStorage));
+	TestFalse(TEXT("rangement refusé"), UPokemonStorage::Store(Party, FullStorage, Make(Db, TEXT("Rattata"), 2), bInParty, Index));
+
+	// Surnoms
+	FString Nickname;
+	TestTrue(TEXT("surnom simple"), UPokemonStorage::CleanNickname(TEXT("  Bulbi  "), Nickname) && Nickname == FString(TEXT("Bulbi")));
+	TestTrue(TEXT("surnom vide = nom de l'espèce"), UPokemonStorage::CleanNickname(TEXT(""), Nickname) && Nickname.IsEmpty());
+	TestTrue(TEXT("12 caractères"), UPokemonStorage::CleanNickname(TEXT("Mr Rattatata"), Nickname));
+	TestFalse(TEXT("13 caractères"), UPokemonStorage::CleanNickname(TEXT("Mr Rattatatat"), Nickname));
+	TestFalse(TEXT("balise refusée"), UPokemonStorage::CleanNickname(TEXT("<b>Bulbi"), Nickname));
+	TestFalse(TEXT("double espace"), UPokemonStorage::CleanNickname(TEXT("Bul  bi"), Nickname));
+
+	// Messages après capture
+	FCaughtPokemonInfo Info;
+	Info.Pokemon = Make(Db, TEXT("Onix"), 5);
+	Info.bInParty = false;
+	Info.Index = 31;
+	Info.bNewInPokedex = true;
+	const TArray<FText> Messages = UPokemonStorage::GetCaughtMessages(Db, Info);
+	TestEqual(TEXT("3 messages"), Messages.Num(), 3);
+	int32 Found = INDEX_NONE;
+	TestTrue(TEXT("boîte 2"), Messages.Num() == 3 && Messages[1].ToString().FindChar(TEXT('2'), Found));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCaptureBattleTest, "PokemonNewAge.Capture.Battle", BattleTest::TestFlags)
+bool FCaptureBattleTest::RunTest(const FString& Parameters)
+{
+	UPokemonDatabase* Db = MakeDatabase();
+
+	// Équipe et PC pleins : la Ball est refusée et n'est pas consommée
+	FBattleSide Side = PlayerSide({ Make(Db, TEXT("Bulbasaur"), 5, { TEXT("Tackle") }) });
+	Side.bCanStoreCaughtPokemon = false;
+	UBattleSession* Session = NewObject<UBattleSession>();
+	Session->InitWildBattle(Db, Side, Make(Db, TEXT("Rattata"), 3, { TEXT("Tackle") }), 31);
+	Session->Start();
+	EBattleActionError Error;
+	TestFalse(TEXT("Ball refusée"), Session->SubmitAction(0, FBattleAction::MakeItem(TEXT("MasterBall")), Error));
+	TestEqual(TEXT("raison plus de place"), Error, EBattleActionError::NoRoomForPokemon);
+	TestEqual(TEXT("Ball gardée"), Session->GetSide(0).GetItemCount(TEXT("MasterBall")), 1);
+
+	// Hautes herbes : environ 11,7 % par pas avec le taux 21 des routes
+	TestTrue(TEXT("taux 21"), FMath::Abs(UBattleRules::GetEncounterChancePerStep(21) - 336.f / 2880.f) < 0.0001f);
+	TestEqual(TEXT("taux 0 = jamais"), UBattleRules::GetEncounterChancePerStep(0), 0.f);
+	FRandomStream Stream(7);
+	int32 Encounters = 0;
+	for (int32 Step = 0; Step < 20000; ++Step)
+	{
+		Encounters += UBattleRules::RollEncounterStep(21, Stream) ? 1 : 0;
+	}
+	TestTrue(TEXT("fréquence des rencontres"), FMath::Abs(Encounters / 20000.f - UBattleRules::GetEncounterChancePerStep(21)) < 0.01f);
+	return true;
+}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FBattleDamageFormulaTest, "PokemonNewAge.Battle.Rules.DamageFormula", BattleTest::TestFlags)
 bool FBattleDamageFormulaTest::RunTest(const FString& Parameters)
@@ -646,6 +757,118 @@ bool FBattleHeldItemTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("restes annoncés"), HasEvent(Session, EBattleEventType::HeldItemActivated, 0));
 		TestEqual(TEXT("restes gardés"), Session->GetSide(0).Party[0].HeldItem, FName(TEXT("Leftovers")));
 	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FShopRulesTest, "PokemonNewAge.Town.Shop", BattleTest::TestFlags)
+bool FShopRulesTest::RunTest(const FString& Parameters)
+{
+	UPokemonDatabase* Db = NewObject<UPokemonDatabase>(GetTransientPackage());
+	Db->Items = MakeTable(FItemRow::StaticStruct());
+	auto AddItem = [Db](const TCHAR* ItemName, EItemCategory Category, int32 Price, float Catch = 0.f)
+	{
+		FItemRow Row;
+		Row.DisplayName = FText::FromString(ItemName);
+		Row.Category = Category;
+		Row.Price = Price;
+		Row.CatchRateMultiplier = Catch;
+		Db->Items->AddRow(ItemName, Row);
+	};
+	AddItem(TEXT("Potion"), EItemCategory::Medicine, 300);
+	AddItem(TEXT("SuperPotion"), EItemCategory::Medicine, 700);
+	AddItem(TEXT("PokeBall"), EItemCategory::PokeBall, 200, 1.f);
+	AddItem(TEXT("PremierBall"), EItemCategory::PokeBall, 20, 1.f);
+	AddItem(TEXT("Antidote"), EItemCategory::Medicine, 101);
+	AddItem(TEXT("MaxRevive"), EItemCategory::Medicine, 0);
+	AddItem(TEXT("OaksParcel"), EItemCategory::KeyItem, 500);
+
+	FShopRow Shop;
+	auto Stock = [&Shop](const TCHAR* Item, int32 Badges = 0, const TCHAR* Flag = nullptr)
+	{
+		FShopEntry Entry;
+		Entry.Item = Item;
+		Entry.MinBadges = Badges;
+		Entry.RequiredFlag = Flag ? FName(Flag) : FName();
+		Shop.Stock.Add(Entry);
+	};
+	Stock(TEXT("PokeBall"));
+	Stock(TEXT("Potion"));
+	Stock(TEXT("SuperPotion"), 1);
+	Stock(TEXT("Antidote"), 0, TEXT("GotPokedex"));
+	Stock(TEXT("Unknown"));
+	Stock(TEXT("MaxRevive"));
+
+	// Rayon : badges, drapeaux, objets inconnus ou sans prix retirés
+	TArray<FName> Flags;
+	TestEqual(TEXT("rayon de départ"), UShopRules::GetStock(Db, Shop, Flags, 0).Num(), 2);
+	Flags.Add(TEXT("GotPokedex"));
+	const TArray<FShopOffer> Offers = UShopRules::GetStock(Db, Shop, Flags, 1);
+	TestEqual(TEXT("rayon avec un badge et le Pokédex"), Offers.Num(), 4);
+	TestEqual(TEXT("prix de la Super Potion"), Offers[2].Price, 700);
+
+	// Achat simple
+	int32 Money = 3000;
+	TArray<FItemStack> Bag;
+	FShopReceipt Receipt;
+	EShopError Error;
+	TestTrue(TEXT("achat de 3 Potions"), UShopRules::Buy(Db, Shop, Flags, 0, TEXT("Potion"), 3, Money, Bag, Receipt, Error));
+	TestEqual(TEXT("argent après achat"), Money, 2100);
+	TestEqual(TEXT("Potions dans le sac"), UShopRules::CountItem(Bag, TEXT("Potion")), 3);
+	TestEqual(TEXT("ticket"), Receipt.Money, 900);
+
+	// Refus : rien ne change
+	TestFalse(TEXT("pas encore en rayon"), UShopRules::Buy(Db, Shop, Flags, 0, TEXT("SuperPotion"), 1, Money, Bag, Receipt, Error));
+	TestEqual(TEXT("raison pas en rayon"), Error, EShopError::NotInStock);
+	TestFalse(TEXT("trop cher"), UShopRules::Buy(Db, Shop, Flags, 0, TEXT("Potion"), 8, Money, Bag, Receipt, Error));
+	TestEqual(TEXT("raison argent"), Error, EShopError::NotEnoughMoney);
+	TestFalse(TEXT("quantité nulle"), UShopRules::Buy(Db, Shop, Flags, 0, TEXT("Potion"), 0, Money, Bag, Receipt, Error));
+	TestFalse(TEXT("quantité 100"), UShopRules::Buy(Db, Shop, Flags, 0, TEXT("Potion"), 100, Money, Bag, Receipt, Error));
+	TestEqual(TEXT("raison quantité"), Error, EShopError::InvalidCount);
+	TestEqual(TEXT("argent inchangé"), Money, 2100);
+
+	// 10 Poké Balls = 1 Honor Ball offerte, 25 = 2
+	TestTrue(TEXT("10 Balls"), UShopRules::Buy(Db, Shop, Flags, 0, TEXT("PokeBall"), 10, Money, Bag, Receipt, Error));
+	TestEqual(TEXT("Honor Ball offerte"), UShopRules::CountItem(Bag, TEXT("PremierBall")), 1);
+	TestEqual(TEXT("ticket Honor Ball"), Receipt.BonusCount, 1);
+	Money = 10000;
+	TestTrue(TEXT("25 Balls"), UShopRules::Buy(Db, Shop, Flags, 0, TEXT("PokeBall"), 25, Money, Bag, Receipt, Error));
+	TestEqual(TEXT("deux de plus"), UShopRules::CountItem(Bag, TEXT("PremierBall")), 3);
+	TestTrue(TEXT("9 Balls"), UShopRules::Buy(Db, Shop, Flags, 0, TEXT("PokeBall"), 9, Money, Bag, Receipt, Error));
+	TestEqual(TEXT("pas de cadeau pour 9"), Receipt.BonusCount, 0);
+
+	// Sac plein à 999
+	TArray<FItemStack> FullBag = { FItemStack() };
+	FullBag[0].Item = TEXT("Potion");
+	FullBag[0].Count = 995;
+	Money = 100000;
+	TestFalse(TEXT("sac plein"), UShopRules::Buy(Db, Shop, Flags, 0, TEXT("Potion"), 5, Money, FullBag, Receipt, Error));
+	TestEqual(TEXT("raison sac plein"), Error, EShopError::BagFull);
+	TestEqual(TEXT("max achetable, sac"), UShopRules::GetMaxBuyCount(300, Money, 995), 4);
+	TestEqual(TEXT("max achetable, argent"), UShopRules::GetMaxBuyCount(300, 1000, 0), 3);
+	TestEqual(TEXT("max achetable, 99"), UShopRules::GetMaxBuyCount(20, 999999, 0), 99);
+
+	// Vente : moitié du prix, arrondie en dessous ; objets rares et sans prix refusés
+	Money = 0;
+	TestTrue(TEXT("vendre 2 Potions"), UShopRules::Sell(Db, TEXT("Potion"), 2, Money, Bag, Receipt, Error));
+	TestEqual(TEXT("moitié du prix"), Money, 300);
+	TestEqual(TEXT("une Potion restante"), UShopRules::CountItem(Bag, TEXT("Potion")), 1);
+	TestTrue(TEXT("vendre la dernière"), UShopRules::Sell(Db, TEXT("Potion"), 1, Money, Bag, Receipt, Error));
+	TestFalse(TEXT("plus de Potion dans le sac"), Bag.ContainsByPredicate([](const FItemStack& S) { return S.Item == FName(TEXT("Potion")); }));
+	TestFalse(TEXT("vendre ce qu'on n'a pas"), UShopRules::Sell(Db, TEXT("Potion"), 1, Money, Bag, Receipt, Error));
+	TestEqual(TEXT("raison pas assez"), Error, EShopError::NotEnoughItems);
+	FItemRow Antidote;
+	Antidote.Price = 101;
+	TestEqual(TEXT("arrondi en dessous"), UShopRules::GetSellPrice(Antidote), 50);
+	Bag.Add(FItemStack());
+	Bag.Last().Item = TEXT("OaksParcel");
+	Bag.Last().Count = 1;
+	TestFalse(TEXT("objet rare invendable"), UShopRules::Sell(Db, TEXT("OaksParcel"), 1, Money, Bag, Receipt, Error));
+	TestEqual(TEXT("raison invendable"), Error, EShopError::CannotSell);
+
+	// Argent plafonné à 999 999 ₽
+	Money = UShopRules::MaxMoney - 10;
+	TestTrue(TEXT("vente près du plafond"), UShopRules::Sell(Db, TEXT("PokeBall"), 1, Money, Bag, Receipt, Error));
+	TestEqual(TEXT("plafond"), Money, UShopRules::MaxMoney);
 	return true;
 }
 

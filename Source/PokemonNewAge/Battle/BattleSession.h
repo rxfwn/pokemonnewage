@@ -6,6 +6,7 @@
 #include "BattleSession.generated.h"
 
 class UPokemonDatabase;
+struct FItemRow;
 struct FMoveRow;
 struct FTrainerRow;
 struct FItemRow;

@@ -376,6 +376,45 @@
     "NextConversation": "None"
   },
   {
+    "Name": "PlayerHouse_Mom_AfterBlackout",
+    "Npc": "Mom",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "Mom",
+        "Text": "{PlayerName} ! Te voilà ! Tes Pokémon avaient l'air à bout de forces...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Narrator",
+        "Text": "Toute l'équipe a repris des forces.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "Mom",
+        "Text": "Ne force pas trop, d'accord ? Je suis toujours là si besoin.",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
     "Name": "PlayerHouse_TV_Read",
     "Npc": "PlayerHouse_TV",
     "Trigger": "Talk",
@@ -2890,6 +2929,45 @@
     "NextConversation": "None"
   },
   {
+    "Name": "PokemonCenter_Nurse_AfterBlackout",
+    "Npc": "PokemonCenterNurse",
+    "Trigger": "Script",
+    "Priority": 0,
+    "RequiredFlags": [],
+    "BlockedByFlags": [],
+    "Lines": [
+      {
+        "Speaker": "PokemonCenterNurse",
+        "Text": "Oh ! Vos Pokémon étaient à bout de forces...",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PokemonCenterNurse",
+        "Text": "Nous les avons soignés. Ils sont de nouveau en pleine forme !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      },
+      {
+        "Speaker": "PokemonCenterNurse",
+        "Text": "Faites bien attention à vous sur la route. À bientôt !",
+        "Event": "None",
+        "EventParam": "None",
+        "EventAmount": 0,
+        "FailConversation": "None",
+        "Choices": []
+      }
+    ],
+    "SetFlags": [],
+    "NextConversation": "None"
+  },
+  {
     "Name": "PokemonCenter_PC_Use",
     "Npc": "PokemonCenter_PC",
     "Trigger": "Talk",
@@ -4105,7 +4183,7 @@
       },
       {
         "Speaker": "PewterMuseum_Receptionist",
-        "Text": "L'entrée coûte 50 ₽. Voulez-vous visiter le musée ?",
+        "Text": "L'entrée coûte 50 P. Voulez-vous visiter le musée ?",
         "Event": "None",
         "EventParam": "None",
         "EventAmount": 0,
@@ -4135,7 +4213,7 @@
     "Lines": [
       {
         "Speaker": "Narrator",
-        "Text": "{PlayerName} paie 50 ₽.",
+        "Text": "{PlayerName} paie 50 P.",
         "Event": "TakeMoney",
         "EventParam": "None",
         "EventAmount": 50,
@@ -4985,7 +5063,7 @@
       },
       {
         "Speaker": "Narrator",
-        "Text": "{PlayerName} perd {MoneyLost} ₽...",
+        "Text": "{PlayerName} perd {MoneyLost} P...",
         "Event": "None",
         "EventParam": "None",
         "EventAmount": 0,

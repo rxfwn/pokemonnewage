@@ -58,6 +58,7 @@ const FNatureRow* UPokemonDatabase::FindNature(FName Id) const { return FindIn<F
 const FEncounterTableRow* UPokemonDatabase::FindEncounterTable(FName Id) const { return FindIn<FEncounterTableRow>(Encounters, Id); }
 const FTrainerRow* UPokemonDatabase::FindTrainer(FName Id) const { return FindIn<FTrainerRow>(Trainers, Id); }
 const FItemRow* UPokemonDatabase::FindItem(FName Id) const { return FindIn<FItemRow>(Items, Id); }
+const FShopRow* UPokemonDatabase::FindShop(FName Id) const { return FindIn<FShopRow>(Shops, Id); }
 
 bool UPokemonDatabase::GetSpecies(FName Id, FSpeciesRow& OutRow) const
 {

@@ -9,10 +9,11 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 SRC="$ROOT/Source/PokemonNewAge"
 OUT="${TMPDIR:-/tmp}/pokemon_battlesim"
 mkdir -p "$OUT/gen"
-for f in $(grep -rhoE '[A-Za-z]+\.generated\.h' "$SRC/Pokemon" "$SRC/Battle" | sort -u); do : > "$OUT/gen/$f"; done
+for f in $(grep -rhoE '[A-Za-z]+\.generated\.h' "$SRC/Pokemon" "$SRC/Battle" "$SRC/Capture" "$SRC/Town" | sort -u); do : > "$OUT/gen/$f"; done
 FLAGS=(-std=c++20 -O1 -Wall -Wshadow -Wno-comment -I "$HERE/inc" -I "$OUT/gen" -I "$SRC" -include CoreMinimal.h)
 LOGIC=("$HERE/enums.cpp" "$SRC/Pokemon/PokemonDatabase.cpp" "$SRC/Pokemon/PokemonInstance.cpp" "$SRC/Pokemon/PokemonProgression.cpp" "$SRC/Battle/BattleRules.cpp"
-       "$SRC/Battle/BattleSession.cpp" "$SRC/Battle/BattleAI.cpp" "$SRC/Battle/BattleText.cpp")
+       "$SRC/Battle/BattleSession.cpp" "$SRC/Battle/BattleAI.cpp" "$SRC/Battle/BattleText.cpp"
+       "$SRC/Capture/PokemonStorage.cpp" "$SRC/Town/ShopRules.cpp")
 if [[ "${1:-}" == "fuzz" ]]; then
   python3 "$HERE/gen_realdata.py" "$ROOT/Data/Pokemon" "$OUT/realdata.cpp"
   g++ "${FLAGS[@]}" -o "$OUT/fuzz" "$HERE/fuzz.cpp" "$OUT/realdata.cpp" "${LOGIC[@]}"

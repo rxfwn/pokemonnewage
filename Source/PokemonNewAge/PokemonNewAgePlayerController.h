@@ -8,6 +8,7 @@
 #include "Battle/BattleTypes.h"
 #include "PokemonNewAgePlayerController.generated.h"
 
+class UCaptureComponent;
 class UInputMappingContext;
 class UUserWidget;
 class UInputAction;
@@ -27,6 +28,9 @@ struct FPokemonBindableKey
 	FKey DefaultKey;
 	FKey Key;
 };
+class UDialogueComponent;
+class UPokemonCenterComponent;
+class UShopComponent;
 
 /**
  *  Basic PlayerController class for a third person game
@@ -139,6 +143,22 @@ public:
 	/** Niveaux, attaques et évolutions hors combat : objets du sac, séquence d'évolution 3D (docs/PROGRESSION.md) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Progression")
 	TObjectPtr<UProgressionComponent> ProgressionComponent;
+
+	/** Conversations de ce joueur et boîte de dialogue (docs/DIALOGUES.md) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Dialogue")
+	TObjectPtr<UDialogueComponent> DialogueComponent;
+
+	/** Centre Pokémon : point de retour après K.O., PC de Léo (docs/CENTRE_ET_BOUTIQUE.md) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Town")
+	TObjectPtr<UPokemonCenterComponent> PokemonCenterComponent;
+
+	/** Boutique Pokémon : achat et vente (docs/CENTRE_ET_BOUTIQUE.md) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Town")
+	TObjectPtr<UShopComponent> ShopComponent;
+
+	/** Capture, surnom, PC de Léo, lancer de Ball en 3D (docs/CAPTURE.md) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Capture")
+	TObjectPtr<UCaptureComponent> CaptureComponent;
 
 	/** Ouvre le menu en jeu s'il est fermé, sinon le ferme */
 	UFUNCTION(BlueprintCallable, Category="UI")
@@ -272,6 +292,36 @@ public:
 	UFUNCTION(Exec)
 	void VoirEvolution(FName FromSpecies, FName ToSpecies);
 
+	// Commandes de test de la capture et du PC (docs/CAPTURE.md)
+
+	/** Surnom Bulbi : surnom du Pokémon qui vient d'être capturé (sans cette commande, il garde son nom) */
+	UFUNCTION(Exec)
+	void Surnom(const FString& Nickname);
+
+	/** Affiche le contenu du PC de Léo */
+	UFUNCTION(Exec)
+	void VoirPC();
+
+	/** Deposer 2 : dépose le 2e Pokémon de l'équipe au PC */
+	UFUNCTION(Exec)
+	void Deposer(int32 PartySlot);
+
+	/** Retirer 1 : prend le 1er Pokémon du PC dans l'équipe */
+	UFUNCTION(Exec)
+	void Retirer(int32 StorageSlot);
+
+	/** Echanger 2 1 : échange le 2e de l'équipe et le 1er du PC */
+	UFUNCTION(Exec)
+	void Echanger(int32 PartySlot, int32 StorageSlot);
+
+	/** Relacher 1 : relâche le 1er Pokémon du PC (définitif) */
+	UFUNCTION(Exec)
+	void Relacher(int32 StorageSlot);
+
+	/** Rencontres 0 : plus de Pokémon sauvages dans les herbes (Rencontres 1 pour les remettre) */
+	UFUNCTION(Exec)
+	void Rencontres(int32 bEnabled);
+
 	/** DonnerPokemon Bulbasaur 5 */
 	UFUNCTION(Exec)
 	void DonnerPokemon(FName Species, int32 Level);
@@ -287,6 +337,59 @@ public:
 	/** Affiche l'équipe dans le journal et à l'écran */
 	UFUNCTION(Exec)
 	void Equipe();
+
+	// Commandes de test des dialogues (docs/DIALOGUES.md)
+
+	/** Parler ProfOak : comme si le joueur parlait à ce PNJ */
+	UFUNCTION(Exec)
+	void Parler(FName Npc);
+
+	/** Dialogue OaksLab_ChooseBulbasaur : joue une conversation par son nom, sans vérifier les drapeaux */
+	UFUNCTION(Exec)
+	void Dialogue(FName ConversationId);
+
+	/** Drapeau GotStarter : donne un drapeau d'histoire */
+	UFUNCTION(Exec)
+	void Drapeau(FName Flag);
+
+	/** Affiche les drapeaux d'histoire du joueur */
+	UFUNCTION(Exec)
+	void Drapeaux();
+
+	// Commandes de test du Centre et de la Boutique (docs/CENTRE_ET_BOUTIQUE.md)
+
+	/** Boutique ViridianPokeMart : ouvre une boutique de DT_Shops sans parler au vendeur */
+	UFUNCTION(Exec)
+	void Boutique(FName ShopId);
+
+	/** Acheter PokeBall 10 : achat dans la boutique ouverte */
+	UFUNCTION(Exec)
+	void Acheter(FName Item, int32 Count = 1);
+
+	/** Vendre Potion 2 : vente dans la boutique ouverte */
+	UFUNCTION(Exec)
+	void Vendre(FName Item, int32 Count = 1);
+
+	/** Argent 5000 : fixe l'argent du joueur */
+	UFUNCTION(Exec)
+	void Argent(int32 Amount);
+
+	/** Badge BoulderBadge : donne un badge (le stock des boutiques grandit avec les badges) */
+	UFUNCTION(Exec)
+	void Badge(FName BadgeId);
+
+	/** Allume le PC de Léo sans aller au Centre */
+	UFUNCTION(Exec)
+	void AllumerPC();
+
+	/** Retient le Centre le plus proche comme point de retour (comme un soin de Joëlle) */
+	UFUNCTION(Exec)
+	void NoterCentre();
+
+	/** Renvoie au dernier Centre visité, comme quand toute l'équipe est K.O. */
+	UFUNCTION(Exec)
+	void RetourCentre();
+
 
 private:
 

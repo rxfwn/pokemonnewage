@@ -1,6 +1,8 @@
 ﻿#include "Battle/BattleSubsystem.h"
 #include "Battle/BattleComponent.h"
 #include "Battle/BattleSession.h"
+#include "Capture/CaptureComponent.h"
+#include "Capture/PokemonStorage.h"
 #include "Core/PokemonPlayerState.h"
 #include "Progression/ProgressionComponent.h"
 #include "Pokemon/PokemonDatabase.h"
@@ -85,6 +87,7 @@ bool UBattleSubsystem::MakePlayerSide(APlayerController* Player, FBattleSide& Ou
 	OutSide.Money = State->Money;
 	OutSide.BadgeCount = State->Badges.Num();
 	OutSide.bGainsExperience = true;
+	OutSide.bCanStoreCaughtPokemon = UPokemonStorage::HasRoom(State->Party, State->StoragePC);
 	return true;
 }
 
@@ -243,7 +246,12 @@ void UBattleSubsystem::HandleEnded(UBattleSession* Session, const FBattleResult&
 			{
 				Caught.MetLocation = State->CurrentLocation;
 			}
-			State->AddPokemon(Caught);
+			// Équipe ou PC, Pokédex, puis le client propose un surnom (SCRUM-42)
+			UCaptureComponent* Capture = Battle.Player ? Battle.Player->FindComponentByClass<UCaptureComponent>() : nullptr;
+			if (!Capture || !Capture->HandlePokemonCaught(Caught))
+			{
+				State->AddPokemon(Caught);
+			}
 		}
 	}
 

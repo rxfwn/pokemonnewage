@@ -93,6 +93,14 @@ Légende : *Parler* = en parlant au PNJ ; *Scène* = déclenchée par le jeu (vo
 - *Toute l'équipe est en pleine forme.*
   - ⚙ HealParty
 
+### `PlayerHouse_Mom_AfterBlackout`
+
+*Scène*
+
+- **Maman** : {PlayerName} ! Te voilà ! Tes Pokémon avaient l'air à bout de forces...
+- *Toute l'équipe a repris des forces.*
+- **Maman** : Ne force pas trop, d'accord ? Je suis toujours là si besoin.
+
 ### `PlayerHouse_TV_Read`
 
 *Parler*
@@ -941,7 +949,7 @@ Légende : *Parler* = en parlant au PNJ ; *Scène* = déclenchée par le jeu (vo
 *Parler* · sauf PaidMuseum
 
 - **Hôtesse** : Bienvenue au Musée des Sciences d'Argenta !
-- **Hôtesse** : L'entrée coûte 50 ₽. Voulez-vous visiter le musée ?
+- **Hôtesse** : L'entrée coûte 50 P. Voulez-vous visiter le musée ?
   - ▸ « Oui » → `PewterMuseum_Receptionist_Pay`
   - ▸ « Non » → `PewterMuseum_Receptionist_Decline`
 
@@ -949,7 +957,7 @@ Légende : *Parler* = en parlant au PNJ ; *Scène* = déclenchée par le jeu (vo
 
 *Scène*
 
-- *{PlayerName} paie 50 ₽.*
+- *{PlayerName} paie 50 P.*
   - ⚙ TakeMoney  ×50
 - **Hôtesse** : Merci ! Bonne visite !
 - ⚑ PaidMuseum
@@ -1173,6 +1181,14 @@ Légende : *Parler* = en parlant au PNJ ; *Scène* = déclenchée par le jeu (vo
 
 - **Infirmière Joëlle** : À bientôt !
 
+### `PokemonCenter_Nurse_AfterBlackout`
+
+*Scène*
+
+- **Infirmière Joëlle** : Oh ! Vos Pokémon étaient à bout de forces...
+- **Infirmière Joëlle** : Nous les avons soignés. Ils sont de nouveau en pleine forme !
+- **Infirmière Joëlle** : Faites bien attention à vous sur la route. À bientôt !
+
 ### `PokemonCenter_PC_Use`
 
 *Parler*
@@ -1185,6 +1201,6 @@ Légende : *Parler* = en parlant au PNJ ; *Scène* = déclenchée par le jeu (vo
 *Scène*
 
 - *{PlayerName} n'a plus de Pokémon en état de se battre !*
-- *{PlayerName} perd {MoneyLost} ₽...*
+- *{PlayerName} perd {MoneyLost} P...*
 - *... et se précipite au dernier Centre Pokémon visité.*
   - ⚙ ReturnToLastHeal
