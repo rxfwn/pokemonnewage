@@ -147,7 +147,7 @@ TSharedRef<SWidget> UGameHUDWidget::RebuildWidget()
 		Place(Block, MakeLine(FLinearColor::White), FVector2D::ZeroVector, FVector2D(159.f, 39.f), FVector2D(2.f, 25.f), FVector2D::ZeroVector);
 		WeatherImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("Weather"));
 		Place(Block, WeatherImage, FVector2D::ZeroVector, FVector2D(176.f, 37.f), FVector2D(29.f, 29.f), FVector2D::ZeroVector);
-		for (const TCHAR* Name : { TEXT("T_HUD_Weather_Sun"), TEXT("T_HUD_Weather_Cloud"), TEXT("T_HUD_Weather_Rain") })
+		for (const TCHAR* Name : { TEXT("T_HUD_Weather_Sun"), TEXT("T_HUD_Weather_Cloud"), TEXT("T_HUD_Weather_Rain"), TEXT("T_HUD_Weather_Wind") })
 		{
 			WeatherIcons.Add(LoadHUDAsset<UTexture2D>(Name));
 		}

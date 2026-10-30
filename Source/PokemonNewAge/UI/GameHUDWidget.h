@@ -17,7 +17,8 @@ enum class EHUDWeather : uint8
 {
 	Sun,
 	Cloud,
-	Rain
+	Rain,
+	Wind
 };
 
 /**

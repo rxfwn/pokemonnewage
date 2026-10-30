@@ -4,14 +4,13 @@
 
 Écrit dans Tools/HUD/Assets/ :
   - T_HUD_PokedexIcon.png : icône du Pokédex en haut à droite (réduite à 256 px depuis l'image de L'amie) ;
-  - T_HUD_ViewCone.png : cône de vue de la boussole (blanc 46 % près du joueur, transparent au loin) ;
-  - T_HUD_Weather_Sun/Cloud/Rain.png : pictos météo blancs à côté de la température.
+  - T_HUD_ViewCone.png : cône de vue de la boussole (blanc 46 % près du joueur, transparent au loin).
+Les pictos météo T_HUD_Weather_Sun/Cloud/Rain/Wind.png sont ceux de L'amie (« Plan de travail 1 ... »), copiés tels quels.
 Et dans Tools/Pokedex/Assets/icons/ les icônes provisoires des deux nouveaux boutons du Pokédex
 (Appareil photo, Compteur de pas), à remplacer par celles de L'amie.
 Les images sont ensuite importées par Tools/HUD/import_hud_unreal.py.
 """
 
-import math
 import os
 import sys
 
@@ -59,40 +58,6 @@ def view_cone():
     save(cone, OUT, "T_HUD_ViewCone.png")
 
 
-def white_icon(draw_function, name, size=64):
-    big = Image.new("RGBA", (size * SS, size * SS), (0, 0, 0, 0))
-    draw_function(ImageDraw.Draw(big), size * SS)
-    save(big.resize((size, size), Image.LANCZOS), OUT, name)
-
-
-def draw_sun(draw, s):
-    c, r, line = s / 2, s * 0.2, int(s * 0.07)
-    draw.ellipse([c - r, c - r, c + r, c + r], outline="white", width=line)
-    for i in range(8):
-        a = i * math.pi / 4
-        draw.line([(c + math.cos(a) * s * 0.3, c + math.sin(a) * s * 0.3),
-                   (c + math.cos(a) * s * 0.44, c + math.sin(a) * s * 0.44)], fill="white", width=line)
-
-
-def draw_cloud_shape(draw, s, top):
-    line = int(s * 0.07)
-    draw.arc([s * 0.12, top + s * 0.14, s * 0.48, top + s * 0.5], 90, 270, fill="white", width=line)
-    draw.arc([s * 0.3, top, s * 0.74, top + s * 0.44], 180, 345, fill="white", width=line)
-    draw.arc([s * 0.56, top + s * 0.16, s * 0.9, top + s * 0.5], 270, 90, fill="white", width=line)
-    draw.line([(s * 0.3, top + s * 0.5), (s * 0.73, top + s * 0.5)], fill="white", width=line)
-
-
-def draw_cloud(draw, s):
-    draw_cloud_shape(draw, s, s * 0.2)
-
-
-def draw_rain(draw, s):
-    draw_cloud_shape(draw, s, s * 0.06)
-    line = int(s * 0.06)
-    for x in (0.34, 0.52, 0.7):
-        draw.line([(s * x, s * 0.68), (s * (x - 0.06), s * 0.88)], fill="white", width=line)
-
-
 def shaded_icon(draw_function, name):
     """Icône provisoire du Pokédex : forme pleine avec un peu de relief, dans l'esprit de la planche de L'amie."""
     s = 256 * SS
@@ -132,9 +97,6 @@ def main():
     else:
         print("pas d'image source pour l'icône Pokédex (%s) : T_HUD_PokedexIcon.png gardé tel quel" % source)
     view_cone()
-    white_icon(draw_sun, "T_HUD_Weather_Sun.png")
-    white_icon(draw_cloud, "T_HUD_Weather_Cloud.png")
-    white_icon(draw_rain, "T_HUD_Weather_Rain.png")
     shaded_icon(draw_camera, "T_PokedexIcon_Camera.png")
     shaded_icon(draw_steps, "T_PokedexIcon_Steps.png")
 

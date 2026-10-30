@@ -52,11 +52,11 @@ Fait en C++ (`UGameHUDWidget`) aux mesures de la maquette (1920 × 1080, mis à 
 
 - **Icône du Pokédex** en haut à droite (image de L'amie), avec la touche qui l'ouvre dessous.
 - **Nom du lieu** en Futura 95, centré en haut, avec le trait blanc dessous : il apparaît 4 s quand on entre dans une ville ou sur une route.
-- **En bas à droite** : le lieu (Inter 24), l'heure du PC, la température (17 °C de moyenne, plus chaud à 15 h, réglable : `Base Temperature`, `Temperature Swing`) et le picto météo (soleil par défaut, `SetWeather` pour nuage ou pluie en attendant un vrai système météo).
+- **En bas à droite** : le lieu (Inter 24), l'heure du PC, la température (17 °C de moyenne, plus chaud à 15 h, réglable : `Base Temperature`, `Temperature Swing`) et le picto météo (pictos de L'amie : soleil par défaut, `SetWeather` pour nuage, pluie ou vent en attendant un vrai système météo).
 - **Boussole** : disque gris translucide, N en haut (le nord de Kanto), point blanc du joueur, cône de vue qui tourne avec la caméra, repère jaune du GPS sur le bord et distance au centre.
 - Il se cache pendant les combats, les menus, la boutique, le PC et l'appareil photo, ou avec Échap > Jeu > Afficher le HUD.
 
-Images et polices : `Tools/HUD/Assets/` (icône du Pokédex, cône, pictos météo ; polices Inter et Futura en `FF_*.ttf`), importées dans `/Game/UI/HUD` par `Tools/HUD/import_hud_unreal.py`, lancé aussi à la fin du script du Pokédex.
+Images et polices : `Tools/HUD/Assets/` (icône du Pokédex, cône, 4 pictos météo de L'amie ; polices Inter et Futura en `FF_*.ttf`), importées dans `/Game/UI/HUD` par `Tools/HUD/import_hud_unreal.py`, lancé aussi à la fin du script du Pokédex.
 
 ## 1. Compiler (Unreal fermé)
 
@@ -71,7 +71,7 @@ Le modèle de L'amie (`Pokedex.blend`) a été découpé en 33 pièces par `Tool
 1. Prendre `Pokedex_Generated.zip` dans les fichiers du projet (dossier **pokedex/**) et le dézipper dans `Tools/Pokedex/`. On doit avoir `Tools/Pokedex/Generated/Pokedex.fbx` et `Tools/Pokedex/Generated/textures/` (16 images).
    Autre possibilité, si Blender est installé dans `C:\Program Files\Blender Foundation\` : mettre `Pokedex.blend` (dossier **pokedex/source/**) dans `Tools/Pokedex/Source/`, le script le prépare tout seul.
 2. Dans Unreal : **Outils > Exécuter un script Python** (Tools > Execute Python Script), choisir `Tools/Pokedex/import_pokedex_unreal.py`.
-3. Attendre la fin. Le journal (**Fenêtre > Journal de sortie**) doit afficher « HUD prêt : 5 images, 3 polices » puis « Menu prêt : 33 pièces 3D sur 33, 16 textures, 10 icônes, 41 lieux sur la carte, 7 sons ».
+3. Attendre la fin. Le journal (**Fenêtre > Journal de sortie**) doit afficher « HUD prêt : 6 images, 3 polices » puis « Menu prêt : 33 pièces 3D sur 33, 16 textures, 10 icônes, 41 lieux sur la carte, 7 sons ».
 
 Sans le dossier `Generated` (ni Blender), le script importe quand même les icônes, la carte et les sons du menu classique, sans le Pokédex 3D (un avertissement le dit dans le journal).
 
@@ -141,7 +141,7 @@ Il s'ouvre tout seul quand un combat commence : cadres des deux Pokémon (nom, n
 - **Échanges et combats entre joueurs** : SCRUM-69.
 - **Musique** : le réglage existe ; il agira sur les musiques dès qu'elles utiliseront la classe de son `SC_Music`.
 - **Figurine** : elle n'apparaît qu'une fois les modèles importés (fil des modèles 3D) ; la version chromatique (`SK_<Espèce>_Shiny`) n'est pas encore utilisée.
-- **Météo** : pas encore de système ; le picto et la température du HUD sont fixes ou calculés selon l'heure. Le picto pluie de la maquette (« Plan de travail 1 copie 2.png ») n'a pas été envoyé : les pictos sont provisoires.
+- **Météo** : pas encore de système ; le picto et la température du HUD sont fixes ou calculés selon l'heure.
 - **Icônes** Appareil photo et Compteur de pas : provisoires.
 - **Boussole** : disque vide comme la maquette ; une vraie mini-carte dedans est possible plus tard.
 - Les sons sont synthétiques : on pourra les remplacer en gardant les mêmes noms.
