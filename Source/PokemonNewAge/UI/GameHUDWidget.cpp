@@ -145,19 +145,19 @@ TSharedRef<SWidget> UGameHUDWidget::RebuildWidget()
 		// Heure | température | météo : une ligne centrée sous le trait, chaque élément à sa largeur réelle
 		UHorizontalBox* InfoRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("InfoRow"));
 		Place(Block, InfoRow, FVector2D::ZeroVector, FVector2D(120.f, 37.f), FVector2D(206.f, 29.f), FVector2D(0.5f, 0.f))->SetAutoSize(true);
-		auto AddToRow = [InfoRow](UWidget* Widget, const FMargin& Padding)
+		auto AddToRow = [InfoRow](UWidget* Widget, const FMargin& RowPadding)
 		{
 			UHorizontalBoxSlot* RowSlot = InfoRow->AddChildToHorizontalBox(Widget);
-			RowSlot->SetPadding(Padding);
+			RowSlot->SetPadding(RowPadding);
 			RowSlot->SetVerticalAlignment(VAlign_Center);
 		};
 		auto AddSeparator = [this, &AddToRow, &MakeLine]()
 		{
-			USizeBox* Size = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
-			Size->SetWidthOverride(2.f);
-			Size->SetHeightOverride(25.f);
-			Size->SetContent(MakeLine(FLinearColor::White));
-			AddToRow(Size, FMargin(9.f, 0.f));
+			USizeBox* SeparatorBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+			SeparatorBox->SetWidthOverride(2.f);
+			SeparatorBox->SetHeightOverride(25.f);
+			SeparatorBox->SetContent(MakeLine(FLinearColor::White));
+			AddToRow(SeparatorBox, FMargin(9.f, 0.f));
 		};
 		TimeText = MakeText(TEXT("FF_Inter_Regular"), 24.f, ETextJustify::Center);
 		AddToRow(TimeText, FMargin(0.f));
