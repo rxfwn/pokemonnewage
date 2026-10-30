@@ -28,6 +28,7 @@
 #include "Landscape.h"
 #include "Pokemon/PokemonDatabase.h"
 #include "Pokemon/PokemonDataSubsystem.h"
+#include "Pokemon/PokemonProgression.h"
 #include "PokemonNewAgePlayerController.h"
 #include "UI/Pokedex/PokedexModel.h"
 
@@ -100,7 +101,7 @@ namespace PokedexScreen
 		{
 		case 0:  return LOCTEXT("PocketMedicine", "SOINS");
 		case 1:  return LOCTEXT("PocketBalls", "CAPTURE");
-		case 2:  return LOCTEXT("PocketOther", "BAIES ET MATÉRIAUX");
+		case 2:  return LOCTEXT("PocketOther", "OBJETS, BAIES ET CT");
 		default: return LOCTEXT("PocketKey", "OBJETS CLÉS");
 		}
 	}
@@ -630,7 +631,8 @@ void UPokedexScreenWidget::Confirm()
 		SelectedItem = Items[Selection];
 		const UPokemonDatabase* Database = GetDatabase();
 		const FItemRow* Item = Database ? Database->FindItem(SelectedItem) : nullptr;
-		if (Item && Item->bUsableInField && Item->Category == EItemCategory::Medicine)
+		// Soins, et objets de progression (Super Bonbon, pierres, CT : docs/PROGRESSION.md)
+		if (Item && Item->bUsableInField && (Item->Category == EItemCategory::Medicine || Item->FieldEffect != EFieldItemEffect::None))
 		{
 			Feedback(EPokedexFeedback::Confirm);
 			SetPage(EPokedexPage::BagTarget);
@@ -1244,6 +1246,17 @@ void UPokedexScreenWidget::BuildBagTarget()
 		const FPokemonInstance& Pokemon = State->Party[Index];
 		UHorizontalBox* Row = AddRow(Index);
 		AddRowText(Row, UPokemonLibrary::GetDisplayName(Database, Pokemon), 20, Pokemon.IsFainted() ? ErrorColor : Text, true, true);
+		if (Item->FieldEffect != EFieldItemEffect::None)
+		{
+			// Comme dans les jeux : APTE / PAS APTE / DÉJÀ APPRIS
+			AddRowText(Row, FText::Format(LOCTEXT("TargetLevel", "N.{0}  "), Pokemon.Level), 18, Text);
+			const EItemCompatibility Compatibility = UPokemonProgression::GetItemCompatibility(Database, SelectedItem, Pokemon);
+			const FText Label = Compatibility == EItemCompatibility::Able ? LOCTEXT("Able", "APTE")
+				: (Compatibility == EItemCompatibility::AlreadyKnown ? LOCTEXT("Known", "DÉJÀ APPRIS")
+				: (Compatibility == EItemCompatibility::NoEffect ? LOCTEXT("NoEffectShort", "SANS EFFET") : LOCTEXT("NotAble", "PAS APTE")));
+			AddRowText(Row, Label, 17, Compatibility == EItemCompatibility::Able ? Good : Dim, true, true);
+			continue;
+		}
 		AddRowHPBar(Row, Pokemon.CurrentHP, Pokemon.GetMaxHP(), 120.f);
 		AddRowText(Row, FText::FromString(FString::Printf(TEXT(" %d/%d "), Pokemon.CurrentHP, Pokemon.GetMaxHP())), 16, Text);
 		AddRowText(Row, Pokemon.IsFainted() ? LOCTEXT("KO", "K.O.") : GetStatusShort(Pokemon.Status), 15, ErrorColor, false, true);
@@ -1695,6 +1708,27 @@ void UPokedexScreenWidget::UseSelectedItemOn(int32 Index)
 	}
 
 	const FPokemonInstance& Pokemon = State->Party[Index];
+	if (Item->FieldEffect != EFieldItemEffect::None)
+	{
+		// Le serveur applique ; s'il faut choisir une attaque ou voir l'évolution, le Pokédex se referme tout seul
+		if (UPokemonProgression::GetItemCompatibility(Database, SelectedItem, Pokemon) != EItemCompatibility::Able)
+		{
+			Feedback(EPokedexFeedback::Error);
+			ShowStatus(LOCTEXT("NoEffect", "Ça n'aura aucun effet."), true);
+			return;
+		}
+		const FText Name = UPokemonLibrary::GetDisplayName(Database, Pokemon);
+		const FText Message = Item->FieldEffect == EFieldItemEffect::LevelUp
+			? FText::Format(LOCTEXT("CandyUsed", "{0} monte au niveau {1} !"), Name, FMath::Min(Pokemon.Level + FMath::Max(Item->LevelsGained, 1), 100))
+			: (Item->FieldEffect == EFieldItemEffect::TeachMove
+				? FText::Format(LOCTEXT("TeachUsed", "{0} veut apprendre une nouvelle capacité !"), Name)
+				: FText::Format(LOCTEXT("StoneUsed", "{0} réagit à l'objet…"), Name));
+		Controller->ServerUseFieldItem(SelectedItem, Index);
+		Feedback(EPokedexFeedback::Confirm);
+		ShowStatus(Message);
+		RefreshTimer = 0.1f;
+		return;
+	}
 	if (!APokemonPlayerState::CanUseItemOnPokemon(*Item, Pokemon))
 	{
 		Feedback(EPokedexFeedback::Error);

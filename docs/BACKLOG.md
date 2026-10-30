@@ -93,7 +93,8 @@ Objectif : farmer des niveaux et voir son Pokémon évoluer.
 - **LVL-1** Gain d'XP après un combat, partage dans l'équipe
 - **LVL-2** Montée de niveau et recalcul des stats
 - **LVL-3** Apprentissage d'attaques au niveau (remplacer une attaque si 4 déjà connues)
-- **LVL-4** Évolution par niveau avec séquence animée
+- **LVL-4** Évolution par niveau avec séquence animée (SCRUM-47, docs/PROGRESSION.md)
+- **LVL-5** Objets de progression : Super Bonbon, pierres d'évolution, Fil de Liaison, Pierre Stase, CT/CS
 - **CMB-7** Statuts (poison, paralysie, sommeil, brûlure, gel)
 
 ## Sprint 6 : menus, Pokédex et sauvegarde (semaines 13-14)

@@ -214,7 +214,7 @@ void AEvolutionScene::PlaceInFrontOf(APlayerController* Controller)
 	// Posé sur le sol devant le joueur ; la scène regarde le joueur (son +X pointe vers lui)
 	FVector Location = Feet + Facing.Vector() * DistanceFromPlayer;
 	FHitResult Hit;
-	FCollisionQueryParams Params(SCENE_QUERY_STAT(EvolutionScene), false, Pawn);
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(EvolutionSceneTrace), false, Pawn);
 	if (GetWorld()->LineTraceSingleByChannel(Hit, Location + FVector(0.f, 0.f, 300.f), Location - FVector(0.f, 0.f, 600.f), ECC_Visibility, Params))
 	{
 		Location = Hit.ImpactPoint;
