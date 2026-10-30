@@ -5,9 +5,12 @@
 #include "Components/Border.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
+#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Core/PokemonSaveGame.h"
 #include "Engine/FontFace.h"
@@ -113,12 +116,10 @@ TSharedRef<SWidget> UGameHUDWidget::RebuildWidget()
 		}
 		PokedexIcon = Icon;
 		Place(Canvas, Icon, FVector2D(1.f, 0.f), FVector2D(-40.f, 39.f), FVector2D(112.f, 112.f), FVector2D(1.f, 0.f));
-		PokedexKey = MakeText(TEXT("FF_Inter_Bold"), 14.f, ETextJustify::Center);
-		Place(Canvas, PokedexKey, FVector2D(1.f, 0.f), FVector2D(-96.f, 151.f), FVector2D(112.f, 20.f), FVector2D(0.5f, 0.f));
 		SavedText = MakeText(TEXT("FF_Inter_Regular"), 14.f, ETextJustify::Right);
 		SavedText->SetText(LOCTEXT("Saved", "Partie sauvegardée"));
 		SavedText->SetRenderOpacity(0.f);
-		Place(Canvas, SavedText, FVector2D(1.f, 0.f), FVector2D(-40.f, 174.f), FVector2D(220.f, 20.f), FVector2D(1.f, 0.f));
+		Place(Canvas, SavedText, FVector2D(1.f, 0.f), FVector2D(-40.f, 155.f), FVector2D(220.f, 20.f), FVector2D(1.f, 0.f));
 
 		// ---- Grand nom du lieu (Futura 95, centré à 157 px du haut) et trait de 584 x 4 à 268 px
 		UCanvasPanel* BannerPanel = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("Banner"));
@@ -141,14 +142,32 @@ TSharedRef<SWidget> UGameHUDWidget::RebuildWidget()
 		PlaceText = MakeText(TEXT("FF_Inter_Regular"), 24.f, ETextJustify::Center);
 		Place(Block, PlaceText, FVector2D::ZeroVector, FVector2D(17.f, 0.f), FVector2D(206.f, 29.f), FVector2D::ZeroVector);
 		Place(Block, MakeLine(FLinearColor::White), FVector2D::ZeroVector, FVector2D(17.f, 32.f), FVector2D(206.f, 2.f), FVector2D::ZeroVector);
+		// Heure | température | météo : une ligne centrée sous le trait, chaque élément à sa largeur réelle
+		UHorizontalBox* InfoRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("InfoRow"));
+		Place(Block, InfoRow, FVector2D::ZeroVector, FVector2D(120.f, 37.f), FVector2D(206.f, 29.f), FVector2D(0.5f, 0.f))->SetAutoSize(true);
+		auto AddToRow = [InfoRow](UWidget* Widget, const FMargin& Padding)
+		{
+			UHorizontalBoxSlot* RowSlot = InfoRow->AddChildToHorizontalBox(Widget);
+			RowSlot->SetPadding(Padding);
+			RowSlot->SetVerticalAlignment(VAlign_Center);
+		};
+		auto AddSeparator = [this, &AddToRow, &MakeLine]()
+		{
+			USizeBox* Size = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+			Size->SetWidthOverride(2.f);
+			Size->SetHeightOverride(25.f);
+			Size->SetContent(MakeLine(FLinearColor::White));
+			AddToRow(Size, FMargin(9.f, 0.f));
+		};
 		TimeText = MakeText(TEXT("FF_Inter_Regular"), 24.f, ETextJustify::Center);
-		Place(Block, TimeText, FVector2D::ZeroVector, FVector2D(17.f, 37.f), FVector2D(65.f, 29.f), FVector2D::ZeroVector);
-		Place(Block, MakeLine(FLinearColor::White), FVector2D::ZeroVector, FVector2D(88.f, 39.f), FVector2D(2.f, 25.f), FVector2D::ZeroVector);
+		AddToRow(TimeText, FMargin(0.f));
+		AddSeparator();
 		TemperatureText = MakeText(TEXT("FF_Inter_Regular"), 24.f, ETextJustify::Center);
-		Place(Block, TemperatureText, FVector2D::ZeroVector, FVector2D(93.f, 37.f), FVector2D(65.f, 29.f), FVector2D::ZeroVector);
-		Place(Block, MakeLine(FLinearColor::White), FVector2D::ZeroVector, FVector2D(159.f, 39.f), FVector2D(2.f, 25.f), FVector2D::ZeroVector);
+		AddToRow(TemperatureText, FMargin(0.f));
+		AddSeparator();
 		WeatherImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("Weather"));
-		Place(Block, WeatherImage, FVector2D::ZeroVector, FVector2D(176.f, 37.f), FVector2D(29.f, 29.f), FVector2D::ZeroVector);
+		WeatherImage->SetDesiredSizeOverride(FVector2D(29.f, 29.f));
+		AddToRow(WeatherImage, FMargin(0.f));
 		for (const TCHAR* Name : { TEXT("T_HUD_Weather_Sun"), TEXT("T_HUD_Weather_Cloud"), TEXT("T_HUD_Weather_Rain"), TEXT("T_HUD_Weather_Wind") })
 		{
 			WeatherIcons.Add(LoadHUDAsset<UTexture2D>(Name));
@@ -275,10 +294,6 @@ void UGameHUDWidget::RefreshInfo()
 	{
 		const float Hour = Now.GetHour() + Now.GetMinute() / 60.f;
 		TemperatureText->SetText(FormatTemperature(BaseTemperature + TemperatureSwing * FMath::Cos((Hour - 15.f) / 24.f * UE_TWO_PI)));
-	}
-	if (PokedexKey && Controller)
-	{
-		PokedexKey->SetText(Controller->GetMenuKey().GetDisplayName(false));
 	}
 }
 

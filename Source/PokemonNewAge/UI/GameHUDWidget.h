@@ -23,7 +23,7 @@ enum class EHUDWeather : uint8
 
 /**
  *  HUD en jeu, d'après la maquette de L'amie (fichiers du projet hud/maquette_hud_route1.png, 1920 x 1080) :
- *  - icône du Pokédex en haut à droite (Tab l'ouvre) ;
+ *  - icône du Pokédex en haut à droite (Tab ouvre le Pokédex 3D, sans texte de touche) ;
  *  - nom du lieu en grand en haut au centre quand on arrive quelque part (« BOURG PALETTE ») ;
  *  - en bas à droite : nom du lieu, heure, température et météo, boussole avec le cône de vue et le GPS.
  *  Caché pendant les combats, les menus et l'appareil photo, ou par Échap > Jeu > Afficher le HUD.
@@ -81,7 +81,6 @@ private:
 
 	UPROPERTY(Transient) TObjectPtr<UCanvasPanel> Canvas;
 	UPROPERTY(Transient) TObjectPtr<UWidget> PokedexIcon;
-	UPROPERTY(Transient) TObjectPtr<UTextBlock> PokedexKey;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> SavedText;
 	UPROPERTY(Transient) TObjectPtr<UWidget> Banner;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> BannerText;

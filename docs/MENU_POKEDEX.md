@@ -50,7 +50,7 @@ Toutes les 5 minutes et en arrivant dans un nouveau lieu, sauf en combat ou menu
 
 Fait en C++ (`UGameHUDWidget`) aux mesures de la maquette (1920 × 1080, mis à l'échelle par Unreal) :
 
-- **Icône du Pokédex** en haut à droite (image de L'amie), avec la touche qui l'ouvre dessous.
+- **Icône du Pokédex** en haut à droite (image de L'amie), sans texte de touche (Tab l'ouvre).
 - **Nom du lieu** en Futura 95, centré en haut, avec le trait blanc dessous : il apparaît 4 s quand on entre dans une ville ou sur une route.
 - **En bas à droite** : le lieu (Inter 24), l'heure du PC, la température (17 °C de moyenne, plus chaud à 15 h, réglable : `Base Temperature`, `Temperature Swing`) et le picto météo (pictos de L'amie : soleil par défaut, `SetWeather` pour nuage, pluie ou vent en attendant un vrai système météo).
 - **Boussole** : disque gris translucide, N en haut (le nord de Kanto), point blanc du joueur, cône de vue qui tourne avec la caméra, repère jaune du GPS sur le bord et distance au centre.
