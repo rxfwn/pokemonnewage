@@ -2,13 +2,13 @@
 
 Organisation voulue par L'amie le 2026-10-29 :
 
-- **Échap** (ou Select) ouvre le menu **Paramètres** façon jeu PC : onglets **Audio**, **Vidéo**, **Commandes**, **Jeu**, et les boutons **OK** (appliquer et fermer), **Annuler** (revenir aux réglages enregistrés), **Appliquer**, **Retour** (fermer sans appliquer). Rien d'autre dans ce menu.
+- **M** (ou Select) ouvre le menu **Paramètres** (provisoire à la place d'Échap, le temps des tests dans l'éditeur ; Échap le referme) façon jeu PC : onglets **Audio**, **Vidéo**, **Commandes**, **Jeu**, et les boutons **OK** (appliquer et fermer), **Annuler** (revenir aux réglages enregistrés), **Appliquer**, **Retour** (fermer sans appliquer). Rien d'autre dans ce menu.
 - **Tab** (ou Start) sort le **Pokédex 3D** modélisé par L'amie. C'est lui qui a toutes les fonctions du jeu (voir la liste plus bas), dont **Sauvegarder** ; sinon le jeu sauvegarde tout seul.
 - Le **HUD** suit la maquette de L'amie (fichiers du projet `hud/maquette_hud_route1.png`) : icône du Pokédex en haut à droite, nom du lieu en grand à l'arrivée, et en bas à droite le lieu, l'heure, la température, la météo et la boussole.
 
 Pendant un combat, Tab, Échap et les raccourcis ne font rien : c'est l'écran de combat qui s'affiche.
 
-**Dans l'éditeur, Échap arrête le jeu (PIE).** Pour tester le menu Échap : lancer en **Jeu autonome** (Standalone Game, flèche à côté de Jouer), ou changer le raccourci de l'éditeur dans **Modifier > Préférences de l'éditeur > Général > Raccourcis clavier**, chercher **Arrêter** (Stop) dans **Jouer dans l'éditeur** et mettre Maj + Échap. Select à la manette marche aussi.
+**Pourquoi M et pas Échap :** dans l'éditeur, Échap arrête le jeu (PIE). Pour repasser sur Échap plus tard : remettre `EKeys::Escape` dans `SetupInputComponent` et `IsSettingsKey` du PlayerController. Pour tester Échap dès maintenant : lancer en **Jeu autonome** (Standalone Game, flèche à côté de Jouer), ou changer le raccourci de l'éditeur dans **Modifier > Préférences de l'éditeur > Général > Raccourcis clavier**, chercher **Arrêter** (Stop) dans **Jouer dans l'éditeur** et mettre Maj + Échap. Select à la manette marche aussi.
 
 ## Le menu Échap (Paramètres)
 
@@ -36,7 +36,7 @@ Les 10 boutons à icônes du volet, dans l'ordre de la grille :
 9. **Compteur de pas** : les pas depuis le début (un pas = 75 cm marchés au sol, comptés par le serveur et sauvegardés) et la distance en km.
 10. **Sauvegarder** : enregistre la partie tout de suite.
 
-**Raccourcis** (modifiables dans Échap > Commandes) : P Pokédex, M Carte, B Sac, R Équipe, C Carte dresseur, L Multijoueur, V Appareil photo, F5 Sauvegarder. Ils ouvrent le Pokédex directement sur la fonction (l'appareil photo démarre sans le Pokédex).
+**Raccourcis** (modifiables dans Échap > Commandes) : P Pokédex, G Carte (GPS), B Sac, R Équipe, C Carte dresseur, L Multijoueur, V Appareil photo, F5 Sauvegarder. Ils ouvrent le Pokédex directement sur la fonction (l'appareil photo démarre sans le Pokédex).
 
 Les icônes **Appareil photo** et **Compteur de pas** sont provisoires (faites par `Tools/HUD/make_hud_assets.py`) : remplacer `Tools/Pokedex/Assets/icons/T_PokedexIcon_Camera.png` et `T_PokedexIcon_Steps.png` (256 × 256, fond transparent) puis relancer le script d'import.
 

@@ -47,7 +47,7 @@ namespace PokemonShortcuts
 	struct FShortcut { EPokedexMenu Menu; const TCHAR* Id; const TCHAR* Key; };
 	const FShortcut Shortcuts[] = {
 		{ EPokedexMenu::Pokedex, TEXT("Pokedex"), TEXT("P") },
-		{ EPokedexMenu::Map, TEXT("Map"), TEXT("M") },
+		{ EPokedexMenu::Map, TEXT("Map"), TEXT("G") },
 		{ EPokedexMenu::Bag, TEXT("Bag"), TEXT("B") },
 		{ EPokedexMenu::Pokemon, TEXT("Party"), TEXT("R") },
 		{ EPokedexMenu::Trainer, TEXT("Trainer"), TEXT("C") },
@@ -151,7 +151,7 @@ void APokemonNewAgePlayerController::SetupInputComponent()
 				Subsystem->AddMappingContext(DefaultMenuContext, 1);
 			}
 
-			// Raccourcis du Pokédex (P Pokédex, B Sac...) et menu Échap
+			// Raccourcis du Pokédex (P Pokédex, G Carte, B Sac...) et menu Paramètres (M pour l'instant)
 			ShortcutContext = NewObject<UInputMappingContext>(this, TEXT("IMC_Shortcuts"));
 			ShortcutActions.Reset();
 			for (const PokemonShortcuts::FShortcut& Shortcut : PokemonShortcuts::Shortcuts)
@@ -161,7 +161,8 @@ void APokemonNewAgePlayerController::SetupInputComponent()
 				ShortcutContext->MapKey(Action, FKey(Shortcut.Key));
 			}
 			SettingsAction = NewObject<UInputAction>(this, TEXT("IA_Settings"));
-			ShortcutContext->MapKey(SettingsAction, EKeys::Escape);
+			// M en attendant : dans l'éditeur, Échap arrête le jeu (remettre EKeys::Escape ici et dans IsSettingsKey)
+			ShortcutContext->MapKey(SettingsAction, EKeys::M);
 			ShortcutContext->MapKey(SettingsAction, EKeys::Gamepad_Special_Left);
 			Subsystem->AddMappingContext(ShortcutContext, 1);
 
@@ -954,7 +955,7 @@ namespace PokemonKeys
 		{ TEXT("Jump"), TEXT("Sauter") },
 		{ TEXT("Interact"), TEXT("Parler, ouvrir") },
 		{ TEXT("Menu"), TEXT("Ouvrir le Pokédex") },
-		{ TEXT("Settings"), TEXT("Menu Échap (paramètres)") },
+		{ TEXT("Settings"), TEXT("Menu Paramètres") },
 		{ TEXT("Pokedex"), TEXT("Pokédex : encyclopédie") },
 		{ TEXT("Map"), TEXT("Pokédex : carte et GPS") },
 		{ TEXT("Bag"), TEXT("Pokédex : sac") },
@@ -1160,7 +1161,7 @@ bool APokemonNewAgePlayerController::FindShortcut(const FKey& Key, EPokedexMenu&
 
 bool APokemonNewAgePlayerController::IsSettingsKey(const FKey& Key) const
 {
-	if (Key == EKeys::Escape || Key == EKeys::Gamepad_Special_Left)
+	if (Key == EKeys::M || Key == EKeys::Gamepad_Special_Left)
 	{
 		return true;
 	}
