@@ -52,6 +52,9 @@ public:
 	/** Animation d'ouverture */
 	void Open();
 
+	/** Animation d'ouverture, directement sur un menu (raccourci, onglet du menu classique) */
+	void OpenOnMenu(EPokedexMenu Menu);
+
 	/** Animation de fermeture, puis le contrôleur rend la main au jeu. bImmediate : sans animation */
 	void Close(bool bImmediate = false);
 

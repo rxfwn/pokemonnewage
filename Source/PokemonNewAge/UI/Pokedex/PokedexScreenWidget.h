@@ -18,20 +18,24 @@ class UPokedexScreenWidget;
 class UCanvasPanel;
 struct FPokemonInstance;
 
-/** Les 10 boutons du volet, dans l'ordre de la grille (gauche à droite, haut en bas) et des icônes. */
+/**
+ *  Les 10 fonctions du Pokédex (liste de L'amie du 2026-10-29), dans l'ordre de la grille du volet
+ *  (gauche à droite, haut en bas) et des icônes. Les réglages sont dans le menu Échap (USettingsMenuWidget).
+ */
 UENUM(BlueprintType)
 enum class EPokedexMenu : uint8
 {
-	Pokemon,
 	Pokedex,
-	Bag,
-	Radio,
-	Trainer,
+	/** Carte interactive et GPS (destination affichée sur la boussole du HUD) */
 	Map,
-	Save,
+	Bag,
+	Pokemon,
+	Trainer,
+	Radio,
 	Online,
-	Options,
-	Style
+	Camera,
+	Steps,
+	Save
 };
 
 constexpr int32 PokedexMenuCount = 10;
@@ -51,14 +55,13 @@ enum class EPokedexPage : uint8
 	BagTarget,
 	Trainer,
 	Save,
-	Options,
-	ConfirmDelete,
 	/** Objet à faire tenir au Pokémon choisi */
 	GiveItem,
 	Map,
 	Online,
-	Controls,
-	/** Radio et Style : pas encore faits */
+	/** Compteur de pas */
+	Steps,
+	/** Radio : pas encore faite */
 	ComingSoon
 };
 
@@ -138,9 +141,6 @@ public:
 
 	bool IsAtHome() const { return Page == EPokedexPage::Home; }
 
-	/** Options > Commandes : attend la nouvelle touche d'une commande (toutes les touches vont à HandleKey) */
-	bool IsCapturingKey() const { return !CapturingKey.IsNone(); }
-
 	/** Touche du clavier ou de la manette ; vrai si utilisée */
 	bool HandleKey(const FKey& Key);
 
@@ -182,13 +182,11 @@ private:
 	void BuildBagTarget();
 	void BuildTrainer();
 	void BuildSave();
-	void BuildOptions();
-	void BuildConfirmDelete();
 	void BuildGiveItem();
 	void BuildMap();
 	void BuildOnline();
-	void BuildControls();
 	void BuildComingSoon();
+	void BuildSteps();
 
 	// Briques d'interface
 	UTextBlock* MakeText(const FText& Text, int32 Size, const FLinearColor& Color, bool bBold = false);
@@ -221,9 +219,6 @@ private:
 	// Actions
 	void UseSelectedItemOn(int32 PartyIndex);
 	void DoSave();
-	void ChangeOption(int32 Option, int32 Delta);
-	/** Touche reçue pendant le choix d'une nouvelle touche */
-	void CaptureKey(const FKey& Key);
 	void Feedback(EPokedexFeedback Type);
 
 	// Arbre de widgets fixe
@@ -258,14 +253,9 @@ private:
 	/** Pokédex : espèces triées par numéro */
 	TArray<FName> SpeciesList;
 	int32 DexIndex = 0;
-	/** Commande dont on attend la nouvelle touche (page Commandes), None sinon */
-	FName CapturingKey;
 	/** Menu ouvert (titre des pages « bientôt ») */
-	EPokedexMenu CurrentMenu = EPokedexMenu::Pokemon;
+	EPokedexMenu CurrentMenu = EPokedexMenu::Pokedex;
 
-	UPROPERTY(Transient)
-	mutable TObjectPtr<UPokedexModel> CachedModel;
-	mutable bool bModelLoaded = false;
 
 	float StatusTimeLeft = 0.f;
 	float RefreshTimer = 0.f;

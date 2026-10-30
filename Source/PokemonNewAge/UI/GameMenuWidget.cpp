@@ -1,104 +1,269 @@
 #include "UI/GameMenuWidget.h"
 #include "Blueprint/WidgetTree.h"
+#include "Components/BackgroundBlur.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
+#include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"
+#include "Components/Image.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
+#include "Components/ScaleBox.h"
+#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
-#include "Kismet/KismetSystemLibrary.h"
+#include "Engine/Texture2D.h"
 #include "PokemonNewAgePlayerController.h"
+#include "UI/Pokedex/PokedexModel.h"
 #include "UI/Pokedex/PokedexScreenWidget.h"
 
 #define LOCTEXT_NAMESPACE "GameMenu"
+
+namespace GameMenu
+{
+	const FLinearColor TabColor(0.08f, 0.09f, 0.11f, 0.92f);
+	const FLinearColor TabSelectedColor(0.86f, 0.16f, 0.18f, 1.f);
+	const FLinearColor TextColor(0.95f, 0.95f, 0.96f);
+	const FLinearColor KeyColor(1.f, 0.82f, 0.35f);
+
+	/** Noms des icônes, dans l'ordre de EPokedexMenu (comme ICONS dans import_pokedex_unreal.py) */
+	const TCHAR* IconNames[] = { TEXT("Pokedex"), TEXT("Map"), TEXT("Bag"), TEXT("Pokemon"), TEXT("Trainer"),
+		TEXT("Radio"), TEXT("Online"), TEXT("Camera"), TEXT("Steps"), TEXT("Save") };
+
+	UTextBlock* MakeText(UWidgetTree* Tree, const FText& Value, int32 Size, const FLinearColor& Color)
+	{
+		UTextBlock* Text = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+		Text->SetText(Value);
+		Text->SetColorAndOpacity(FSlateColor(Color));
+		FSlateFontInfo Font = Text->GetFont();
+		Font.Size = Size;
+		Text->SetFont(Font);
+		Text->SetJustification(ETextJustify::Center);
+		return Text;
+	}
+}
+
+using namespace GameMenu;
+
+TArray<EPokedexMenu> UGameMenuWidget::GetTabs()
+{
+	TArray<EPokedexMenu> Tabs;
+	for (int32 Index = 0; Index < PokedexMenuCount; ++Index)
+	{
+		Tabs.Add(EPokedexMenu(Index));
+	}
+	return Tabs;
+}
+
+UTexture2D* UGameMenuWidget::GetMenuIcon(EPokedexMenu Menu)
+{
+	const int32 Index = int32(Menu);
+	if (const UPokedexModel* Model = LoadObject<UPokedexModel>(nullptr, UPokedexModel::AssetPath, nullptr, LOAD_NoWarn | LOAD_Quiet);
+		Model && Model->MenuIcons.IsValidIndex(Index) && Model->MenuIcons[Index])
+	{
+		return Model->MenuIcons[Index];
+	}
+	if (Index < 0 || Index >= UE_ARRAY_COUNT(IconNames))
+	{
+		return nullptr;
+	}
+	const FString Path = FString::Printf(TEXT("/Game/UI/Pokedex/Icons/T_PokedexIcon_%s.T_PokedexIcon_%s"), IconNames[Index], IconNames[Index]);
+	return LoadObject<UTexture2D>(nullptr, *Path, nullptr, LOAD_NoWarn | LOAD_Quiet);
+}
 
 TSharedRef<SWidget> UGameMenuWidget::RebuildWidget()
 {
 	if (WidgetTree && !WidgetTree->RootWidget)
 	{
-		// Fond assombri sur tout l'écran, panneau à droite comme dans les jeux
 		UOverlay* Root = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("Root"));
 		WidgetTree->RootWidget = Root;
-		RootOverlay = Root;
+
+		// Décor flouté et assombri derrière le menu
+		UBackgroundBlur* Blur = WidgetTree->ConstructWidget<UBackgroundBlur>(UBackgroundBlur::StaticClass(), TEXT("Blur"));
+		Blur->SetBlurStrength(8.f);
+		UOverlaySlot* BlurSlot = Root->AddChildToOverlay(Blur);
+		BlurSlot->SetHorizontalAlignment(HAlign_Fill);
+		BlurSlot->SetVerticalAlignment(VAlign_Fill);
 
 		UBorder* Dim = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Dim"));
-		Dim->SetBrushColor(FLinearColor(0.f, 0.f, 0.f, 0.35f));
+		Dim->SetBrushColor(FLinearColor(0.f, 0.f, 0.f, 0.55f));
 		UOverlaySlot* DimSlot = Root->AddChildToOverlay(Dim);
 		DimSlot->SetHorizontalAlignment(HAlign_Fill);
 		DimSlot->SetVerticalAlignment(VAlign_Fill);
 
-		UBorder* Panel = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Panel"));
-		Panel->SetBrushColor(FLinearColor(0.96f, 0.95f, 0.92f, 0.95f));
-		Panel->SetPadding(FMargin(24.f, 20.f));
-		UOverlaySlot* PanelSlot = Root->AddChildToOverlay(Panel);
-		PanelSlot->SetHorizontalAlignment(HAlign_Right);
-		PanelSlot->SetVerticalAlignment(VAlign_Center);
-		PanelSlot->SetPadding(FMargin(0.f, 0.f, 60.f, 0.f));
-		ListPanel = Panel;
+		UVerticalBox* Main = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("Main"));
+		UOverlaySlot* MainSlot = Root->AddChildToOverlay(Main);
+		MainSlot->SetHorizontalAlignment(HAlign_Fill);
+		MainSlot->SetVerticalAlignment(VAlign_Fill);
+		MainSlot->SetPadding(FMargin(40.f, 28.f));
 
-		UVerticalBox* List = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("List"));
-		Panel->SetContent(List);
+		// Onglets à icônes
+		UHorizontalBox* Tabs = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("Tabs"));
+		UVerticalBoxSlot* TabsSlot = Main->AddChildToVerticalBox(Tabs);
+		TabsSlot->SetHorizontalAlignment(HAlign_Center);
+		TabsSlot->SetPadding(FMargin(0.f, 0.f, 0.f, 16.f));
 
-		AddEntry(List, LOCTEXT("Pokedex", "Pokédex"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnPokedexClicked);
-		AddEntry(List, LOCTEXT("Pokemon", "Pokémon"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnPokemonClicked);
-		AddEntry(List, LOCTEXT("Bag", "Sac"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnBagClicked);
-		AddEntry(List, LOCTEXT("Trainer", "Dresseur"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTrainerClicked);
-		AddEntry(List, LOCTEXT("Map", "Carte"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnMapClicked);
-		AddEntry(List, LOCTEXT("Online", "En ligne"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnOnlineClicked);
-		AddEntry(List, LOCTEXT("Save", "Sauvegarder"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnSaveClicked);
-		AddEntry(List, LOCTEXT("Options", "Options"), true)->OnClicked.AddDynamic(this, &UGameMenuWidget::OnOptionsClicked);
-		ResumeButton = AddEntry(List, LOCTEXT("Resume", "Reprendre"), true);
-		ResumeButton->OnClicked.AddDynamic(this, &UGameMenuWidget::OnResumeClicked);
-		UButton* QuitButton = AddEntry(List, LOCTEXT("Quit", "Quitter"), true);
-		QuitButton->OnClicked.AddDynamic(this, &UGameMenuWidget::OnQuitClicked);
+		const TArray<EPokedexMenu> Menus = GetTabs();
+		for (int32 Index = 0; Index < Menus.Num() && Index < 10; ++Index)
+		{
+			UButton* Button = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass());
+			UVerticalBox* Content = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
+			Button->SetContent(Content);
+
+			if (UTexture2D* Icon = GetMenuIcon(Menus[Index]))
+			{
+				USizeBox* IconBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+				IconBox->SetWidthOverride(56.f);
+				IconBox->SetHeightOverride(56.f);
+				UImage* Image = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+				Image->SetBrushFromTexture(Icon, false);
+				IconBox->SetContent(Image);
+				UVerticalBoxSlot* IconSlot = Content->AddChildToVerticalBox(IconBox);
+				IconSlot->SetHorizontalAlignment(HAlign_Center);
+			}
+			Content->AddChildToVerticalBox(MakeText(WidgetTree, UPokedexScreenWidget::GetMenuName(Menus[Index]), 16, TextColor));
+			UTextBlock* KeyText = MakeText(WidgetTree, FText::GetEmpty(), 12, KeyColor);
+			Content->AddChildToVerticalBox(KeyText);
+
+			// AddDynamic a besoin du nom de la fonction écrit en toutes lettres
+			switch (Index)
+			{
+			case 0: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab0Clicked); break;
+			case 1: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab1Clicked); break;
+			case 2: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab2Clicked); break;
+			case 3: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab3Clicked); break;
+			case 4: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab4Clicked); break;
+			case 5: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab5Clicked); break;
+			case 6: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab6Clicked); break;
+			case 7: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab7Clicked); break;
+			case 8: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab8Clicked); break;
+			default: Button->OnClicked.AddDynamic(this, &UGameMenuWidget::OnTab9Clicked); break;
+			}
+			UHorizontalBoxSlot* ButtonSlot = Tabs->AddChildToHorizontalBox(Button);
+			ButtonSlot->SetPadding(FMargin(4.f, 0.f));
+			TabButtons.Add(Button);
+			TabKeys.Add(KeyText);
+		}
+
+		// Page de l'onglet, agrandie pour remplir l'écran
+		UScaleBox* PageScale = WidgetTree->ConstructWidget<UScaleBox>(UScaleBox::StaticClass(), TEXT("PageScale"));
+		PageScale->SetStretch(EStretch::ScaleToFit);
+		UVerticalBoxSlot* PageSlot = Main->AddChildToVerticalBox(PageScale);
+		PageSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+		PageSlot->SetHorizontalAlignment(HAlign_Center);
+		PageSlot->SetVerticalAlignment(VAlign_Center);
+
+		Screen = WidgetTree->ConstructWidget<UPokedexScreenWidget>(UPokedexScreenWidget::StaticClass(), TEXT("Page"));
+		Screen->bStandalone = true;
+		Screen->OnRequestClose.AddUObject(this, &UGameMenuWidget::CloseMenu);
+		PageScale->SetContent(Screen);
+
+		// Aide et boutons du bas
+		UHorizontalBox* Bottom = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("Bottom"));
+		UVerticalBoxSlot* BottomSlot = Main->AddChildToVerticalBox(Bottom);
+		BottomSlot->SetPadding(FMargin(0.f, 14.f, 0.f, 0.f));
+		UTextBlock* Help = MakeText(WidgetTree, LOCTEXT("Help", "LB / RB ou Page préc. / Page suiv. : onglet      Échap : retour      Tab : fermer"), 14, TextColor);
+		Help->SetJustification(ETextJustify::Left);
+		UHorizontalBoxSlot* HelpSlot = Bottom->AddChildToHorizontalBox(Help);
+		HelpSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+		HelpSlot->SetVerticalAlignment(VAlign_Center);
+		AddButton(Bottom, LOCTEXT("Resume", "Reprendre"))->OnClicked.AddDynamic(this, &UGameMenuWidget::OnResumeClicked);
 	}
 
 	return Super::RebuildWidget();
 }
 
-UButton* UGameMenuWidget::AddEntry(UVerticalBox* List, const FText& Label, bool bAvailable)
+UButton* UGameMenuWidget::AddButton(UHorizontalBox* Bar, const FText& Label)
 {
 	UButton* Button = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass());
-	UTextBlock* Text = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
-	Text->SetText(bAvailable ? Label : FText::Format(LOCTEXT("Soon", "{0}  (bientôt)"), Label));
-	Text->SetColorAndOpacity(FSlateColor(FLinearColor(0.05f, 0.05f, 0.07f)));
-	FSlateFontInfo Font = Text->GetFont();
-	Font.Size = 26;
-	Text->SetFont(Font);
+	Button->SetBackgroundColor(TabColor);
+	UTextBlock* Text = MakeText(WidgetTree, Label, 16, TextColor);
 	Button->SetContent(Text);
-	Button->SetIsEnabled(bAvailable);
-
-	UVerticalBoxSlot* EntrySlot = List->AddChildToVerticalBox(Button);
-	EntrySlot->SetPadding(FMargin(0.f, 4.f));
-	EntrySlot->SetHorizontalAlignment(HAlign_Fill);
+	UHorizontalBoxSlot* ButtonSlot = Bar->AddChildToHorizontalBox(Button);
+	ButtonSlot->SetPadding(FMargin(8.f, 0.f, 0.f, 0.f));
 	return Button;
 }
 
 void UGameMenuWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	RefreshTabs();
+}
+
+void UGameMenuWidget::OpenTab(EPokedexMenu Menu)
+{
+	const int32 Index = GetTabs().IndexOfByKey(Menu);
+	CurrentTab = Index != INDEX_NONE ? Index : 0;
+	if (Screen)
+	{
+		Screen->OpenMenu(GetTabs()[CurrentTab]);
+	}
+	RefreshTabs();
 	FocusDefaultEntry();
 }
 
 void UGameMenuWidget::FocusDefaultEntry()
 {
-	if (ResumeButton)
+	if (Screen)
 	{
-		ResumeButton->SetKeyboardFocus();
+		Screen->SetKeyboardFocus();
+	}
+}
+
+void UGameMenuWidget::CycleTab(int32 Delta)
+{
+	const int32 Count = GetTabs().Num();
+	OpenTab(GetTabs()[(CurrentTab + Delta + Count) % Count]);
+}
+
+void UGameMenuWidget::RefreshTabs()
+{
+	const APokemonNewAgePlayerController* Controller = Cast<APokemonNewAgePlayerController>(GetOwningPlayer());
+	const TArray<EPokedexMenu> Menus = GetTabs();
+	for (int32 Index = 0; Index < TabButtons.Num(); ++Index)
+	{
+		TabButtons[Index]->SetBackgroundColor(Index == CurrentTab ? TabSelectedColor : TabColor);
+		const FKey Key = Controller ? Controller->GetShortcutKey(Menus[Index]) : FKey();
+		TabKeys[Index]->SetText(Key.IsValid() ? FText::Format(LOCTEXT("TabKey", "[{0}]"), Key.GetDisplayName(false)) : FText::GetEmpty());
 	}
 }
 
 FReply UGameMenuWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
 {
 	const FKey Key = InKeyEvent.GetKey();
-	if (Key == EKeys::Tab || Key == EKeys::Escape || Key == EKeys::BackSpace
-		|| Key == EKeys::Gamepad_FaceButton_Right || Key == EKeys::Gamepad_Special_Right)
+	const APokemonNewAgePlayerController* Controller = Cast<APokemonNewAgePlayerController>(GetOwningPlayer());
+	EPokedexMenu Shortcut;
+
+	if (Key == EKeys::Gamepad_LeftShoulder || Key == EKeys::PageUp)
+	{
+		CycleTab(-1);
+	}
+	else if (Key == EKeys::Gamepad_RightShoulder || Key == EKeys::PageDown)
+	{
+		CycleTab(1);
+	}
+	else if (Controller && Controller->FindShortcut(Key, Shortcut))
+	{
+		// Le raccourci de l'onglet ouvert ferme le menu, comme dans les jeux PC
+		if (GetTabs()[CurrentTab] == Shortcut)
+		{
+			CloseMenu();
+		}
+		else
+		{
+			OpenTab(Shortcut);
+		}
+	}
+	else if ((Controller && Controller->IsMenuKey(Key)) || Key == EKeys::Escape)
 	{
 		CloseMenu();
-		return FReply::Handled();
 	}
-	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+	else
+	{
+		return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+	}
+	return FReply::Handled();
 }
 
 void UGameMenuWidget::OnResumeClicked()
@@ -106,46 +271,17 @@ void UGameMenuWidget::OnResumeClicked()
 	CloseMenu();
 }
 
-void UGameMenuWidget::OnQuitClicked()
-{
-	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, false);
-}
 
-void UGameMenuWidget::OnPokedexClicked() { OpenScreen(EPokedexMenu::Pokedex); }
-void UGameMenuWidget::OnPokemonClicked() { OpenScreen(EPokedexMenu::Pokemon); }
-void UGameMenuWidget::OnBagClicked() { OpenScreen(EPokedexMenu::Bag); }
-void UGameMenuWidget::OnTrainerClicked() { OpenScreen(EPokedexMenu::Trainer); }
-void UGameMenuWidget::OnSaveClicked() { OpenScreen(EPokedexMenu::Save); }
-void UGameMenuWidget::OnOptionsClicked() { OpenScreen(EPokedexMenu::Options); }
-void UGameMenuWidget::OnMapClicked() { OpenScreen(EPokedexMenu::Map); }
-void UGameMenuWidget::OnOnlineClicked() { OpenScreen(EPokedexMenu::Online); }
-
-void UGameMenuWidget::OpenScreen(EPokedexMenu Menu)
-{
-	if (!Screen)
-	{
-		Screen = CreateWidget<UPokedexScreenWidget>(GetOwningPlayer(), UPokedexScreenWidget::StaticClass());
-		Screen->bStandalone = true;
-		Screen->OnRequestClose.AddUObject(this, &UGameMenuWidget::CloseScreen);
-		UOverlaySlot* ScreenSlot = RootOverlay->AddChildToOverlay(Screen);
-		ScreenSlot->SetHorizontalAlignment(HAlign_Center);
-		ScreenSlot->SetVerticalAlignment(VAlign_Center);
-	}
-	Screen->SetVisibility(ESlateVisibility::Visible);
-	ListPanel->SetVisibility(ESlateVisibility::Collapsed);
-	Screen->OpenMenu(Menu);
-	Screen->SetKeyboardFocus();
-}
-
-void UGameMenuWidget::CloseScreen()
-{
-	if (Screen)
-	{
-		Screen->SetVisibility(ESlateVisibility::Collapsed);
-	}
-	ListPanel->SetVisibility(ESlateVisibility::Visible);
-	FocusDefaultEntry();
-}
+void UGameMenuWidget::OnTab0Clicked() { OpenTab(GetTabs()[0]); }
+void UGameMenuWidget::OnTab1Clicked() { OpenTab(GetTabs()[1]); }
+void UGameMenuWidget::OnTab2Clicked() { OpenTab(GetTabs()[2]); }
+void UGameMenuWidget::OnTab3Clicked() { OpenTab(GetTabs()[3]); }
+void UGameMenuWidget::OnTab4Clicked() { OpenTab(GetTabs()[4]); }
+void UGameMenuWidget::OnTab5Clicked() { OpenTab(GetTabs()[5]); }
+void UGameMenuWidget::OnTab6Clicked() { OpenTab(GetTabs()[6]); }
+void UGameMenuWidget::OnTab7Clicked() { OpenTab(GetTabs()[7]); }
+void UGameMenuWidget::OnTab8Clicked() { OpenTab(GetTabs()[8]); }
+void UGameMenuWidget::OnTab9Clicked() { OpenTab(GetTabs()[9]); }
 
 void UGameMenuWidget::CloseMenu()
 {

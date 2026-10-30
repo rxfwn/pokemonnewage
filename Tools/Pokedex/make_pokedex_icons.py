@@ -4,7 +4,7 @@ Icônes des 10 boutons du volet du Pokédex (SCRUM-64), découpées dans la plan
 Lancer : python Tools/Pokedex/make_pokedex_icons.py   (Python 3 avec Pillow et numpy)
 Entrée : Tools/Pokedex/Source/planche_icones.png (2 rangées de 5 icônes sur fond noir)
 Sortie : Tools/Pokedex/Assets/icons/T_PokedexIcon_<Menu>.png (256 × 256, fond transparent)
-L'ordre suit les boutons du volet (de gauche à droite, puis de haut en bas) et EPokedexMenu dans le C++.
+L'ordre est celui de la planche de L'amie ; le C++ (EPokedexMenu) les range à sa façon, par leur nom (Options et Style ne servent plus).
 """
 
 import os

@@ -542,6 +542,12 @@ void APokedexDevice::Open()
 	FocusLid();
 }
 
+void APokedexDevice::OpenOnMenu(EPokedexMenu Menu)
+{
+	Open();
+	PressMenuButton(int32(Menu));
+}
+
 void APokedexDevice::Close(bool bImmediate)
 {
 	if (!bClosing)
@@ -822,7 +828,7 @@ void APokedexDevice::LoadFigure(FName Species)
 		return StaticLoadObject(UObject::StaticClass(), nullptr, *FString::Printf(TEXT("%s/%s.%s"), *Folder, *Name, *Name), nullptr, LOAD_NoWarn | LOAD_Quiet);
 	};
 
-	FBoxSphereBounds Bounds;
+	FBoxSphereBounds Bounds(ForceInit);
 	USceneComponent* Figure = nullptr;
 	if (USkeletalMesh* Skeletal = Cast<USkeletalMesh>(Load(TEXT("SK_") + Id)))
 	{
@@ -1147,12 +1153,6 @@ FIntPoint APokedexDevice::GetDirection(const FKey& Key)
 
 bool APokedexDevice::HandleKey(const FKey& Key)
 {
-	// Options > Commandes : la touche suivante est la nouvelle touche choisie, même Tab
-	if (Screen && Screen->IsCapturingKey() && !bClosing)
-	{
-		Screen->HandleKey(Key);
-		return true;
-	}
 	if (Key == EKeys::Tab || Key == EKeys::Gamepad_Special_Right)
 	{
 		Close();

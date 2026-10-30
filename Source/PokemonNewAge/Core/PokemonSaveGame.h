@@ -74,6 +74,10 @@ struct FPlayerSaveData
 	/** Temps de jeu total en secondes */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Save")
 	float PlayTimeSeconds = 0.f;
+
+	/** Compteur de pas du Pokédex */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Save")
+	int32 StepCount = 0;
 };
 
 /** Le fichier de sauvegarde (Saved/SaveGames/Partie.sav). */
@@ -128,6 +132,18 @@ public:
 
 	UPROPERTY()
 	bool bInvertCameraY = false;
+
+	/** Champ de vision de la caméra, en degrés (menu Échap > Vidéo) */
+	UPROPERTY()
+	float FieldOfView = 90.f;
+
+	/** Boussole, lieu, heure et météo en bas à droite (menu Échap > Jeu) */
+	UPROPERTY()
+	bool bShowHUD = true;
+
+	/** Sauvegarde automatique (menu Échap > Jeu) */
+	UPROPERTY()
+	bool bAutoSave = true;
 
 	/** Touches changées dans Options > Commandes : commande (Jump_Key, Forward_Key, Interact_Pad...) -> touche */
 	UPROPERTY()

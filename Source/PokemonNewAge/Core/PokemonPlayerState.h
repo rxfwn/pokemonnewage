@@ -82,6 +82,13 @@ public:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category="Story")
 	float PlayTimeBeforeSession = 0.f;
 
+	/** Compteur de pas du Pokédex (compté par le serveur, APokemonNewAgePlayerController::Tick) */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category="Story")
+	int32 StepCount = 0;
+
+	/** Longueur d'un pas du compteur, en cm */
+	static constexpr float StepLength = 75.f;
+
 	/** Heure du serveur au début de cette session */
 	UPROPERTY(Replicated, BlueprintReadOnly, Category="Story")
 	float SessionStartServerTime = 0.f;

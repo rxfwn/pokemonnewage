@@ -5,6 +5,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "Camera/PlayerCameraManager.h"
+#include "Camera/CameraComponent.h"
 #include "InputMappingContext.h"
 #include "InputModifiers.h"
 #include "PokemonNewAgeCharacter.h"
@@ -15,6 +16,12 @@
 #include "UI/Battle/BattleHUDWidget.h"
 #include "UI/Pokedex/PokedexDevice.h"
 #include "UI/Pokedex/PokedexWidgets.h"
+#include "UI/Pokedex/PokedexScreenWidget.h"
+#include "UI/GameHUDWidget.h"
+#include "UI/SettingsMenuWidget.h"
+#include "UI/Pokedex/PokedexModel.h"
+#include "UnrealClient.h"
+#include "Misc/Paths.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
@@ -33,6 +40,22 @@
 #include "GameFramework/InputSettings.h"
 #include "PokemonNewAge.h"
 #include "Widgets/Input/SVirtualJoystick.h"
+
+namespace PokemonShortcuts
+{
+	/** Raccourcis vers une fonction du Pokédex : fonction, commande (KeyBindings), touche d'origine */
+	struct FShortcut { EPokedexMenu Menu; const TCHAR* Id; const TCHAR* Key; };
+	const FShortcut Shortcuts[] = {
+		{ EPokedexMenu::Pokedex, TEXT("Pokedex"), TEXT("P") },
+		{ EPokedexMenu::Map, TEXT("Map"), TEXT("G") },
+		{ EPokedexMenu::Bag, TEXT("Bag"), TEXT("B") },
+		{ EPokedexMenu::Pokemon, TEXT("Party"), TEXT("R") },
+		{ EPokedexMenu::Trainer, TEXT("Trainer"), TEXT("C") },
+		{ EPokedexMenu::Online, TEXT("Online"), TEXT("L") },
+		{ EPokedexMenu::Camera, TEXT("Camera"), TEXT("V") },
+		{ EPokedexMenu::Save, TEXT("Save"), TEXT("F5") },
+	};
+}
 
 APokemonNewAgePlayerController::APokemonNewAgePlayerController()
 {
@@ -78,6 +101,16 @@ void APokemonNewAgePlayerController::BeginPlay()
 	{
 		ApplyGameOptions();
 
+		// HUD en jeu (maquette de L'amie) : icône Pokédex, nom du lieu, heure, météo, boussole
+		PokedexModel = const_cast<UPokedexModel*>(UPokedexModel::Get());
+		TSubclassOf<UGameHUDWidget> HUDClass = GameHUDClass ? GameHUDClass : TSubclassOf<UGameHUDWidget>(UGameHUDWidget::StaticClass());
+		GameHUD = CreateWidget<UGameHUDWidget>(this, HUDClass);
+		if (GameHUD)
+		{
+			GameHUD->AddToPlayerScreen(1);
+		}
+		AutoSaveTimer = AutoSaveInterval;
+
 		// Écran de combat : il apparaît à chaque début de combat
 		BattleComponent->OnBattleStarted.AddDynamic(this, &APokemonNewAgePlayerController::HandleBattleStarted);
 
@@ -118,6 +151,32 @@ void APokemonNewAgePlayerController::SetupInputComponent()
 				Subsystem->AddMappingContext(DefaultMenuContext, 1);
 			}
 
+			// Raccourcis du Pokédex (P Pokédex, G Carte, B Sac...) et menu Paramètres (M pour l'instant)
+			ShortcutContext = NewObject<UInputMappingContext>(this, TEXT("IMC_Shortcuts"));
+			ShortcutActions.Reset();
+			for (const PokemonShortcuts::FShortcut& Shortcut : PokemonShortcuts::Shortcuts)
+			{
+				UInputAction* Action = NewObject<UInputAction>(this, FName(FString(TEXT("IA_Shortcut_")) + Shortcut.Id));
+				ShortcutActions.Add(Action);
+				ShortcutContext->MapKey(Action, FKey(Shortcut.Key));
+			}
+			SettingsAction = NewObject<UInputAction>(this, TEXT("IA_Settings"));
+			// M en attendant : dans l'éditeur, Échap arrête le jeu (remettre EKeys::Escape ici et dans IsSettingsKey)
+			ShortcutContext->MapKey(SettingsAction, EKeys::M);
+			ShortcutContext->MapKey(SettingsAction, EKeys::Gamepad_Special_Left);
+			Subsystem->AddMappingContext(ShortcutContext, 1);
+
+			// Appareil photo : ajouté par-dessus tout (priorité 10) seulement pendant le mode photo
+			PhotoContext = NewObject<UInputMappingContext>(this, TEXT("IMC_Photo"));
+			PhotoShootAction = NewObject<UInputAction>(this, TEXT("IA_PhotoShoot"));
+			PhotoExitAction = NewObject<UInputAction>(this, TEXT("IA_PhotoExit"));
+			PhotoContext->MapKey(PhotoShootAction, EKeys::LeftMouseButton);
+			PhotoContext->MapKey(PhotoShootAction, EKeys::Enter);
+			PhotoContext->MapKey(PhotoShootAction, EKeys::Gamepad_FaceButton_Bottom);
+			PhotoContext->MapKey(PhotoExitAction, EKeys::Escape);
+			PhotoContext->MapKey(PhotoExitAction, EKeys::Gamepad_FaceButton_Right);
+			PhotoContext->MapKey(PhotoExitAction, EKeys::Gamepad_Special_Left);
+
 			// only add these IMCs if we're not using mobile touch input
 			if (!ShouldUseTouchControls())
 			{
@@ -136,6 +195,19 @@ void APokemonNewAgePlayerController::SetupInputComponent()
 		{
 			EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Started, this, &APokemonNewAgePlayerController::ToggleGameMenu);
 		}
+		for (UInputAction* Action : ShortcutActions)
+		{
+			EnhancedInputComponent->BindAction(Action, ETriggerEvent::Started, this, &APokemonNewAgePlayerController::HandleShortcut);
+		}
+		if (SettingsAction)
+		{
+			EnhancedInputComponent->BindAction(SettingsAction, ETriggerEvent::Started, this, &APokemonNewAgePlayerController::HandleSettingsAction);
+		}
+		if (PhotoShootAction && PhotoExitAction)
+		{
+			EnhancedInputComponent->BindAction(PhotoShootAction, ETriggerEvent::Started, this, &APokemonNewAgePlayerController::TakePhoto);
+			EnhancedInputComponent->BindAction(PhotoExitAction, ETriggerEvent::Started, this, &APokemonNewAgePlayerController::StopPhotoMode);
+		}
 	}
 }
 
@@ -153,40 +225,30 @@ void APokemonNewAgePlayerController::ToggleGameMenu()
 
 void APokemonNewAgePlayerController::OpenGameMenu()
 {
-	if (IsGameMenuOpen() || !IsLocalPlayerController() || BattleComponent->IsInBattle() || BattleHUD)
+	if (IsGameMenuOpen() || IsSettingsMenuOpen() || bPhotoMode || !IsLocalPlayerController() || BattleComponent->IsInBattle() || BattleHUD)
+	{
+		return;
+	}
+	if (!SpawnPokedexDevice(nullptr))
+	{
+		OpenGameMenuAt(EPokedexMenu::Pokedex);
+	}
+}
+
+void APokemonNewAgePlayerController::OpenGameMenuAt(EPokedexMenu Menu)
+{
+	if (IsGameMenuOpen() || IsSettingsMenuOpen() || bPhotoMode || !IsLocalPlayerController() || BattleComponent->IsInBattle() || BattleHUD)
 	{
 		return;
 	}
 
-	// Le Pokédex 3D (SCRUM-64)
-	if (bUsePokedex3D && PokedexDeviceClass)
+	// Le Pokédex 3D (SCRUM-64), ouvert directement sur la fonction
+	if (SpawnPokedexDevice(&Menu))
 	{
-		FActorSpawnParameters Params;
-		Params.Owner = this;
-		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		APokedexDevice* Device = GetWorld()->SpawnActor<APokedexDevice>(PokedexDeviceClass, FTransform::Identity, Params);
-		if (Device && Device->InitializeFor(this))
-		{
-			PokedexDevice = Device;
-			// Pause en solo seulement : en ligne, le monde continue pour les autres (SCRUM-68)
-			if (GetNetMode() == NM_Standalone)
-			{
-				SetPause(true);
-			}
-			SetShowMouseCursor(true);
-			FInputModeUIOnly InputMode;
-			InputMode.SetWidgetToFocus(Device->GetInputWidget()->TakeWidget());
-			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-			SetInputMode(InputMode);
-			Device->Open();
-			return;
-		}
-		if (Device)
-		{
-			Device->Destroy();
-		}
+		return;
 	}
 
+	// Sans DA_PokedexModel : le Pokédex à plat
 	TSubclassOf<UGameMenuWidget> MenuClass = GameMenuClass ? GameMenuClass : TSubclassOf<UGameMenuWidget>(UGameMenuWidget::StaticClass());
 	GameMenu = CreateWidget<UGameMenuWidget>(this, MenuClass);
 	if (!GameMenu)
@@ -206,7 +268,47 @@ void APokemonNewAgePlayerController::OpenGameMenu()
 	InputMode.SetWidgetToFocus(GameMenu->TakeWidget());
 	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 	SetInputMode(InputMode);
-	GameMenu->FocusDefaultEntry();
+	GameMenu->OpenTab(Menu);
+}
+
+bool APokemonNewAgePlayerController::SpawnPokedexDevice(const EPokedexMenu* Menu)
+{
+	if (!bUsePokedex3D || !PokedexDeviceClass)
+	{
+		return false;
+	}
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	APokedexDevice* Device = GetWorld()->SpawnActor<APokedexDevice>(PokedexDeviceClass, FTransform::Identity, Params);
+	if (!Device || !Device->InitializeFor(this))
+	{
+		if (Device)
+		{
+			Device->Destroy();
+		}
+		return false;
+	}
+	PokedexDevice = Device;
+	// Pause en solo seulement : en ligne, le monde continue pour les autres (SCRUM-68)
+	if (GetNetMode() == NM_Standalone)
+	{
+		SetPause(true);
+	}
+	SetShowMouseCursor(true);
+	FInputModeUIOnly InputMode;
+	InputMode.SetWidgetToFocus(Device->GetInputWidget()->TakeWidget());
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
+	if (Menu)
+	{
+		Device->OpenOnMenu(*Menu);
+	}
+	else
+	{
+		Device->Open();
+	}
+	return true;
 }
 
 void APokemonNewAgePlayerController::CloseGameMenu()
@@ -229,6 +331,240 @@ void APokemonNewAgePlayerController::CloseGameMenu()
 	SetPause(false);
 	SetShowMouseCursor(false);
 	SetInputMode(FInputModeGameOnly());
+}
+
+void APokemonNewAgePlayerController::HandleShortcut(const FInputActionInstance& Instance)
+{
+	const UInputAction* Source = Instance.GetSourceAction();
+	const int32 Index = ShortcutActions.IndexOfByPredicate([Source](const TObjectPtr<UInputAction>& Action) { return Action.Get() == Source; });
+	if (Index == INDEX_NONE || IsGameMenuOpen())
+	{
+		return;
+	}
+	// L'appareil photo n'a pas besoin de sortir le Pokédex
+	if (PokemonShortcuts::Shortcuts[Index].Menu == EPokedexMenu::Camera)
+	{
+		StartPhotoMode();
+		return;
+	}
+	OpenGameMenuAt(PokemonShortcuts::Shortcuts[Index].Menu);
+}
+
+void APokemonNewAgePlayerController::HandleSettingsAction()
+{
+	// Le mode photo prend Échap avant (contexte IMC_Photo, priorité 10)
+	if (!bPhotoMode)
+	{
+		OpenSettingsMenu();
+	}
+}
+
+// ---------------------------------------------------------------- Menu Échap
+
+void APokemonNewAgePlayerController::OpenSettingsMenu()
+{
+	if (IsSettingsMenuOpen() || IsGameMenuOpen() || !IsLocalPlayerController() || BattleHUD)
+	{
+		return;
+	}
+	TSubclassOf<USettingsMenuWidget> MenuClass = SettingsMenuClass ? SettingsMenuClass : TSubclassOf<USettingsMenuWidget>(USettingsMenuWidget::StaticClass());
+	SettingsMenu = CreateWidget<USettingsMenuWidget>(this, MenuClass);
+	if (!SettingsMenu)
+	{
+		return;
+	}
+	SettingsMenu->AddToPlayerScreen(20);
+	if (GetNetMode() == NM_Standalone)
+	{
+		SetPause(true);
+	}
+	SetShowMouseCursor(true);
+	FInputModeUIOnly InputMode;
+	InputMode.SetWidgetToFocus(SettingsMenu->TakeWidget());
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
+	SettingsMenu->FocusFirst();
+}
+
+void APokemonNewAgePlayerController::CloseSettingsMenu()
+{
+	if (!SettingsMenu)
+	{
+		return;
+	}
+	SettingsMenu->RemoveFromParent();
+	SettingsMenu = nullptr;
+	SetPause(false);
+	SetShowMouseCursor(false);
+	SetInputMode(FInputModeGameOnly());
+}
+
+// ---------------------------------------------------------------- Appareil photo
+
+void APokemonNewAgePlayerController::StartPhotoMode()
+{
+	if (bPhotoMode || !IsLocalPlayerController() || BattleHUD)
+	{
+		return;
+	}
+	if (PokedexDevice)
+	{
+		PokedexDevice->Close(true);
+	}
+	else if (GameMenu)
+	{
+		CloseGameMenu();
+	}
+	bPhotoMode = true;
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()); Subsystem && PhotoContext)
+	{
+		Subsystem->AddMappingContext(PhotoContext, 10);
+	}
+}
+
+void APokemonNewAgePlayerController::StopPhotoMode()
+{
+	if (!bPhotoMode)
+	{
+		return;
+	}
+	bPhotoMode = false;
+	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()); Subsystem && PhotoContext)
+	{
+		Subsystem->RemoveMappingContext(PhotoContext);
+	}
+}
+
+void APokemonNewAgePlayerController::TakePhoto()
+{
+	if (!bPhotoMode)
+	{
+		return;
+	}
+	// Sans l'interface ; dans Saved/Screenshots/<plateforme>/
+	const FString FileName = FPaths::ScreenShotDir() / FString::Printf(TEXT("Photo_%s.png"), *FDateTime::Now().ToString(TEXT("%Y%m%d_%H%M%S")));
+	FScreenshotRequest::RequestScreenshot(FileName, false, false);
+	if (GameHUD)
+	{
+		GameHUD->OnPhotoTaken();
+	}
+}
+
+// ---------------------------------------------------------------- GPS, lieu, pas, sauvegarde automatique
+
+void APokemonNewAgePlayerController::SetGpsTarget(int32 PlaceIndex)
+{
+	GpsTarget = PokedexModel && PokedexModel->MapPlaces.IsValidIndex(PlaceIndex) ? PlaceIndex : INDEX_NONE;
+}
+
+void APokemonNewAgePlayerController::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (HasAuthority())
+	{
+		CountSteps();
+	}
+	if (IsLocalPlayerController())
+	{
+		UpdatePlace(DeltaSeconds);
+		UpdateAutoSave(DeltaSeconds);
+	}
+}
+
+void APokemonNewAgePlayerController::CountSteps()
+{
+	const ACharacter* Hero = Cast<ACharacter>(GetPawn());
+	APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>();
+	if (!Hero || !State)
+	{
+		bHasStepLocation = false;
+		return;
+	}
+	const FVector Location = Hero->GetActorLocation();
+	const UCharacterMovementComponent* Movement = Hero->GetCharacterMovement();
+	if (bHasStepLocation && Movement && Movement->IsMovingOnGround())
+	{
+		const float Moved = float(FVector::Dist2D(Location, LastStepLocation));
+		// Au-delà de 5 m d'un coup, c'est une téléportation (porte, Centre Pokémon), pas des pas
+		if (Moved < 500.f)
+		{
+			StepDistance += Moved;
+			const int32 NewSteps = FMath::FloorToInt(StepDistance / APokemonPlayerState::StepLength);
+			if (NewSteps > 0)
+			{
+				State->StepCount += NewSteps;
+				StepDistance -= NewSteps * APokemonPlayerState::StepLength;
+			}
+		}
+	}
+	LastStepLocation = Location;
+	bHasStepLocation = true;
+}
+
+void APokemonNewAgePlayerController::UpdatePlace(float DeltaSeconds)
+{
+	PlaceTimer -= DeltaSeconds;
+	if (PlaceTimer > 0.f)
+	{
+		return;
+	}
+	PlaceTimer = 0.5f;
+
+	int32 Place = INDEX_NONE;
+	FVector2D UV;
+	if (const APawn* MyPawn = GetPawn(); MyPawn && PokedexModel && PokedexModel->WorldToMap(GetWorld(), MyPawn->GetActorLocation(), UV))
+	{
+		Place = PokedexModel->FindPlaceAt(UV);
+	}
+	if (Place == CurrentPlace)
+	{
+		return;
+	}
+	const bool bFirst = !bPlaceKnown;
+	bPlaceKnown = true;
+	CurrentPlace = Place;
+	if (Place != INDEX_NONE)
+	{
+		// Grand nom du lieu en haut de l'écran, et sauvegarde automatique en arrivant
+		if (GameHUD)
+		{
+			GameHUD->ShowPlaceBanner(PokedexModel->MapPlaces[Place].Name);
+		}
+		if (!bFirst)
+		{
+			TryAutoSave();
+		}
+	}
+}
+
+void APokemonNewAgePlayerController::UpdateAutoSave(float DeltaSeconds)
+{
+	TimeSinceAutoSave += DeltaSeconds;
+	AutoSaveTimer -= DeltaSeconds;
+	if (AutoSaveTimer <= 0.f)
+	{
+		AutoSaveTimer = AutoSaveInterval;
+		TryAutoSave();
+	}
+}
+
+void APokemonNewAgePlayerController::TryAutoSave()
+{
+	const UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
+	if ((Options && !Options->bAutoSave) || TimeSinceAutoSave < AutoSaveMinGap
+		|| BattleComponent->IsInBattle() || BattleHUD || IsGameMenuOpen() || IsSettingsMenuOpen())
+	{
+		return;
+	}
+	if (UPokemonSaveLibrary::SaveGame(this))
+	{
+		TimeSinceAutoSave = 0.f;
+		if (GameHUD)
+		{
+			GameHUD->OnAutoSaved();
+		}
+	}
 }
 
 void APokemonNewAgePlayerController::OnPokedexClosed(APokedexDevice* Device)
@@ -301,6 +637,10 @@ void APokemonNewAgePlayerController::ApplyGameOptions()
 	const UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
 	CameraSensitivity = FMath::Clamp(Options->CameraSensitivity, 0.1f, 5.f);
 	bInvertCameraY = Options->bInvertCameraY;
+	if (const APokemonNewAgeCharacter* Hero = Cast<APokemonNewAgeCharacter>(GetPawn()); Hero && Hero->GetFollowCamera())
+	{
+		Hero->GetFollowCamera()->SetFieldOfView(FMath::Clamp(Options->FieldOfView, 60.f, 120.f));
+	}
 	UPokemonSaveLibrary::ApplyOptions(this, Options);
 }
 
@@ -614,7 +954,16 @@ namespace PokemonKeys
 		{ TEXT("Sprint"), TEXT("Courir") },
 		{ TEXT("Jump"), TEXT("Sauter") },
 		{ TEXT("Interact"), TEXT("Parler, ouvrir") },
-		{ TEXT("Menu"), TEXT("Pokédex (menu)") },
+		{ TEXT("Menu"), TEXT("Ouvrir le Pokédex") },
+		{ TEXT("Settings"), TEXT("Menu Paramètres") },
+		{ TEXT("Pokedex"), TEXT("Pokédex : encyclopédie") },
+		{ TEXT("Map"), TEXT("Pokédex : carte et GPS") },
+		{ TEXT("Bag"), TEXT("Pokédex : sac") },
+		{ TEXT("Party"), TEXT("Pokédex : équipe") },
+		{ TEXT("Trainer"), TEXT("Pokédex : carte dresseur") },
+		{ TEXT("Online"), TEXT("Pokédex : multijoueur") },
+		{ TEXT("Camera"), TEXT("Appareil photo") },
+		{ TEXT("Save"), TEXT("Sauvegarder") },
 	};
 
 	/** Sens donné par une touche de déplacement : on rejoue ses modificateurs (Inverser, Échanger les axes) sur (1, 0, 0) */
@@ -680,6 +1029,10 @@ void APokemonNewAgePlayerController::GetSourceContexts(TArray<TPair<UInputMappin
 	{
 		OutContexts.Emplace(DefaultMenuContext, 1);
 	}
+	if (ShortcutContext)
+	{
+		OutContexts.Emplace(ShortcutContext, 1);
+	}
 	if (const APokemonNewAgeCharacter* Hero = Cast<APokemonNewAgeCharacter>(GetPawn()); Hero && Hero->GetInteractContext())
 	{
 		OutContexts.Emplace(Hero->GetInteractContext(), 1);
@@ -701,6 +1054,15 @@ FName APokemonNewAgePlayerController::GetBindingId(const FEnhancedActionKeyMappi
 	if (Action == MenuAction)
 	{
 		Base = TEXT("Menu");
+	}
+	else if (SettingsAction && Action == SettingsAction)
+	{
+		Base = TEXT("Settings");
+	}
+	else if (const int32 Shortcut = ShortcutActions.IndexOfByPredicate([Action](const TObjectPtr<UInputAction>& Candidate) { return Candidate.Get() == Action; });
+		Shortcut != INDEX_NONE)
+	{
+		Base = PokemonShortcuts::Shortcuts[Shortcut].Id;
 	}
 	else if (Hero && Action == Hero->GetJumpAction())
 	{
@@ -766,6 +1128,81 @@ TArray<FPokemonBindableKey> APokemonNewAgePlayerController::GetBindableKeys() co
 		return PokemonKeys::CommandOrder(A.Id) < PokemonKeys::CommandOrder(B.Id);
 	});
 	return Keys;
+}
+
+FKey APokemonNewAgePlayerController::GetShortcutKey(EPokedexMenu Menu) const
+{
+	for (const PokemonShortcuts::FShortcut& Shortcut : PokemonShortcuts::Shortcuts)
+	{
+		if (Shortcut.Menu != Menu)
+		{
+			continue;
+		}
+		const FName Id(FString(Shortcut.Id) + TEXT("_Key"));
+		const UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
+		const FKey* Custom = Options ? Options->KeyBindings.Find(Id) : nullptr;
+		return Custom ? *Custom : FKey(Shortcut.Key);
+	}
+	return FKey();
+}
+
+bool APokemonNewAgePlayerController::FindShortcut(const FKey& Key, EPokedexMenu& OutMenu) const
+{
+	for (const PokemonShortcuts::FShortcut& Shortcut : PokemonShortcuts::Shortcuts)
+	{
+		if (Key.IsValid() && GetShortcutKey(Shortcut.Menu) == Key)
+		{
+			OutMenu = Shortcut.Menu;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool APokemonNewAgePlayerController::IsSettingsKey(const FKey& Key) const
+{
+	if (Key == EKeys::M || Key == EKeys::Gamepad_Special_Left)
+	{
+		return true;
+	}
+	const UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
+	for (const TCHAR* Id : { TEXT("Settings_Key"), TEXT("Settings_Pad") })
+	{
+		if (const FKey* Custom = Options ? Options->KeyBindings.Find(FName(Id)) : nullptr; Custom && *Custom == Key)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+FKey APokemonNewAgePlayerController::GetMenuKey() const
+{
+	for (const FPokemonBindableKey& Entry : GetBindableKeys())
+	{
+		if (Entry.Id == FName(TEXT("Menu_Key")))
+		{
+			return Entry.Key;
+		}
+	}
+	return EKeys::Tab;
+}
+
+bool APokemonNewAgePlayerController::IsMenuKey(const FKey& Key) const
+{
+	if (Key == EKeys::Tab || Key == EKeys::Gamepad_Special_Right)
+	{
+		return true;
+	}
+	const UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
+	for (const TCHAR* Id : { TEXT("Menu_Key"), TEXT("Menu_Pad") })
+	{
+		if (const FKey* Custom = Options ? Options->KeyBindings.Find(FName(Id)) : nullptr; Custom && *Custom == Key)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 void APokemonNewAgePlayerController::SetKeyBinding(FName Id, const FKey& Key)

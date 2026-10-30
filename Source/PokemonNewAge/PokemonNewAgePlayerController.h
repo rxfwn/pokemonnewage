@@ -16,8 +16,13 @@ class UGameMenuWidget;
 class UBattleComponent;
 class UBattleHUDWidget;
 class APokedexDevice;
+class UGameHUDWidget;
+class USettingsMenuWidget;
+class UPokedexModel;
+struct FInputActionInstance;
+enum class EPokedexMenu : uint8;
 
-/** Une commande dont on peut changer la touche (Options > Commandes du Pokédex). */
+/** Une commande dont on peut changer la touche (menu Échap > Commandes). */
 struct FPokemonBindableKey
 {
 	/** Forward_Key, Jump_Pad... (clé de UPokemonOptionsSave::KeyBindings) */
@@ -86,9 +91,95 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UGameMenuWidget> GameMenu;
 
-	/** Le menu est le Pokédex 3D (SCRUM-64). Sans DA_PokedexModel, le menu à plat prend le relais */
+	/** Raccourcis (P Pokédex, B Sac...) et menu Échap, créés par le code, modifiables dans Échap > Commandes */
+	UPROPERTY(Transient)
+	UInputMappingContext* ShortcutContext;
+
+	/** Une action par raccourci, dans l'ordre de PokemonShortcuts::Shortcuts */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UInputAction>> ShortcutActions;
+
+	/** Échap ou Select : menu Paramètres */
+	UPROPERTY(Transient)
+	TObjectPtr<UInputAction> SettingsAction;
+
+	/** Appareil photo : prendre la photo, quitter (contexte ajouté par-dessus les autres pendant le mode photo) */
+	UPROPERTY(Transient)
+	TObjectPtr<UInputMappingContext> PhotoContext;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UInputAction> PhotoShootAction;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UInputAction> PhotoExitAction;
+
+	/** HUD en jeu (maquette de L'amie : icône Pokédex, nom du lieu, heure, météo, boussole). Un Widget Blueprint enfant pour l'habiller */
+	UPROPERTY(EditAnywhere, Category="UI")
+	TSubclassOf<UGameHUDWidget> GameHUDClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UGameHUDWidget> GameHUD;
+
+	/** Menu Échap (Paramètres). Un Widget Blueprint enfant de SettingsMenuWidget pour l'habiller */
+	UPROPERTY(EditAnywhere, Category="UI")
+	TSubclassOf<USettingsMenuWidget> SettingsMenuClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USettingsMenuWidget> SettingsMenu;
+
+	/** Gardé ici pour que la carte, les lieux et les icônes ne soient pas déchargés */
+	UPROPERTY(Transient)
+	TObjectPtr<UPokedexModel> PokedexModel;
+
+	/** Sort le Pokédex 3D, sur l'accueil (Menu nul) ou sur une fonction. Faux sans DA_PokedexModel ou si bUsePokedex3D est décoché */
+	bool SpawnPokedexDevice(const EPokedexMenu* Menu);
+
+	/** Un raccourci du menu est pressé en jeu */
+	void HandleShortcut(const FInputActionInstance& Instance);
+
+	void HandleSettingsAction();
+	void TakePhoto();
+
+	/** Le Pokédex est en 3D (SCRUM-64). Décoché, ou sans DA_PokedexModel : Pokédex à plat (UGameMenuWidget) */
 	UPROPERTY(EditAnywhere, Category="UI")
 	bool bUsePokedex3D = true;
+
+	/** Sauvegarde automatique : toutes les N secondes, et en arrivant dans un nouveau lieu (si Échap > Jeu le permet) */
+	UPROPERTY(EditAnywhere, Category="Save", meta=(ClampMin=30, Units="Seconds"))
+	float AutoSaveInterval = 300.f;
+
+	/** Pas de deux sauvegardes automatiques à moins de N secondes d'écart */
+	UPROPERTY(EditAnywhere, Category="Save", meta=(ClampMin=5, Units="Seconds"))
+	float AutoSaveMinGap = 30.f;
+
+	float AutoSaveTimer = 0.f;
+	float TimeSinceAutoSave = 0.f;
+
+	/** Lieu actuel (index dans DA_PokedexModel > MapPlaces), relu toutes les 0,5 s */
+	int32 CurrentPlace = INDEX_NONE;
+	float PlaceTimer = 0.f;
+	/** Faux jusqu'au premier lieu trouvé (pas de sauvegarde automatique à l'arrivée en jeu) */
+	bool bPlaceKnown = false;
+
+	/** Destination du GPS (index dans MapPlaces) */
+	int32 GpsTarget = INDEX_NONE;
+
+	bool bPhotoMode = false;
+
+	/** Serveur : compteur de pas (position au tick précédent et distance pas encore comptée) */
+	FVector LastStepLocation = FVector::ZeroVector;
+	bool bHasStepLocation = false;
+	float StepDistance = 0.f;
+
+	/** Serveur : ajoute les pas du personnage au PlayerState */
+	void CountSteps();
+
+	/** Lieu du joueur, sauvegarde automatique */
+	void UpdatePlace(float DeltaSeconds);
+	void UpdateAutoSave(float DeltaSeconds);
+
+	/** Sauvegarde automatique si rien ne l'empêche (combat, menu, dialogue) */
+	void TryAutoSave();
 
 	/** Classe du Pokédex 3D (un Blueprint enfant de PokedexDevice pour régler lumières, flou...) */
 	UPROPERTY(EditAnywhere, Category="UI")
@@ -124,6 +215,9 @@ protected:
 
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
+
+	/** Compteur de pas (serveur), lieu, sauvegarde automatique (joueur local) */
+	virtual void Tick(float DeltaSeconds) override;
 
 	/** Input mapping context setup */
 	virtual void SetupInputComponent() override;
@@ -163,6 +257,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category="UI")
 	void OpenGameMenu();
 
+	/** Ouvre le Pokédex directement sur une fonction (raccourcis) */
+	void OpenGameMenuAt(EPokedexMenu Menu);
+
 	/** Ferme le menu en jeu et relance le jeu */
 	UFUNCTION(BlueprintCallable, Category="UI")
 	void CloseGameMenu();
@@ -170,6 +267,30 @@ public:
 	/** Vrai si le menu en jeu est ouvert */
 	UFUNCTION(BlueprintPure, Category="UI")
 	bool IsGameMenuOpen() const { return GameMenu != nullptr || PokedexDevice != nullptr; }
+
+	// ------------------------------------------------ Menu Échap (Paramètres)
+
+	UFUNCTION(BlueprintCallable, Category="UI")
+	void OpenSettingsMenu();
+
+	UFUNCTION(BlueprintCallable, Category="UI")
+	void CloseSettingsMenu();
+
+	bool IsSettingsMenuOpen() const { return SettingsMenu != nullptr; }
+
+	// ------------------------------------------------ Pokédex : appareil photo, GPS, lieu
+
+	/** Range le Pokédex et passe en mode photo (HUD caché ; clic, Entrée ou A : photo ; Échap ou B : quitter) */
+	void StartPhotoMode();
+	void StopPhotoMode();
+	bool IsInPhotoMode() const { return bPhotoMode; }
+
+	/** Destination du GPS (index dans DA_PokedexModel > MapPlaces), INDEX_NONE = pas de GPS */
+	int32 GetGpsTarget() const { return GpsTarget; }
+	void SetGpsTarget(int32 PlaceIndex);
+
+	/** Lieu où se trouve le joueur (index dans MapPlaces), INDEX_NONE en pleine nature ou hors de Kanto */
+	int32 GetCurrentPlace() const { return CurrentPlace; }
 
 	/** Appelé par le Pokédex 3D à la fin de son animation de fermeture */
 	void OnPokedexClosed(APokedexDevice* Device);
@@ -190,6 +311,21 @@ public:
 
 	/** Remet toutes les touches d'origine */
 	void ResetKeyBindings();
+
+	/** Touche clavier actuelle du raccourci d'une fonction du Pokédex (invalide s'il n'en a pas) */
+	FKey GetShortcutKey(EPokedexMenu Menu) const;
+
+	/** Fonction du Pokédex dont le raccourci est cette touche */
+	bool FindShortcut(const FKey& Key, EPokedexMenu& OutMenu) const;
+
+	/** Touche qui ouvre et ferme le Pokédex (Tab, Start ou celle choisie) */
+	bool IsMenuKey(const FKey& Key) const;
+
+	/** Touche du menu Échap (Échap, Select ou celle choisie) */
+	bool IsSettingsKey(const FKey& Key) const;
+
+	/** Touche clavier actuelle du Pokédex (affichée sous l'icône du HUD) */
+	FKey GetMenuKey() const;
 
 	/** Remplace les contextes d'entrée par des copies avec les touches choisies (au lancement et après un changement) */
 	void ApplyKeyBindings();
