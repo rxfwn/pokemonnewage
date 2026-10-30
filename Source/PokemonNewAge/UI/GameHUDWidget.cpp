@@ -40,7 +40,9 @@ namespace GameHUD
 		if (const UFontFace* Face = LoadObject<UFontFace>(nullptr, *FString::Printf(TEXT("%s/Fonts/%s.%s"), Folder, FaceName, FaceName), nullptr, LOAD_NoWarn | LOAD_Quiet))
 		{
 			TSharedRef<FCompositeFont> Composite = MakeShared<FCompositeFont>();
-			Composite->DefaultTypeface.Fonts.Add(FTypefaceEntry(TEXT("Regular"), Face));
+			FTypefaceEntry& Entry = Composite->DefaultTypeface.Fonts.AddDefaulted_GetRef();
+			Entry.Name = TEXT("Regular");
+			Entry.Font = FFontData(Face);
 			return FSlateFontInfo(Composite, Size);
 		}
 		FSlateFontInfo Font = Fallback;

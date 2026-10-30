@@ -828,7 +828,7 @@ void APokedexDevice::LoadFigure(FName Species)
 		return StaticLoadObject(UObject::StaticClass(), nullptr, *FString::Printf(TEXT("%s/%s.%s"), *Folder, *Name, *Name), nullptr, LOAD_NoWarn | LOAD_Quiet);
 	};
 
-	FBoxSphereBounds Bounds;
+	FBoxSphereBounds Bounds(ForceInit);
 	USceneComponent* Figure = nullptr;
 	if (USkeletalMesh* Skeletal = Cast<USkeletalMesh>(Load(TEXT("SK_") + Id)))
 	{
