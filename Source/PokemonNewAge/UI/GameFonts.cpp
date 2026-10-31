@@ -33,8 +33,8 @@ namespace PokemonFonts
 			{
 				return CachedFont;
 			}
-			// Futura Bold pour tout (L'amie, 2026-10-31 : « futura bold penché, c'est la même » que Futura Md BT) ;
-			// FF_Futura_Medium / FF_Futura_MediumItalic seulement si on les ajoute un jour.
+			// Futura Medium pour le texte et l'italique, Futura Bold pour le gras, tout penché (L'amie, 2026-10-31) ;
+			// chacune remplace l'autre si elle manque (FF_Futura_Medium arrive avec l'écran de titre).
 			// Les accents (é, à, ç, ©, °) sont ajoutés au .ttf par Tools/HUD/add_futura_accents.py (écran de titre)
 			UFontFace* Bold = LoadFace(TEXT("FF_Futura_Bold"));
 			UFontFace* Medium = LoadFace(TEXT("FF_Futura_Medium"));

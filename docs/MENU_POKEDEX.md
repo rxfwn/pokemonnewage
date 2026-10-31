@@ -148,10 +148,9 @@ Il s'ouvre tout seul quand un combat commence : cadres des deux Pokémon (nom, n
 - Les sons sont synthétiques : on pourra les remplacer en gardant les mêmes noms.
 - Le nom du joueur est celui donné par Unreal (pas encore d'écran pour le choisir).
 
-## Police du jeu : Futura Bold penchée partout
+## Police du jeu : Futura penchée partout
 
-Demandé par L'amie le 2026-10-31 (« futura bold penché, c'est la même » que la Futura Md BT de sa maquette) : toute l'interface (HUD, Pokédex 3D, Paramètres, dialogues, combat, boutique, PC, évolution) passe par `PokemonFonts::Get(Taille, bGras)` (`Source/PokemonNewAge/UI/GameFonts.h`). Il prend la Font Face `/Game/UI/HUD/Fonts/FF_Futura_Bold` (fichier `Tools/HUD/Assets/fonts/FF_Futura_Bold.ttf`) et l'incline (`SkewAmount` 0,18, comme l'écran de titre). Pour la redresser : `Skew` dans `GameFonts.cpp`.
+Demandé par L'amie le 2026-10-31 : toute l'interface (HUD, Pokédex 3D, Paramètres, dialogues, combat, boutique, PC, évolution) passe par `PokemonFonts::Get(Taille, bGras)` (`Source/PokemonNewAge/UI/GameFonts.h`). Texte normal : `FF_Futura_Medium` (Futura Cyrillic Medium fournie par L'amie) ; gras : `FF_Futura_Bold` ; les deux inclinées (`SkewAmount` 0,18, comme l'écran de titre). Pour redresser : `Skew` dans `GameFonts.cpp`. Si l'une manque, l'autre la remplace ; sans aucune, Roboto.
 
-La Futura d'origine n'avait pas les accents : `Tools/HUD/add_futura_accents.py` (fil de l'écran de titre) les ajoute dans `FF_Futura_Bold.ttf` (original gardé dans `FF_Futura_Bold.orig.ttf`). À l'ouverture d'Unreal, `init_unreal.py` réimporte toute police dont le `.ttf` est plus récent que l'asset.
+La Futura d'origine n'avait pas les accents : `Tools/HUD/add_futura_accents.py` (fil de l'écran de titre) les ajoute dans `FF_Futura_Bold.ttf` et `FF_Futura_Medium.ttf` (originaux gardés dans `fonts/original/`). À l'ouverture d'Unreal, `init_unreal.py` réimporte toute police dont le `.ttf` est plus récent que l'asset.
 
-Si on ajoute un jour `FF_Futura_Medium.ttf` / `FF_Futura_MediumItalic.ttf` dans le même dossier, le texte normal et l'italique les prennent tout seuls (import automatique à l'ouverture d'Unreal). Sans aucune Font Face importée, le jeu reprend Roboto.
