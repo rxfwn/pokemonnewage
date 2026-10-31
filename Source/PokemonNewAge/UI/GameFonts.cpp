@@ -34,7 +34,8 @@ namespace PokemonFonts
 				return CachedFont;
 			}
 			// Futura Bold pour tout (L'amie, 2026-10-31 : « futura bold penché, c'est la même » que Futura Md BT) ;
-			// FF_Futura_Medium / FF_Futura_MediumItalic seulement si on les ajoute un jour
+			// FF_Futura_Medium / FF_Futura_MediumItalic seulement si on les ajoute un jour.
+			// Les accents (é, à, ç, ©, °) sont ajoutés au .ttf par Tools/HUD/add_futura_accents.py (écran de titre)
 			UFontFace* Bold = LoadFace(TEXT("FF_Futura_Bold"));
 			UFontFace* Medium = LoadFace(TEXT("FF_Futura_Medium"));
 			UFontFace* Italic = LoadFace(TEXT("FF_Futura_MediumItalic"));
@@ -56,19 +57,6 @@ namespace PokemonFonts
 			AddTypeface(Composite->DefaultTypeface, TEXT("Bold"), Bold);
 			AddTypeface(Composite->DefaultTypeface, TEXT("Italic"), Italic);
 
-			// Futura Bold n'a pas les accents (é, à, ç, ©, °...) : Jost Bold (clone libre de Futura) les fournit
-			if (UFontFace* Accents = LoadFace(TEXT("FF_Futura_Fallback")))
-			{
-				FCompositeSubFont& Sub = Composite->SubTypefaces.AddDefaulted_GetRef();
-				Sub.CharacterRanges.Add(FInt32Range(FInt32Range::BoundsType::Inclusive(0x00A0), FInt32Range::BoundsType::Inclusive(0x024F)));
-				Sub.CharacterRanges.Add(FInt32Range(FInt32Range::BoundsType::Inclusive(0x2010), FInt32Range::BoundsType::Inclusive(0x206F)));
-				Sub.CharacterRanges.Add(FInt32Range(FInt32Range::BoundsType::Inclusive(0x20AC), FInt32Range::BoundsType::Inclusive(0x20AC)));
-				for (const TCHAR* Name : { TEXT("Regular"), TEXT("Bold"), TEXT("Italic") })
-				{
-					AddTypeface(Sub.Typeface, Name, Accents);
-					AddTypeface(Composite->FallbackTypeface.Typeface, Name, Accents);
-				}
-			}
 			CachedFont = Composite;
 			return CachedFont;
 		}

@@ -54,7 +54,9 @@ def import_hud():
     import_files(images, HUD_DIR)
     textures = [as_ui(HUD_DIR + "/" + os.path.splitext(os.path.basename(path))[0]) for path in images]
 
-    fonts = sorted(glob.glob(os.path.join(ASSETS_DIR, "fonts", "FF_*.ttf")))
+    # Sans les copies d'origine (FF_Futura_Bold.orig.ttf, gardée par add_futura_accents.py)
+    fonts = sorted(path for path in glob.glob(os.path.join(ASSETS_DIR, "fonts", "FF_*.ttf"))
+                   if "." not in os.path.splitext(os.path.basename(path))[0])
     import_files(fonts, FONT_DIR)
     faces = []
     for path in fonts:

@@ -152,6 +152,6 @@ Il s'ouvre tout seul quand un combat commence : cadres des deux Pokémon (nom, n
 
 Demandé par L'amie le 2026-10-31 (« futura bold penché, c'est la même » que la Futura Md BT de sa maquette) : toute l'interface (HUD, Pokédex 3D, Paramètres, dialogues, combat, boutique, PC, évolution) passe par `PokemonFonts::Get(Taille, bGras)` (`Source/PokemonNewAge/UI/GameFonts.h`). Il prend la Font Face `/Game/UI/HUD/Fonts/FF_Futura_Bold` (fichier `Tools/HUD/Assets/fonts/FF_Futura_Bold.ttf`) et l'incline (`SkewAmount` 0,18, comme l'écran de titre). Pour la redresser : `Skew` dans `GameFonts.cpp`.
 
-Cette Futura n'a pas les accents (é, à, ç, ©, °) : ils viennent de `FF_Futura_Fallback.ttf`, Jost Bold (clone libre de Futura, licence OFL dans `Jost-OFL.txt`), branché comme sous-police pour les caractères U+00A0 à U+024F, la ponctuation (’ … « ») et €.
+La Futura d'origine n'avait pas les accents : `Tools/HUD/add_futura_accents.py` (fil de l'écran de titre) les ajoute dans `FF_Futura_Bold.ttf` (original gardé dans `FF_Futura_Bold.orig.ttf`). À l'ouverture d'Unreal, `init_unreal.py` réimporte toute police dont le `.ttf` est plus récent que l'asset.
 
 Si on ajoute un jour `FF_Futura_Medium.ttf` / `FF_Futura_MediumItalic.ttf` dans le même dossier, le texte normal et l'italique les prennent tout seuls (import automatique à l'ouverture d'Unreal). Sans aucune Font Face importée, le jeu reprend Roboto.
