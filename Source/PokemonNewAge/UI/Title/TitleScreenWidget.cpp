@@ -17,6 +17,8 @@
 #include "Components/SizeBox.h"
 #include "Components/SizeBoxSlot.h"
 #include "Misc/PackageName.h"
+#include "Misc/Paths.h"
+#include "ImageUtils.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
@@ -64,13 +66,19 @@ namespace TitleScreenUI
 
 	/**
 	 *  Tout l'écran de titre est en Futura Bold penchée (choix de L'amie du 2026-10-31, à la place de
-	 *  Futura Md BT italique). Futura Bold est importée par Tools/HUD/import_hud_unreal.py ; sinon Roboto.
+	 *  Futura Md BT italique). On lit d'abord le .ttf du dossier Tools (il a les accents ajoutés par
+	 *  Tools/HUD/add_futura_accents.py, même si l'asset importé est plus ancien), puis l'asset, puis Roboto.
 	 *  bBold et bItalic sont gardés pour pouvoir varier plus tard.
 	 */
 	FSlateFontInfo Futura(float Size, bool /*bBold*/, bool /*bItalic*/, const FSlateFontInfo& Fallback)
 	{
 		FSlateFontInfo Font;
-		if (const UFontFace* Face = LoadFace(TEXT("FF_Futura_Bold")))
+		const FString File = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Tools/HUD/Assets/fonts/FF_Futura_Bold.ttf"));
+		if (FPaths::FileExists(File))
+		{
+			Font = FSlateFontInfo(File, Size);
+		}
+		else if (const UFontFace* Face = LoadFace(TEXT("FF_Futura_Bold")))
 		{
 			Font = FromFace(Face, Size);
 		}
@@ -84,15 +92,30 @@ namespace TitleScreenUI
 		return Font;
 	}
 
-	/** Charge une image si elle a été importée (pas d'avertissement sinon) */
+	/**
+	 *  Charge une image : l'asset s'il a été importé (Tools/Title/import_title_unreal.py), sinon directement le PNG
+	 *  du même nom dans Tools/Title/Assets (pas besoin de lancer le script pour la voir).
+	 */
 	UTexture2D* TryLoad(const TSoftObjectPtr<UTexture2D>& Soft)
 	{
 		const FSoftObjectPath& Path = Soft.ToSoftObjectPath();
-		if (Path.IsNull() || !FPackageName::DoesPackageExist(Path.GetLongPackageName()))
+		if (Path.IsNull())
 		{
 			return nullptr;
 		}
-		return Soft.LoadSynchronous();
+		if (FPackageName::DoesPackageExist(Path.GetLongPackageName()))
+		{
+			if (UTexture2D* Texture = Soft.LoadSynchronous())
+			{
+				return Texture;
+			}
+		}
+		const FString File = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Tools/Title/Assets") / (Path.GetAssetName() + TEXT(".png")));
+		if (FPaths::FileExists(File))
+		{
+			return FImageUtils::ImportFileAsTexture2D(File);
+		}
+		return nullptr;
 	}
 
 	bool IsBackKey(const FKey& Key)

@@ -6,7 +6,7 @@ D'après la maquette Figma de L'amie du 2026-10-31 (1920 × 1080) :
 - **Logo** de L'amie (« Plan de travail 10 », `Tools/Title/Assets/T_Title_Logo.png`) en haut à gauche, à (34, 34), 638 × 323, ombre portée noire à 60 %.
 - **Menu** à gauche, x = 160 : **Continuer** (y 621), **Nouvelle partie** (694), **Options** (767). Futura Bold penchée 32 px (choix de L'amie : « c'est la même » que Futura Md BT italique), blanc, ombre (3, 4) noire à 60 %. Sans sauvegarde, Continuer disparaît et les deux autres remontent.
 - **En bas à droite** : « v.1.0.0 » et « © 2026 », alignés à droite à 1832 px.
-- **Toutes les typos en Futura Bold penchée** (`Tools/HUD/Assets/fonts/FF_Futura_Bold.ttf`, penchée par Unreal).
+- **Toutes les typos en Futura Bold penchée** (`Tools/HUD/Assets/fonts/FF_Futura_Bold.ttf`, penchée par Unreal). Le fichier d'origine n'avait aucune lettre accentuée (Unreal affichait des carrés « LATIN 1 ») : `Tools/HUD/add_futura_accents.py` les fabrique à partir des glyphes de la police (é è ê ë à â ç î ï ô ù û ü, capitales, © ° « »). L'original est dans `fonts/original/`.
 
 ## Ce que fait chaque entrée
 
@@ -35,7 +35,7 @@ Pour sauter le titre : lancer avec `-NoTitle`, ou décocher **Afficher dans l'é
 ## Installer et tester (une seule fois, Unreal fermé puis ouvert)
 
 1. `git pull`, puis compiler dans VS Code (tâche **PokemonNewAgeEditor Win64 Development Build**, Unreal fermé).
-2. Ouvrir Unreal, puis **Outils > Exécuter un script Python** (Tools > Execute Python Script) → `Tools/Title/import_title_unreal.py`. Il crée `/Game/UI/Title/T_Title_Background` et `T_Title_Logo`.
+2. Rien à importer : le jeu lit tout seul le fond et le logo dans `Tools/Title/Assets`, et la police dans `Tools/HUD/Assets/fonts`. Le script `Tools/Title/import_title_unreal.py` (Outils > Exécuter un script Python) ne sert que pour le jeu final, où le dossier Tools n'est pas livré.
 3. Ouvrir L_Kanto et cliquer sur **Jouer**. À vérifier :
    - l'écran ressemble à la maquette (fond, titre en haut à gauche, menu à gauche, version en bas à droite) ;
    - flèches et souris changent l'entrée choisie (elle se décale un peu à droite) ;
