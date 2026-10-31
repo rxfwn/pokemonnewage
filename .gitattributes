@@ -34,3 +34,6 @@
 
 # Images générées par les scripts d'outils (petites, hors LFS)
 Tools/**/*.png -filter -diff -merge binary
+
+# Moitiés de Poké Balls préparées par Tools/Capture/prepare_pokeballs.py (petites, hors LFS)
+Tools/Capture/Balls/**/*.fbx -filter -diff -merge binary
