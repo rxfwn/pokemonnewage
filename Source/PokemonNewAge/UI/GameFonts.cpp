@@ -46,15 +46,29 @@ namespace PokemonFonts
 				return nullptr;
 			}
 			TSharedRef<FCompositeFont> Composite = MakeShared<FCompositeFont>();
-			auto AddTypeface = [&Composite](const TCHAR* Name, UFontFace* Face)
+			auto AddTypeface = [](FTypeface& Typeface, const TCHAR* Name, UFontFace* Face)
 			{
-				FTypefaceEntry& Entry = Composite->DefaultTypeface.Fonts.AddDefaulted_GetRef();
+				FTypefaceEntry& Entry = Typeface.Fonts.AddDefaulted_GetRef();
 				Entry.Name = Name;
 				Entry.Font = FFontData(Face);
 			};
-			AddTypeface(TEXT("Regular"), Medium);
-			AddTypeface(TEXT("Bold"), Bold);
-			AddTypeface(TEXT("Italic"), Italic);
+			AddTypeface(Composite->DefaultTypeface, TEXT("Regular"), Medium);
+			AddTypeface(Composite->DefaultTypeface, TEXT("Bold"), Bold);
+			AddTypeface(Composite->DefaultTypeface, TEXT("Italic"), Italic);
+
+			// Futura Bold n'a pas les accents (é, à, ç, ©, °...) : Jost Bold (clone libre de Futura) les fournit
+			if (UFontFace* Accents = LoadFace(TEXT("FF_Futura_Fallback")))
+			{
+				FCompositeSubFont& Sub = Composite->SubTypefaces.AddDefaulted_GetRef();
+				Sub.CharacterRanges.Add(FInt32Range(FInt32Range::BoundsType::Inclusive(0x00A0), FInt32Range::BoundsType::Inclusive(0x024F)));
+				Sub.CharacterRanges.Add(FInt32Range(FInt32Range::BoundsType::Inclusive(0x2010), FInt32Range::BoundsType::Inclusive(0x206F)));
+				Sub.CharacterRanges.Add(FInt32Range(FInt32Range::BoundsType::Inclusive(0x20AC), FInt32Range::BoundsType::Inclusive(0x20AC)));
+				for (const TCHAR* Name : { TEXT("Regular"), TEXT("Bold"), TEXT("Italic") })
+				{
+					AddTypeface(Sub.Typeface, Name, Accents);
+					AddTypeface(Composite->FallbackTypeface.Typeface, Name, Accents);
+				}
+			}
 			CachedFont = Composite;
 			return CachedFont;
 		}
