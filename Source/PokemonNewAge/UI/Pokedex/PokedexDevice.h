@@ -90,6 +90,14 @@ public:
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
 	float MenuExposureEV100 = 7.f;
 
+	/** Prendre l'exposition qui va avec le soleil de la map (décor visible), au lieu de Menu Exposure EV100 */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	bool bMatchWorldExposure = true;
+
+	/** Correction de l'exposition calculée (EV) : négatif = décor et appareil plus clairs */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	float WorldExposureOffset = 0.f;
+
 	/** Luminosité des écrans et des icônes (1 = blanc pur à l'exposition du menu) */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
 	float ScreenBrightness = 0.75f;
@@ -156,6 +164,9 @@ private:
 
 	/** Distance à la caméra pour que l'appareil ouvert remplisse ScreenFill de la fenêtre (refait si elle change de taille) */
 	void UpdateFraming();
+
+	/** EV100 qui affiche la map correctement d'après la lumière de son soleil */
+	float EstimateWorldExposure() const;
 	void UpdateAnimation(float DeltaSeconds);
 	void UpdateLights(float DeltaSeconds);
 	void UpdatePanels(float DeltaSeconds);
@@ -316,6 +327,7 @@ private:
 	FRotator CameraRotation = FRotator::ZeroRotator;
 	float ViewDistance = 32.f;
 	float GlowScale = 1.f;
+	float ExposureEV100 = 7.f;
 	float WidgetBrightness = 1.f;
 	FIntPoint FramedViewportSize = FIntPoint::ZeroValue;
 

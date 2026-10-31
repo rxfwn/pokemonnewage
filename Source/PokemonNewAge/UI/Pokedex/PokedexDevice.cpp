@@ -2,6 +2,7 @@
 #include "UI/Pokedex/PokedexModel.h"
 #include "UI/Pokedex/PokedexWidgets.h"
 #include "Camera/PlayerCameraManager.h"
+#include "Components/DirectionalLightComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/PostProcessComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -14,6 +15,7 @@
 #include "Engine/Engine.h"
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
+#include "UObject/UObjectIterator.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PokemonNewAge.h"
 #include "PokemonNewAgePlayerController.h"
@@ -227,8 +229,18 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 	}
 	if (WidgetMaterial)
 	{
+		// Déjà enregistré : on le réenregistre pour qu'il recrée son matériau à partir de M_PokedexWidget
+		ScreenComponent->UnregisterComponent();
 		ScreenComponent->SetMaterial(0, WidgetMaterial);
+		ScreenComponent->RegisterComponent();
 	}
+#if WITH_EDITOR
+	else if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(INDEX_NONE, 10.f, FColor::Orange,
+			TEXT("Pokedex 3D : M_PokedexWidget absent, ecrans noirs. Fermer et rouvrir Unreal, ou lancer Tools/Pokedex/import_pokedex_unreal.py"));
+	}
+#endif
 	ScreenComponent->SetOwnerPlayer(InController->GetLocalPlayer());
 	ScreenComponent->SetWidget(Screen);
 	ScreenComponent->SetTintColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.f));
@@ -260,25 +272,32 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 
 	PlaceInFrontOfCamera();
 
+	// Exposition du menu : celle que demande la lumière du soleil de la map (le décor flouté reste visible), sinon le réglage
+	ExposureEV100 = bMatchWorldExposure ? EstimateWorldExposure() : MenuExposureEV100;
+	UE_LOG(LogPokemonNewAge, Log, TEXT("Pokedex 3D : exposition du menu EV100 %.1f"), ExposureEV100);
+
 	// Lumières et rendu du menu
 	// Intensités réglées pour EV100 11 : on les suit quand l'exposition du menu change, pour garder le même rendu
-	const float LightScale = FMath::Square(GetActorScale3D().X) * FMath::Pow(2.f, MenuExposureEV100 - 11.f);
+	const float LightScale = FMath::Square(GetActorScale3D().X) * FMath::Pow(2.f, ExposureEV100 - 11.f);
 	KeyLight->SetIntensity(KeyLightIntensity * LightScale);
 	FillLight->SetIntensity(FillLightIntensity * LightScale);
 	// Moins de reflets blancs sur le plastique verni
 	KeyLight->SetSpecularScale(0.35f);
 	FillLight->SetSpecularScale(0.15f);
-	GlowScale = 0.6f * ExposureUnit(MenuExposureEV100);
-	WidgetBrightness = ScreenBrightness * ExposureUnit(MenuExposureEV100);
+	GlowScale = 0.6f * ExposureUnit(ExposureEV100);
+	WidgetBrightness = ScreenBrightness * ExposureUnit(ExposureEV100);
 	FPostProcessSettings& Settings = PostProcess->Settings;
 	Settings.bOverride_DepthOfFieldFocalDistance = true;
 	Settings.DepthOfFieldFocalDistance = ViewDistance * GetActorScale3D().X;
 	Settings.bOverride_DepthOfFieldFstop = true;
 	Settings.DepthOfFieldFstop = BackgroundBlurFstop;
+	// Histogramme bloqué sur une seule valeur, même si un volume de la map est en exposition manuelle
+	Settings.bOverride_AutoExposureMethod = true;
+	Settings.AutoExposureMethod = EAutoExposureMethod::AEM_Histogram;
 	Settings.bOverride_AutoExposureMinBrightness = true;
-	Settings.AutoExposureMinBrightness = MenuExposureEV100;
+	Settings.AutoExposureMinBrightness = ExposureEV100;
 	Settings.bOverride_AutoExposureMaxBrightness = true;
-	Settings.AutoExposureMaxBrightness = MenuExposureEV100;
+	Settings.AutoExposureMaxBrightness = ExposureEV100;
 	Settings.bOverride_AutoExposureBias = true;
 	Settings.AutoExposureBias = 0.f;
 	Settings.bOverride_VignetteIntensity = true;
@@ -706,8 +725,14 @@ void APokedexDevice::UpdateAnimation(float DeltaSeconds)
 		{
 			continue;
 		}
-		const int32 MenuIndex = MenuButtons.IndexOfByKey(Cast<UStaticMeshComponent>(Component));
-		const bool bLifted = MenuIndex != INDEX_NONE && (Component == Hovered.Get() || (MenuIndex == LidSelection && bLidFocus));
+		// Le bouton et son icône (posée juste devant) montent ensemble, sinon le bouton passe devant l'icône
+		int32 MenuIndex = MenuButtons.IndexOfByKey(Cast<UStaticMeshComponent>(Component));
+		if (MenuIndex == INDEX_NONE)
+		{
+			MenuIndex = MenuIcons.IndexOfByKey(Cast<UWidgetComponent>(Component));
+		}
+		const bool bButtonHovered = MenuIndex != INDEX_NONE && MenuButtons.IsValidIndex(MenuIndex) && Hovered.Get() == MenuButtons[MenuIndex].Get();
+		const bool bLifted = MenuIndex != INDEX_NONE && (bButtonHovered || (MenuIndex == LidSelection && bLidFocus));
 		const float PreviousHover = Press.HoverAlpha;
 		Press.HoverAlpha = FMath::FInterpTo(Press.HoverAlpha, bLifted ? 1.f : 0.f, DeltaSeconds, 14.f);
 		if (Press.PressTime < 0.f && FMath::IsNearlyEqual(PreviousHover, Press.HoverAlpha, 1e-4f))
@@ -1453,4 +1478,24 @@ void APokedexDevice::SetGlow(UMaterialInstanceDynamic* Material, float Strength)
 		// Strength 1 ≈ une lueur nette, quelle que soit l'exposition du menu
 		Material->SetScalarParameterValue(TEXT("EmissiveStrength"), Strength * GlowScale);
 	}
+}
+
+float APokedexDevice::EstimateWorldExposure() const
+{
+	// Soleil le plus fort de la map (lux) -> luminance d'un sol moyen (18 %) -> EV100 qui l'affiche en gris moyen
+	float Lux = 0.f;
+	for (TObjectIterator<UDirectionalLightComponent> It; It; ++It)
+	{
+		const UDirectionalLightComponent* Sun = *It;
+		if (Sun->GetWorld() == GetWorld() && Sun->IsRegistered() && Sun->IsVisible() && Sun->LightingChannels.bChannel0)
+		{
+			Lux = FMath::Max(Lux, Sun->Intensity);
+		}
+	}
+	if (Lux <= 0.f)
+	{
+		return MenuExposureEV100;
+	}
+	const float Luminance = Lux * 0.18f / PI;
+	return FMath::Clamp(FMath::Log2(Luminance * 100.f / 12.5f) + WorldExposureOffset, -2.f, 16.f);
 }
