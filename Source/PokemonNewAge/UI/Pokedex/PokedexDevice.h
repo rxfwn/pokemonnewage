@@ -7,6 +7,7 @@
 
 class APokemonNewAgePlayerController;
 class UMaterialInstanceDynamic;
+class UMaterialInterface;
 class UPointLightComponent;
 class UPokedexIconWidget;
 class UPokedexInfoWidget;
@@ -83,11 +84,15 @@ public:
 
 	/** Marge autour de l'appareil ouvert quand on calcule la distance à la caméra (1 = bord à bord) */
 	UPROPERTY(EditAnywhere, Category="Pokedex")
-	float ScreenFill = 0.94f;
+	float ScreenFill = 0.89f;
 
 	/** Exposition fixe pendant le menu (EV100) : l'appareil a le même rendu de jour comme de nuit */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
-	float MenuExposureEV100 = 11.f;
+	float MenuExposureEV100 = 7.f;
+
+	/** Luminosité des écrans et des icônes (1 = blanc pur à l'exposition du menu) */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	float ScreenBrightness = 0.75f;
 
 	/** Intensité des lumières qui éclairent l'appareil (candelas) */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
@@ -111,6 +116,13 @@ public:
 	/** Vitesse de rotation à la souris (degrés par pixel) */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Commandes")
 	float DragSensitivity = 0.35f;
+
+	/** Rotation maximale à la souris ou au stick (degrés de chaque côté) */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Commandes", meta=(Units="Degrees"))
+	float MaxTurnYaw = 30.f;
+
+	UPROPERTY(EditAnywhere, Category="Pokedex|Commandes", meta=(Units="Degrees"))
+	float MaxTurnPitch = 20.f;
 
 protected:
 
@@ -138,6 +150,9 @@ private:
 	/** Taille en cm (largeur, hauteur) et centre de la face avant d'une pièce, dans le repère de son parent */
 	bool GetPartFace(FName PartKey, FVector& OutCenter, FVector2D& OutSize) const;
 	void PlaceInFrontOfCamera();
+
+	/** Allume un voyant ou une pièce (EmissiveStrength mis à l'échelle de l'exposition du menu) */
+	void SetGlow(UMaterialInstanceDynamic* Material, float Strength) const;
 
 	/** Distance à la caméra pour que l'appareil ouvert remplisse ScreenFill de la fenêtre (refait si elle change de taille) */
 	void UpdateFraming();
@@ -250,6 +265,10 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> LensMaterial;
 
+	/** M_PokedexWidget (écrans et icônes) */
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInterface> WidgetMaterial;
+
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> LedRedMaterial;
 
@@ -296,6 +315,8 @@ private:
 	FVector CameraLocation = FVector::ZeroVector;
 	FRotator CameraRotation = FRotator::ZeroRotator;
 	float ViewDistance = 32.f;
+	float GlowScale = 1.f;
+	float WidgetBrightness = 1.f;
 	FIntPoint FramedViewportSize = FIntPoint::ZeroValue;
 
 	// Taille du modèle (MeasureModel)

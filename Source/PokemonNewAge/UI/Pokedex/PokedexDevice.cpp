@@ -64,6 +64,12 @@ namespace PokedexDevice
 		return 1.f + C3 * FMath::Pow(T - 1.f, 3.f) + C1 * FMath::Pow(T - 1.f, 2.f);
 	}
 	float Flash(float Now, float Start, float Decay) { return Now >= Start ? FMath::Exp(-(Now - Start) * Decay) : 0.f; }
+
+	/** Luminance qui s'affiche en blanc moyen à cette exposition (EV100) : les émissifs et lumières s'y règlent */
+	float ExposureUnit(float EV100) { return 1.2f * FMath::Pow(2.f, EV100); }
+
+	/** Matériau des écrans et icônes, créé par import_pokedex_unreal.py (paramètre Brightness) */
+	const TCHAR* WidgetMaterialPath = TEXT("/Game/UI/Pokedex/M_PokedexWidget.M_PokedexWidget");
 }
 
 using namespace PokedexDevice;
@@ -214,6 +220,15 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 	// Grand écran
 	Screen = CreateWidget<UPokedexScreenWidget>(InController, UPokedexScreenWidget::StaticClass());
 	Screen->OnFeedback.AddUObject(this, &APokedexDevice::OnScreenFeedback);
+	WidgetMaterial = LoadObject<UMaterialInterface>(nullptr, WidgetMaterialPath, nullptr, LOAD_NoWarn | LOAD_Quiet);
+	if (!WidgetMaterial)
+	{
+		UE_LOG(LogPokemonNewAge, Warning, TEXT("Pokedex 3D : M_PokedexWidget absent, ecrans sombres (rouvrir Unreal pour relancer l'import)"));
+	}
+	if (WidgetMaterial)
+	{
+		ScreenComponent->SetMaterial(0, WidgetMaterial);
+	}
 	ScreenComponent->SetOwnerPlayer(InController->GetLocalPlayer());
 	ScreenComponent->SetWidget(Screen);
 	ScreenComponent->SetTintColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.f));
@@ -246,9 +261,15 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 	PlaceInFrontOfCamera();
 
 	// Lumières et rendu du menu
-	const float LightScale = FMath::Square(GetActorScale3D().X);
+	// Intensités réglées pour EV100 11 : on les suit quand l'exposition du menu change, pour garder le même rendu
+	const float LightScale = FMath::Square(GetActorScale3D().X) * FMath::Pow(2.f, MenuExposureEV100 - 11.f);
 	KeyLight->SetIntensity(KeyLightIntensity * LightScale);
 	FillLight->SetIntensity(FillLightIntensity * LightScale);
+	// Moins de reflets blancs sur le plastique verni
+	KeyLight->SetSpecularScale(0.35f);
+	FillLight->SetSpecularScale(0.15f);
+	GlowScale = 0.6f * ExposureUnit(MenuExposureEV100);
+	WidgetBrightness = ScreenBrightness * ExposureUnit(MenuExposureEV100);
 	FPostProcessSettings& Settings = PostProcess->Settings;
 	Settings.bOverride_DepthOfFieldFocalDistance = true;
 	Settings.DepthOfFieldFocalDistance = ViewDistance * GetActorScale3D().X;
@@ -261,7 +282,7 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 	Settings.bOverride_AutoExposureBias = true;
 	Settings.AutoExposureBias = 0.f;
 	Settings.bOverride_VignetteIntensity = true;
-	Settings.VignetteIntensity = 0.7f;
+	Settings.VignetteIntensity = 0.35f;
 
 	// Fermé, sous l'écran
 	Hinge->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
@@ -390,7 +411,7 @@ void APokedexDevice::ApplyMaterials(UStaticMeshComponent* Part, FName Key)
 			Material->SetScalarParameterValue(TEXT("Metallic"), 0.f);
 			Material->SetScalarParameterValue(TEXT("Roughness"), 0.3f);
 			Material->SetVectorParameterValue(TEXT("EmissiveColor"), TileGlow);
-			Material->SetScalarParameterValue(TEXT("EmissiveStrength"), 0.f);
+			SetGlow(Material, 0.f);
 			MenuGlows[MenuIndex] = Material;
 		}
 		else
@@ -409,7 +430,7 @@ void APokedexDevice::ApplyMaterials(UStaticMeshComponent* Part, FName Key)
 				if (Key == Led.Key)
 				{
 					Material->SetVectorParameterValue(TEXT("EmissiveColor"), Led.Value);
-					Material->SetScalarParameterValue(TEXT("EmissiveStrength"), 0.f);
+					SetGlow(Material, 0.f);
 				}
 			}
 			if (Key == TEXT("Lens"))           { LensMaterial = Material; }
@@ -459,6 +480,10 @@ UWidgetComponent* APokedexDevice::AddPanel(FName PartKey, UUserWidget* Widget, F
 	Panel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Panel->SetTickWhenOffscreen(true);
 	Panel->PrimaryComponentTick.bTickEvenWhenPaused = true;
+	if (WidgetMaterial)
+	{
+		Panel->SetMaterial(0, WidgetMaterial);
+	}
 	Panel->RegisterComponent();
 	Panel->SetOwnerPlayer(Controller->GetLocalPlayer());
 	Panel->SetWidget(Widget);
@@ -650,6 +675,8 @@ void APokedexDevice::UpdateAnimation(float DeltaSeconds)
 		UserYaw = FMath::FInterpTo(FRotator::NormalizeAxis(UserYaw), 0.f, DeltaSeconds, 5.f);
 		UserPitch = FMath::FInterpTo(FRotator::NormalizeAxis(UserPitch), 0.f, DeltaSeconds, 5.f);
 	}
+	UserYaw = FMath::Clamp(FRotator::NormalizeAxis(UserYaw), -MaxTurnYaw, MaxTurnYaw);
+	UserPitch = FMath::Clamp(FRotator::NormalizeAxis(UserPitch), -MaxTurnPitch, MaxTurnPitch);
 	const float Sway = Time - LastInteractTime > 1.5f ? 1.f : 0.f;
 	Pivot->SetRelativeRotation(FRotator(UserPitch + Sway * 1.2f * FMath::Sin(Time * 1.1f), UserYaw + Sway * 2.f * FMath::Sin(Time * 0.7f), 0.f));
 
@@ -708,11 +735,17 @@ void APokedexDevice::UpdateAnimation(float DeltaSeconds)
 		if (Panel)
 		{
 			Panel->SetTintColorAndOpacity(PanelTint);
+			if (UMaterialInstanceDynamic* PanelMaterial = Panel->GetMaterialInstance())
+			{
+				PanelMaterial->SetScalarParameterValue(TEXT("Brightness"), WidgetBrightness);
+			}
 		}
 	}
 	const float Turned = FMath::Clamp(FMath::Max(FMath::Abs(FRotator::NormalizeAxis(UserYaw)), FMath::Abs(FRotator::NormalizeAxis(UserPitch))) / 25.f, 0.f, 1.f);
-	PostProcess->BlendWeight = OpenAlpha * (1.f - Turned);
+	// L'exposition reste celle du menu même tourné ; seul le flou s'en va (sinon les bords de l'appareil seraient flous)
+	PostProcess->BlendWeight = OpenAlpha;
 	PostProcess->Settings.DepthOfFieldFocalDistance = Distance;
+	PostProcess->Settings.DepthOfFieldFstop = FMath::Lerp(BackgroundBlurFstop, 32.f, Turned);
 }
 
 void APokedexDevice::UpdateLights(float DeltaSeconds)
@@ -720,24 +753,24 @@ void APokedexDevice::UpdateLights(float DeltaSeconds)
 	const float Booting = OpenAlpha < 1.f && !bClosing ? 1.f : 0.f;
 	if (LedGreenMaterial)
 	{
-		LedGreenMaterial->SetScalarParameterValue(TEXT("EmissiveStrength"), (1.f - Booting) * (2.5f + 1.5f * FMath::Sin(Time * 2.4f)) + 6.f * Flash(Time, LensFlash, 3.f));
+		SetGlow(LedGreenMaterial, (1.f - Booting) * (2.5f + 1.5f * FMath::Sin(Time * 2.4f)) + 6.f * Flash(Time, LensFlash, 3.f));
 	}
 	if (LedYellowMaterial)
 	{
-		LedYellowMaterial->SetScalarParameterValue(TEXT("EmissiveStrength"), 0.2f + 10.f * Flash(Time, LedYellowFlash, 10.f));
+		SetGlow(LedYellowMaterial, OpenAlpha * 2.f + 10.f * Flash(Time, LedYellowFlash, 10.f));
 	}
 	if (LedRedMaterial)
 	{
-		LedRedMaterial->SetScalarParameterValue(TEXT("EmissiveStrength"), 0.2f + 10.f * Flash(Time, LedRedFlash, 6.f) + (bClosing ? 4.f : 0.f));
+		SetGlow(LedRedMaterial, OpenAlpha * 2.f + 10.f * Flash(Time, LedRedFlash, 6.f) + (bClosing ? 4.f : 0.f));
 	}
 	if (LensMaterial)
 	{
-		LensMaterial->SetScalarParameterValue(TEXT("EmissiveStrength"), 0.3f + 8.f * Flash(Time, LensFlash, 4.f));
+		SetGlow(LensMaterial, OpenAlpha * 1.2f + 8.f * Flash(Time, LensFlash, 4.f));
 	}
 	if (ScreenLedsMaterial)
 	{
 		// Clignotent quand l'écran change de page
-		ScreenLedsMaterial->SetScalarParameterValue(TEXT("EmissiveStrength"), OpenAlpha * (0.4f + 8.f * Flash(Time, ScreenFlash, 8.f)));
+		SetGlow(ScreenLedsMaterial, OpenAlpha * (0.4f + 8.f * Flash(Time, ScreenFlash, 8.f)));
 	}
 
 	float LastMenuFlash = -10.f;
@@ -758,7 +791,7 @@ void APokedexDevice::UpdateLights(float DeltaSeconds)
 		LastMenuFlash = FMath::Max(LastMenuFlash, MenuFlash[Index]);
 		if (MenuGlows.IsValidIndex(Index) && MenuGlows[Index])
 		{
-			MenuGlows[Index]->SetScalarParameterValue(TEXT("EmissiveStrength"), Strength * OpenAlpha);
+			SetGlow(MenuGlows[Index], Strength * OpenAlpha);
 		}
 		if (MenuIconWidgets.IsValidIndex(Index) && MenuIconWidgets[Index])
 		{
@@ -768,7 +801,7 @@ void APokedexDevice::UpdateLights(float DeltaSeconds)
 	if (LidLedsMaterial)
 	{
 		// Respirent tant que le volet attend un choix, s'allument quand on appuie sur un bouton du volet
-		LidLedsMaterial->SetScalarParameterValue(TEXT("EmissiveStrength"),
+		SetGlow(LidLedsMaterial,
 			OpenAlpha * ((bLidFocus ? 1.5f + FMath::Sin(Time * 3.f) : 0.5f) + 8.f * Flash(Time, LastMenuFlash, 5.f)));
 	}
 }
@@ -1000,7 +1033,14 @@ void APokedexDevice::HandlePointerDown(const FKey& Button, const FVector2D& Pixe
 	{
 		ClickDPad(Hit.ImpactPoint);
 	}
-	else if (Key == TEXT("ConfirmButton") || Key == TEXT("LidButton"))
+	else if (Key == TEXT("ConfirmButton"))
+	{
+		// Le bouton rond noir sous l'écran : l'appareil photo (demandé par L'amie)
+		PressPart(Hit.GetComponent());
+		LensFlash = Time;
+		PressMenuButton(int32(EPokedexMenu::Camera));
+	}
+	else if (Key == TEXT("LidButton"))
 	{
 		PressPart(Hit.GetComponent());
 		HandleKey(EKeys::Enter);
@@ -1119,7 +1159,7 @@ void APokedexDevice::SetHovered(UPrimitiveComponent* Component)
 				if (UMaterialInstanceDynamic* MID = Material.Get())
 				{
 					MID->SetVectorParameterValue(TEXT("EmissiveColor"), FLinearColor(1.f, 0.95f, 0.85f));
-					MID->SetScalarParameterValue(TEXT("EmissiveStrength"), bOn ? 0.25f : 0.f);
+					SetGlow(MID, bOn ? 0.25f : 0.f);
 				}
 			}
 		}
@@ -1405,3 +1445,12 @@ void APokedexDevice::PlaySound(USoundBase* Sound, float Pitch) const
 }
 
 #undef LOCTEXT_NAMESPACE
+
+void APokedexDevice::SetGlow(UMaterialInstanceDynamic* Material, float Strength) const
+{
+	if (Material)
+	{
+		// Strength 1 ≈ une lueur nette, quelle que soit l'exposition du menu
+		Material->SetScalarParameterValue(TEXT("EmissiveStrength"), Strength * GlowScale);
+	}
+}

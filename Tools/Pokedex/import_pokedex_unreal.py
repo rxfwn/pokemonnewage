@@ -200,6 +200,46 @@ def make_material():
     return material
 
 
+def make_widget_material():
+    """M_PokedexWidget : écrans et icônes du Pokédex (composants Widget). Comme le matériau d'Unreal
+    (Widget3DPassThrough), mais avec un paramètre Brightness que le C++ règle sur l'exposition du menu :
+    sans lui, les écrans paraissent noirs en plein jour."""
+    path = CONTENT_DIR + "/M_PokedexWidget"
+    if eal.does_asset_exist(path):
+        eal.delete_asset(path)
+    material = asset_tools.create_asset("M_PokedexWidget", CONTENT_DIR, unreal.Material, unreal.MaterialFactoryNew())
+    material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
+
+    slate = _texture(material, "SlateUI", unreal.MaterialSamplerType.SAMPLERTYPE_COLOR, None, -900, 0)
+    tint = _vector(material, "TintColorAndOpacity", (1.0, 1.0, 1.0, 1.0), -900, 300)
+    brightness = _scalar(material, "Brightness", 1.0, -900, 500)
+    _scalar(material, "OpacityFromTexture", 1.0, -900, 650)  # attendu par UWidgetComponent
+    color = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -600, 100)
+    tint_rgb = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, -700, 300)
+    tint_rgb.set_editor_property("r", True)
+    tint_rgb.set_editor_property("g", True)
+    tint_rgb.set_editor_property("b", True)
+    tint_a = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, -700, 400)
+    tint_a.set_editor_property("a", True)
+    lit = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -400, 150)
+    opacity = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -400, 400)
+
+    mel.connect_material_expressions(tint, "", tint_rgb, "")
+    mel.connect_material_expressions(tint, "", tint_a, "")
+    mel.connect_material_expressions(slate, "RGB", color, "A")
+    mel.connect_material_expressions(tint_rgb, "", color, "B")
+    mel.connect_material_expressions(color, "", lit, "A")
+    mel.connect_material_expressions(brightness, "", lit, "B")
+    mel.connect_material_expressions(slate, "A", opacity, "A")
+    mel.connect_material_expressions(tint_a, "", opacity, "B")
+    mel.connect_material_property(lit, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
+    mel.recompile_material(material)
+    eal.save_asset(path)
+    return material
+
+
 def make_textured_material(textures):
     """M_PokedexTextured : textures du modèle (couleur, ORM, normales, émissif) + lumière ajoutée par le C++ (voyants)."""
     path, material = _new_material("M_PokedexTextured")
@@ -430,6 +470,7 @@ def main():
             task.enter_progress_frame(1, "Matériaux")
             material = make_material()
             instances = make_material_instances(make_textured_material(textures), textures)
+            make_widget_material()
             task.enter_progress_frame(1, "Pièces 3D")
             import_files([FBX_PATH], MESH_DIR)
             meshes = collect_meshes()

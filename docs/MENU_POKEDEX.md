@@ -23,7 +23,9 @@ Les réglages attendent **Appliquer** ou **OK** ; les touches changent tout de s
 
 ## Le Pokédex 3D (Tab)
 
-Comme l'image de référence de L'amie (sans les mains) : Tab sort le Pokédex ouvert devant la caméra, il prend presque tout l'écran (`Screen Fill` 0,94, recalculé si la fenêtre change de taille), décor flou derrière. À gauche l'écran affiche la fonction choisie, à droite le volet porte les 10 boutons à icônes : ils s'allument et se soulèvent sous la souris ou la sélection, et s'enfoncent au clic.
+Comme l'image de référence de L'amie (sans les mains) : Tab sort le Pokédex ouvert devant la caméra, il prend presque tout l'écran (`Screen Fill` 0,89, recalculé si la fenêtre change de taille), décor du jeu flouté derrière. On le tourne à la souris jusqu'à 30° de côté et 20° en hauteur (`Max Turn Yaw` / `Max Turn Pitch`). Les voyants du haut et l'objectif restent allumés ; le bouton rond noir sous l'écran lance l'appareil photo.
+
+**Rendu (réglages dans `BP`/classe `PokedexDevice`, catégorie Rendu)** : exposition fixe `Menu Exposure EV100` (7 par défaut : plus petit = décor plus clair). Les lumières de l'appareil, les voyants et les écrans suivent cette valeur tout seuls. Les écrans et icônes utilisent `M_PokedexWidget` (créé par le script d'import, réimporté tout seul à l'ouverture d'Unreal s'il manque) ; leur luminosité : `Screen Brightness`. À gauche l'écran affiche la fonction choisie, à droite le volet porte les 10 boutons à icônes : ils s'allument et se soulèvent sous la souris ou la sélection, et s'enfoncent au clic.
 
 
 Les 10 boutons à icônes du volet, dans l'ordre de la grille :

@@ -18,7 +18,8 @@ FBX_PATH = os.path.join(PROJECT_DIR, "Tools", "Pokedex", "Generated", "Pokedex.f
 
 def pokedex_installed():
     eal = unreal.EditorAssetLibrary
-    if not eal.does_asset_exist(MODEL_PATH):
+    # M_PokedexWidget : ajouté le 2026-10-31 (écrans noirs sans lui) ; son absence relance l'import
+    if not eal.does_asset_exist(MODEL_PATH) or not eal.does_asset_exist("/Game/UI/Pokedex/M_PokedexWidget"):
         return False
     model = eal.load_asset(MODEL_PATH)
     try:
