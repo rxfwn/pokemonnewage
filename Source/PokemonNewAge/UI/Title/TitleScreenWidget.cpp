@@ -63,47 +63,24 @@ namespace TitleScreenUI
 	}
 
 	/**
-	 *  Futura de la maquette (Futura Md BT), importée par Tools/HUD/import_hud_unreal.py depuis
-	 *  Tools/HUD/Assets/fonts/FF_Futura_*.ttf. Sans elle : Futura Bold (déjà là), puis Roboto.
+	 *  Tout l'écran de titre est en Futura Bold penchée (choix de L'amie du 2026-10-31, à la place de
+	 *  Futura Md BT italique). Futura Bold est importée par Tools/HUD/import_hud_unreal.py ; sinon Roboto.
+	 *  bBold et bItalic sont gardés pour pouvoir varier plus tard.
 	 */
-	FSlateFontInfo Futura(float Size, bool bBold, bool bItalic, const FSlateFontInfo& Fallback)
+	FSlateFontInfo Futura(float Size, bool /*bBold*/, bool /*bItalic*/, const FSlateFontInfo& Fallback)
 	{
-		struct FChoice { const TCHAR* Face; bool bHasItalic; };
-		TArray<FChoice> Choices;
-		if (bBold)
+		FSlateFontInfo Font;
+		if (const UFontFace* Face = LoadFace(TEXT("FF_Futura_Bold")))
 		{
-			Choices.Add({ TEXT("FF_Futura_BoldItalic"), true });
-			Choices.Add({ TEXT("FF_Futura_Bold"), false });
+			Font = FromFace(Face, Size);
 		}
 		else
 		{
-			Choices.Add({ TEXT("FF_Futura_MediumItalic"), true });
-			Choices.Add({ TEXT("FF_Futura_Medium"), false });
-			Choices.Add({ TEXT("FF_Futura_Bold"), false });
+			Font = Fallback;
+			Font.Size = Size;
+			Font.TypefaceFontName = FName(TEXT("Bold"));
 		}
-		for (const FChoice& Choice : Choices)
-		{
-			if (Choice.bHasItalic && !bItalic)
-			{
-				continue;
-			}
-			if (const UFontFace* Face = LoadFace(Choice.Face))
-			{
-				FSlateFontInfo Font = FromFace(Face, Size);
-				if (bItalic && !Choice.bHasItalic)
-				{
-					Font.SkewAmount = SyntheticItalic;
-				}
-				return Font;
-			}
-		}
-		FSlateFontInfo Font = Fallback;
-		Font.Size = Size;
-		Font.TypefaceFontName = bBold ? FName(TEXT("Bold")) : FName(TEXT("Regular"));
-		if (bItalic)
-		{
-			Font.SkewAmount = SyntheticItalic;
-		}
+		Font.SkewAmount = SyntheticItalic;
 		return Font;
 	}
 

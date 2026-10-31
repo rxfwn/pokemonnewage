@@ -3,10 +3,10 @@
 D'après la maquette Figma de L'amie du 2026-10-31 (1920 × 1080) :
 
 - **Fond** : son image (Pikachu et le dresseur au-dessus du village), qui remplit l'écran avec un zoom très lent.
-- **Logo** en haut à gauche, à (34, 34), 638 × 323, ombre portée noire à 60 %. Tant que le PNG du logo n'est pas là, « POKÉMON / ÉCLAIR » est écrit en Futura à la même place.
-- **Menu** à gauche, x = 160 : **Continuer** (y 621), **Nouvelle partie** (694), **Options** (767). Futura Md BT italique 32 px, blanc, ombre (3, 4) noire à 60 %. Sans sauvegarde, Continuer disparaît et les deux autres remontent.
+- **Logo** de L'amie (« Plan de travail 10 », `Tools/Title/Assets/T_Title_Logo.png`) en haut à gauche, à (34, 34), 638 × 323, ombre portée noire à 60 %.
+- **Menu** à gauche, x = 160 : **Continuer** (y 621), **Nouvelle partie** (694), **Options** (767). Futura Bold penchée 32 px (choix de L'amie : « c'est la même » que Futura Md BT italique), blanc, ombre (3, 4) noire à 60 %. Sans sauvegarde, Continuer disparaît et les deux autres remontent.
 - **En bas à droite** : « v.1.0.0 » et « © 2026 », alignés à droite à 1832 px.
-- **Toutes les typos en Futura** (polices `FF_Futura_*` de `Tools/HUD/Assets/fonts`). Sans Futura Md BT italique, l'écran prend Futura Bold penché en attendant.
+- **Toutes les typos en Futura Bold penchée** (`Tools/HUD/Assets/fonts/FF_Futura_Bold.ttf`, penchée par Unreal).
 
 ## Ce que fait chaque entrée
 
@@ -35,7 +35,7 @@ Pour sauter le titre : lancer avec `-NoTitle`, ou décocher **Afficher dans l'é
 ## Installer et tester (une seule fois, Unreal fermé puis ouvert)
 
 1. `git pull`, puis compiler dans VS Code (tâche **PokemonNewAgeEditor Win64 Development Build**, Unreal fermé).
-2. Ouvrir Unreal, puis **Outils > Exécuter un script Python** (Tools > Execute Python Script) → `Tools/Title/import_title_unreal.py`. Il crée `/Game/UI/Title/T_Title_Background` (et le logo s'il est là).
+2. Ouvrir Unreal, puis **Outils > Exécuter un script Python** (Tools > Execute Python Script) → `Tools/Title/import_title_unreal.py`. Il crée `/Game/UI/Title/T_Title_Background` et `T_Title_Logo`.
 3. Ouvrir L_Kanto et cliquer sur **Jouer**. À vérifier :
    - l'écran ressemble à la maquette (fond, titre en haut à gauche, menu à gauche, version en bas à droite) ;
    - flèches et souris changent l'entrée choisie (elle se décale un peu à droite) ;
@@ -43,8 +43,6 @@ Pour sauter le titre : lancer avec `-NoTitle`, ou décocher **Afficher dans l'é
    - **Continuer** fait disparaître le titre en fondu, le HUD revient et le nom du lieu s'affiche ;
    - relancer, **Nouvelle partie** → la question apparaît ; **Non** revient ; **Oui** recharge la map au point de départ.
 
-## À fournir par L'amie
+## Pour ajouter d'autres fonds
 
-- Le **logo** (« Plan de travail 10.png » de la maquette) : le mettre dans `Tools/Title/Assets/T_Title_Logo.png` et relancer le script d'import.
-- La police **Futura Md BT** (normale et italique, .ttf) : `Tools/HUD/Assets/fonts/FF_Futura_Medium.ttf` et `FF_Futura_MediumItalic.ttf`.
-- Les autres fonds de la maquette (Route 1, sas) si elle veut qu'ils défilent : `Tools/Title/Assets/T_Title_Background_2.png`... puis les ajouter dans les réglages.
+Les autres fonds de la maquette (Route 1, sas) peuvent défiler : `Tools/Title/Assets/T_Title_Background_2.png`, `_3`..., relancer le script d'import, puis les ajouter dans les réglages (Backgrounds).
