@@ -34,8 +34,17 @@ namespace TitleScreenUI
 	/** Couleurs de la maquette : texte blanc, ombre noire à 60 % décalée de (3, 4) */
 	const FLinearColor White(1.f, 1.f, 1.f);
 	const FLinearColor Dim(1.f, 1.f, 1.f, 0.72f);
-	const FLinearColor Shadow(0.f, 0.f, 0.f, 0.6f);
 	const FVector2D ShadowOffset(3.f, 4.f);
+
+	/**
+	 *  Ombre floue (CSS de la maquette : 3px 4px 4px rgba(0,0,0,0.6)). Slate ne sait pas flouter une ombre :
+	 *  on empile 9 copies noires très transparentes autour du décalage, ce qui adoucit les bords.
+	 */
+	const FVector2D BlurSamples[] = {
+		{ 0.f, 0.f }, { 2.f, 0.f }, { -2.f, 0.f }, { 0.f, 2.f }, { 0.f, -2.f },
+		{ 1.4f, 1.4f }, { -1.4f, 1.4f }, { 1.4f, -1.4f }, { -1.4f, -1.4f } };
+	/** 9 couches à 9 % : un peu moins de 60 % au cœur de l'ombre, plus léger sur les bords */
+	const FLinearColor ShadowLayer(0.f, 0.f, 0.f, 0.09f);
 	const FLinearColor PanelColor(0.03f, 0.03f, 0.04f, 0.82f);
 
 	/**
@@ -143,6 +152,26 @@ namespace TitleScreenUI
 
 using namespace TitleScreenUI;
 
+UWidget* UTitleScreenWidget::WithSoftShadow(UTextBlock* Text, FVector2D Offset)
+{
+	Text->SetShadowColorAndOpacity(FLinearColor::Transparent);
+	UOverlay* Layers = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass());
+	for (const FVector2D& Sample : BlurSamples)
+	{
+		UTextBlock* Copy = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+		Copy->SetText(Text->GetText());
+		Copy->SetFont(Text->GetFont());
+		Copy->SetJustification(ETextJustify::Left);
+		Copy->SetColorAndOpacity(FSlateColor(ShadowLayer));
+		Copy->SetShadowColorAndOpacity(FLinearColor::Transparent);
+		Copy->SetRenderTranslation(Offset + Sample);
+		Layers->AddChildToOverlay(Copy);
+	}
+	Layers->AddChildToOverlay(Text);
+	Layers->SetVisibility(ESlateVisibility::HitTestInvisible);
+	return Layers;
+}
+
 void UTitleScreenWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
@@ -202,11 +231,10 @@ UTitleScreenWidget::FEntry UTitleScreenWidget::MakeEntry(const FText& Label, flo
 	Entry.Label->SetText(Label);
 	Entry.Label->SetFont(Futura(FontSize, false, true, Probe->GetFont()));
 	Entry.Label->SetColorAndOpacity(FSlateColor(White));
-	Entry.Label->SetShadowOffset(ShadowOffset);
-	Entry.Label->SetShadowColorAndOpacity(Shadow);
-	Entry.Button->SetContent(Entry.Label);
+	Entry.Block = WithSoftShadow(Entry.Label, ShadowOffset);
+	Entry.Button->SetContent(Entry.Block);
 
-	EntryWidgets.Append({ Entry.Button.Get(), Entry.Label.Get() });
+	EntryWidgets.Append({ Entry.Button.Get(), Entry.Label.Get(), Entry.Block.Get() });
 	return Entry;
 }
 
@@ -226,9 +254,7 @@ TSharedRef<SWidget> UTitleScreenWidget::RebuildWidget()
 			Text->SetText(Value);
 			Text->SetFont(Futura(Size, bBold, bItalic, Default));
 			Text->SetColorAndOpacity(FSlateColor(Color));
-			Text->SetShadowOffset(ShadowOffset);
-			Text->SetShadowColorAndOpacity(Shadow);
-			return Text;
+			return WithSoftShadow(Text, ShadowOffset);
 		};
 
 		// ---- Fond : les images de la maquette (recadrées pour remplir l'écran), sinon vignette sur la vue 3D
@@ -273,14 +299,21 @@ TSharedRef<SWidget> UTitleScreenWidget::RebuildWidget()
 		if (UTexture2D* Logo = TryLoad(Settings->Logo))
 		{
 			UOverlay* LogoLayers = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass());
-			UImage* LogoShadow = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
-			LogoShadow->SetBrushFromTexture(Logo, false);
-			LogoShadow->SetColorAndOpacity(Shadow);
-			LogoShadow->SetRenderTranslation(FVector2D(3.f, 3.f));
+			// Ombre floue du logo (drop-shadow 3px 3px 4px à 60 %) : 9 copies noires transparentes, puis le logo
+			TArray<UImage*> Images;
+			for (const FVector2D& Sample : BlurSamples)
+			{
+				UImage* LogoShadow = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+				LogoShadow->SetBrushFromTexture(Logo, false);
+				LogoShadow->SetColorAndOpacity(ShadowLayer);
+				LogoShadow->SetRenderTranslation(FVector2D(3.f, 3.f) + Sample);
+				Images.Add(LogoShadow);
+			}
 			UImage* LogoImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
 			LogoImage->SetBrushFromTexture(Logo, false);
-			// Les deux images remplissent la boîte de 638 × 323 (sinon elles restent à 32 × 32 dans le coin)
-			for (UImage* Layer : { LogoShadow, LogoImage })
+			Images.Add(LogoImage);
+			// Les images remplissent la boîte de 638 × 323 (sinon elles restent à 32 × 32 dans le coin)
+			for (UImage* Layer : Images)
 			{
 				UOverlaySlot* LayerSlot = LogoLayers->AddChildToOverlay(Layer);
 				LayerSlot->SetHorizontalAlignment(HAlign_Fill);
@@ -535,10 +568,11 @@ void UTitleScreenWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 		}
 		const int32 Index = Entries.IndexOfByKey(Entry);
 		const bool bSelected = Index != INDEX_NONE && Index == Selected;
-		Entry->Label->SetColorAndOpacity(FSlateColor(bSelected ? White : Dim));
+		// Texte et ombre pâlissent ensemble (sinon l'ombre reste forte sous un texte pâle)
+		Entry->Block->SetRenderOpacity(bSelected ? 1.f : 0.72f);
 		const float Target = bSelected ? 14.f : 0.f;
-		const float Current = Entry->Label->GetRenderTransform().Translation.X;
-		Entry->Label->SetRenderTranslation(FVector2D(FMath::FInterpTo(Current, Target, InDeltaTime, 14.f), 0.f));
+		const float Current = Entry->Block->GetRenderTransform().Translation.X;
+		Entry->Block->SetRenderTranslation(FVector2D(FMath::FInterpTo(Current, Target, InDeltaTime, 14.f), 0.f));
 	}
 }
 

@@ -63,9 +63,14 @@ private:
 	{
 		TObjectPtr<UButton> Button;
 		TObjectPtr<UTextBlock> Label;
+		/** Le texte et son ombre floue (c'est lui qui glisse vers la droite) */
+		TObjectPtr<UWidget> Block;
 	};
 
 	FEntry MakeEntry(const FText& Label, float FontSize);
+
+	/** Met le texte dans un calque avec son ombre floue décalée de Offset ; renvoie le calque */
+	UWidget* WithSoftShadow(UTextBlock* Text, FVector2D Offset);
 
 	/** Entrées visibles de l'étape en cours, dans l'ordre */
 	TArray<const FEntry*> VisibleEntries() const;
