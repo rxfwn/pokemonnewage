@@ -57,7 +57,7 @@ Sans Unreal (dans le cloud) : `./Tools/BattleSim/run.sh` (tests) et `./Tools/Bat
 
 ## Régler la séquence
 
-Créer un Blueprint enfant d'**EvolutionScene** (*Content/Progression/BP_EvolutionScene*), puis dans le Blueprint du PlayerController : composant **ProgressionComponent** > **Evolution Scene Class** = ce Blueprint. Réglages : durées (Intro, Glow, Morph, Reveal), vitesses de l'alternance, distance devant le joueur, couleur de la lueur, et la caméra / les lumières / le post-process (flou, vignette) dans ses composants. Un Niagara d'étincelles peut s'y ajouter sans code.
+Créer un Blueprint enfant d'**EvolutionScene** (*Content/Progression/BP_EvolutionScene*), puis dans le Blueprint du PlayerController : composant **ProgressionComponent** > **Evolution Scene Class** = ce Blueprint. Réglages : durées (Intro, Glow, Morph, Reveal), la Poké Ball d'où sort le Pokémon au début (catégorie **Evolution > Ball** : taille, moment d'ouverture, angle du couvercle ; c'est la Ball de sa capture, modèles importés par `Tools/Capture/import_pokeball_unreal.py`, voir `docs/CAPTURE.md`), vitesses de l'alternance, distance devant le joueur, couleur de la lueur, et la caméra / les lumières / le post-process (flou, vignette) dans ses composants. Un Niagara d'étincelles peut s'y ajouter sans code.
 
 ## Pas encore fait
 

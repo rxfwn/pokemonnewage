@@ -441,7 +441,9 @@ void UProgressionComponent::StartEvolution(const FStep& Step)
 	const int32 PartyIndex = Step.PartyIndex;
 	const FName To = Step.ToSpecies;
 	const bool bPreview = Step.bPreview;
-	Scene->Play(Controller, Widget, Name, From, To, [WeakThis, PartyIndex, To, bPreview](bool bEvolved)
+	// Il sort de la Ball de sa capture (aperçu : Poké Ball)
+	const FName Ball = Pokemon ? Pokemon->Ball : NAME_None;
+	Scene->Play(Controller, Widget, Name, From, To, Ball, [WeakThis, PartyIndex, To, bPreview](bool bEvolved)
 	{
 		if (UProgressionComponent* Self = WeakThis.Get())
 		{

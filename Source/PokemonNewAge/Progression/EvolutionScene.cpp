@@ -1,4 +1,5 @@
 #include "Progression/EvolutionScene.h"
+#include "Capture/PokeBallModel.h"
 #include "Progression/ProgressionComponent.h"
 #include "UI/Progression/ProgressionWidget.h"
 #include "Pokemon/PokemonDatabase.h"
@@ -34,6 +35,11 @@ namespace EvolutionScene
 	/** Lumière de la lueur au plus fort (lumens) */
 	constexpr float GlowLightMax = 6000.f;
 	constexpr float FlashLightMax = 40000.f;
+	/** La Ball se referme et disparaît après la sortie du Pokémon (s) */
+	constexpr float BallCloseTime = 0.45f;
+	/** Son d'ouverture de la Ball (celui du lancer, Tools/Capture/import_pokeball_unreal.py) */
+	const TCHAR* BallOpenSound = TEXT("/Game/Capture/Sons/SW_Ball_Open.SW_Ball_Open");
+	const FLinearColor BallLightColor(1.f, 0.25f, 0.2f);
 
 	UObject* LoadModelAsset(const FString& Species, const FString& Prefix)
 	{
@@ -109,12 +115,20 @@ AEvolutionScene::AEvolutionScene()
 	Music->SetupAttachment(Root);
 	Music->bAutoActivate = false;
 	Music->bIsUISound = true;
+
+	BallBottom = MakeStatic(TEXT("BallBottom"));
+	BallHinge = CreateDefaultSubobject<USceneComponent>(TEXT("BallHinge"));
+	BallHinge->SetupAttachment(BallBottom);
+	BallTop = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BallTop"));
+	BallTop->SetupAttachment(BallHinge);
+	BallTop->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	BallTop->SetVisibility(false);
 }
 
 // ---------------------------------------------------------------- Mise en place
 
 void AEvolutionScene::Play(APlayerController* Controller, UProgressionWidget* InWidget, const FText& InPokemonName, FName FromSpecies, FName ToSpecies,
-	TFunction<void(bool)> OnFinished)
+	FName Ball, TFunction<void(bool)> OnFinished)
 {
 	PlayerController = Controller;
 	Widget = InWidget;
@@ -155,6 +169,13 @@ void AEvolutionScene::Play(APlayerController* Controller, UProgressionWidget* In
 	}
 	SetGlow(OldGlow, 0.f);
 	SetGlow(NewGlow, 1.f);
+
+	// Le Pokémon sortira de sa Ball : invisible (taille 0) jusqu'à l'ouverture
+	bBallIntro = OldMesh && SetupBall(Ball, OldHeight);
+	if (bBallIntro)
+	{
+		SetModelScale(OldMesh, 0.f);
+	}
 
 	// Cadrage : le plus grand des deux Pokémon tient dans l'image
 	const float Height = FMath::Max3(OldHeight, NewHeight, 30.f);
@@ -271,6 +292,16 @@ void AEvolutionScene::EnterPhase(EPhase NewPhase)
 	Phase = NewPhase;
 	PhaseTime = 0.f;
 
+	if (Phase != EPhase::Intro && bBallIntro)
+	{
+		// Entrée interrompue (annulation) ou finie : plus de Ball, le Pokémon en entier
+		HideBall();
+		SetModelScale(OldMesh, 1.f);
+		GlowLight->SetLightColor(GlowColor);
+		GlowLight->SetIntensity(0.f);
+		bBallIntro = false;
+	}
+
 	switch (Phase)
 	{
 	case EPhase::Glow:
@@ -327,11 +358,15 @@ void AEvolutionScene::Tick(float DeltaTime)
 	switch (Phase)
 	{
 	case EPhase::Intro:
+		if (bBallIntro)
+		{
+			TickBallIntro();
+		}
 		if (bCancelRequested)
 		{
 			EnterPhase(EPhase::Cancelled);
 		}
-		else if (PhaseTime >= IntroTime)
+		else if (PhaseTime >= (bBallIntro ? FMath::Max(IntroTime, BallOpenDelay + BallReleaseTime + EvolutionScene::BallCloseTime + 0.3f) : IntroTime))
 		{
 			EnterPhase(EPhase::Glow);
 		}
@@ -447,6 +482,77 @@ void AEvolutionScene::Tick(float DeltaTime)
 	default:
 		break;
 	}
+}
+
+bool AEvolutionScene::SetupBall(FName Ball, float PokemonHeight)
+{
+	const float ModelSize = PokeBallModel::Apply(Ball, BallBottom, BallHinge, BallTop);
+	if (ModelSize <= 0.f)
+	{
+		return false;
+	}
+	BallBaseScale = BallDiameter / ModelSize;
+	// Devant le Pokémon, côté caméra (+X), tournée de 3/4 pour qu'on voie le bouton et la charnière
+	BallBottom->SetRelativeLocationAndRotation(FVector(40.f + PokemonHeight * 0.2f, 0.f, BallDiameter * 0.5f), FRotator(0.f, 25.f, 0.f));
+	BallBottom->SetRelativeScale3D(FVector(BallBaseScale));
+	BallBottom->SetVisibility(true);
+	BallTop->SetVisibility(true);
+	PokeBallModel::SetOpenAngle(BallHinge, 0.f);
+	PokeBallModel::SetGlow(BallBottom, BallTop, 0.f, EvolutionScene::BallLightColor);
+	bBallOpenSoundPlayed = false;
+	return true;
+}
+
+void AEvolutionScene::TickBallIntro()
+{
+	using namespace EvolutionScene;
+	const float Release = FMath::Max(BallReleaseTime, 0.05f);
+	const float Opening = (PhaseTime - BallOpenDelay) / Release;
+	if (Opening < 0.f)
+	{
+		return;
+	}
+	if (!bBallOpenSoundPlayed)
+	{
+		bBallOpenSoundPlayed = true;
+		if (USoundBase* Sound = LoadObject<USoundBase>(nullptr, BallOpenSound, nullptr, LOAD_NoWarn | LOAD_Quiet))
+		{
+			UGameplayStatics::PlaySound2D(this, Sound);
+		}
+		GlowLight->SetLightColor(BallLightColor);
+	}
+
+	if (Opening <= 1.f)
+	{
+		// Le couvercle s'ouvre vite, le Pokémon grandit dans un éclair rouge, sa silhouette prend ses couleurs
+		const float Lid = FMath::InterpEaseOut(0.f, 1.f, FMath::Min(Opening * 3.f, 1.f), 2.f);
+		const float Pulse = FMath::Sin(Opening * UE_PI);
+		PokeBallModel::SetOpenAngle(BallHinge, BallOpenAngle * Lid);
+		PokeBallModel::SetGlow(BallBottom, BallTop, 6.f * Pulse, BallLightColor);
+		SetModelScale(OldMesh, FMath::InterpEaseOut(0.f, 1.f, Opening, 2.f));
+		SetGlow(OldGlow, 1.f - Opening);
+		GlowLight->SetIntensity(GlowLightMax * 0.6f * Pulse);
+		return;
+	}
+
+	// Le Pokémon est sorti : la Ball se referme, rapetisse et disparaît
+	SetModelScale(OldMesh, 1.f);
+	SetGlow(OldGlow, 0.f);
+	GlowLight->SetIntensity(0.f);
+	const float Closing = FMath::Clamp((PhaseTime - BallOpenDelay - Release) / BallCloseTime, 0.f, 1.f);
+	PokeBallModel::SetOpenAngle(BallHinge, BallOpenAngle * (1.f - FMath::Min(Closing * 2.f, 1.f)));
+	PokeBallModel::SetGlow(BallBottom, BallTop, 0.f, BallLightColor);
+	BallBottom->SetRelativeScale3D(FVector(BallBaseScale * FMath::Max(1.f - Closing, 0.001f)));
+	if (Closing >= 1.f)
+	{
+		HideBall();
+	}
+}
+
+void AEvolutionScene::HideBall()
+{
+	BallBottom->SetVisibility(false);
+	BallTop->SetVisibility(false);
 }
 
 bool AEvolutionScene::RequestCancel()
