@@ -15,6 +15,7 @@ class UInputAction;
 class UGameMenuWidget;
 class UBattleComponent;
 class UBattleHUDWidget;
+class UProgressionComponent;
 class APokedexDevice;
 class UGameHUDWidget;
 class USettingsMenuWidget;
@@ -233,6 +234,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Battle")
 	TObjectPtr<UBattleComponent> BattleComponent;
 
+	/** Niveaux, attaques et évolutions hors combat : objets du sac, séquence d'évolution 3D (docs/PROGRESSION.md) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Progression")
+	TObjectPtr<UProgressionComponent> ProgressionComponent;
+
 	/** Conversations de ce joueur et boîte de dialogue (docs/DIALOGUES.md) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Dialogue")
 	TObjectPtr<UDialogueComponent> DialogueComponent;
@@ -294,6 +299,9 @@ public:
 
 	/** Appelé par le Pokédex 3D à la fin de son animation de fermeture */
 	void OnPokedexClosed(APokedexDevice* Device);
+
+	/** Vrai tant que l'écran de combat est affiché (messages de fin compris) */
+	bool IsBattleHUDOpen() const;
 
 	/** Appelé par l'écran de combat quand il se retire */
 	void OnBattleHUDClosed();
@@ -398,9 +406,27 @@ public:
 	UFUNCTION(Exec)
 	void Oublier(int32 Slot);
 
-	/** Évolution après le combat : Evoluer 1 (Evoluer 1 0 pour l'annuler) */
+	/** Évolution proposée, sans la séquence : Evoluer 1 (Evoluer 1 0 pour l'annuler) */
 	UFUNCTION(Exec)
 	void Evoluer(int32 PartySlot, int32 bAccept = 1);
+
+	// Progression (docs/PROGRESSION.md)
+
+	/** Objet de progression du sac sur un Pokémon : UtiliserObjet ThunderStone 2, UtiliserObjet TM39 1 */
+	UFUNCTION(Exec)
+	void UtiliserObjet(FName Item, int32 PartySlot = 1);
+
+	/** Donne et utilise des Super Bonbons : SuperBonbon 1 5 */
+	UFUNCTION(Exec)
+	void SuperBonbon(int32 PartySlot = 1, int32 Count = 1);
+
+	/** XP hors combat (hôte seulement) : DonnerXP 1 500 */
+	UFUNCTION(Exec)
+	void DonnerXP(int32 PartySlot, int32 Amount);
+
+	/** Rejoue la séquence d'évolution sans rien changer : VoirEvolution Bulbasaur Ivysaur */
+	UFUNCTION(Exec)
+	void VoirEvolution(FName FromSpecies, FName ToSpecies);
 
 	// Commandes de test de la capture et du PC (docs/CAPTURE.md)
 

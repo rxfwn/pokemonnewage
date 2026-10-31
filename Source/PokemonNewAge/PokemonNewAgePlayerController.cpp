@@ -27,6 +27,8 @@
 #include "TimerManager.h"
 #include "Battle/BattleComponent.h"
 #include "Battle/BattleSubsystem.h"
+#include "Progression/ProgressionComponent.h"
+#include "Pokemon/PokemonProgression.h"
 #include "Capture/CaptureComponent.h"
 #include "Core/PokemonPlayerState.h"
 #include "Dialogue/DialogueComponent.h"
@@ -61,6 +63,7 @@ APokemonNewAgePlayerController::APokemonNewAgePlayerController()
 {
 	CaptureComponent = CreateDefaultSubobject<UCaptureComponent>(TEXT("CaptureComponent"));
 	BattleComponent = CreateDefaultSubobject<UBattleComponent>(TEXT("BattleComponent"));
+	ProgressionComponent = CreateDefaultSubobject<UProgressionComponent>(TEXT("ProgressionComponent"));
 	PokedexDeviceClass = APokedexDevice::StaticClass();
 	DialogueComponent = CreateDefaultSubobject<UDialogueComponent>(TEXT("DialogueComponent"));
 	PokemonCenterComponent = CreateDefaultSubobject<UPokemonCenterComponent>(TEXT("PokemonCenterComponent"));
@@ -620,6 +623,11 @@ void APokemonNewAgePlayerController::HandleBattleStarted(const FBattleSnapshot& 
 	}
 }
 
+bool APokemonNewAgePlayerController::IsBattleHUDOpen() const
+{
+	return BattleHUD != nullptr;
+}
+
 void APokemonNewAgePlayerController::OnBattleHUDClosed()
 {
 	BattleHUD = nullptr;
@@ -656,7 +664,16 @@ void APokemonNewAgePlayerController::ServerUseFieldItem_Implementation(FName Ite
 {
 	if (APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>(); State && !BattleComponent->IsInBattle())
 	{
-		State->UseItemOnPokemon(UPokemonDataSubsystem::GetDatabase(this), Item, PartyIndex);
+		// Super Bonbon, pierres, CT : niveaux, attaques et évolution passent par la progression (docs/PROGRESSION.md)
+		const UPokemonDatabase* Database = UPokemonDataSubsystem::GetDatabase(this);
+		if (UPokemonProgression::IsProgressionItem(Database, Item))
+		{
+			ProgressionComponent->UseItemOnServer(Item, PartyIndex);
+		}
+		else
+		{
+			State->UseItemOnPokemon(Database, Item, PartyIndex);
+		}
 	}
 }
 
@@ -821,7 +838,35 @@ void APokemonNewAgePlayerController::Oublier(int32 Slot)
 
 void APokemonNewAgePlayerController::Evoluer(int32 PartySlot, int32 bAccept)
 {
-	BattleComponent->ConfirmEvolution(PartySlot - 1, bAccept != 0);
+	ProgressionComponent->ConfirmEvolution(PartySlot - 1, bAccept != 0);
+}
+
+void APokemonNewAgePlayerController::UtiliserObjet(FName Item, int32 PartySlot)
+{
+	ProgressionComponent->UseItem(Item, PartySlot - 1);
+}
+
+void APokemonNewAgePlayerController::SuperBonbon(int32 PartySlot, int32 Count)
+{
+	// Un bonbon après l'autre, comme dans le sac (chacun peut proposer une attaque ou une évolution)
+	if (APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>(); State && HasAuthority())
+	{
+		State->AddItem(TEXT("RareCandy"), FMath::Max(Count, 1));
+	}
+	for (int32 Index = 0; Index < FMath::Max(Count, 1); ++Index)
+	{
+		ProgressionComponent->UseItem(TEXT("RareCandy"), PartySlot - 1);
+	}
+}
+
+void APokemonNewAgePlayerController::DonnerXP(int32 PartySlot, int32 Amount)
+{
+	ProgressionComponent->GiveExperience(PartySlot - 1, Amount);
+}
+
+void APokemonNewAgePlayerController::VoirEvolution(FName FromSpecies, FName ToSpecies)
+{
+	ProgressionComponent->PreviewEvolution(FromSpecies, ToSpecies);
 }
 
 void APokemonNewAgePlayerController::Surnom(const FString& Nickname)

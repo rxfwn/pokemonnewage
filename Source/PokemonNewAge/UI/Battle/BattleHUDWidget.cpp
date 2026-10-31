@@ -20,6 +20,8 @@
 #include "Pokemon/PokemonDatabase.h"
 #include "Pokemon/PokemonDataSubsystem.h"
 #include "PokemonNewAgePlayerController.h"
+#include "Progression/ProgressionComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 #define LOCTEXT_NAMESPACE "BattleHUD"
 
@@ -173,6 +175,22 @@ TSharedRef<SWidget> UBattleHUDWidget::RebuildWidget()
 		MenuBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("MenuBox"));
 		MenuFrame->SetContent(MenuBox);
 		MenuFrame->SetVisibility(ESlateVisibility::Collapsed);
+
+		// Stats gagnées à la montée de niveau, à gauche au-dessus du texte
+		StatsFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("StatsFrame"));
+		StatsFrame->SetBrush(FSlateRoundedBoxBrush(PanelColor, 14.f));
+		StatsFrame->SetPadding(FMargin(24.f, 16.f));
+		UOverlaySlot* StatsSlot = Root->AddChildToOverlay(StatsFrame);
+		StatsSlot->SetHorizontalAlignment(HAlign_Left);
+		StatsSlot->SetVerticalAlignment(VAlign_Bottom);
+		StatsSlot->SetPadding(FMargin(80.f, 0.f, 0.f, 230.f));
+		USizeBox* StatsSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		StatsSize->SetWidthOverride(380.f);
+		StatsFrame->SetContent(StatsSize);
+		StatsGrid = WidgetTree->ConstructWidget<UUniformGridPanel>(UUniformGridPanel::StaticClass());
+		StatsGrid->SetSlotPadding(FMargin(6.f, 3.f));
+		StatsSize->SetContent(StatsGrid);
+		StatsFrame->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	SetIsFocusable(true);
 	return Super::RebuildWidget();
@@ -262,7 +280,6 @@ void UBattleHUDWidget::Begin(UBattleComponent* InBattle, const FBattleSnapshot& 
 	Battle->OnBattleEvents.AddDynamic(this, &UBattleHUDWidget::HandleEvents);
 	Battle->OnBattleEnded.AddDynamic(this, &UBattleHUDWidget::HandleEnded);
 	Battle->OnActionRefused.AddDynamic(this, &UBattleHUDWidget::HandleRefused);
-	Battle->OnMovesToLearn.AddDynamic(this, &UBattleHUDWidget::HandleMovesToLearn);
 }
 
 void UBattleHUDWidget::HandleEvents(const TArray<FBattleEvent>& Events, const FBattleSnapshot& InSnapshot)
@@ -285,7 +302,6 @@ void UBattleHUDWidget::HandleEnded(const FBattleResult& InResult)
 {
 	bEnded = true;
 	Result = InResult;
-	EvolutionStep = 0;
 	if (Queue.Num() == 0 && !bMessageActive)
 	{
 		ShowMenuForPhase();
@@ -298,21 +314,9 @@ void UBattleHUDWidget::HandleRefused(EBattleActionError Error)
 	ShowMessage(UBattleText::GetActionErrorText(Error));
 }
 
-void UBattleHUDWidget::HandleMovesToLearn(int32 PartyIndex, const TArray<FName>& Moves)
-{
-	for (const FName Move : Moves)
-	{
-		MovesToLearn.Emplace(PartyIndex, Move);
-	}
-	bWaitingForServer = false;
-	if (!bMessageActive && Queue.Num() == 0)
-	{
-		ShowMenuForPhase();
-	}
-}
-
 void UBattleHUDWidget::StartNextEvent()
 {
+	StatsFrame->SetVisibility(ESlateVisibility::Collapsed);
 	while (Queue.Num() > 0)
 	{
 		const FBattleEvent Event = Queue[0];
@@ -358,6 +362,10 @@ void UBattleHUDWidget::ApplyEventVisuals(const FBattleEvent& Event)
 		if (Before && Before->Species == Event.Species)
 		{
 			DisplayedHP[Side] = TargetHP[Side] = Before->CurrentHP;
+			if (Side == 0)
+			{
+				DisplayedExp = TargetExp = Before->Experience;
+			}
 			ShownLevel[Side] = Before->Level;
 			Boxes[Side].Level->SetText(FText::Format(LOCTEXT("Level", "N.{0}"), Before->Level));
 		}
@@ -371,11 +379,21 @@ void UBattleHUDWidget::ApplyEventVisuals(const FBattleEvent& Event)
 	case EBattleEventType::Fainted:
 		TargetHP[Side] = 0.f;
 		break;
+	case EBattleEventType::ExpGained:
+		if (Side == 0 && Event.PartyIndex == ShownIndex[Side])
+		{
+			TargetExp += Event.Amount;
+		}
+		break;
 	case EBattleEventType::LevelUp:
 		if (Event.PartyIndex == ShownIndex[Side])
 		{
 			ShownLevel[Side] = Event.Amount;
 			Boxes[Side].Level->SetText(FText::Format(LOCTEXT("Level", "N.{0}"), Event.Amount));
+		}
+		if (Side == Snapshot.LocalSide)
+		{
+			ShowLevelUpStats(Event);
 		}
 		break;
 	case EBattleEventType::Caught:
@@ -420,15 +438,78 @@ void UBattleHUDWidget::RefreshInfoBox(int32 Side, bool bInstantHP)
 		DisplayedHP[Side] = TargetHP[Side];
 	}
 
-	if (Box.ExpBar && Database)
+	if (Side == 0)
 	{
-		if (const FSpeciesRow* Species = Database->FindSpecies(Pokemon->Species))
+		// L'état final du serveur fait foi ; la barre y va en glissant (UpdateExpBar)
+		TargetExp = Pokemon->Experience;
+		if (bInstantHP)
 		{
-			const int32 ThisLevel = Database->GetExperienceForLevel(Species->GrowthRate, Pokemon->Level);
-			const int32 NextLevel = Database->GetExperienceForLevel(Species->GrowthRate, FMath::Min(Pokemon->Level + 1, 100));
-			Box.ExpBar->SetPercent(NextLevel > ThisLevel ? FMath::Clamp(float(Pokemon->Experience - ThisLevel) / float(NextLevel - ThisLevel), 0.f, 1.f) : 1.f);
+			DisplayedExp = TargetExp;
 		}
+		UpdateExpBar(0.f);
 	}
+}
+
+void UBattleHUDWidget::UpdateExpBar(float DeltaTime)
+{
+	const FPokemonInstance* Pokemon = GetDisplayedPokemon(0);
+	const UPokemonDatabase* Database = GetDatabase();
+	const FSpeciesRow* Species = Pokemon && Database ? Database->FindSpecies(Pokemon->Species) : nullptr;
+	if (!Boxes[0].ExpBar || !Species)
+	{
+		return;
+	}
+	const int32 Level = FMath::Clamp(ShownLevel[0] > 0 ? ShownLevel[0] : Pokemon->Level, 1, 100);
+	const float ThisLevel = Database->GetExperienceForLevel(Species->GrowthRate, Level);
+	const float NextLevel = Database->GetExperienceForLevel(Species->GrowthRate, FMath::Min(Level + 1, 100));
+	const float Range = FMath::Max(NextLevel - ThisLevel, 1.f);
+	// Une barre pleine se remplit en un peu plus d'une seconde ; elle s'arrête au bout tant que le niveau n'est pas annoncé
+	const float Stop = Level < 100 ? FMath::Min(TargetExp, NextLevel) : TargetExp;
+	if (DisplayedExp < Stop)
+	{
+		DisplayedExp = FMath::Min(DisplayedExp + Range * 0.8f * DeltaTime, Stop);
+	}
+	else if (DisplayedExp > TargetExp)
+	{
+		DisplayedExp = TargetExp;
+	}
+	Boxes[0].ExpBar->SetPercent(Level >= 100 ? 1.f : FMath::Clamp((DisplayedExp - ThisLevel) / Range, 0.f, 1.f));
+}
+
+bool UBattleHUDWidget::IsExpBarMoving() const
+{
+	const FPokemonInstance* Pokemon = GetDisplayedPokemon(0);
+	const UPokemonDatabase* Database = GetDatabase();
+	const FSpeciesRow* Species = Pokemon && Database ? Database->FindSpecies(Pokemon->Species) : nullptr;
+	if (!Species || ShownLevel[0] >= 100)
+	{
+		return false;
+	}
+	const float NextLevel = Database->GetExperienceForLevel(Species->GrowthRate, FMath::Clamp(ShownLevel[0] + 1, 2, 100));
+	return DisplayedExp + 0.5f < FMath::Min(TargetExp, NextLevel);
+}
+
+void UBattleHUDWidget::ShowLevelUpStats(const FBattleEvent& Event)
+{
+	UGameplayStatics::PlaySound2D(this, UProgressionComponent::LoadSound(TEXT("SW_LevelUp")));
+	StatsGrid->ClearChildren();
+	const FText Names[] = {
+		LOCTEXT("StatHP", "PV max."), LOCTEXT("StatAtk", "Attaque"), LOCTEXT("StatDef", "Défense"),
+		LOCTEXT("StatSpA", "Atq. Spé."), LOCTEXT("StatSpD", "Déf. Spé."), LOCTEXT("StatSpe", "Vitesse")
+	};
+	const FPokemonBaseStats& A = Event.StatsBefore;
+	const FPokemonBaseStats& B = Event.StatsAfter;
+	const int32 Before[] = { A.HP, A.Attack, A.Defense, A.SpecialAttack, A.SpecialDefense, A.Speed };
+	const int32 After[] = { B.HP, B.Attack, B.Defense, B.SpecialAttack, B.SpecialDefense, B.Speed };
+	for (int32 Row = 0; Row < 6; ++Row)
+	{
+		StatsGrid->AddChildToUniformGrid(MakeText(Names[Row], 20, Text), Row, 0);
+		UTextBlock* Total = MakeText(FText::AsNumber(After[Row]), 20, Text, true);
+		StatsGrid->AddChildToUniformGrid(Total, Row, 1)->SetHorizontalAlignment(HAlign_Right);
+		UTextBlock* Gain = MakeText(FText::FromString(FString::Printf(TEXT("+%d"), After[Row] - Before[Row])), 20, After[Row] > Before[Row] ? Good : Dim, true);
+		StatsGrid->AddChildToUniformGrid(Gain, Row, 2)->SetHorizontalAlignment(HAlign_Right);
+	}
+	StatsFrame->SetVisibility(ESlateVisibility::HitTestInvisible);
 }
 
 // ---------------------------------------------------------------- Boîte de texte
@@ -478,7 +559,7 @@ void UBattleHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 		{
 			MessageText->SetText(FText::FromString(FullMessage.Left(After)));
 		}
-		const bool bBarsMoving = FMath::Abs(DisplayedHP[0] - TargetHP[0]) > 0.5f || FMath::Abs(DisplayedHP[1] - TargetHP[1]) > 0.5f;
+		const bool bBarsMoving = FMath::Abs(DisplayedHP[0] - TargetHP[0]) > 0.5f || FMath::Abs(DisplayedHP[1] - TargetHP[1]) > 0.5f || IsExpBarMoving();
 		if (After >= FullMessage.Len() && !bBarsMoving)
 		{
 			MessageArrow->SetVisibility(Queue.Num() > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
@@ -507,6 +588,8 @@ void UBattleHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 		}
 	}
 
+	UpdateExpBar(InDeltaTime);
+
 	if (CloseTimer > 0.f)
 	{
 		CloseTimer -= InDeltaTime;
@@ -526,24 +609,13 @@ void UBattleHUDWidget::ShowMenuForPhase()
 		return;
 	}
 
-	// Fin du combat : évolutions puis attaques à apprendre, puis on ferme
+	// Fin du combat : on ferme ; les évolutions suivent (séquence 3D de UProgressionComponent)
 	if (bEnded)
 	{
-		if (Result.Evolutions.IsValidIndex(EvolutionStep))
-		{
-			ShowEvolution();
-			return;
-		}
-		if (MovesToLearn.Num() > 0)
-		{
-			ShowForgetMove(MovesToLearn[0].Key, MovesToLearn[0].Value, true);
-			return;
-		}
 		ClearMenu();
-		// Un peu d'attente : après une évolution, le serveur peut encore proposer une attaque
 		if (CloseTimer < 0.f)
 		{
-			CloseTimer = 1.f;
+			CloseTimer = 0.6f;
 		}
 		return;
 	}
@@ -561,7 +633,7 @@ void UBattleHUDWidget::ShowMenuForPhase()
 		}
 		break;
 	case EBattlePhase::WaitingForMoveLearn:
-		ShowForgetMove(Snapshot.PendingLearnPartyIndex, Snapshot.PendingLearnMove, false);
+		ShowForgetMove(Snapshot.PendingLearnPartyIndex, Snapshot.PendingLearnMove);
 		break;
 	default:
 		break;
@@ -764,12 +836,12 @@ void UBattleHUDWidget::ShowParty(EPartyMode Mode)
 	}
 }
 
-void UBattleHUDWidget::ShowForgetMove(int32 PartyIndex, FName NewMove, bool bAfterEvolution)
+void UBattleHUDWidget::ShowForgetMove(int32 PartyIndex, FName NewMove)
 {
 	ClearMenu();
 	CloseTimer = -1.f;
 	Menu = EMenu::ForgetMove;
-	PartyMode = bAfterEvolution ? EPartyMode::AfterEvolutionLearn : EPartyMode::Switch;
+	PartyMode = EPartyMode::Switch;
 	const UPokemonDatabase* Database = GetDatabase();
 	const int32 Local = Snapshot.LocalSide;
 	const FPokemonInstance* Pokemon = Snapshot.Sides.IsValidIndex(Local) && Snapshot.Sides[Local].Party.IsValidIndex(PartyIndex)
@@ -788,31 +860,6 @@ void UBattleHUDWidget::ShowForgetMove(int32 PartyIndex, FName NewMove, bool bAft
 			Known ? TypeColor(Known->Type) : FLinearColor::Gray);
 	}
 	AddMenuButton(MenuBox, FText::Format(LOCTEXT("DontLearn", "Ne pas apprendre {0}"), MoveName), EBattleHUDAction::KeepMoves, 0, FLinearColor(0.3f, 0.3f, 0.35f));
-	MenuFrame->SetVisibility(ESlateVisibility::Visible);
-	if (FirstButton)
-	{
-		FirstButton->SetKeyboardFocus();
-	}
-}
-
-void UBattleHUDWidget::ShowEvolution()
-{
-	ClearMenu();
-	CloseTimer = -1.f;
-	Menu = EMenu::Evolution;
-	const FPendingEvolution& Evolution = Result.Evolutions[EvolutionStep];
-	const UPokemonDatabase* Database = GetDatabase();
-	const int32 Local = Snapshot.LocalSide;
-	const FPokemonInstance* Pokemon = Snapshot.Sides.IsValidIndex(Local) && Snapshot.Sides[Local].Party.IsValidIndex(Evolution.PartyIndex)
-		? &Snapshot.Sides[Local].Party[Evolution.PartyIndex] : nullptr;
-	const FSpeciesRow* NewSpecies = Database ? Database->FindSpecies(Evolution.NewSpecies) : nullptr;
-
-	MessageText->SetText(FText::Format(LOCTEXT("Evolving", "Quoi ? {0} évolue en {1} !"),
-		Pokemon ? UPokemonLibrary::GetDisplayName(Database, *Pokemon) : FText::GetEmpty(),
-		NewSpecies ? NewSpecies->DisplayName : FText::FromName(Evolution.NewSpecies)));
-	MessageArrow->SetVisibility(ESlateVisibility::Hidden);
-	AddMenuButton(MenuBox, LOCTEXT("Evolve", "Laisser évoluer"), EBattleHUDAction::EvolveYes, 0, FLinearColor(0.3f, 0.6f, 0.95f));
-	AddMenuButton(MenuBox, LOCTEXT("Stop", "Arrêter l'évolution (B)"), EBattleHUDAction::EvolveNo, 1, FLinearColor(0.3f, 0.3f, 0.35f));
 	MenuFrame->SetVisibility(ESlateVisibility::Visible);
 	if (FirstButton)
 	{
@@ -896,41 +943,10 @@ void UBattleHUDWidget::OnButton(EBattleHUDAction Action, int32 Index)
 	{
 		const int32 ForgetSlot = Action == EBattleHUDAction::ForgetMove ? Index : -1;
 		ClearMenu();
-		if (PartyMode == EPartyMode::AfterEvolutionLearn && MovesToLearn.Num() > 0)
-		{
-			const TPair<int32, FName> Pending = MovesToLearn[0];
-			MovesToLearn.RemoveAt(0);
-			if (ForgetSlot >= 0)
-			{
-				Battle->LearnPendingMove(Pending.Key, Pending.Value, ForgetSlot);
-			}
-			ShowMenuForPhase();
-		}
-		else
-		{
-			bWaitingForServer = true;
-			Battle->ResolveMoveLearn(ForgetSlot);
-		}
+		bWaitingForServer = true;
+		Battle->ResolveMoveLearn(ForgetSlot);
 		break;
 	}
-	case EBattleHUDAction::EvolveYes:
-	case EBattleHUDAction::EvolveNo:
-		if (Result.Evolutions.IsValidIndex(EvolutionStep))
-		{
-			Battle->ConfirmEvolution(Result.Evolutions[EvolutionStep].PartyIndex, Action == EBattleHUDAction::EvolveYes);
-			++EvolutionStep;
-			ClearMenu();
-			if (Action == EBattleHUDAction::EvolveYes)
-			{
-				// Le serveur dira s'il y a des attaques à apprendre (HandleMovesToLearn)
-				ShowMessage(LOCTEXT("Evolved", "Félicitations ! Ton Pokémon a évolué !"));
-			}
-			else
-			{
-				ShowMessage(LOCTEXT("Stopped", "Hein ? L'évolution s'est arrêtée."));
-			}
-		}
-		break;
 	case EBattleHUDAction::Back:
 		if (Menu == EMenu::Party && PartyMode == EPartyMode::ItemTarget)
 		{
@@ -970,11 +986,6 @@ FReply UBattleHUDWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKey
 			OnButton(EBattleHUDAction::Back, 0);
 			return FReply::Handled();
 		}
-		if (Menu == EMenu::Evolution)
-		{
-			OnButton(EBattleHUDAction::EvolveNo, 0);
-			return FReply::Handled();
-		}
 	}
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
@@ -997,7 +1008,6 @@ void UBattleHUDWidget::FinishBattle()
 		Battle->OnBattleEvents.RemoveDynamic(this, &UBattleHUDWidget::HandleEvents);
 		Battle->OnBattleEnded.RemoveDynamic(this, &UBattleHUDWidget::HandleEnded);
 		Battle->OnActionRefused.RemoveDynamic(this, &UBattleHUDWidget::HandleRefused);
-		Battle->OnMovesToLearn.RemoveDynamic(this, &UBattleHUDWidget::HandleMovesToLearn);
 	}
 	RemoveFromParent();
 	if (APokemonNewAgePlayerController* Controller = Cast<APokemonNewAgePlayerController>(GetOwningPlayer()))

@@ -199,7 +199,25 @@ enum class EHeldItemEffect : uint8
 	/** Expérience × HeldValue % (Œuf Chance) */
 	ExpBoost,
 	/** Argent gagné contre un dresseur × HeldValue % (Pièce Rune) */
-	MoneyBoost
+	MoneyBoost,
+	/** Empêche l'évolution par niveau ou par échange (Pierre Stase) */
+	PreventEvolution
+};
+
+/** Effet d'un objet utilisé sur un Pokémon hors combat pour le faire progresser (DT_Items, FieldEffect). */
+UENUM(BlueprintType)
+enum class EFieldItemEffect : uint8
+{
+	/** Pas un objet de progression (les soins passent par HealHP, CuresStatus...) */
+	None,
+	/** Gagne LevelsGained niveaux (Super Bonbon) */
+	LevelUp,
+	/** Évolution par objet : l'espèce dit quel objet (Pierre Foudre, Pierre Lune...) */
+	EvolutionItem,
+	/** Fait évoluer les Pokémon qui évoluent par échange, sans échange (Fil de Liaison) */
+	TradeEvolution,
+	/** Enseigne TeachesMove (CT, CS) aux espèces qui peuvent l'apprendre */
+	TeachMove
 };
 
 /** Poche du sac où range un objet (DT_Items). */
@@ -209,7 +227,9 @@ enum class EItemCategory : uint8
 	Medicine,
 	PokeBall,
 	KeyItem,
-	Other
+	Other,
+	/** CT et CS (poche CT/CS du sac) */
+	Machine
 };
 
 /** Six statistiques de base. Sert aussi pour les EV donnés en battant l'espèce. */

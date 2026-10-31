@@ -12,7 +12,8 @@ OUT = os.path.join(os.path.dirname(__file__), "..", "..", "Data", "Pokemon", "DT
 
 
 def item(name, display, category, price, desc, *, heal=0, heal_full=False, cures=(), revive=0,
-         catch=0.0, master=False, battle=True, field=True, held="None", held_value=0, boost="None"):
+         catch=0.0, master=False, battle=True, field=True, held="None", held_value=0, boost="None",
+         effect="None", levels=0, teaches="None", reusable=False):
     return {
         "Name": name,
         "DisplayName": display,
@@ -28,9 +29,32 @@ def item(name, display, category, price, desc, *, heal=0, heal_full=False, cures
         "HeldEffect": held,
         "HeldValue": held_value,
         "HeldBoostType": boost,
+        "FieldEffect": effect,
+        "LevelsGained": levels,
+        "TeachesMove": teaches,
+        "bReusable": reusable,
         "bUsableInBattle": battle,
         "bUsableInField": field,
     }
+
+
+def machines():
+    """CT et CS de Rouge Feu / Vert Feuille (DT_Machines), avec le nom français de l'attaque."""
+    data = os.path.dirname(OUT)
+    with open(os.path.join(data, "DT_Machines.json"), encoding="utf-8") as f:
+        rows = json.load(f)
+    with open(os.path.join(data, "DT_Moves.json"), encoding="utf-8") as f:
+        moves = {m["Name"]: m for m in json.load(f)}
+    out = []
+    for row in rows:
+        move = moves.get(row["Move"])
+        if not move:
+            continue
+        label = ("CS" if row["bIsHM"] else "CT") + row["Name"][2:]
+        out.append(item(row["Name"], f"{label} {move['DisplayName']}", "Machine", 0,
+                        f"Apprend {move['DisplayName']} à un Pokémon compatible. {move['Description']}",
+                        effect="TeachMove", teaches=row["Move"], reusable=True, battle=False))
+    return out
 
 
 ALL_STATUS = ["Poison", "BadlyPoisoned", "Burn", "Paralysis", "Sleep", "Freeze"]
@@ -111,6 +135,24 @@ ITEMS = [
         ("MetalCoat", "Peau Métal", "Steel", "Acier"),
     ]
 ] + [
+    # Progression (docs/PROGRESSION.md) : poche « Objets et baies »
+    item("RareCandy", "Super Bonbon", "Other", 0, "Un bonbon plein d'énergie. Fait monter un Pokémon d'un niveau.",
+         effect="LevelUp", levels=1, battle=False),
+    item("FireStone", "Pierre Feu", "Other", 2100, "Une pierre étrange qui fait évoluer certains Pokémon. Elle est orange.",
+         effect="EvolutionItem", battle=False),
+    item("WaterStone", "Pierre Eau", "Other", 2100, "Une pierre étrange qui fait évoluer certains Pokémon. Elle est bleue.",
+         effect="EvolutionItem", battle=False),
+    item("ThunderStone", "Pierre Foudre", "Other", 2100, "Une pierre étrange qui fait évoluer certains Pokémon. Un éclair est dessiné dessus.",
+         effect="EvolutionItem", battle=False),
+    item("LeafStone", "Pierre Plante", "Other", 2100, "Une pierre étrange qui fait évoluer certains Pokémon. Une feuille est dessinée dessus.",
+         effect="EvolutionItem", battle=False),
+    item("MoonStone", "Pierre Lune", "Other", 0, "Une pierre étrange qui fait évoluer certains Pokémon. Elle est noire comme la nuit.",
+         effect="EvolutionItem", battle=False),
+    item("LinkingCord", "Fil de Liaison", "Other", 0, "Un câble mystérieux. Fait évoluer les Pokémon qui évoluent normalement par échange.",
+         effect="TradeEvolution", battle=False),
+    item("Everstone", "Pierre Stase", "Other", 0, "À tenir. Le Pokémon qui la tient n'évolue pas.",
+         held="PreventEvolution", battle=False, field=False),
+] + machines() + [
     # Objets rares de la V1 (donnés par les dialogues)
     item("OaksParcel", "Colis de Chen", "KeyItem", 0, "Un colis à remettre au Professeur Chen.", battle=False, field=False),
     item("Pokedex", "Pokédex", "KeyItem", 0, "Une encyclopédie high-tech qui enregistre les Pokémon.", battle=False),

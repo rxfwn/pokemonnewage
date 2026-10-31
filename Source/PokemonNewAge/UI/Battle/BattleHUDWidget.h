@@ -30,8 +30,6 @@ enum class EBattleHUDAction : uint8
 	PartyPick,
 	ForgetMove,
 	KeepMoves,
-	EvolveYes,
-	EvolveNo,
 	Back
 };
 
@@ -55,7 +53,9 @@ public:
  *  Écran de combat (SCRUM-36) : cadres des deux Pokémon (nom, niveau, PV animés, XP), boîte de texte
  *  et menus Attaque / Sac / Pokémon / Fuite. Construit en C++, ouvert par le PlayerController à chaque combat.
  *  Il rejoue les événements envoyés par le serveur (UBattleComponent::OnBattleEvents) un par un, avec les
- *  textes de UBattleText, puis propose les choix selon la phase (action, remplaçant, 5e attaque, évolution).
+ *  textes de UBattleText, puis propose les choix selon la phase (action, remplaçant, 5e attaque).
+ *  À la montée de niveau : barre d'XP qui se remplit et panneau des stats gagnées. Les évolutions se jouent
+ *  après la fermeture de l'écran (UProgressionComponent, docs/PROGRESSION.md).
  *  Il ne calcule rien du combat lui-même (docs/COMBAT.md).
  *  Souris, clavier (flèches, Entrée, Échap) et manette (croix, A, B).
  */
@@ -87,15 +87,12 @@ protected:
 	UFUNCTION()
 	void HandleRefused(EBattleActionError Error);
 
-	UFUNCTION()
-	void HandleMovesToLearn(int32 PartyIndex, const TArray<FName>& Moves);
-
 private:
 
 	/** Ce que l'écran attend du joueur une fois les messages finis */
-	enum class EMenu : uint8 { None, Main, Moves, Bag, Party, ForgetMove, Evolution };
+	enum class EMenu : uint8 { None, Main, Moves, Bag, Party, ForgetMove };
 	/** Pourquoi on choisit un Pokémon dans l'équipe */
-	enum class EPartyMode : uint8 { Switch, Replacement, ItemTarget, AfterEvolutionLearn };
+	enum class EPartyMode : uint8 { Switch, Replacement, ItemTarget };
 
 	// Lecture des événements
 	void StartNextEvent();
@@ -116,8 +113,11 @@ private:
 	void ShowMoves();
 	void ShowBag();
 	void ShowParty(EPartyMode Mode);
-	void ShowForgetMove(int32 PartyIndex, FName NewMove, bool bAfterEvolution);
-	void ShowEvolution();
+	void ShowForgetMove(int32 PartyIndex, FName NewMove);
+	void ShowLevelUpStats(const FBattleEvent& Event);
+	/** Barre d'XP du joueur : position animée vers TargetExp (XP totale), sur l'échelle du niveau affiché */
+	void UpdateExpBar(float DeltaTime);
+	bool IsExpBarMoving() const;
 	UButton* AddMenuButton(UPanelWidget* Panel, const FText& Text, EBattleHUDAction Action, int32 Index,
 		const FLinearColor& Color, bool bEnabled = true, const FText& SubText = FText::GetEmpty());
 	void Submit(const FBattleAction& Action);
@@ -145,6 +145,8 @@ private:
 	UPROPERTY(Transient) TObjectPtr<UVerticalBox> MenuBox;
 	UPROPERTY(Transient) TArray<TObjectPtr<UBattleHUDButtonBinding>> Bindings;
 	UPROPERTY(Transient) TObjectPtr<UButton> FirstButton;
+	UPROPERTY(Transient) TObjectPtr<UBorder> StatsFrame;
+	UPROPERTY(Transient) TObjectPtr<UUniformGridPanel> StatsGrid;
 
 	FInfoBox Boxes[2];
 
@@ -159,6 +161,8 @@ private:
 	float DisplayedHP[2] = { 0.f, 0.f };
 	float TargetHP[2] = { 0.f, 0.f };
 	float MaxHP[2] = { 1.f, 1.f };
+	float DisplayedExp = 0.f;
+	float TargetExp = 0.f;
 
 	EMenu Menu = EMenu::None;
 	EPartyMode PartyMode = EPartyMode::Switch;
@@ -175,8 +179,6 @@ private:
 	// Fin de combat
 	bool bEnded = false;
 	FBattleResult Result;
-	int32 EvolutionStep = 0;
-	TArray<TPair<int32, FName>> MovesToLearn;
 	float CloseTimer = -1.f;
 	bool bWaitingForServer = false;
 };

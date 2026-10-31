@@ -1,8 +1,6 @@
 #include "Battle/BattleComponent.h"
 #include "Battle/BattleSession.h"
 #include "Battle/BattleSubsystem.h"
-#include "Core/PokemonPlayerState.h"
-#include "Pokemon/PokemonDataSubsystem.h"
 #include "GameFramework/PlayerController.h"
 #include "Battle/BattleText.h"
 #include "Engine/Engine.h"
@@ -48,8 +46,6 @@ void UBattleComponent::SubmitAction(const FBattleAction& Action) { ServerSubmitA
 void UBattleComponent::ChooseReplacement(int32 PartyIndex) { ServerChooseReplacement(PartyIndex); }
 void UBattleComponent::RunInsteadOfReplacement() { ServerRunInsteadOfReplacement(); }
 void UBattleComponent::ResolveMoveLearn(int32 ForgetSlot) { ServerResolveMoveLearn(ForgetSlot); }
-void UBattleComponent::ConfirmEvolution(int32 PartyIndex, bool bAccept) { ServerConfirmEvolution(PartyIndex, bAccept); }
-void UBattleComponent::LearnPendingMove(int32 PartyIndex, FName Move, int32 ForgetSlot) { ServerLearnPendingMove(PartyIndex, Move, ForgetSlot); }
 
 // ---------------------------------------------------------------- Serveur
 
@@ -93,62 +89,6 @@ void UBattleComponent::ServerResolveMoveLearn_Implementation(int32 ForgetSlot)
 	if (!Session || !Session->ResolveMoveLearn(0, ForgetSlot))
 	{
 		ClientActionRefused(EBattleActionError::WrongPhase);
-	}
-}
-
-void UBattleComponent::ServerConfirmEvolution_Implementation(int32 PartyIndex, bool bAccept)
-{
-	const int32 PendingIndex = PendingEvolutions.IndexOfByPredicate([PartyIndex](const FPendingEvolution& E) { return E.PartyIndex == PartyIndex; });
-	APlayerController* Player = GetPlayerController();
-	APokemonPlayerState* State = Player ? Player->GetPlayerState<APokemonPlayerState>() : nullptr;
-	if (PendingIndex == INDEX_NONE || !State || !State->Party.IsValidIndex(PartyIndex))
-	{
-		return;
-	}
-	const FName NewSpecies = PendingEvolutions[PendingIndex].NewSpecies;
-	PendingEvolutions.RemoveAt(PendingIndex);
-	if (!bAccept)
-	{
-		return;
-	}
-
-	const UPokemonDatabase* Database = UPokemonDataSubsystem::GetDatabase(this);
-	TArray<FName> MovesToLearn;
-	if (!UPokemonLibrary::Evolve(Database, State->Party[PartyIndex], NewSpecies, MovesToLearn))
-	{
-		return;
-	}
-	State->MarkCaught(NewSpecies);
-
-	// Case libre : appris tout de suite ; sinon le joueur choisit (LearnPendingMove)
-	TArray<FName> ToChoose;
-	for (FName Move : MovesToLearn)
-	{
-		if (!UPokemonLibrary::LearnMove(Database, State->Party[PartyIndex], Move))
-		{
-			ToChoose.Add(Move);
-		}
-	}
-	if (ToChoose.Num() > 0)
-	{
-		AllowedMovesToLearn.FindOrAdd(PartyIndex).Append(ToChoose);
-		ClientMovesToLearn(PartyIndex, ToChoose);
-	}
-}
-
-void UBattleComponent::ServerLearnPendingMove_Implementation(int32 PartyIndex, FName Move, int32 ForgetSlot)
-{
-	TArray<FName>* Allowed = AllowedMovesToLearn.Find(PartyIndex);
-	APlayerController* Player = GetPlayerController();
-	APokemonPlayerState* State = Player ? Player->GetPlayerState<APokemonPlayerState>() : nullptr;
-	if (!Allowed || !Allowed->Contains(Move) || !State || !State->Party.IsValidIndex(PartyIndex))
-	{
-		return;
-	}
-	Allowed->Remove(Move);
-	if (ForgetSlot >= 0 || State->Party[PartyIndex].Moves.Num() < 4)
-	{
-		UPokemonLibrary::LearnMove(UPokemonDataSubsystem::GetDatabase(this), State->Party[PartyIndex], Move, ForgetSlot);
 	}
 }
 
@@ -200,7 +140,7 @@ void UBattleComponent::ClientBattleEnded_Implementation(const FBattleResult& Res
 	{
 		for (const FPendingEvolution& Evolution : Result.Evolutions)
 		{
-			PrintBattleLine(FString::Printf(TEXT("Quoi ? Le Pokemon n.%d evolue en %s ! (Evoluer %d, ou Evoluer %d 0 pour annuler)"),
+			PrintBattleLine(FString::Printf(TEXT("Quoi ? Le Pokemon n.%d evolue en %s ! (sequence apres le combat, ou Evoluer %d / Evoluer %d 0)"),
 				Evolution.PartyIndex + 1, *Evolution.NewSpecies.ToString(), Evolution.PartyIndex + 1, Evolution.PartyIndex + 1), FColor::Green);
 		}
 	}
@@ -214,18 +154,4 @@ void UBattleComponent::ClientActionRefused_Implementation(EBattleActionError Err
 		PrintBattleLine(UBattleText::GetActionErrorText(Error).ToString(), FColor::Red);
 	}
 	OnActionRefused.Broadcast(Error);
-}
-
-void UBattleComponent::ClientMovesToLearn_Implementation(int32 PartyIndex, const TArray<FName>& Moves)
-{
-	MovesToLearnPartyIndex = PartyIndex;
-	MovesToLearnAfterEvolution = Moves;
-	if (bPrintEventsToScreen)
-	{
-		for (FName Move : Moves)
-		{
-			PrintBattleLine(FString::Printf(TEXT("Le Pokemon n.%d veut apprendre %s (4 capacites deja connues)"), PartyIndex + 1, *Move.ToString()), FColor::Green);
-		}
-	}
-	OnMovesToLearn.Broadcast(PartyIndex, Moves);
 }

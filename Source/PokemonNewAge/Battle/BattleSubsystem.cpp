@@ -4,6 +4,7 @@
 #include "Capture/CaptureComponent.h"
 #include "Capture/PokemonStorage.h"
 #include "Core/PokemonPlayerState.h"
+#include "Progression/ProgressionComponent.h"
 #include "Pokemon/PokemonDatabase.h"
 #include "Pokemon/PokemonDataSubsystem.h"
 #include "GameFramework/PlayerController.h"
@@ -256,8 +257,12 @@ void UBattleSubsystem::HandleEnded(UBattleSession* Session, const FBattleResult&
 
 	if (UBattleComponent* Component = GetBattleComponent(Battle.Player))
 	{
-		Component->PendingEvolutions = Result.Evolutions;
 		Component->ClientBattleEnded(Result);
+	}
+	// Évolutions : séquence 3D et confirmation une fois l'écran de combat fermé (docs/PROGRESSION.md)
+	if (UProgressionComponent* Progression = Battle.Player ? Battle.Player->FindComponentByClass<UProgressionComponent>() : nullptr)
+	{
+		Progression->AddBattleEvolutions(Result.Evolutions);
 	}
 
 	OnBattleEnded.Broadcast(Battle.Player, Battle.TrainerGroup, Result);

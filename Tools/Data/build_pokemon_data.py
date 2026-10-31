@@ -333,14 +333,19 @@ def main() -> None:
         target = r["evolved_species_id"]
         if target not in species:
             continue  # évolutions vers la 2G et après : hors Pokédex V1
+        if r.get("evolved_pokemon_form_id") or r.get("time_of_day"):
+            continue  # formes régionales (Rattata d'Alola, Ramoloss de Galar...) : pas dans Kanto
         trig = {"1": "Level", "2": "Trade", "3": "Item"}.get(r["evolution_trigger_id"])
         if trig is None:
             continue
-        evolutions[species[target]["evolves_from_species_id"]].append({
+        evo = {
             "Species": species_key[target], "Trigger": trig,
             "MinLevel": num(r["minimum_level"]),
             "Item": items.get(r["trigger_item_id"], "None") if r["trigger_item_id"] else "None",
-        })
+        }
+        # PokeAPI répète certaines évolutions par génération : une seule fois chacune
+        if evo not in evolutions[species[target]["evolves_from_species_id"]]:
+            evolutions[species[target]["evolves_from_species_id"]].append(evo)
 
     v1 = v1_species(encounter_rows, trainer_rows,
                     {species_key[k]: v for k, v in evolutions.items() if k in species_key})

@@ -9,13 +9,13 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBattleStarted, const FBattleSnaps
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBattleEvents, const TArray<FBattleEvent>&, Events, const FBattleSnapshot&, Snapshot);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBattleEnded, const FBattleResult&, Result);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnBattleActionRefused, EBattleActionError, Error);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnMovesToLearn, int32, PartyIndex, const TArray<FName>&, Moves);
 
 /**
  *  Le lien entre un joueur et son combat (sur son PlayerController, créé par le code).
  *  - L'UI du combat appelle SubmitAction, ChooseReplacement... : la demande part au serveur.
  *  - Le serveur renvoie les événements du tour : OnBattleEvents, à rejouer dans l'ordre (texte, animations, PV).
  *  Marche pareil en solo (le joueur est son propre serveur) et en multijoueur.
+ *  Après le combat, les évolutions et les attaques proposées passent par UProgressionComponent (docs/PROGRESSION.md).
  */
 UCLASS(ClassGroup=(Pokemon), meta=(BlueprintSpawnableComponent))
 class UBattleComponent : public UActorComponent
@@ -42,14 +42,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Battle")
 	void ResolveMoveLearn(int32 ForgetSlot);
 
-	/** Après le combat (séquence d'évolution) : bAccept = faux si le joueur appuie sur B */
-	UFUNCTION(BlueprintCallable, Category="Battle")
-	void ConfirmEvolution(int32 PartyIndex, bool bAccept);
-
-	/** Hors combat (après une évolution) : apprendre Move à la place de ForgetSlot (-1 = case libre) */
-	UFUNCTION(BlueprintCallable, Category="Battle")
-	void LearnPendingMove(int32 PartyIndex, FName Move, int32 ForgetSlot);
-
 	UFUNCTION(BlueprintPure, Category="Battle")
 	bool IsInBattle() const { return bInBattle; }
 
@@ -70,18 +62,6 @@ public:
 	UPROPERTY(BlueprintAssignable, Category="Battle")
 	FOnBattleActionRefused OnActionRefused;
 
-	/** Après une évolution : le Pokémon veut apprendre des attaques mais en connaît déjà 4 (proposer, puis LearnPendingMove) */
-	UPROPERTY(BlueprintAssignable, Category="Battle")
-	FOnMovesToLearn OnMovesToLearn;
-
-	/** Après une évolution : attaques que le Pokémon peut apprendre (proposer au joueur, puis LearnPendingMove) */
-	UPROPERTY(BlueprintReadOnly, Category="Battle")
-	TArray<FName> MovesToLearnAfterEvolution;
-
-	/** Pokémon de l'équipe concerné par MovesToLearnAfterEvolution */
-	UPROPERTY(BlueprintReadOnly, Category="Battle")
-	int32 MovesToLearnPartyIndex = -1;
-
 	// ------------------------------------------------ Côté serveur (UBattleSubsystem)
 
 	UFUNCTION(Client, Reliable)
@@ -96,18 +76,9 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientActionRefused(EBattleActionError Error);
 
-	UFUNCTION(Client, Reliable)
-	void ClientMovesToLearn(int32 PartyIndex, const TArray<FName>& Moves);
-
 	/** Écrit le texte de chaque événement à l'écran et dans le journal (tests sans UI de combat) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Battle")
 	bool bPrintEventsToScreen = true;
-
-	/** Évolutions proposées à la fin du dernier combat (le serveur vérifie avant d'appliquer) */
-	TArray<FPendingEvolution> PendingEvolutions;
-
-	/** Attaques que le serveur autorise après une évolution */
-	TMap<int32, TArray<FName>> AllowedMovesToLearn;
 
 protected:
 
@@ -122,12 +93,6 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void ServerResolveMoveLearn(int32 ForgetSlot);
-
-	UFUNCTION(Server, Reliable)
-	void ServerConfirmEvolution(int32 PartyIndex, bool bAccept);
-
-	UFUNCTION(Server, Reliable)
-	void ServerLearnPendingMove(int32 PartyIndex, FName Move, int32 ForgetSlot);
 
 private:
 
