@@ -7,8 +7,8 @@ Fichier de données partagé, en Python pur (sans numpy) :
 Le réseau des routes et des villes est décalqué de la carte de Rouge Feu / Vert Feuille
 (kanto_frlg.bin, fait par make_frlg_mask.py) : 815 × 800 cases d'une demi-tuile, 1 case =
 6,5 m, soit environ 1 km de Bourg Palette à Jadielle et un Kanto de 5,3 × 5,2 km.
-Tout ce qui est hors des routes devient du relief infranchissable (falaises, montagnes) ou
-la mer. La silhouette des côtes vient de la carte de Let's Go (kanto_terres.bin).
+Hors des routes : des plateaux et collines de forêt (les arbres cacheront les talus qui
+empêchent de couper), des montagnes seulement là où la carte en montre, ou la mer. La silhouette des côtes vient de la carte de Let's Go (kanto_terres.bin).
 Les villes de la V1 ont leur taille réelle en mètres (bâtiments, décor).
 
 Repère du monde : x = nord, y = est, en mètres. Le coin (0, 0) est le coin du Landscape.
@@ -70,64 +70,73 @@ _LAND_W, _LAND_H, _LAND_FINE, _LAND_WIDE, _LAND_INLAND = _load_land()
 # Chaque ville a sa hauteur ; les routes montent et descendent entre elles en passant par
 # des points de passage (cols, collines, descentes vers la mer) : (nom, colonne, ligne, m).
 TOWNS = [
-    ("Bourg Palette", 144, 540, 22),     # plaine du sud, au pied des collines
-    ("Jadielle", 144, 400, 48),          # bassin entouré de collines
-    ("Argenta", 144, 160, 140),          # ville de pierre sur un plateau de montagne
-    ("Plateau Indigo", 24, 35, 330),     # tout en haut, au bout de la Route Victoire
-    ("Azuria", 576, 110, 40),            # vallée de la rivière, au nord
-    ("Safrania", 576, 280, 62),          # grande plaine du centre
-    ("Céladopole", 420, 280, 45),
-    ("Carmin sur Mer", 576, 440, 8),     # le port, au niveau de la mer
-    ("Lavanville", 790, 275, 115),       # village perché dans les montagnes de l'est
-    ("Parmanie", 432, 640, 12),          # côte sud
-    ("Cramois'Île", 145, 775, 18),       # île volcanique
+    ("Bourg Palette", 144, 540, 10),     # dans son creux, au sud, près du rivage
+    ("Jadielle", 144, 400, 26),          # un peu plus haut : on la voit depuis la Route 1
+    ("Argenta", 144, 160, 70),           # ville de pierre sur un plateau, au pied des montagnes
+    ("Plateau Indigo", 24, 35, 210),     # tout en haut, au bout de la Route Victoire
+    ("Azuria", 576, 110, 30),            # vallée de la rivière, au nord
+    ("Safrania", 576, 280, 42),          # grande plaine du centre, un peu surélevée
+    ("Céladopole", 420, 280, 30),
+    ("Carmin sur Mer", 576, 440, 4),     # le port, au niveau de la mer
+    ("Lavanville", 790, 275, 80),        # village perché à l'est, au pied du Tunnel Roche
+    ("Parmanie", 432, 640, 6),           # côte sud
+    ("Cramois'Île", 145, 775, 8),        # île
 ]
 ROUTE_POINTS = [
-    ("Route 1 (colline)", 144, 470, 72),        # on voit Jadielle depuis le haut
-    ("Route 1 (bas)", 144, 515, 30),
-    ("Route 2 (forêt)", 144, 280, 95),
-    ("Route 2 (col)", 144, 205, 125),
-    ("Route 22", 60, 404, 68),
-    ("Route 23 (bas)", 24, 300, 160),
-    ("Route 23 (haut)", 24, 130, 285),
-    ("Route 3", 260, 160, 165),
-    ("Col du Mont Sélénite", 336, 125, 215),
-    ("Route 4", 450, 120, 105),
-    ("Route 24", 576, 45, 70),
-    ("Route 25", 700, 20, 48),
-    ("Route 9", 700, 120, 135),
-    ("Route 10 (Tunnel Roche)", 790, 185, 175),
-    ("Route 10 (sud)", 790, 235, 140),
-    ("Route 5", 576, 190, 55),
-    ("Route 6", 576, 370, 32),
-    ("Route 7", 500, 280, 58),
-    ("Route 8", 690, 280, 92),
-    ("Route 11", 700, 440, 22),
-    ("Route 12 (nord)", 790, 400, 62),
-    ("Route 12 (sud)", 790, 520, 28),
-    ("Route 13", 700, 560, 24),
-    ("Route 14", 640, 620, 20),
-    ("Route 15", 560, 640, 15),
-    ("Piste cyclable (haut)", 290, 300, 62),
-    ("Piste cyclable (milieu)", 290, 450, 40),
-    ("Piste cyclable (bas)", 290, 600, 16),
-    ("Route 18", 340, 640, 12),
-    ("Route 21 (rivage)", 144, 610, 6),
+    ("Route 1 (colline)", 144, 470, 40),        # belvédère : on voit Jadielle depuis le haut
+    ("Route 1 (bas)", 144, 515, 14),
+    ("Route 2 (forêt)", 144, 280, 45),
+    ("Route 2 (col)", 144, 205, 85),            # on domine Argenta avant de descendre
+    ("Route 22", 60, 404, 30),
+    ("Route 23 (bas)", 24, 300, 80),
+    ("Route 23 (haut)", 24, 130, 170),
+    ("Route 3", 260, 160, 95),
+    ("Col du Mont Sélénite", 336, 125, 130),
+    ("Route 4", 450, 120, 60),
+    ("Route 24", 576, 45, 110),                 # on monte vers le cap
+    ("Route 25", 650, 18, 170),
+    ("Route 25 (cap)", 735, 20, 195),           # maison de Léo : presque le plus haut du jeu
+    ("Route 9", 700, 120, 90),
+    ("Route 10 (Tunnel Roche)", 790, 185, 110),
+    ("Route 10 (sud)", 790, 235, 95),           # on voit Lavanville en contrebas
+    ("Route 5", 576, 190, 36),
+    ("Route 6", 576, 370, 22),
+    ("Route 7", 500, 280, 36),
+    ("Route 8", 690, 280, 62),
+    ("Route 11", 700, 440, 12),
+    ("Route 12 (nord)", 790, 400, 40),
+    ("Route 12 (sud)", 790, 520, 14),
+    ("Route 13", 700, 560, 10),
+    ("Route 14", 640, 620, 12),
+    ("Route 15", 560, 640, 8),
+    ("Piste cyclable (haut)", 290, 300, 30),
+    ("Piste cyclable (milieu)", 290, 450, 22),
+    ("Piste cyclable (bas)", 290, 600, 8),
+    ("Route 18", 340, 640, 6),
+    ("Route 21 (rivage)", 144, 610, 4),
 ]
 
-# Massifs : (nom, colonne, ligne, rayon en cases, poids). Le poids règle la hauteur
-# (1 = grandes montagnes). Les montagnes forment des chaînes en crêtes, pas des bosses.
-MASSIFS = [
-    ("Route Victoire", 70, 170, 120, 1.0),
-    ("Montagnes d'Argenta", 200, 70, 110, 0.9),
-    ("Mont Sélénite", 340, 50, 110, 1.0),
-    ("Crêtes du nord", 460, 40, 120, 0.8),
-    ("Tunnel Roche", 720, 200, 85, 0.95),
-    ("Monts de Lavanville", 700, 350, 70, 0.6),
-    ("Collines de Jadielle", 230, 420, 90, 0.55),
-    ("Collines du sud", 210, 560, 90, 0.4),
-    ("Volcan de Cramois'Île", 150, 772, 22, 0.9),
+# La forme de Kanto (mer, plaines, forêts, montagnes) vient du dessin de L'amie :
+# reference/dessin_kanto.png, lu par make_dessin_mask.py -> kanto_dessin.png.
+# Eau très peu profonde (1,5 m au plus) : la côte est de la Route 12 (futur pont).
+SHALLOW_AREAS = [(760, 280, 900, 640)]
+
+# Belvédères : petites buttes au bord des routes, d'où l'on voit au loin.
+# (colonne, ligne du point de la route, décalage nord x et est y en mètres).
+LOOKOUTS = [
+    (144, 470, 0, 45),      # Route 1 : Jadielle au nord, Bourg Palette au sud
+    (144, 212, 0, -45),     # Route 2 : Argenta en contrebas
+    (300, 158, 40, 0),      # Route 3 : le Mont Sélénite
+    (568, 40, 0, -45),      # Route 24 : Azuria et la mer
+    (720, 18, -40, 0),      # Route 25 : le cap
+    (788, 238, 0, 40),      # Route 10 : Lavanville
+    (792, 380, 0, -45),     # Route 12 : la mer à l'est
+    (60, 404, 40, 0),       # Route 22 : les montagnes de la Route Victoire
 ]
+
+# Creux de Bourg Palette : la ville au fond d'une cuvette rectangulaire aux bords doux.
+# (demi-taille nord-sud x, demi-taille est-ouest y, profondeur, largeur du talus) en mètres.
+PALLET_BASIN = (125.0, 150.0, 6.0, 45.0)
 
 # --- Lieux de la V1 ------------------------------------------------------------------------
 
@@ -600,6 +609,8 @@ def find_zone(x, y):
 HEIGHTMAP_PATH = os.path.join(HERE, "kanto_v1_heightmap.png")
 CORRIDORS_PATH = os.path.join(HERE, "kanto_couloirs.bin")
 LAKES_PATH = os.path.join(HERE, "kanto_lacs.json")
+DRAWING_PATH = os.path.join(HERE, "kanto_dessin.png")  # zones du dessin de L'amie (make_dessin_mask.py)
+FOREST_MASK_PATH = os.path.join(HERE, "kanto_forets.png")  # masque des forêts (1009 × 1009)
 CORRIDOR_STEP = 3.0  # mètres entre deux points de kanto_couloirs.bin
 _HEIGHTS = None
 _CORRIDORS = None
