@@ -61,7 +61,7 @@ public:
 	TFunction<bool()> OnBack;
 
 	/** Bouton cliqué dans le choix d'attaque */
-	void ChooseForgetSlot(int32 Slot);
+	void ChooseForgetSlot(int32 MoveSlot);
 
 	bool IsBusy() const { return bMessageActive || bChoosing; }
 

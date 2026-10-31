@@ -300,9 +300,9 @@ void UProgressionWidget::ShowForgetMove(const FPokemonInstance& Pokemon, FName N
 		{
 			ClearMenu();
 			bChoosing = true;
-			for (int32 Slot = 0; Slot < LearningPokemon.Moves.Num(); ++Slot)
+			for (int32 MoveSlot = 0; MoveSlot < LearningPokemon.Moves.Num(); ++MoveSlot)
 			{
-				const FPokemonMoveSlot& Known = LearningPokemon.Moves[Slot];
+				const FPokemonMoveSlot& Known = LearningPokemon.Moves[MoveSlot];
 				const FMoveRow* Row = Database ? Database->FindMove(Known.Move) : nullptr;
 				UButton* Button = WidgetTree->ConstructWidget<UButton>(UButton::StaticClass());
 				const FLinearColor Color(0.25f, 0.45f, 0.75f);
@@ -318,7 +318,7 @@ void UProgressionWidget::ShowForgetMove(const FPokemonInstance& Pokemon, FName N
 				Content->AddChildToVerticalBox(MakeText(FText::Format(LOCTEXT("PP", "PP {0}/{1}"), Known.CurrentPP, Known.MaxPP), 16, Dim));
 				Button->SetContent(Content);
 				UProgressionButtonBinding* Binding = NewObject<UProgressionButtonBinding>(this);
-				Binding->Slot = Slot;
+				Binding->Slot = MoveSlot;
 				Binding->Owner = this;
 				Button->OnClicked.AddDynamic(Binding, &UProgressionButtonBinding::HandleClicked);
 				Bindings.Add(Binding);
@@ -361,7 +361,7 @@ void UProgressionWidget::ClearMenu()
 	MenuFrame->SetVisibility(ESlateVisibility::Collapsed);
 }
 
-void UProgressionWidget::ChooseForgetSlot(int32 Slot)
+void UProgressionWidget::ChooseForgetSlot(int32 MoveSlot)
 {
 	if (!bChoosing)
 	{
@@ -376,20 +376,20 @@ void UProgressionWidget::ChooseForgetSlot(int32 Slot)
 	const FText Move = MoveName(Database, LearningMove);
 	TFunction<void(int32)> Chosen = MoveTemp(ForgetChosen);
 	ForgetChosen = nullptr;
-	auto Done = [Chosen, Slot]()
+	auto Done = [Chosen, MoveSlot]()
 	{
 		if (Chosen)
 		{
-			Chosen(Slot);
+			Chosen(MoveSlot);
 		}
 	};
 
-	if (!LearningPokemon.Moves.IsValidIndex(Slot))
+	if (!LearningPokemon.Moves.IsValidIndex(MoveSlot))
 	{
 		ShowMessage(FText::Format(LOCTEXT("NotLearned", "{0} n'a pas appris {1}."), Name, Move), true, Done);
 		return;
 	}
-	const FText Forgotten = MoveName(Database, LearningPokemon.Moves[Slot].Move);
+	const FText Forgotten = MoveName(Database, LearningPokemon.Moves[MoveSlot].Move);
 	ShowMessage(FText::Format(LOCTEXT("Forgot", "1, 2 et… Tadaa ! {0} a oublié {1}…"), Name, Forgotten), true, [this, Name, Move, Done]()
 	{
 		UGameplayStatics::PlaySound2D(this, UProgressionComponent::LoadSound(TEXT("SW_MoveLearned")));
