@@ -60,7 +60,6 @@ RIM_WIDTH = 9.0          # largeur du talus (pente d'environ 40 à 60° : on ne 
 FOREST_HILLS = 45.0      # collines boisées derrière le talus
 MOUNTAIN_BASE = 90.0     # hauteur des montagnes (là où la carte en montre)
 MOUNTAIN_PEAK = 260.0    # en plus, au cœur des massifs (pics fins)
-WARP = 260.0             # déformation des bords des routes et des côtes (pas de rectangles)
 V1_CLEARANCE = 75.0      # largeur garantie autour des chemins de la V1
 ROUTE_HILLS = 22.0       # collines au fond des routes larges (pentes douces)
 SHELF_DEPTH = 2.0        # eau claire : 0 à 2 m de fond près des côtes
@@ -340,46 +339,28 @@ def sample(plane, u, v, outside=0.0):
     return np.where(inside, value, outside)
 
 
-def components(mask):
-    """Étiquettes des zones connexes (4 voisins) d'un masque, et leur taille en cases."""
-    from collections import deque
-    labels = np.zeros(mask.shape, np.int32)
-    sizes = [0]
-    for r0, c0 in zip(*np.nonzero(mask)):
-        if labels[r0, c0]:
-            continue
-        label = len(sizes)
-        labels[r0, c0] = label
-        queue, count = deque([(r0, c0)]), 0
-        while queue:
-            r, c = queue.popleft()
-            count += 1
-            for rr, cc in ((r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)):
-                if 0 <= rr < mask.shape[0] and 0 <= cc < mask.shape[1] and mask[rr, cc] and not labels[rr, cc]:
-                    labels[rr, cc] = label
-                    queue.append((rr, cc))
-        sizes.append(count)
-    return labels, np.array(sizes)
+DRAW_STEP = layout.WORLD_SIZE / ((layout.HEIGHTMAP_SIZE - 1) // 4)  # 6 m par pixel du dessin
 
 
-def clean_coast(sea, ground):
-    """Côte sans criques ni petits bouts : on bouche les anses étroites (fermeture de 7 cases,
-    environ 45 m), puis on retire les îlots et les mares de mer trop petits. On garde les îles
-    nommées (layout.KEEP_ISLANDS)."""
-    land = ~sea
-    grown = distance_from(land) <= 7
-    land = distance_from(~grown) > 7          # fermeture : les criques étroites se bouchent
-    land |= ~sea & (distance_from(sea) > 0)  # sans rien retirer à la terre d'origine
-    labels, sizes = components(land)
-    keep = sizes >= layout.MIN_ISLAND_CELLS
-    for column, row in layout.KEEP_ISLANDS:
-        keep[labels[row + PAD, column + PAD]] = True
-    keep[0] = False
-    land = keep[labels]
-    water_labels, water_sizes = components(~land)
-    small_water = (water_sizes < layout.MIN_ISLAND_CELLS)[water_labels] & ~land
-    land |= small_water & ~ground  # mares isolées dans la terre (pas les lacs des routes)
-    return ~land
+def drawing_fields():
+    """Distances signées (en mètres) tirées du dessin (kanto_dessin.png, make_dessin_mask.py) :
+    côte (+ sur la terre), plaine (+ dans les plaines) et profondeur dans les montagnes."""
+    from PIL import Image
+    zones = np.asarray(Image.open(layout.DRAWING_PATH))
+    sea, plain, rock = zones == 0, zones == 1, zones == 3
+    every = np.ones(zones.shape, np.bool_)
+
+    def signed(mask):
+        rr, cc = np.nonzero(mask)
+        d_out, _ = geodesic(every, rr.astype(np.int64), cc.astype(np.int64), np.zeros(len(rr)))
+        rr, cc = np.nonzero(~mask)
+        d_in, _ = geodesic(every, rr.astype(np.int64), cc.astype(np.int64), np.zeros(len(rr)))
+        return np.where(mask, d_in, -d_out) * DRAW_STEP
+
+    coast = masked_blur(-signed(sea), every, 3)
+    plain = masked_blur(signed(plain), every, 3)
+    mount = masked_blur(np.maximum(signed(rock), 0), every, 3)
+    return coast, plain, mount
 
 
 def cell_fields():
@@ -388,16 +369,6 @@ def cell_fields():
     # Piste cyclable : les bandes d'eau qui la longent sur la carte deviennent du sol.
     strip = grid[PAD + 250:PAD + 575, PAD + 255:PAD + 320]
     strip[strip >= 2] = 1
-    # Retouches : la baie centrale remonte le long de la piste cyclable, chenal au sud de
-    # Bourg Palette (rectangles de mer).
-    for c0, r0, c1, r1 in layout.SEA_AREAS:
-        grid[PAD + r0:PAD + r1, PAD + c0:PAD + c1] = 2
-    # Retouche : l'eau du haut du cap (Route 24 et 25) devient des lacs en hauteur.
-    keep_lakes = np.zeros(grid.shape, bool)
-    for c0, r0, c1, r1 in layout.LAKE_AREAS:
-        part = grid[PAD + r0:PAD + r1, PAD + c0:PAD + c1]
-        part[part == 2] = 3
-        keep_lakes[PAD + r0:PAD + r1, PAD + c0:PAD + c1] = True
     walk = grid == 1
     lake = grid == 3
     # Fines bandes de terre le long des routes maritimes (bords de tuiles) : la mer.
@@ -408,7 +379,7 @@ def cell_fields():
     land_lg = letsgo_land(cols_i, rows_i)
 
     # Lacs que Let's Go met dans la mer : la mer.
-    lake_sea = lake & (land_lg < 0.5) & ~keep_lakes
+    lake_sea = lake & (land_lg < 0.5)
     lake &= ~lake_sea
     ground = walk | lake  # là où l'on marche (les lacs prennent l'altitude de la route)
 
@@ -416,12 +387,7 @@ def cell_fields():
     near_ground = distance_from(ground) <= 8
     sea = (grid == 2) | lake_sea | ((grid == 0) & (land_lg < 0.5) & ~near_ground)
     # Retouches : baie agrandie, anse comblée.
-    for c0, r0, c1, r1 in layout.LAND_AREAS:
-        area = np.zeros(grid.shape, bool)
-        area[PAD + r0:PAD + r1, PAD + c0:PAD + c1] = True
-        sea &= ~(area & (grid != 2))
 
-    sea = clean_coast(sea, ground)
 
     # Altitude des routes : interpolation le long des chemins entre villes et points de passage.
     controls = layout.TOWNS + layout.ROUTE_POINTS
@@ -468,39 +434,20 @@ def v1_path_distance(x, y):
     return best
 
 
-def massif_field(x, y):
-    """Part de montagne (0 à 1) : seulement les massifs de la carte (layout.MASSIFS)."""
-    wx = x + fbm(x, y, 900, 3, SEED + 1) * 200
-    wy = y + fbm(x, y, 900, 3, SEED + 2) * 200
-    column, row = layout.to_frlg(wx, wy)
-    mountain = np.zeros_like(x)
-    for _, mc, mr, radius, weight in layout.MASSIFS:
-        d = np.hypot(column - mc, row - mr) / radius
-        mountain = 1 - (1 - mountain) * (1 - weight * smoothstep(1.0, 0.1, d))
-    return mountain
-
-
 def relief(x, y, fields):
     """Hauteur avant érosion, et deux aides : poids d'érosion et hauteur minimale (falaises)."""
-    _, _, _, altitude_c, corridor_c, coast_c, lake_c = fields
-    # Coordonnées déformées : bords des routes et côtes sinueux, pas les marches de la carte.
-    wx = x + fbm(x, y, 900, 3, SEED + 4) * WARP + fbm(x, y, 180, 3, SEED + 5) * WARP * 0.3
-    wy = y + fbm(x, y, 900, 3, SEED + 6) * WARP + fbm(x, y, 180, 3, SEED + 7) * WARP * 0.3
+    _, _, _, altitude_c, _, _, lake_c, (coast_d, plain_d, mount_d) = fields
+    wx, wy = x, y  # le dessin donne déjà les formes : pas de déformation
     column, row = layout.to_frlg(wx, wy)
     column, row = column + PAD, row + PAD
     altitude = sample(altitude_c, column, row, 0.0)
-    # Bords des routes irréguliers à deux échelles : pas de rectangles.
-    raw = sample(corridor_c, column, row, -60.0) * CELL
-    corridor = (raw + fbm(x, y, 160, 4, SEED + 10) * 30
-                + fbm(x, y, 450, 3, SEED + 9) * 45 + fbm(x, y, 1100, 2, SEED + 8) * 80)
-    corridor = np.maximum(corridor, raw - 25)  # la forêt mord peu sur les routes, elles s'élargissent par endroits
-    # La V1 reste praticable malgré la déformation : couloir garanti autour de ses chemins.
+    # Le dessin de L'amie décide de tout : mer, plaines (routes et villes), forêts, montagnes.
+    u, v = x / DRAW_STEP, y / DRAW_STEP
+    corridor = sample(plain_d, u, v, -60.0)
+    # Les chemins restent toujours praticables : couloir garanti autour d'eux.
     corridor = np.maximum(corridor, V1_CLEARANCE - v1_path_distance(x, y))
-    # Côtes lisses (pas de criques) : seulement de grandes ondulations.
-    coast = sample(coast_c, column, row, -60.0) * CELL + fbm(x, y, 1200, 2, SEED + 11) * 35
-    # Bourg Palette garde de la terre autour de lui (le chenal du sud reste ouvert).
-    pallet_x, pallet_y = layout.from_frlg(144, 540)
-    coast = np.maximum(coast, 200 - np.hypot(x - pallet_x, y - pallet_y))
+    coast = sample(coast_d, u, v, -300.0)
+    mountain = smoothstep(0, 150, sample(mount_d, u, v, 0.0))
     lake = sample(lake_c, column, row, -60.0) * CELL + fbm(x, y, 60, 3, SEED + 12) * 4
 
     inside = np.maximum(corridor, 0.0)
@@ -516,13 +463,11 @@ def relief(x, y, fields):
     seaward = smoothstep(20, 320, coast)
     hills = (FOREST_HILLS * smoothstep(15, 260, outside) * seaward
              * np.clip(0.2 + 0.8 * (0.5 + 0.5 * fbm(x, y, 650, 5, SEED + 16)), 0, 1.2))
-    mountain = massif_field(x, y)
     crest = ridged(x, y, 560, 7, SEED + 17)
     body = smoothstep(0.0, 0.9, mountain)  # le massif lui-même, puis les arêtes et les pics fins
     peaks = (MOUNTAIN_BASE + MOUNTAIN_PEAK * mountain) * (0.35 * body + 0.65 * crest ** 1.4)
-    # Les grands massifs montent vite (même dans les bandes étroites, comme la côte nord).
-    near = 260 - 120 * smoothstep(0.6, 0.9, mountain)
-    rise = smoothstep(25, near, outside) * smoothstep(0.05, 0.6, mountain) * smoothstep(0, 110, coast)
+    # Les montagnes montent depuis le bord de la zone grise du dessin.
+    rise = smoothstep(0.0, 0.35, mountain) * smoothstep(0, 60, coast)
     land = np.where(corridor >= 0, floor, altitude + rim + hills + peaks * rise)
     land = np.where(land > 380, 380 + 90 * np.tanh((land - 380) / 90), land)  # sommets à 470 m au plus
 
@@ -545,7 +490,8 @@ def relief(x, y, fields):
     height = seabed + (land - seabed) * smoothstep(-3, 3, coast)
 
     # Lacs et rivières en hauteur : creusés de 2,5 m sous la route.
-    water = smoothstep(-2, 3, lake)
+    # Pas de lacs ajoutés : seule l'eau du dessin compte (la mer).
+    water = np.zeros_like(lake)
     height = height + (np.minimum(height, altitude - 2.5) - height) * water
 
     erosion = smoothstep(25, 90, outside) * smoothstep(0, 40, coast) * (0.3 + 0.7 * smoothstep(0.05, 0.4, mountain))
@@ -585,24 +531,6 @@ def town_terraces(height, x, y):
                   * smoothstep(width / 2, width / 2 - 0.8, np.abs(y - py)))
         height = height - 2.0 * inside
     return height
-
-
-def _ellipse(x, y, spec):
-    """Distance normalisée (1 = bord) à une ellipse en cases FRLG (colonne, ligne, demi-axes)."""
-    column, row, half_c, half_r = spec
-    cx, cy = layout.from_frlg(column, row)
-    return np.hypot((x - cx) / (half_r * CELL), (y - cy) / (half_c * CELL))
-
-
-def island_clearing(height, x, y):
-    """Île de la baie : une clairière basse (3 m) au milieu de la forêt, et un étang au centre."""
-    d = _ellipse(x, y, layout.ISLAND_CLEARING) + fbm(x, y, 120, 3, SEED + 43) * 0.12
-    if d.min() > 1.6:
-        return height
-    floor = 3.0 + fbm(x, y, 90, 3, SEED + 44) * 0.8
-    height = np.where(height > 0, height + (floor - height) * smoothstep(1.35, 0.95, d), height)
-    pond = _ellipse(x, y, layout.ISLAND_POND) + fbm(x, y, 60, 3, SEED + 45) * 0.15
-    return height + (-1.5 - height) * smoothstep(1.0, 0.75, pond)
 
 
 def pallet_basin(height, dx, dy, floor, x, y):
@@ -830,7 +758,7 @@ def grid_xy(rows, count=SIZE, spacing=STEP):
 
 def main():
     start = time.time()
-    fields = cell_fields()
+    fields = cell_fields() + (drawing_fields(),)
     print(f"Carte et altitudes des routes : {time.time() - start:.0f} s")
 
     height = np.empty((SIZE, SIZE))
@@ -876,7 +804,7 @@ def main():
                  + fbm(x, y, 9, 2, SEED + 51) * GROUND_NOISE_SMALL)
         dry = smoothstep(0.5, 3.0, height[part]) * ~wet[part]
         height[part] += bumps * dry
-        height[part] = lookouts(town_terraces(island_clearing(height[part], x, y), x, y), x, y)
+        height[part] = lookouts(town_terraces(height[part], x, y), x, y)
     carve_paths(height)
     building_pads(height)
     print(f"Villes, chemins et plateformes : {time.time() - start:.0f} s")

@@ -116,47 +116,10 @@ ROUTE_POINTS = [
     ("Route 21 (rivage)", 144, 610, 4),
 ]
 
-# Montagnes : (nom, colonne, ligne, rayon en cases, poids). Seulement là où la carte de
-# référence en montre (Route Victoire à l'ouest, Mont Sélénite au nord, Tunnel Roche à
-# l'est). Tout le reste hors des routes est de la forêt sur des plateaux et des collines.
-MASSIFS = [
-    # Tout l'ouest : la Route Victoire et le Plateau Indigo au milieu de hautes montagnes.
-    ("Route Victoire (nord)", 20, 90, 130, 1.0),
-    ("Route Victoire (sud)", 20, 290, 130, 1.0),
-    ("Entre Route 23 et Route 2", 95, 230, 75, 0.9),
-    ("Montagnes d'Argenta", 100, 90, 70, 0.9),
-    # Le nord : une grande chaîne le long de la côte, du Plateau Indigo jusqu'à la Route 24.
-    ("Mont Sélénite (ouest)", 190, 30, 110, 1.0),
-    ("Mont Sélénite", 300, 30, 110, 1.0),
-    ("Côte nord", 410, 20, 105, 1.0),
-    ("Côte nord (est)", 510, 15, 90, 0.95),
-    # L'est : le Tunnel Roche.
-    ("Tunnel Roche", 715, 195, 90, 1.0),
-    # Rochers et petites crêtes dans les forêts (moins hauts).
-    ("Crête de la Route 3", 270, 205, 45, 0.45),
-    ("Crête de la Route 4", 470, 185, 55, 0.45),
-    ("Rochers de Céladopole", 430, 215, 35, 0.4),
-    ("Rochers de Lavanville", 700, 350, 60, 0.45),
-    ("Rochers de la Route 22", 60, 465, 60, 0.5),
-    ("Volcan de Cramois'Île", 150, 772, 22, 0.5),
-]
-
-# Retouches de la silhouette (en cases FRLG : colonne min, ligne min, colonne max, ligne max).
-# Mer : la baie centrale remonte au nord-ouest jusqu'à la forêt, le long de la piste cyclable.
-SEA_AREAS = [(297, 338, 335, 430), (146, 595, 156, 660)]
-# Terre : l'anse au sud de la Route 25 est comblée (le cap de la maison de Léo est un massif).
-LAND_AREAS = [(600, 30, 800, 80)]
-# Pas de petits bouts : îlots et mares de moins de 1500 cases (≈ 6 ha) retirés, sauf ces îles.
-MIN_ISLAND_CELLS = 1500
-KEEP_ISLANDS = [(145, 775), (300, 778)]  # Cramois'Île, Îles Écume
-# Eau en hauteur : la rivière de la Route 24 et l'étang de la Route 25 (lacs, pas la mer).
-LAKE_AREAS = [(585, -10, 810, 110)]
+# La forme de Kanto (mer, plaines, forêts, montagnes) vient du dessin de L'amie :
+# reference/dessin_kanto.png, lu par make_dessin_mask.py -> kanto_dessin.png.
 # Eau très peu profonde (1,5 m au plus) : la côte est de la Route 12 (futur pont).
 SHALLOW_AREAS = [(760, 280, 900, 640)]
-# Clairière au milieu de l'île de la baie (cases : colonne, ligne du centre, demi-largeur
-# est-ouest, demi-hauteur nord-sud), avec un étang au centre (même forme, plus petite).
-ISLAND_CLEARING = (427, 519, 46, 33)
-ISLAND_POND = (427, 519, 16, 11)
 
 # Belvédères : petites buttes au bord des routes, d'où l'on voit au loin.
 # (colonne, ligne du point de la route, décalage nord x et est y en mètres).
@@ -208,7 +171,6 @@ TERRACES = {
     "Bourg Palette": [(3, 2.5)],
     "Jadielle": [(-15, 4.0), (28, 4.0)],
     "Argenta": [(-19.5, 5.0), (29, 5.0)],
-    "Plateau Indigo": [(-18, 4.0), (-6, 4.0), (6, 4.0)],  # gradins jusqu'à la Ligue
 }
 RAMP_HALF_WIDTH = 5.0
 
@@ -647,6 +609,7 @@ def find_zone(x, y):
 HEIGHTMAP_PATH = os.path.join(HERE, "kanto_v1_heightmap.png")
 CORRIDORS_PATH = os.path.join(HERE, "kanto_couloirs.bin")
 LAKES_PATH = os.path.join(HERE, "kanto_lacs.json")
+DRAWING_PATH = os.path.join(HERE, "kanto_dessin.png")  # zones du dessin de L'amie (make_dessin_mask.py)
 FOREST_MASK_PATH = os.path.join(HERE, "kanto_forets.png")  # masque des forêts (1009 × 1009)
 CORRIDOR_STEP = 3.0  # mètres entre deux points de kanto_couloirs.bin
 _HEIGHTS = None
