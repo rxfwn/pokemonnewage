@@ -23,6 +23,9 @@ Les réglages attendent **Appliquer** ou **OK** ; les touches changent tout de s
 
 ## Le Pokédex 3D (Tab)
 
+Comme l'image de référence de L'amie (sans les mains) : Tab sort le Pokédex ouvert devant la caméra, il prend presque tout l'écran (`Screen Fill` 0,94, recalculé si la fenêtre change de taille), décor flou derrière. À gauche l'écran affiche la fonction choisie, à droite le volet porte les 10 boutons à icônes : ils s'allument et se soulèvent sous la souris ou la sélection, et s'enfoncent au clic.
+
+
 Les 10 boutons à icônes du volet, dans l'ordre de la grille :
 
 1. **Pokédex** : toutes les espèces par numéro, vu / capturé, fiche avec types, description, **où le trouver** et la figurine 3D du Pokémon.
