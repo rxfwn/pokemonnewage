@@ -19,7 +19,7 @@ sys.path.insert(0, HERE)
 import kanto_v1_layout as layout  # noqa: E402
 
 SIZE = (layout.HEIGHTMAP_SIZE - 1) // 4 + 1   # 1009 : un pixel = 6 m
-FRAME = (6, 7, 808, 809)                       # la carte dans l'image (sans le cadre noir)
+FRAME = (4, 4, 1090, 1090)                       # la carte dans l'image (sans le cadre noir)
 MIN_PIECE = 200                                # morceaux isolés plus petits : retirés (≈ 0,7 ha)
 
 

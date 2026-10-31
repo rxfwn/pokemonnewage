@@ -23,6 +23,19 @@ Toutes les villes de Kanto ont maintenant leurs bâtiments en blocs (Centre Pok�
 4. **Outils > Exécuter un script Python…** > `Tools\Blockout\blockout_kanto_v1.py`.
 5. Parcourir la carte et noter les endroits où le relief gêne (une ville trop pentue, une route bouchée, un bâtiment dans une pente) : on corrige la heightmap avant le biome.
 
+## Relief v2 : d'après le dessin (31 octobre 2026)
+
+Le relief suit maintenant **le dessin de L'amie** (`Tools/Blockout/reference/dessin_kanto.png`, retouche Photoshop de la vue du dessus). `make_dessin_mask.py` y lit quatre zones (mer, plaine, forêt, montagne) et les range dans `kanto_dessin.png`, que `make_heightmap.py` utilise pour tout le reste :
+
+- **Mer** : 0 à 2 m de fond sur environ 150 m (eau claire), puis 15 m au large. Plages en pente douce, sans falaise ni crique. 1,5 m au plus le long de la Route 12 (pour un pont).
+- **Plaines** (routes et villes) : au niveau des routes, collines douces. Les villes sont aplanies avec un fondu de 70 m, sans marche. Bourg Palette est au fond d'une cuvette de 300 × 250 m (talus de 6 m, ouverte au nord et au sud).
+- **Forêts** : un talus de 5 à 18 m au bord des plaines, que les arbres cacheront et qui empêche de couper entre deux routes, puis des collines boisées.
+- **Montagnes** (zones grises du dessin, tampons de rochers compris) : crêtes et pics fins jusqu'à environ 450 m.
+- **Altitudes** : de 4 m (Carmin sur Mer) à 210 m (Plateau Indigo) ; le cap de la Route 25 est à 195 m. Huit petits belvédères de 5 m au bord des routes.
+- `kanto_forets.png` (1009 × 1009, même sens que la heightmap) : masque des forêts pour le PCG des arbres.
+
+**Pour changer la forme** : retoucher le dessin, le remplacer dans `reference/`, puis `python Tools/Blockout/make_dessin_mask.py` et `python Tools/Blockout/make_heightmap.py` (environ 11 minutes ; `--test <dossier>` fait un essai en 40 secondes). Les retouches fines se font ensuite au **sculpt dans Unreal** : les faire dans un **calque d'édition à part** (Calques d'édition > clic droit > Créer un calque), sinon un prochain import de heightmap les effacerait.
+
 ## Ce qui est réaliste dès maintenant
 
 - **Les tailles** : un personnage fait 1,80 m, une maison 9 × 11 m et 7 m de haut, une arène 26 × 30 m, la Tour Sylphe 36 × 36 m et 60 m de haut. Les bâtiments ont leur vraie taille, ce qui laisse la place à des intérieurs sans chargement plus tard.
