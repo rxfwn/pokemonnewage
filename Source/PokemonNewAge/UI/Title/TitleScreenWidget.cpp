@@ -74,28 +74,38 @@ namespace TitleScreenUI
 	}
 
 	/**
-	 *  Tout l'écran de titre est en Futura Bold penchée (choix de L'amie du 2026-10-31, à la place de
-	 *  Futura Md BT italique). On lit d'abord le .ttf du dossier Tools (il a les accents ajoutés par
+	 *  Futura penchée partout (choix de L'amie du 2026-10-31) : Futura Medium pour le menu et les textes,
+	 *  Futura Bold pour les titres. On lit d'abord le .ttf du dossier Tools (il a les accents ajoutés par
 	 *  Tools/HUD/add_futura_accents.py, même si l'asset importé est plus ancien), puis l'asset, puis Roboto.
-	 *  bBold et bItalic sont gardés pour pouvoir varier plus tard.
 	 */
-	FSlateFontInfo Futura(float Size, bool /*bBold*/, bool /*bItalic*/, const FSlateFontInfo& Fallback)
+	FSlateFontInfo Futura(float Size, bool bBold, bool /*bItalic*/, const FSlateFontInfo& Fallback)
 	{
 		FSlateFontInfo Font;
-		const FString File = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Tools/HUD/Assets/fonts/FF_Futura_Bold.ttf"));
-		if (FPaths::FileExists(File))
+		bool bFound = false;
+		const TCHAR* Faces[] = { bBold ? TEXT("FF_Futura_Bold") : TEXT("FF_Futura_Medium"), TEXT("FF_Futura_Bold") };
+		for (const TCHAR* Name : Faces)
 		{
-			Font = FSlateFontInfo(File, Size);
+			const FString File = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Tools/HUD/Assets/fonts") / (FString(Name) + TEXT(".ttf")));
+			if (FPaths::FileExists(File))
+			{
+				Font = FSlateFontInfo(File, Size);
+				bFound = true;
+			}
+			else if (const UFontFace* Face = LoadFace(Name))
+			{
+				Font = FromFace(Face, Size);
+				bFound = true;
+			}
+			if (bFound)
+			{
+				break;
+			}
 		}
-		else if (const UFontFace* Face = LoadFace(TEXT("FF_Futura_Bold")))
-		{
-			Font = FromFace(Face, Size);
-		}
-		else
+		if (!bFound)
 		{
 			Font = Fallback;
 			Font.Size = Size;
-			Font.TypefaceFontName = FName(TEXT("Bold"));
+			Font.TypefaceFontName = bBold ? FName(TEXT("Bold")) : FName(TEXT("Regular"));
 		}
 		Font.SkewAmount = SyntheticItalic;
 		return Font;

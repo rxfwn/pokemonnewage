@@ -1,16 +1,15 @@
-"""Ajoute les lettres accentuées françaises à la police Futura Bold du projet (FF_Futura_Bold.ttf).
+"""Ajoute les lettres accentuées françaises aux polices Futura du projet (FF_Futura_Bold.ttf, FF_Futura_Medium.ttf).
 
-Le fichier fourni (Futura PT Cyrillic Bold) n'a ni É, ni é, ni ç, ni ©, ni « » : Unreal affichait à leur place
+Les fichiers fournis (Futura Cyrillic Bold et Medium) n'ont ni É, ni é, ni ç, ni ©, ni « » : Unreal affichait à leur place
 un carré « LATIN 1 ». Ce script les fabrique à partir des glyphes de la police elle-même (lettre de base + accent
-grave retourné, accent circonflexe réduit, points, virgule...) et réécrit le fichier.
+grave retourné, accent circonflexe réduit, points, virgule...) et écrit les fichiers FF_*.ttf.
 
     python Tools/HUD/add_futura_accents.py            (pip install fonttools)
 
-Relançable : il repart toujours de la police d'origine gardée dans fonts/original/ (hors import).
+Relançable : il repart toujours des polices d'origine gardées dans fonts/original/ (hors import).
 """
 
 import os
-import shutil
 
 from fontTools.pens.boundsPen import BoundsPen
 from fontTools.pens.cu2quPen import Cu2QuPen
@@ -19,17 +18,26 @@ from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.ttLib import TTFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FONT = os.path.join(HERE, "Assets", "fonts", "FF_Futura_Bold.ttf")
-ORIGINAL = os.path.join(HERE, "Assets", "fonts", "original", "Futura_Bold_sans_accents.ttf")
+FONTS_DIR = os.path.join(HERE, "Assets", "fonts")
 
-X_HEIGHT = 447
-CAP_HEIGHT = 667
+# (police d'origine sans accents, police écrite pour Unreal)
+FONTS = [
+    ("Futura_Bold_sans_accents.ttf", "FF_Futura_Bold.ttf"),
+    ("Futura_Medium_sans_accents.ttf", "FF_Futura_Medium.ttf"),
+]
 
 
 def main():
-    if not os.path.exists(ORIGINAL):
-        shutil.copyfile(FONT, ORIGINAL)
-    font = TTFont(ORIGINAL)
+    for original, target in FONTS:
+        source = os.path.join(FONTS_DIR, "original", original)
+        if os.path.exists(source):
+            add_accents(source, os.path.join(FONTS_DIR, target))
+
+
+def add_accents(original, target):
+    font = TTFont(original)
+    X_HEIGHT = font["OS/2"].sxHeight
+    CAP_HEIGHT = font["OS/2"].sCapHeight
     glyphs = font.getGlyphSet()
     cmap = font.getBestCmap()
     order = list(font.getGlyphOrder())
@@ -202,8 +210,8 @@ def main():
     if "post" in font and font["post"].formatType == 2.0:
         font["post"].extraNames = []
         font["post"].mapping = {}
-    font.save(FONT)
-    print("FF_Futura_Bold.ttf : %d glyphes ajoutés" % len(new))
+    font.save(target)
+    print("%s : %d glyphes ajoutés" % (os.path.basename(target), len(new)))
 
 
 if __name__ == "__main__":
