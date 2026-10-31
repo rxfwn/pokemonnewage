@@ -11,6 +11,7 @@
 #include "Components/WidgetComponent.h"
 #include "Components/WidgetInteractionComponent.h"
 #include "Core/PokemonPlayerState.h"
+#include "Engine/Engine.h"
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -162,6 +163,14 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 	if (!InController || !Model || !Model->Parts.FindRef(TEXT("Body")))
 	{
 		UE_LOG(LogPokemonNewAge, Warning, TEXT("Pokedex 3D : DA_PokedexModel introuvable ou incomplet, menu a plat utilise (voir docs/MENU_POKEDEX.md)"));
+#if WITH_EDITOR
+		// Visible tout de suite dans l'éditeur : le Pokédex 3D s'installe à l'ouverture d'Unreal (Content/Python/init_unreal.py)
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 8.f, FColor::Orange,
+				TEXT("Pokedex 3D pas installe : fermer et rouvrir Unreal (installation automatique), ou lancer Tools/Pokedex/import_pokedex_unreal.py"));
+		}
+#endif
 		return false;
 	}
 	Controller = InController;

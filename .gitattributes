@@ -34,3 +34,6 @@
 
 # Images générées par les scripts d'outils (petites, hors LFS)
 Tools/**/*.png -filter -diff -merge binary
+
+# Modèle du Pokédex 3D déjà découpé (petit, hors LFS : le push LFS depuis le cloud est refusé)
+Tools/Pokedex/Generated/*.fbx -filter -diff -merge binary

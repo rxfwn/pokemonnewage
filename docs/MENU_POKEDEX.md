@@ -40,7 +40,7 @@ Les 10 boutons à icônes du volet, dans l'ordre de la grille :
 
 Les icônes **Appareil photo** et **Compteur de pas** sont provisoires (faites par `Tools/HUD/make_hud_assets.py`) : remplacer `Tools/Pokedex/Assets/icons/T_PokedexIcon_Camera.png` et `T_PokedexIcon_Steps.png` (256 × 256, fond transparent) puis relancer le script d'import.
 
-Sans `DA_PokedexModel` (ou avec `Use Pokedex 3D` décoché dans le PlayerController), Tab ouvre le même Pokédex à plat, ses 10 fonctions en onglets.
+Tab ouvre toujours le modèle 3D. Le Pokédex à plat n'est qu'un secours, si le modèle n'est pas installé (voir §2) ou si `Use Pokedex 3D` est décoché dans le PlayerController.
 
 ## Sauvegarde automatique
 
@@ -68,18 +68,19 @@ Images et polices : `Tools/HUD/Assets/` (icône du Pokédex, cône, 4 pictos mé
 
 Le modèle de L'amie (`Pokedex.blend`) a été découpé en 33 pièces par `Tools/Pokedex/prepare_pokedex_model.py` (chaque bouton s'enfonce seul, le volet tourne, les écrans reçoivent l'interface). Ses textures sont gardées.
 
-1. Prendre `Pokedex_Generated.zip` dans les fichiers du projet (dossier **pokedex/**) et le dézipper dans `Tools/Pokedex/`. On doit avoir `Tools/Pokedex/Generated/Pokedex.fbx` et `Tools/Pokedex/Generated/textures/` (16 images).
-   Autre possibilité, si Blender est installé dans `C:\Program Files\Blender Foundation\` : mettre `Pokedex.blend` (dossier **pokedex/source/**) dans `Tools/Pokedex/Source/`, le script le prépare tout seul.
-2. Dans Unreal : **Outils > Exécuter un script Python** (Tools > Execute Python Script), choisir `Tools/Pokedex/import_pokedex_unreal.py`.
-3. Attendre la fin. Le journal (**Fenêtre > Journal de sortie**) doit afficher « HUD prêt : 6 images, 3 polices » puis « Menu prêt : 33 pièces 3D sur 33, 16 textures, 10 icônes, 41 lieux sur la carte, 7 sons ».
+Le modèle découpé est **dans le dépôt** : `Tools/Pokedex/Generated/Pokedex.fbx` et `Tools/Pokedex/Generated/textures/` (16 images). Plus rien à dézipper.
 
-Sans le dossier `Generated` (ni Blender), le script importe quand même les icônes, la carte et les sons du menu classique, sans le Pokédex 3D (un avertissement le dit dans le journal).
+1. `git pull`, compiler (§1), puis ouvrir Unreal.
+2. **C'est tout** : à l'ouverture, `Content/Python/init_unreal.py` voit que `DA_PokedexModel` manque (ou n'a pas le modèle 3D) et lance tout seul `Tools/Pokedex/import_pokedex_unreal.py`. Une fenêtre « Import du menu » s'affiche une minute. Les fois suivantes, il ne fait rien.
+3. Le journal (**Fenêtre > Journal de sortie**) doit afficher « HUD prêt : 6 images, 3 polices » puis « Menu prêt : 33 pièces 3D sur 33, 16 textures, 10 icônes, 41 lieux sur la carte, 7 sons ».
+
+Pour réimporter de force (nouvelle icône, nouveau modèle) : **Outils > Exécuter un script Python** (Tools > Execute Python Script), choisir `Tools/Pokedex/import_pokedex_unreal.py`. Pour refaire le modèle depuis `Pokedex.blend` : `prepare_pokedex_model.py` dans Blender, qui réécrit `Tools/Pokedex/Generated/`.
 
 Le script crée dans `Content/UI/Pokedex/` : les pièces (`Meshes/`), les textures (`Textures/`), les matériaux `M_PokedexTextured` + `MI_Pokedex_Udim0001` à `0005` (les textures de L'amie) et `M_Pokedex` (uni, sous les icônes), les icônes (`Icons/`), la carte (`Map/`), les sons (`Sounds/`) et `DA_PokedexModel`. Il crée aussi `Content/Audio/SC_Music`, `SC_Effects` et `SM_Options` pour les volumes. On peut le relancer, il remplace tout.
 
 Pour changer une icône : remplacer l'image dans `Tools/Pokedex/Assets/icons/` (ou relancer `make_pokedex_icons.py` sur une nouvelle planche) puis relancer le script d'import. La carte se refait avec `make_pokedex_map.py` (elle suit `Tools/Blockout/kanto_v1_layout.py`).
 
-Sans `DA_PokedexModel`, le menu classique marche sans icônes (noms seuls) et le Pokédex s'affiche à plat.
+Si le Pokédex 3D n'est pas installé, Tab ouvre en secours un Pokédex à plat, et un message orange le signale dans l'éditeur : fermer et rouvrir Unreal suffit.
 
 ## 3. Tester
 
@@ -128,7 +129,7 @@ Les réglages sont dans la classe `PokedexDevice` (créer un Blueprint enfant po
 - **Trop gros ou trop petit à l'écran** : `Screen Fill`.
 - **Volet trop ou pas assez tourné vers soi** : `Open Lid Yaw` (10 degrés par défaut).
 - **Appareil à l'envers ou en miroir** : le journal affiche un avertissement. Le code corrige seul l'échelle et le miroir de l'import ; si ça ne suffit pas, me le dire avec une capture.
-- **Appareil tout gris** : les textures n'ont pas été importées (dossier `Generated/textures` manquant) ; relancer le script d'import après avoir dézippé.
+- **Appareil tout gris** : les textures n'ont pas été importées (dossier `Generated/textures` manquant) ; relancer le script d'import (vérifier que `Tools/Pokedex/Generated/textures` est bien là après le `git pull`).
 - **Couleur trop terne ou relief inversé** : ouvrir `MI_Pokedex_Udim000X` et régler `Tint`, ou décocher **Inverser le canal vert** (Flip Green Channel) sur la texture `_Normal`.
 
 ## Écran de combat (SCRUM-36)

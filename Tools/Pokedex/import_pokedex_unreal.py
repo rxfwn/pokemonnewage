@@ -4,9 +4,10 @@
     Outils > Exécuter un script Python (Tools > Execute Python Script)
     -> choisir Tools/Pokedex/import_pokedex_unreal.py
 
-Avant : copier le dossier Generated (fichiers du projet : pokedex/Pokedex_Generated.zip, à dézipper)
-dans Tools/Pokedex/, pour avoir Tools/Pokedex/Generated/Pokedex.fbx et Tools/Pokedex/Generated/textures/.
-Ou bien : mettre Pokedex.blend dans Tools/Pokedex/Source/ avec Blender installé, le script le prépare tout seul.
+Le modèle de L'amie, déjà découpé, est dans le dépôt : Tools/Pokedex/Generated/Pokedex.fbx et Generated/textures/
+(refait par prepare_pokedex_model.py depuis Pokedex.blend). Rien à dézipper.
+Normalement inutile de le lancer à la main : Content/Python/init_unreal.py le lance tout seul à l'ouverture
+de l'éditeur quand DA_PokedexModel manque ou n'a pas le modèle 3D.
 
 Ce qu'il fait, tout seul :
   1. cherche Tools/Pokedex/Generated/Pokedex.fbx ; s'il n'y est pas, lance Blender (s'il est installé)
@@ -85,7 +86,7 @@ def make_fbx():
     if not blender or not os.path.exists(BLEND_PATH):
         unreal.log_warning(
             "Pokedex.fbx introuvable : seul le menu (icônes, carte, sons) est importé, sans le Pokédex 3D. "
-            "Pour le 3D : dézipper pokedex/Pokedex_Generated.zip (fichiers du projet) dans Tools/Pokedex/, puis relancer.")
+            "Pour le 3D : faire git pull (Tools/Pokedex/Generated est dans le dépôt), puis relancer.")
         return False
     unreal.log("Préparation du modèle avec Blender : " + blender)
     subprocess.run([blender, "--background", "--python", os.path.join(TOOLS_DIR, "prepare_pokedex_model.py"), "--",
@@ -460,4 +461,6 @@ def main():
                                                            len([i for i in icons if i]), len(map_data.get("places", [])),
                                                            len(sounds)))
 
-main()
+# Lancé seul depuis l'éditeur (pas quand Content/Python/init_unreal.py le charge sous le nom import_pokedex_unreal)
+if __name__ != "import_pokedex_unreal":
+    main()
