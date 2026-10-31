@@ -148,14 +148,8 @@ Il s'ouvre tout seul quand un combat commence : cadres des deux Pokémon (nom, n
 - Les sons sont synthétiques : on pourra les remplacer en gardant les mêmes noms.
 - Le nom du joueur est celui donné par Unreal (pas encore d'écran pour le choisir).
 
-## Police du jeu : Futura partout
+## Police du jeu : Futura Bold penchée partout
 
-Demandé par L'amie le 2026-10-31 : toute l'interface (HUD, Pokédex 3D, Paramètres, dialogues, combat, boutique, PC, évolution) passe par `PokemonFonts::Get(Taille, bGras)` (`Source/PokemonNewAge/UI/GameFonts.h`). Il charge les Font Faces de `/Game/UI/HUD/Fonts` :
+Demandé par L'amie le 2026-10-31 (« futura bold penché, c'est la même » que la Futura Md BT de sa maquette) : toute l'interface (HUD, Pokédex 3D, Paramètres, dialogues, combat, boutique, PC, évolution) passe par `PokemonFonts::Get(Taille, bGras)` (`Source/PokemonNewAge/UI/GameFonts.h`). Il prend la Font Face `/Game/UI/HUD/Fonts/FF_Futura_Bold` (fichier `Tools/HUD/Assets/fonts/FF_Futura_Bold.ttf`) et l'incline (`SkewAmount` 0,18, comme l'écran de titre). Pour la redresser : `Skew` dans `GameFonts.cpp`.
 
-| Fichier dans `Tools/HUD/Assets/fonts/` | Sert pour |
-| --- | --- |
-| `FF_Futura_Medium.ttf` (Futura Md BT) | le texte normal |
-| `FF_Futura_MediumItalic.ttf` (Futura Md BT italique) | l'italique (`PokemonFonts::EStyle::Italic`, menu de l'écran de titre) |
-| `FF_Futura_Bold.ttf` | le gras, et en secours tant que les deux autres manquent |
-
-Pour ajouter une police : mettre le .ttf avec ce nom, puis relancer `Tools/HUD/import_hud_unreal.py` (ou fermer et rouvrir Unreal si le Pokédex 3D n'est pas encore installé) et relancer le jeu. Sans aucune Font Face importée, le jeu reprend Roboto.
+Si on ajoute un jour `FF_Futura_Medium.ttf` / `FF_Futura_MediumItalic.ttf` dans le même dossier, le texte normal et l'italique les prennent tout seuls (import automatique à l'ouverture d'Unreal). Sans aucune Font Face importée, le jeu reprend Roboto.

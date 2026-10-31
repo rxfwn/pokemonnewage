@@ -4,10 +4,9 @@
 #include "Fonts/SlateFontInfo.h"
 
 /**
- *  Police de tout le jeu : Futura (demandé par L'amie le 2026-10-31, maquette de l'écran de titre en Futura Md BT).
- *  Font Faces importées par Tools/HUD/import_hud_unreal.py depuis Tools/HUD/Assets/fonts/ dans /Game/UI/HUD/Fonts :
- *    FF_Futura_Medium (texte), FF_Futura_MediumItalic (italique), FF_Futura_Bold (gras).
- *  Il en manque une : on prend la plus proche (Medium <-> Bold), et Roboto si aucune n'est importée.
+ *  Police de tout le jeu : Futura Bold penchée (demandé par L'amie le 2026-10-31, maquette de l'écran de titre).
+ *  Font Face FF_Futura_Bold importée par Tools/HUD/import_hud_unreal.py dans /Game/UI/HUD/Fonts, inclinée par SkewAmount.
+ *  FF_Futura_Medium / FF_Futura_MediumItalic servent seulement si on les ajoute ; Roboto penché si rien n'est importé.
  */
 namespace PokemonFonts
 {
