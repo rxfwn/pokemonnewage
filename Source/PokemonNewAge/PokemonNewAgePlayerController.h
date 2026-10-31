@@ -526,6 +526,14 @@ public:
 	UFUNCTION(Exec)
 	void RetourCentre();
 
+	/** Liste les points de téléportation de test (TeleportPoint) posés dans la map */
+	UFUNCTION(Exec)
+	void Teleports();
+
+	/** Va au point de téléportation Name (nom, début du nom ou numéro de la liste Teleports) */
+	UFUNCTION(Exec)
+	void Teleport(const FString& Name);
+
 
 private:
 
