@@ -140,6 +140,10 @@ public:
 	UPROPERTY(EditAnywhere, Category="Pokedex|Commandes", meta=(Units="Degrees"))
 	float MaxTurnPitch = 5.f;
 
+	/** Douceur de la rotation (plus petit = plus lent et plus fluide) */
+	UPROPERTY(EditAnywhere, Category="Pokedex")
+	float RotationSmoothing = 8.f;
+
 protected:
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -334,6 +338,9 @@ private:
 	FVector2D LastPointer = FVector2D::ZeroVector;
 	float UserYaw = 0.f;
 	float UserPitch = 0.f;
+	/** Rotation affichée (suit UserYaw / UserPitch en douceur) */
+	float ShownYaw = 0.f;
+	float ShownPitch = 0.f;
 	float StickYaw = 0.f;
 	float StickPitch = 0.f;
 	float ZoomOffset = 0.f;

@@ -21,11 +21,11 @@ def pokedex_installed():
     # M_PokedexWidget : ajouté le 2026-10-31 (écrans noirs sans lui) ; son absence relance l'import
     if not eal.does_asset_exist(MODEL_PATH) or not eal.does_asset_exist("/Game/UI/Pokedex/M_PokedexWidget"):
         return False
-    # Icône appareil photo et écrans lissés (version 2 du matériau) : ajoutés le 2026-11-01
+    # Icône appareil photo et écrans lissés (version 3 du matériau) : ajoutés le 2026-11-01
     if not eal.does_asset_exist("/Game/UI/Pokedex/Icons/T_PokedexButton_Camera"):
         return False
     widget_material = eal.load_asset("/Game/UI/Pokedex/M_PokedexWidget")
-    if not widget_material or eal.get_metadata_tag(widget_material, "PokedexWidgetVersion") != "2":
+    if not widget_material or eal.get_metadata_tag(widget_material, "PokedexWidgetVersion") != "3":
         return False
     model = eal.load_asset(MODEL_PATH)
     try:

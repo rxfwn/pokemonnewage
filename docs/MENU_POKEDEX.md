@@ -25,9 +25,9 @@ Les réglages attendent **Appliquer** ou **OK** ; les touches changent tout de s
 
 Comme l'image de référence de L'amie (sans les mains) : Tab sort le Pokédex ouvert devant la caméra, il prend presque tout l'écran sans être coupé (`Screen Fill` 0,89, épaisseur comprise, recalculé si la fenêtre change de taille), décor du jeu flouté derrière. On le tourne à la souris de 5° au plus dans chaque sens (`Max Turn Yaw` / `Max Turn Pitch`). Les voyants du haut et l'objectif restent allumés ; le bouton rond noir sous l'écran (petite icône appareil photo de L'amie) lance l'appareil photo. Le Pokédex suit la caméra pendant l'ouverture : il finit bien en face même si on tournait la caméra en appuyant sur Tab.
 
-**Netteté** : écrans et icônes sont dessinés `Panel Render Scale` fois plus fins (2 par défaut : l'écran principal est rendu en 1920 × 1296). `M_PokedexWidget` (version 2) fait la moyenne de 16 points par pixel affiché, sinon le texte réduit « grésille ». Pas de flou de mouvement pendant le menu (l'appareil était tout étalé si la caméra tournait à l'ouverture).
+**Netteté** : écrans et icônes sont dessinés `Panel Render Scale` fois plus fins (2 par défaut : l'écran principal est rendu en 1920 × 1296). `M_PokedexWidget` (version 3) fait la moyenne de 4 lectures de la texture à ±1/4 de pixel affiché, sinon le texte réduit « grésille » (la version 2, à 16 points, délavait les icônes). Pas de flou de mouvement pendant le menu (l'appareil était tout étalé si la caméra tournait à l'ouverture).
 
-**Éclairage** (d'après l'image de L'amie, lumière de jour douce) : lumière principale chaude et large, lumière d'appoint bleutée (ciel), contre-jour chaud derrière en haut à droite (`Rim Light Intensity`), décor plus flouté (`Background Blur Fstop` 1,8), léger bloom et couleurs un peu chaudes.
+**Éclairage** (d'après l'image de L'amie, lumière de jour douce) : lumière principale chaude et large, lumière d'appoint bleutée (ciel), contre-jour chaud derrière en haut à droite (`Rim Light Intensity`), décor plus flouté (`Background Blur Fstop` 1,8). Le décor est seulement flouté : ni vignettage, ni couleurs changées.
 
 **Heure du jeu** (HUD, petit écran, barre de l'écran) : `Core/GameClock`. Lue dans une variable décimale `Heure`, `Hour`, `TimeOfDay` ou `Time` (0 à 24) de `BP_CycleJourNuit` si elle existe, sinon déduite de la hauteur du soleil (midi en haut, matin quand il monte), sinon l'heure du PC.
 
@@ -117,7 +117,7 @@ Les pièces de l'appareil :
 
 Le reste est du décor, **pas cliquable** (demandé par L'amie) : objectif et voyants du haut, languettes jaune et bleue, petit bouton rouge de l'écran, voyants et fentes du volet, bouton rond jaune du volet, petits écrans « CAPTURÉS/VUS » et « BADGES », boîtier, charnière. La main de la souris n'apparaît que sur ce qui est cliquable.
 
-- **Tourner l'appareil** : seulement **clic droit maintenu** en bougeant la souris (ou stick droit). Il ne bouge jamais tout seul, reste où on l'a laissé et ne recule pas : la rotation est limitée à 5°. La molette l'éloigne (jamais plus près que le cadrage de départ ; sur l'écran, elle fait défiler la liste).
+- **Tourner l'appareil** : seulement **clic droit maintenu** en bougeant la souris (ou stick droit). Il ne bouge jamais tout seul, reste où on l'a laissé et ne recule pas : la rotation est limitée à 5°, fluide (`Rotation Smoothing`) et freine en douceur près de la limite. **Un clic gauche hors du Pokédex le range.** La molette l'éloigne (jamais plus près que le cadrage de départ ; sur l'écran, elle fait défiler la liste).
 - **Clavier** : flèches ou ZQSD (grille 5 × 2 sur le volet), Entrée pour valider, Échap ou Retour arrière pour revenir, Tab pour fermer.
 - **Manette** : croix, A, B, gâchettes hautes pour changer de menu, stick droit pour tourner, Start pour fermer.
 

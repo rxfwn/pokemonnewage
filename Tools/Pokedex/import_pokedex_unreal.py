@@ -212,39 +212,52 @@ def make_widget_material():
     material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
 
     # L'écran est rendu en grand (Panel Render Scale) puis réduit à l'écran : sans lissage, le texte « grésille ».
-    # On fait donc la moyenne de 16 points dans chaque pixel affiché (filtre boîte selon la taille du pixel, ddx/ddy)
-    slate_tex = mel.create_material_expression(material, unreal.MaterialExpressionTextureObjectParameter, -1300, 0)
+    # 4 lectures normales de la texture (mêmes couleurs que le matériau d'Unreal) à ±1/4 de pixel affiché, moyennées.
+    # (Version 2 : nœud Custom à 16 points, couleurs délavées et traits trop effacés.)
+    slate_tex = mel.create_material_expression(material, unreal.MaterialExpressionTextureObjectParameter, -1700, 0)
     slate_tex.set_editor_property("parameter_name", "SlateUI")
     slate_tex.set_editor_property("texture", unreal.load_asset("/Engine/EngineResources/DefaultTexture"))
-    uv = mel.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate, -1300, 200)
-    slate = mel.create_material_expression(material, unreal.MaterialExpressionCustom, -1050, 0)
-    slate.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT4)
-    slate.set_editor_property("description", "SlateUI lisse")
-    tex_input = unreal.CustomInput()
-    tex_input.set_editor_property("input_name", "Tex")
-    uv_input = unreal.CustomInput()
-    uv_input.set_editor_property("input_name", "UV")
-    slate.set_editor_property("inputs", [tex_input, uv_input])
-    slate.set_editor_property("code", "\n".join([
-        "float2 dx = ddx(UV);",
-        "float2 dy = ddy(UV);",
-        "float4 acc = 0;",
-        "for (int i = 0; i < 4; i++)",
-        "{",
-        "    for (int j = 0; j < 4; j++)",
-        "    {",
-        "        float2 o = ((i + 0.5) / 4.0 - 0.5) * dx + ((j + 0.5) / 4.0 - 0.5) * dy;",
-        "        acc += Texture2DSample(Tex, TexSampler, UV + o);",
-        "    }",
-        "}",
-        "return acc / 16.0;",
-    ]))
-    mel.connect_material_expressions(slate_tex, "", slate, "Tex")
-    mel.connect_material_expressions(uv, "", slate, "UV")
-    slate_rgb = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, -800, 0)
+    uv = mel.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate, -1700, 250)
+    ddx = mel.create_material_expression(material, unreal.MaterialExpressionDDX, -1550, 350)
+    ddy = mel.create_material_expression(material, unreal.MaterialExpressionDDY, -1550, 450)
+    mel.connect_material_expressions(uv, "", ddx, "")
+    mel.connect_material_expressions(uv, "", ddy, "")
+    samples = []
+    for index, (a, b) in enumerate(((-0.25, -0.25), (0.25, -0.25), (-0.25, 0.25), (0.25, 0.25))):
+        y = -300 + index * 220
+        off_x = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -1400, y)
+        off_x.set_editor_property("const_b", a)
+        mel.connect_material_expressions(ddx, "", off_x, "A")
+        off_y = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -1400, y + 80)
+        off_y.set_editor_property("const_b", b)
+        mel.connect_material_expressions(ddy, "", off_y, "A")
+        offset = mel.create_material_expression(material, unreal.MaterialExpressionAdd, -1300, y)
+        mel.connect_material_expressions(off_x, "", offset, "A")
+        mel.connect_material_expressions(off_y, "", offset, "B")
+        coords = mel.create_material_expression(material, unreal.MaterialExpressionAdd, -1200, y)
+        mel.connect_material_expressions(uv, "", coords, "A")
+        mel.connect_material_expressions(offset, "", coords, "B")
+        sample = mel.create_material_expression(material, unreal.MaterialExpressionTextureSample, -1050, y)
+        sample.set_editor_property("sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_COLOR)
+        mel.connect_material_expressions(slate_tex, "", sample, "Tex")
+        mel.connect_material_expressions(coords, "", sample, "UVs")
+        samples.append(sample)
+    sum_a = mel.create_material_expression(material, unreal.MaterialExpressionAdd, -900, -200)
+    mel.connect_material_expressions(samples[0], "RGBA", sum_a, "A")
+    mel.connect_material_expressions(samples[1], "RGBA", sum_a, "B")
+    sum_b = mel.create_material_expression(material, unreal.MaterialExpressionAdd, -900, 200)
+    mel.connect_material_expressions(samples[2], "RGBA", sum_b, "A")
+    mel.connect_material_expressions(samples[3], "RGBA", sum_b, "B")
+    total = mel.create_material_expression(material, unreal.MaterialExpressionAdd, -820, 0)
+    mel.connect_material_expressions(sum_a, "", total, "A")
+    mel.connect_material_expressions(sum_b, "", total, "B")
+    slate = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -760, 0)
+    slate.set_editor_property("const_b", 0.25)
+    mel.connect_material_expressions(total, "", slate, "A")
+    slate_rgb = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, -700, 0)
     for channel in ("r", "g", "b"):
         slate_rgb.set_editor_property(channel, True)
-    slate_a = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, -800, 150)
+    slate_a = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, -700, 150)
     slate_a.set_editor_property("a", True)
     mel.connect_material_expressions(slate, "", slate_rgb, "")
     mel.connect_material_expressions(slate, "", slate_a, "")
@@ -271,7 +284,7 @@ def make_widget_material():
     mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
     mel.recompile_material(material)
     # Version lue par Content/Python/init_unreal.py : une version plus ancienne relance l'import à l'ouverture d'Unreal
-    eal.set_metadata_tag(material, "PokedexWidgetVersion", "2")
+    eal.set_metadata_tag(material, "PokedexWidgetVersion", "3")
     eal.save_asset(path)
     return material
 

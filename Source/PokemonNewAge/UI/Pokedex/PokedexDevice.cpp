@@ -317,18 +317,12 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 	Settings.AutoExposureMaxBrightness = ExposureEV100;
 	Settings.bOverride_AutoExposureBias = true;
 	Settings.AutoExposureBias = 0.f;
+	// Le décor est seulement flouté : ni plus sombre ni plus saturé (demandé par L'amie)
 	Settings.bOverride_VignetteIntensity = true;
-	Settings.VignetteIntensity = 0.3f;
+	Settings.VignetteIntensity = 0.f;
 	// Pas de flou de mouvement : si la caméra tournait quand on a appuyé sur Tab, l'appareil (qui la suit) était tout étalé
 	Settings.bOverride_MotionBlurAmount = true;
 	Settings.MotionBlurAmount = 0.f;
-	// Rendu « fin d'après-midi » : un peu de bloom, couleurs légèrement chaudes et saturées
-	Settings.bOverride_BloomIntensity = true;
-	Settings.BloomIntensity = 0.45f;
-	Settings.bOverride_ColorSaturation = true;
-	Settings.ColorSaturation = FVector4(1.f, 1.f, 1.f, 1.08f);
-	Settings.bOverride_ColorGain = true;
-	Settings.ColorGain = FVector4(1.03f, 1.f, 0.95f, 1.f);
 
 	// Fermé, sous l'écran
 	Hinge->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
@@ -753,7 +747,14 @@ void APokedexDevice::UpdateAnimation(float DeltaSeconds)
 	UserPitch += StickPitch * 100.f * DeltaSeconds;
 	UserYaw = FMath::Clamp(FRotator::NormalizeAxis(UserYaw), -MaxTurnYaw, MaxTurnYaw);
 	UserPitch = FMath::Clamp(FRotator::NormalizeAxis(UserPitch), -MaxTurnPitch, MaxTurnPitch);
-	Pivot->SetRelativeRotation(FRotator(UserPitch, UserYaw, 0.f));
+	// Rotation affichée qui rejoint la souris en douceur, et freine en approchant de la limite (pas d'arrêt sec)
+	auto SoftLimit = [](float Angle, float Limit)
+	{
+		return Limit > 0.f ? Limit * FMath::Sin(FMath::Clamp(Angle / Limit, -1.f, 1.f) * HALF_PI) : 0.f;
+	};
+	ShownYaw = FMath::FInterpTo(ShownYaw, SoftLimit(UserYaw, MaxTurnYaw), DeltaSeconds, RotationSmoothing);
+	ShownPitch = FMath::FInterpTo(ShownPitch, SoftLimit(UserPitch, MaxTurnPitch), DeltaSeconds, RotationSmoothing);
+	Pivot->SetRelativeRotation(FRotator(ShownPitch, ShownYaw, 0.f));
 
 	// Suit la caméra à chaque image : si elle tournait encore quand on a appuyé sur Tab (souris en mouvement,
 	// retard du bras de caméra), l'appareil finit quand même bien en face
@@ -1105,6 +1106,8 @@ void APokedexDevice::HandlePointerDown(const FKey& Button, const FVector2D& Pixe
 	FHitResult Hit;
 	if (!TraceParts(Pixel, Hit))
 	{
+		// Clic gauche hors du Pokédex : il se range (demandé par L'amie)
+		Close();
 		return;
 	}
 
