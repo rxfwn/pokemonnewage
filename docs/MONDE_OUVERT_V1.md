@@ -157,3 +157,13 @@ Le relief vient de `Tools/Blockout/make_heightmap.py`, qui lit le même plan. Un
 **Passage à la version FRLG (octobre 2026)** : l'échelle en hauteur passe de 100 à 200. Il faut donc **supprimer l'ancien Landscape** et refaire l'étape 3 avec 150, 150, 200, puis l'étape 7 et le script.
 
 Le décalque de la carte FRLG se refait avec `python Tools/Blockout/make_frlg_mask.py carte_frlg.png` (`pip install numpy pillow`), à partir de l'image complète de Kanto (tuiles assemblées sur fond en damier). Il produit `kanto_frlg.bin` et un aperçu `kanto_frlg_apercu.png`.
+
+## Points de téléportation de test
+
+Pour tester la map sans tout traverser à pied : poser des **TeleportPoint** (Placer des acteurs, chercher « Teleport Point »), donner un nom dans **Point Name** (Argenta, Route3...) et tourner la flèche bleue dans le sens où le joueur doit regarder. Ils sont toujours chargés (pas de streaming World Partition).
+
+En jeu, console (touche ²) :
+- `Teleports` : liste numérotée des points ;
+- `Teleport Argenta` (ou `Teleport arg`, ou `Teleport 2`) : y aller.
+
+Astuces de test : `slomo 4` accélère tout le jeu, `ghost` pour voler à travers le décor, `walk` pour revenir à la marche.

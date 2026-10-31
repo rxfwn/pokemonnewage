@@ -32,6 +32,7 @@
 #include "Dialogue/DialogueComponent.h"
 #include "Town/PokemonCenterComponent.h"
 #include "Town/ShopComponent.h"
+#include "World/TeleportPoint.h"
 #include "Pokemon/PokemonDatabase.h"
 #include "Pokemon/PokemonDataSubsystem.h"
 #include "Engine/Engine.h"
@@ -1393,4 +1394,44 @@ void APokemonNewAgePlayerController::RetourCentre()
 	{
 		PrintDebug(TEXT("Aucun PokemonCenterPoint ni Player Start dans la map"));
 	}
+}
+
+void APokemonNewAgePlayerController::Teleports()
+{
+	const TArray<ATeleportPoint*> Points = ATeleportPoint::GetAll(this);
+	if (Points.IsEmpty())
+	{
+		PrintDebug(TEXT("Aucun TeleportPoint dans la map"));
+		return;
+	}
+	// AddOnScreenDebugMessage empile le dernier en haut : on affiche à l'envers pour lire 1, 2, 3...
+	for (int32 Index = Points.Num() - 1; Index >= 0; --Index)
+	{
+		PrintDebug(FString::Printf(TEXT("%d. %s"), Index + 1, *Points[Index]->PointName.ToString()));
+	}
+}
+
+void APokemonNewAgePlayerController::Teleport(const FString& Name)
+{
+	ATeleportPoint* Point = ATeleportPoint::Find(this, Name);
+	APawn* ControlledPawn = GetPawn();
+	if (!Point || !ControlledPawn)
+	{
+		PrintDebug(FString::Printf(TEXT("Point de teleportation introuvable : %s (tape Teleports pour la liste)"), *Name));
+		return;
+	}
+	if (!HasAuthority())
+	{
+		PrintDebug(TEXT("Teleport : seulement sur le serveur (jeu en solo)"));
+		return;
+	}
+	const FRotator Facing(0.f, Point->GetActorRotation().Yaw, 0.f);
+	if (ACharacter* PlayerCharacter = Cast<ACharacter>(ControlledPawn))
+	{
+		PlayerCharacter->GetCharacterMovement()->StopMovementImmediately();
+	}
+	// Un peu au-dessus du point : le joueur retombe sur le sol au lieu de rester coincé dedans.
+	ControlledPawn->TeleportTo(Point->GetActorLocation() + FVector(0.f, 0.f, 100.f), Facing, false, true);
+	SetControlRotation(Facing);
+	PrintDebug(FString::Printf(TEXT("Teleporte a %s"), *Point->PointName.ToString()));
 }
