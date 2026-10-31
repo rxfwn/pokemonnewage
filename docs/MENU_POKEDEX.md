@@ -52,7 +52,7 @@ Fait en C++ (`UGameHUDWidget`) aux mesures de la maquette (1920 × 1080, mis à 
 
 - **Icône du Pokédex** en haut à droite (image de L'amie), sans texte de touche (Tab l'ouvre).
 - **Nom du lieu** en Futura 95, centré en haut, avec le trait blanc dessous : il apparaît 4 s quand on entre dans une ville ou sur une route.
-- **En bas à droite** : le lieu (Futura 24), l'heure du PC, la température (17 °C de moyenne, plus chaud à 15 h, réglable : `Base Temperature`, `Temperature Swing`) et le picto météo (pictos de L'amie : soleil par défaut, `SetWeather` pour nuage, pluie ou vent en attendant un vrai système météo).
+- **En bas à droite** : le lieu (Futura BdCn BT 24, droite, comme la maquette), l'heure du PC, la température (17 °C de moyenne, plus chaud à 15 h, réglable : `Base Temperature`, `Temperature Swing`) et le picto météo (pictos de L'amie : soleil par défaut, `SetWeather` pour nuage, pluie ou vent en attendant un vrai système météo).
 - **Boussole** : disque gris translucide, N en haut (le nord de Kanto), point blanc du joueur, cône de vue qui tourne avec la caméra, repère jaune du GPS sur le bord et distance au centre.
 - Il se cache pendant les combats, les menus, la boutique, le PC et l'appareil photo, ou avec Échap > Jeu > Afficher le HUD.
 
@@ -150,7 +150,9 @@ Il s'ouvre tout seul quand un combat commence : cadres des deux Pokémon (nom, n
 
 ## Police du jeu : Futura penchée partout
 
-Demandé par L'amie le 2026-10-31 : toute l'interface (HUD, Pokédex 3D, Paramètres, dialogues, combat, boutique, PC, évolution) passe par `PokemonFonts::Get(Taille, bGras)` (`Source/PokemonNewAge/UI/GameFonts.h`). Texte normal : `FF_Futura_Medium` (Futura Cyrillic Medium fournie par L'amie) ; gras : `FF_Futura_Bold` ; les deux inclinées (`SkewAmount` 0,18, comme l'écran de titre). Pour redresser : `Skew` dans `GameFonts.cpp`. Si l'une manque, l'autre la remplace ; sans aucune, Roboto.
+Demandé par L'amie le 2026-10-31 : toute l'interface (Pokédex 3D, Paramètres, dialogues, combat, boutique, PC, évolution) passe par `PokemonFonts::Get(Taille, bGras)` (`Source/PokemonNewAge/UI/GameFonts.h`). Texte normal : `FF_Futura_Medium` (Futura Cyrillic Medium fournie par L'amie) ; gras : `FF_Futura_Bold` ; les deux inclinées (`SkewAmount` 0,18, comme l'écran de titre). Pour redresser : `Skew` dans `GameFonts.cpp`.
+
+**Le HUD en jeu** suit la maquette de L'amie : Futura BdCn BT (gras condensé), **droite**, blanche, via `PokemonFonts::GetHUD`. Il prend `FF_Futura_BoldCondensed.ttf` si on l'ajoute dans `Tools/HUD/Assets/fonts/` ; en attendant il prend Futura Bold et la resserre à 82 % en largeur. Si l'une manque, l'autre la remplace ; sans aucune, Roboto.
 
 La Futura d'origine n'avait pas les accents : `Tools/HUD/add_futura_accents.py` (fil de l'écran de titre) les ajoute dans `FF_Futura_Bold.ttf` et `FF_Futura_Medium.ttf` (originaux gardés dans `fonts/original/`). À l'ouverture d'Unreal, `init_unreal.py` réimporte toute police dont le `.ttf` est plus récent que l'asset.
 

@@ -74,4 +74,29 @@ namespace PokemonFonts
 		Info.SkewAmount = Skew;
 		return Info;
 	}
+
+	FSlateFontInfo GetHUD(float Size, bool* bOutCondensed)
+	{
+		static TSharedPtr<const FCompositeFont> HUDFont;
+		static bool bCondensed = false;
+		if (!HUDFont.IsValid())
+		{
+			UFontFace* Face = LoadFace(TEXT("FF_Futura_BoldCondensed"));
+			bCondensed = Face != nullptr;
+			Face = Face ? Face : LoadFace(TEXT("FF_Futura_Bold"));
+			if (Face)
+			{
+				TSharedRef<FCompositeFont> Composite = MakeShared<FCompositeFont>();
+				FTypefaceEntry& Entry = Composite->DefaultTypeface.Fonts.AddDefaulted_GetRef();
+				Entry.Name = TEXT("Regular");
+				Entry.Font = FFontData(Face);
+				HUDFont = Composite;
+			}
+		}
+		if (bOutCondensed)
+		{
+			*bOutCondensed = bCondensed;
+		}
+		return HUDFont.IsValid() ? FSlateFontInfo(HUDFont, Size, FName(TEXT("Regular"))) : FCoreStyle::GetDefaultFontStyle(TEXT("Bold"), Size);
+	}
 }

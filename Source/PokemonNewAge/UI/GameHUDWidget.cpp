@@ -68,15 +68,22 @@ TSharedRef<SWidget> UGameHUDWidget::RebuildWidget()
 		CanvasSlot->SetHorizontalAlignment(HAlign_Fill);
 		CanvasSlot->SetVerticalAlignment(VAlign_Fill);
 
-		// Futura partout (UI/GameFonts.h)
-		auto MakeText = [this](bool bBold, float Size, ETextJustify::Type Justify)
+		// Maquette de L'amie : Futura BdCn BT (gras condensé), droite, blanche, sans ombre (UI/GameFonts.h)
+		auto MakeText = [this](float Size, ETextJustify::Type Justify)
 		{
 			UTextBlock* Label = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
-			Label->SetFont(PokemonFonts::Get(Size, bBold));
+			bool bCondensed = false;
+			Label->SetFont(PokemonFonts::GetHUD(Size, &bCondensed));
 			Label->SetColorAndOpacity(FSlateColor(FLinearColor::White));
 			Label->SetJustification(Justify);
-			Label->SetShadowOffset(FVector2D(1.f, 1.f));
-			Label->SetShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.35f));
+			if (!bCondensed)
+			{
+				// Pas encore la vraie condensée : on resserre la Futura Bold à l'affichage
+				FWidgetTransform Narrow;
+				Narrow.Scale = FVector2D(0.82f, 1.f);
+				Label->SetRenderTransform(Narrow);
+				Label->SetRenderTransformPivot(FVector2D(Justify == ETextJustify::Right ? 1.f : 0.5f, 0.5f));
+			}
 			return Label;
 		};
 		auto MakeLine = [this](const FLinearColor& Color)
@@ -98,7 +105,7 @@ TSharedRef<SWidget> UGameHUDWidget::RebuildWidget()
 		}
 		PokedexIcon = Icon;
 		Place(Canvas, Icon, FVector2D(1.f, 0.f), FVector2D(-40.f, 39.f), FVector2D(112.f, 112.f), FVector2D(1.f, 0.f));
-		SavedText = MakeText(false, 14.f, ETextJustify::Right);
+		SavedText = MakeText(14.f, ETextJustify::Right);
 		SavedText->SetText(LOCTEXT("Saved", "Partie sauvegardée"));
 		SavedText->SetRenderOpacity(0.f);
 		Place(Canvas, SavedText, FVector2D(1.f, 0.f), FVector2D(-40.f, 155.f), FVector2D(220.f, 20.f), FVector2D(1.f, 0.f));
@@ -106,8 +113,8 @@ TSharedRef<SWidget> UGameHUDWidget::RebuildWidget()
 		// ---- Grand nom du lieu (Futura 95, centré à 157 px du haut) et trait de 584 x 4 à 268 px
 		UCanvasPanel* BannerPanel = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("Banner"));
 		Place(Canvas, BannerPanel, FVector2D(0.5f, 0.f), FVector2D(0.f, 157.f), FVector2D(846.f, 120.f), FVector2D(0.5f, 0.f));
-		BannerText = MakeText(true, 95.f, ETextJustify::Center);
-		BannerText->SetShadowOffset(FVector2D(3.f, 3.f));
+		BannerText = MakeText(95.f, ETextJustify::Center);
+		BannerText->SetShadowOffset(FVector2D(3.f, 3.f));  // ombre de la maquette
 		BannerText->SetShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.6f));
 		Place(BannerPanel, BannerText, FVector2D::ZeroVector, FVector2D::ZeroVector, FVector2D(846.f, 117.f), FVector2D::ZeroVector);
 		const float LineLeft = (846.f - 584.f) * 0.5f;
@@ -121,10 +128,10 @@ TSharedRef<SWidget> UGameHUDWidget::RebuildWidget()
 		Place(Canvas, Block, FVector2D(1.f, 1.f), FVector2D::ZeroVector, BlockSize, FVector2D(1.f, 1.f));
 		InfoBlock = Block;
 
-		PlaceText = MakeText(false, 24.f, ETextJustify::Center);
+		PlaceText = MakeText(24.f, ETextJustify::Center);
 		Place(Block, PlaceText, FVector2D::ZeroVector, FVector2D(17.f, 0.f), FVector2D(206.f, 29.f), FVector2D::ZeroVector);
 		Place(Block, MakeLine(FLinearColor::White), FVector2D::ZeroVector, FVector2D(17.f, 32.f), FVector2D(206.f, 2.f), FVector2D::ZeroVector);
-		// Heure | température | météo : une ligne centrée sous le trait, chaque élément à sa largeur réelle
+		// Heure | température | météo : une ligne centrée sous le trait (traits verticaux de 29 px), chaque élément à sa largeur réelle
 		UHorizontalBox* InfoRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("InfoRow"));
 		Place(Block, InfoRow, FVector2D::ZeroVector, FVector2D(120.f, 37.f), FVector2D(206.f, 29.f), FVector2D(0.5f, 0.f))->SetAutoSize(true);
 		auto AddToRow = [InfoRow](UWidget* Widget, const FMargin& RowPadding)
@@ -137,14 +144,14 @@ TSharedRef<SWidget> UGameHUDWidget::RebuildWidget()
 		{
 			USizeBox* SeparatorBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
 			SeparatorBox->SetWidthOverride(2.f);
-			SeparatorBox->SetHeightOverride(25.f);
+			SeparatorBox->SetHeightOverride(29.f);
 			SeparatorBox->SetContent(MakeLine(FLinearColor::White));
-			AddToRow(SeparatorBox, FMargin(9.f, 0.f));
+			AddToRow(SeparatorBox, FMargin(6.f, 0.f));
 		};
-		TimeText = MakeText(false, 24.f, ETextJustify::Center);
+		TimeText = MakeText(24.f, ETextJustify::Center);
 		AddToRow(TimeText, FMargin(0.f));
 		AddSeparator();
-		TemperatureText = MakeText(false, 24.f, ETextJustify::Center);
+		TemperatureText = MakeText(24.f, ETextJustify::Center);
 		AddToRow(TemperatureText, FMargin(0.f));
 		AddSeparator();
 		WeatherImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("Weather"));
@@ -173,14 +180,14 @@ TSharedRef<SWidget> UGameHUDWidget::RebuildWidget()
 		UBorder* Dot = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Player"));
 		Dot->SetBrush(FSlateRoundedBoxBrush(FLinearColor::White, 6.f));
 		Place(Block, Dot, FVector2D::ZeroVector, CompassCenter - FVector2D(6.f), FVector2D(12.f), FVector2D::ZeroVector);
-		UTextBlock* North = MakeText(true, 25.f, ETextJustify::Center);
+		UTextBlock* North = MakeText(25.f, ETextJustify::Center);
 		North->SetText(LOCTEXT("North", "N"));
 		Place(Block, North, FVector2D::ZeroVector, FVector2D(82.f, 78.f), FVector2D(75.f, 30.f), FVector2D::ZeroVector);
 		GpsMarker = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Gps"));
 		GpsMarker->SetBrush(FSlateRoundedBoxBrush(FLinearColor(1.f, 0.8f, 0.2f), 7.f, FLinearColor::White, 2.f));
 		GpsMarker->SetVisibility(ESlateVisibility::Collapsed);
 		Place(Block, GpsMarker, FVector2D::ZeroVector, CompassCenter - FVector2D(7.f), FVector2D(14.f), FVector2D::ZeroVector);
-		GpsText = MakeText(false, 14.f, ETextJustify::Center);
+		GpsText = MakeText(14.f, ETextJustify::Center);
 		Place(Block, GpsText, FVector2D::ZeroVector, FVector2D(17.f, CompassCenter.Y + 22.f), FVector2D(206.f, 40.f), FVector2D::ZeroVector);
 
 		// ---- Appareil photo : aide en bas au centre (absente des photos)
@@ -188,7 +195,7 @@ TSharedRef<SWidget> UGameHUDWidget::RebuildWidget()
 		UOverlaySlot* PhotoSlot = Root->AddChildToOverlay(PhotoLayer);
 		PhotoSlot->SetHorizontalAlignment(HAlign_Fill);
 		PhotoSlot->SetVerticalAlignment(VAlign_Fill);
-		PhotoText = MakeText(false, 20.f, ETextJustify::Center);
+		PhotoText = MakeText(20.f, ETextJustify::Center);
 		Place(PhotoLayer, PhotoText, FVector2D(0.5f, 1.f), FVector2D(0.f, -48.f), FVector2D(1000.f, 60.f), FVector2D(0.5f, 1.f));
 		PhotoLayer->SetVisibility(ESlateVisibility::Collapsed);
 		PhotoHint = PhotoLayer;

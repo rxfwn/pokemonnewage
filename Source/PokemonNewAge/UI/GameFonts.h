@@ -19,6 +19,13 @@ namespace PokemonFonts
 
 	FSlateFontInfo Get(float Size, EStyle Style = EStyle::Regular);
 
+	/**
+	 *  Police droite du HUD en jeu (maquette de L'amie : Futura BdCn BT, gras condensé, pas penché) :
+	 *  FF_Futura_BoldCondensed si elle est importée, sinon FF_Futura_Bold. bOutCondensed dit laquelle on a eue
+	 *  (le HUD resserre lui-même le texte quand ce n'est pas la vraie condensée).
+	 */
+	FSlateFontInfo GetHUD(float Size, bool* bOutCondensed = nullptr);
+
 	inline FSlateFontInfo Get(float Size, bool bBold)
 	{
 		return Get(Size, bBold ? EStyle::Bold : EStyle::Regular);
