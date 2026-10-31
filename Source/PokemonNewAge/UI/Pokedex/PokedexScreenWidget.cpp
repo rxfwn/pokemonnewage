@@ -1,4 +1,5 @@
 #include "UI/Pokedex/PokedexScreenWidget.h"
+#include "Core/GameClock.h"
 #include "UI/GameFonts.h"
 #include "Blueprint/WidgetTree.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
@@ -107,8 +108,10 @@ namespace PokedexScreen
 		}
 	}
 
-	/** Taille de l'image de la carte sur l'écran (pixels) */
-	constexpr float MapSize = 470.f;
+	/** Fenêtre de la carte sur l'écran (pixels) et zoom : on voit une partie de Kanto en gros, centrée sur la ville choisie */
+	constexpr float MapViewWidth = 600.f;
+	constexpr float MapViewHeight = 470.f;
+	constexpr float MapZoomedSize = 1150.f;
 }
 
 using namespace PokedexScreen;
@@ -234,7 +237,7 @@ void UPokedexScreenWidget::NativeTick(const FGeometry& MyGeometry, float InDelta
 	if (ClockTimer <= 0.f && ClockText)
 	{
 		ClockTimer = 1.f;
-		ClockText->SetText(FText::FromString(FDateTime::Now().ToString(TEXT("%H:%M"))));
+		ClockText->SetText(PokemonClock::FormatTime(GetWorld()));
 	}
 
 	if (StatusTimeLeft > 0.f)
@@ -1354,10 +1357,26 @@ void UPokedexScreenWidget::BuildMap()
 	UHorizontalBox* Layout = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
 	Content->AddChildToVerticalBox(Layout);
 
-	// Carte à gauche, avec les villes et le joueur par-dessus
+	const TArray<int32> Towns = GetMapTowns();
+	if (Towns.Num() > 0)
+	{
+		Selection = FMath::Clamp(Selection, 0, Towns.Num() - 1);
+	}
+	FVector2D PlayerUV;
+	const bool bHasPlayer = GetPlayerMapPosition(PlayerUV);
+
+	// Carte à gauche, zoomée et centrée sur la ville choisie (sinon sur le joueur), avec les villes et le joueur par-dessus
+	const FVector2D View(MapViewWidth, MapViewHeight);
+	const FVector2D Focus = Towns.IsValidIndex(Selection) ? Model->MapPlaces[Towns[Selection]].UV : (bHasPlayer ? PlayerUV : FVector2D(0.5f, 0.5f));
+	const FVector2D MapOrigin(
+		FMath::Clamp(Focus.X * MapZoomedSize - View.X * 0.5f, 0.f, MapZoomedSize - View.X),
+		FMath::Clamp(Focus.Y * MapZoomedSize - View.Y * 0.5f, 0.f, MapZoomedSize - View.Y));
+	auto ToMap = [MapOrigin](const FVector2D& UV) { return UV * MapZoomedSize - MapOrigin; };
+
 	USizeBox* MapBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
-	MapBox->SetWidthOverride(MapSize);
-	MapBox->SetHeightOverride(MapSize);
+	MapBox->SetWidthOverride(View.X);
+	MapBox->SetHeightOverride(View.Y);
+	MapBox->SetClipping(EWidgetClipping::ClipToBounds);
 	UCanvasPanel* Canvas = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass());
 	MapBox->SetContent(Canvas);
 	Layout->AddChildToHorizontalBox(MapBox)->SetVerticalAlignment(VAlign_Top);
@@ -1365,25 +1384,20 @@ void UPokedexScreenWidget::BuildMap()
 	UImage* MapImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
 	MapImage->SetBrushFromTexture(Model->MapTexture);
 	UCanvasPanelSlot* ImageSlot = Canvas->AddChildToCanvas(MapImage);
-	ImageSlot->SetPosition(FVector2D::ZeroVector);
-	ImageSlot->SetSize(FVector2D(MapSize, MapSize));
+	ImageSlot->SetPosition(-MapOrigin);
+	ImageSlot->SetSize(FVector2D(MapZoomedSize, MapZoomedSize));
 
-	const TArray<int32> Towns = GetMapTowns();
-	if (Towns.Num() > 0)
-	{
-		Selection = FMath::Clamp(Selection, 0, Towns.Num() - 1);
-	}
-	auto AddMarker = [Canvas](UWidget* Marker, const FVector2D& UV, float Size)
+	auto AddMarker = [Canvas, ToMap](UWidget* Marker, const FVector2D& UV, float Size)
 	{
 		UCanvasPanelSlot* MarkerSlot = Canvas->AddChildToCanvas(Marker);
 		MarkerSlot->SetSize(FVector2D(Size, Size));
-		MarkerSlot->SetPosition(UV * MapSize - FVector2D(Size * 0.5f, Size * 0.5f));
+		MarkerSlot->SetPosition(ToMap(UV) - FVector2D(Size * 0.5f, Size * 0.5f));
 	};
 	for (int32 Index = 0; Index < Towns.Num(); ++Index)
 	{
 		const FPokedexMapPlace& Place = Model->MapPlaces[Towns[Index]];
 		const bool bSelected = Index == Selection;
-		AddMarker(MakeDot(bSelected ? Gold : Accent, bSelected ? 16.f : 9.f, Background), Place.UV, bSelected ? 16.f : 9.f);
+		AddMarker(MakeDot(bSelected ? Gold : Accent, bSelected ? 22.f : 13.f, Background), Place.UV, bSelected ? 22.f : 13.f);
 	}
 	if (Towns.IsValidIndex(Selection))
 	{
@@ -1392,19 +1406,17 @@ void UPokedexScreenWidget::BuildMap()
 		UBorder* Label = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass());
 		Label->SetBrushColor(FLinearColor(0.f, 0.f, 0.f, 0.7f));
 		Label->SetPadding(FMargin(6.f, 1.f));
-		Label->SetContent(MakeText(Place.Name, 15, Gold, true));
+		Label->SetContent(MakeText(Place.Name, 20, Gold, true));
 		UCanvasPanelSlot* LabelSlot = Canvas->AddChildToCanvas(Label);
 		LabelSlot->SetAutoSize(true);
-		const bool bLeft = Place.UV.X > 0.7f;
+		const bool bLeft = ToMap(Place.UV).X > View.X * 0.6f;
 		LabelSlot->SetAlignment(FVector2D(bLeft ? 1.f : 0.f, 0.5f));
-		LabelSlot->SetPosition(Place.UV * MapSize + FVector2D(bLeft ? -14.f : 14.f, 0.f));
+		LabelSlot->SetPosition(ToMap(Place.UV) + FVector2D(bLeft ? -18.f : 18.f, 0.f));
 	}
 
-	FVector2D PlayerUV;
-	const bool bHasPlayer = GetPlayerMapPosition(PlayerUV);
 	if (bHasPlayer)
 	{
-		AddMarker(MakeDot(FLinearColor(0.95f, 0.12f, 0.1f), 18.f, FLinearColor::White), PlayerUV, 18.f);
+		AddMarker(MakeDot(FLinearColor(0.95f, 0.12f, 0.1f), 24.f, FLinearColor::White), PlayerUV, 24.f);
 	}
 
 	// Colonne de droite : où on est, puis la liste des villes
@@ -1419,7 +1431,7 @@ void UPokedexScreenWidget::BuildMap()
 	const int32 GpsTarget = Player ? Player->GetGpsTarget() : INDEX_NONE;
 	if (Model->MapPlaces.IsValidIndex(GpsTarget))
 	{
-		AddMarker(MakeDot(Good, 14.f, Background), Model->MapPlaces[GpsTarget].UV, 14.f);
+		AddMarker(MakeDot(Good, 18.f, Background), Model->MapPlaces[GpsTarget].UV, 18.f);
 	}
 	AddLine(LOCTEXT("YouAreHere", "TU ES ICI"), 16, Dim, true);
 	AddLine(Here >= 0 ? Model->MapPlaces[Here].Name : (bHasPlayer ? LOCTEXT("Wild", "En pleine nature") : LOCTEXT("NoLandscape", "Hors de Kanto")),

@@ -23,7 +23,13 @@ Les réglages attendent **Appliquer** ou **OK** ; les touches changent tout de s
 
 ## Le Pokédex 3D (Tab)
 
-Comme l'image de référence de L'amie (sans les mains) : Tab sort le Pokédex ouvert devant la caméra, il prend presque tout l'écran (`Screen Fill` 0,89, recalculé si la fenêtre change de taille), décor du jeu flouté derrière. On le tourne à la souris jusqu'à 30° de côté et 20° en hauteur (`Max Turn Yaw` / `Max Turn Pitch`). Les voyants du haut et l'objectif restent allumés ; le bouton rond noir sous l'écran lance l'appareil photo.
+Comme l'image de référence de L'amie (sans les mains) : Tab sort le Pokédex ouvert devant la caméra, il prend presque tout l'écran sans être coupé (`Screen Fill` 0,86, épaisseur comprise, recalculé si la fenêtre change de taille), décor du jeu flouté derrière. On le tourne à la souris jusqu'à 30° de côté et 20° en hauteur (`Max Turn Yaw` / `Max Turn Pitch`). Les voyants du haut et l'objectif restent allumés ; le bouton rond noir sous l'écran (petite icône appareil photo de L'amie) lance l'appareil photo. Le Pokédex suit la caméra pendant l'ouverture : il finit bien en face même si on tournait la caméra en appuyant sur Tab.
+
+**Netteté** : écrans et icônes sont dessinés `Panel Render Scale` fois plus fins (2 par défaut : l'écran principal est rendu en 1920 × 1296).
+
+**Éclairage** (d'après l'image de L'amie, lumière de jour douce) : lumière principale chaude et large, lumière d'appoint bleutée (ciel), contre-jour chaud derrière en haut à droite (`Rim Light Intensity`), décor plus flouté (`Background Blur Fstop` 1,8), léger bloom et couleurs un peu chaudes.
+
+**Heure du jeu** (HUD, petit écran, barre de l'écran) : `Core/GameClock`. Lue dans une variable décimale `Heure`, `Hour`, `TimeOfDay` ou `Time` (0 à 24) de `BP_CycleJourNuit` si elle existe, sinon déduite de la hauteur du soleil (midi en haut, matin quand il monte), sinon l'heure du PC.
 
 **Rendu (réglages dans `BP`/classe `PokedexDevice`, catégorie Rendu)** : exposition fixe calculée d'après le soleil de la map (`Match World Exposure`, correction `World Exposure Offset` : négatif = plus clair ; sinon `Menu Exposure EV100`). La valeur choisie s'écrit dans le journal : « Pokedex 3D : exposition du menu EV100 … ». Les lumières de l'appareil, les voyants et les écrans suivent cette valeur tout seuls. Les écrans et icônes utilisent `M_PokedexWidget` (créé par le script d'import, réimporté tout seul à l'ouverture d'Unreal s'il manque) ; leur luminosité : `Screen Brightness`. À gauche l'écran affiche la fonction choisie, à droite le volet porte les 10 boutons à icônes : ils s'allument et se soulèvent sous la souris ou la sélection, et s'enfoncent au clic.
 
@@ -31,7 +37,7 @@ Comme l'image de référence de L'amie (sans les mains) : Tab sort le Pokédex o
 Les 10 boutons à icônes du volet, dans l'ordre de la grille :
 
 1. **Pokédex** : toutes les espèces par numéro, vu / capturé, fiche avec types, description, **où le trouver** et la figurine 3D du Pokémon.
-2. **Carte et GPS** : Kanto vu de haut, le point rouge est le joueur, « Tu es ici » donne le lieu. Valider sur une ville en fait la **destination du GPS** (point vert sur la carte, repère jaune et distance sur la boussole du HUD) ; valider encore l'arrête.
+2. **Carte et GPS** : Kanto vu de haut, zoomé et centré sur la ville choisie (la carte défile quand on change de ville), le point rouge est le joueur, « Tu es ici » donne le lieu. Valider sur une ville en fait la **destination du GPS** (point vert sur la carte, repère jaune et distance sur la boussole du HUD) ; valider encore l'arrête.
 3. **Sac** : 4 poches, **Soins**, **Capture**, **Baies et matériaux**, **Objets clés** ; utiliser un soin sur un Pokémon.
 4. **Équipe** : PV et objet tenu, la fiche en 3 onglets (infos, stats, attaques), **Déplacer**, **Donner un objet** / **Reprendre l'objet**.
 5. **Carte dresseur** : nom, numéro, argent, temps de jeu, Pokédex, les 8 badges et les exploits.
@@ -57,7 +63,7 @@ Fait en C++ (`UGameHUDWidget`) aux mesures de la maquette (1920 × 1080, mis à 
 
 - **Icône du Pokédex** en haut à droite (image de L'amie), sans texte de touche (Tab l'ouvre).
 - **Nom du lieu** en Futura 95, centré en haut, avec le trait blanc dessous : il apparaît 4 s quand on entre dans une ville ou sur une route.
-- **En bas à droite** : le lieu (Futura BdCn BT 24, droite, comme la maquette), l'heure du PC, la température (17 °C de moyenne, plus chaud à 15 h, réglable : `Base Temperature`, `Temperature Swing`) et le picto météo (pictos de L'amie : soleil par défaut, `SetWeather` pour nuage, pluie ou vent en attendant un vrai système météo).
+- **En bas à droite** : le lieu (Futura BdCn BT 24, droite, comme la maquette), l'heure du jeu (voir « Heure du jeu »), la température (17 °C de moyenne, plus chaud à 15 h, réglable : `Base Temperature`, `Temperature Swing`) et le picto météo (pictos de L'amie : soleil par défaut, `SetWeather` pour nuage, pluie ou vent en attendant un vrai système météo).
 - **Boussole** : disque gris translucide, N en haut (le nord de Kanto), point blanc du joueur, cône de vue qui tourne avec la caméra, repère jaune du GPS sur le bord et distance au centre.
 - Il se cache pendant les combats, les menus, la boutique, le PC et l'appareil photo, ou avec Échap > Jeu > Afficher le HUD.
 
@@ -105,19 +111,17 @@ Les pièces de l'appareil :
 |---|---|
 | 10 boutons à icônes du volet | ouvrent les menus (voir plus bas) |
 | `<` et `>` sur le volet | menu précédent / suivant |
-| bouton rond jaune du volet, bouton rond noir | valider |
-| petit bouton rouge sous l'écran | retour |
-| languette jaune | accueil (retour au volet) |
-| languette bleue, objectif bleu | ouvre le Pokédex |
+| bouton rond noir (icône appareil photo) | appareil photo |
 | croix | naviguer |
-| charnière | fermer |
 | grand écran | cliquable directement (listes, onglets) |
 
-- **Tourner l'appareil** : clic droit maintenu, ou clic gauche sur le boîtier ou le volet. Il revient en place quand on lâche. La molette rapproche ou éloigne (sur l'écran, elle fait défiler la liste).
+Le reste est du décor, **pas cliquable** (demandé par L'amie) : objectif et voyants du haut, languettes jaune et bleue, petit bouton rouge de l'écran, voyants et fentes du volet, bouton rond jaune du volet, petits écrans « CAPTURÉS/VUS » et « BADGES », boîtier, charnière. La main de la souris n'apparaît que sur ce qui est cliquable.
+
+- **Tourner l'appareil** : seulement **clic droit maintenu** en bougeant la souris (ou stick droit). Il ne bouge jamais tout seul et reste où on l'a laissé. Plus il est tourné, plus il recule, pour ne jamais sortir de l'écran. La molette l'éloigne (jamais plus près que le cadrage de départ ; sur l'écran, elle fait défiler la liste).
 - **Clavier** : flèches ou ZQSD (grille 5 × 2 sur le volet), Entrée pour valider, Échap ou Retour arrière pour revenir, Tab pour fermer.
 - **Manette** : croix, A, B, gâchettes hautes pour changer de menu, stick droit pour tourner, Start pour fermer.
 
-Les autres écrans : celui du haut du volet donne le nom et la description de ce qui est choisi (menu, Pokémon, espèce, objet, ville). Les petits écrans affichent l'heure et l'argent (sous l'écran), le Pokédex capturés / vus et les badges (sur le volet).
+Les autres écrans : celui du haut du volet donne le nom et la description de ce qui est choisi (menu, Pokémon, espèce, objet, ville). Les petits écrans affichent l'heure **du jeu** et l'argent (sous l'écran), le Pokédex capturés / vus et les badges (sur le volet).
 
 Ce que contient chaque fonction : voir « Le Pokédex 3D (Tab) » plus haut.
 

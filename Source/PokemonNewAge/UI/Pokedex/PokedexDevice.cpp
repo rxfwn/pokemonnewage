@@ -11,9 +11,12 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Components/WidgetInteractionComponent.h"
+#include "Core/GameClock.h"
 #include "Core/PokemonPlayerState.h"
 #include "Engine/Engine.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/Texture2D.h"
+#include "Widgets/Layout/SDPIScaler.h"
 #include "Kismet/GameplayStatics.h"
 #include "UObject/UObjectIterator.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -32,11 +35,8 @@ namespace PokedexDevice
 		TEXT("PrevButton"), TEXT("NextButton"), TEXT("LidButton") };
 
 	/** Boutons qui s'enfoncent */
-	const TCHAR* PushButtons[] = { TEXT("BackButton"), TEXT("ConfirmButton"), TEXT("HomeButton"), TEXT("DexButton"), TEXT("DPad"),
-		TEXT("Lens"), TEXT("PrevButton"), TEXT("NextButton"), TEXT("LidButton") };
+	const TCHAR* PushButtons[] = { TEXT("ConfirmButton"), TEXT("DPad"), TEXT("PrevButton"), TEXT("NextButton") };
 
-	/** Pièces sur lesquelles on ne clique pas (on les attrape pour tourner l'appareil) */
-	const TCHAR* GripParts[] = { TEXT("Body"), TEXT("Lid"), TEXT("LidScreen"), TEXT("MiniScreen0"), TEXT("MiniScreen1"), TEXT("MiniScreen2") };
 
 	/** Couleur des boutons du volet (sous les icônes), allumés quand on les choisit */
 	const FLinearColor TileColor(0.62f, 0.86f, 0.93f);
@@ -72,6 +72,7 @@ namespace PokedexDevice
 
 	/** Matériau des écrans et icônes, créé par import_pokedex_unreal.py (paramètre Brightness) */
 	const TCHAR* WidgetMaterialPath = TEXT("/Game/UI/Pokedex/M_PokedexWidget.M_PokedexWidget");
+	const TCHAR* CameraIconPath = TEXT("/Game/UI/Pokedex/Icons/T_PokedexButton_Camera.T_PokedexButton_Camera");
 }
 
 using namespace PokedexDevice;
@@ -122,7 +123,8 @@ APokedexDevice::APokedexDevice()
 	KeyLight->SetRelativeLocation(FVector(-26.f, -16.f, 18.f));
 	KeyLight->SetIntensityUnits(ELightUnits::Candelas);
 	KeyLight->SetAttenuationRadius(400.f);
-	KeyLight->SetSourceRadius(6.f);
+	KeyLight->SetSourceRadius(14.f);
+	KeyLight->SetLightColor(FLinearColor(1.f, 0.94f, 0.84f));
 	KeyLight->LightingChannels.bChannel0 = false;
 	KeyLight->LightingChannels.bChannel1 = true;
 	KeyLight->SetCastShadows(true);
@@ -133,10 +135,22 @@ APokedexDevice::APokedexDevice()
 	FillLight->SetIntensityUnits(ELightUnits::Candelas);
 	FillLight->SetAttenuationRadius(400.f);
 	FillLight->SetSourceRadius(10.f);
-	FillLight->SetLightColor(FLinearColor(0.85f, 0.92f, 1.f));
+	FillLight->SetLightColor(FLinearColor(0.78f, 0.88f, 1.f));
 	FillLight->LightingChannels.bChannel0 = false;
 	FillLight->LightingChannels.bChannel1 = true;
 	FillLight->SetCastShadows(false);
+
+	// Contre-jour : soleil chaud derrière l'appareil, en haut à droite (liseré lumineux sur les bords)
+	RimLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("RimLight"));
+	RimLight->SetupAttachment(Root);
+	RimLight->SetRelativeLocation(FVector(22.f, 20.f, 24.f));
+	RimLight->SetIntensityUnits(ELightUnits::Candelas);
+	RimLight->SetAttenuationRadius(400.f);
+	RimLight->SetSourceRadius(8.f);
+	RimLight->SetLightColor(FLinearColor(1.f, 0.82f, 0.6f));
+	RimLight->LightingChannels.bChannel0 = false;
+	RimLight->LightingChannels.bChannel1 = true;
+	RimLight->SetCastShadows(false);
 
 	// Décor flouté et exposition fixe pendant le menu
 	PostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("PostProcess"));
@@ -242,17 +256,18 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 	}
 #endif
 	ScreenComponent->SetOwnerPlayer(InController->GetLocalPlayer());
-	ScreenComponent->SetWidget(Screen);
-	ScreenComponent->SetTintColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.f));
+	const FVector2D ScreenPixels(UPokedexScreenWidget::ScreenWidth, UPokedexScreenWidget::ScreenHeight);
+	float ScreenCmPerPixel = 1.f / UPokedexPanelWidget::PixelsPerCm;
 	FVector ScreenCenter;
 	FVector2D ScreenSize;
 	if (GetPartFace(TEXT("Screen"), ScreenCenter, ScreenSize))
 	{
 		// Toute la vitre, à la même échelle en largeur et en hauteur
 		ScreenComponent->SetRelativeLocation(ScreenCenter);
-		const float Scale = FMath::Min(ScreenSize.X / UPokedexScreenWidget::ScreenWidth, ScreenSize.Y / UPokedexScreenWidget::ScreenHeight);
-		ScreenComponent->SetRelativeScale3D(FVector(Scale));
+		ScreenCmPerPixel = FMath::Min(ScreenSize.X / ScreenPixels.X, ScreenSize.Y / ScreenPixels.Y);
 	}
+	SetPanelWidget(ScreenComponent, Screen, ScreenPixels, ScreenCmPerPixel);
+	ScreenComponent->SetTintColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.f));
 	Panels.Add(ScreenComponent);
 
 	CreatePanels();
@@ -281,9 +296,11 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 	const float LightScale = FMath::Square(GetActorScale3D().X) * FMath::Pow(2.f, ExposureEV100 - 11.f);
 	KeyLight->SetIntensity(KeyLightIntensity * LightScale);
 	FillLight->SetIntensity(FillLightIntensity * LightScale);
-	// Moins de reflets blancs sur le plastique verni
-	KeyLight->SetSpecularScale(0.35f);
+	RimLight->SetIntensity(RimLightIntensity * LightScale);
+	// Reflets doux sur le plastique (lumière de jour diffuse, comme sur la maquette)
+	KeyLight->SetSpecularScale(0.45f);
 	FillLight->SetSpecularScale(0.15f);
+	RimLight->SetSpecularScale(0.6f);
 	GlowScale = 0.6f * ExposureUnit(ExposureEV100);
 	WidgetBrightness = ScreenBrightness * ExposureUnit(ExposureEV100);
 	FPostProcessSettings& Settings = PostProcess->Settings;
@@ -301,7 +318,14 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 	Settings.bOverride_AutoExposureBias = true;
 	Settings.AutoExposureBias = 0.f;
 	Settings.bOverride_VignetteIntensity = true;
-	Settings.VignetteIntensity = 0.35f;
+	Settings.VignetteIntensity = 0.3f;
+	// Rendu « fin d'après-midi » : un peu de bloom, couleurs légèrement chaudes et saturées
+	Settings.bOverride_BloomIntensity = true;
+	Settings.BloomIntensity = 0.45f;
+	Settings.bOverride_ColorSaturation = true;
+	Settings.ColorSaturation = FVector4(1.f, 1.f, 1.f, 1.08f);
+	Settings.bOverride_ColorGain = true;
+	Settings.ColorGain = FVector4(1.03f, 1.f, 0.95f, 1.f);
 
 	// Fermé, sous l'écran
 	Hinge->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
@@ -401,6 +425,7 @@ void APokedexDevice::MeasureModel()
 	}
 	HalfWidth = OpenBox.GetExtent().Y;
 	HalfHeight = OpenBox.GetExtent().Z;
+	HalfDepth = OpenBox.GetExtent().X;
 	OpenOffset = FVector(0.f, -OpenBox.GetCenter().Y, -OpenBox.GetCenter().Z);
 	ClosedOffset = FVector(0.f, -ClosedBox.GetCenter().Y, -ClosedBox.GetCenter().Z);
 }
@@ -490,10 +515,8 @@ UWidgetComponent* APokedexDevice::AddPanel(FName PartKey, UUserWidget* Widget, F
 	UWidgetComponent* Panel = NewObject<UWidgetComponent>(this, FName(*(TEXT("Panel_") + PartKey.ToString())));
 	Panel->SetupAttachment(Part->GetAttachParent());
 	Panel->SetWidgetSpace(EWidgetSpace::World);
-	Panel->SetDrawSize(PixelSize);
 	Panel->SetRelativeLocation(Center);
 	Panel->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
-	Panel->SetRelativeScale3D(FVector(1.f / UPokedexPanelWidget::PixelsPerCm));
 	Panel->SetBlendMode(bOpaque ? EWidgetBlendMode::Opaque : EWidgetBlendMode::Transparent);
 	Panel->SetBackgroundColor(bOpaque ? FLinearColor::Black : FLinearColor::Transparent);
 	Panel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -505,11 +528,26 @@ UWidgetComponent* APokedexDevice::AddPanel(FName PartKey, UUserWidget* Widget, F
 	}
 	Panel->RegisterComponent();
 	Panel->SetOwnerPlayer(Controller->GetLocalPlayer());
-	Panel->SetWidget(Widget);
+	SetPanelWidget(Panel, Widget, PixelSize, 1.f / UPokedexPanelWidget::PixelsPerCm);
 	Panel->SetTintColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.f));
 	AddInstanceComponent(Panel);
 	Panels.Add(Panel);
 	return Panel;
+}
+
+void APokedexDevice::SetPanelWidget(UWidgetComponent* Panel, UUserWidget* Widget, FVector2D PixelSize, float CmPerPixel)
+{
+	// Le widget garde sa mise en page (PixelSize) mais il est dessiné dans une texture RenderScale fois plus grande,
+	// et le panneau est réduit d'autant : même taille sur l'appareil, texte et icônes bien plus nets
+	const float RenderScale = FMath::Clamp(PanelRenderScale, 1.f, 4.f);
+	Panel->SetDrawSize(PixelSize * RenderScale);
+	Panel->SetRelativeScale3D(FVector(CmPerPixel / RenderScale));
+	if (FMath::IsNearlyEqual(RenderScale, 1.f))
+	{
+		Panel->SetWidget(Widget);
+		return;
+	}
+	Panel->SetSlateWidget(SNew(SDPIScaler).DPIScale(RenderScale)[Widget->TakeWidget()]);
 }
 
 void APokedexDevice::CreatePanels()
@@ -560,6 +598,27 @@ void APokedexDevice::CreatePanels()
 		MenuIcons.Add(Panel);
 		MenuIconWidgets.Add(Icon);
 	}
+
+	// Petit appareil photo blanc sur le bouton rond noir (icône de L'amie) : il s'enfonce avec le bouton
+	if (UTexture2D* CameraIcon = LoadObject<UTexture2D>(nullptr, CameraIconPath, nullptr, LOAD_NoWarn | LOAD_Quiet))
+	{
+		if (GetPartFace(TEXT("ConfirmButton"), Center, Size))
+		{
+			UPokedexIconWidget* Icon = CreateWidget<UPokedexIconWidget>(PC, UPokedexIconWidget::StaticClass());
+			Icon->SetPixelSize(Size * UPokedexPanelWidget::PixelsPerCm * 0.6f);
+			Icon->SetIcon(CameraIcon);
+			if (UWidgetComponent* Panel = AddPanel(TEXT("ConfirmButton"), Icon, Icon->GetPixelSize(), false))
+			{
+				Panel->SetRelativeLocation(Panel->GetRelativeLocation() - FVector(0.02f, 0.f, 0.f));
+				Pressables.Add({ Panel, Panel->GetRelativeLocation(), -1.f });
+				CameraIconPanel = Panel;
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogPokemonNewAge, Warning, TEXT("Pokedex 3D : icone appareil photo absente (lancer Tools/Pokedex/import_pokedex_unreal.py)"));
+	}
 }
 
 void APokedexDevice::PlaceInFrontOfCamera()
@@ -589,7 +648,8 @@ void APokedexDevice::UpdateFraming()
 	const float Aspect = SizeY > 0 ? float(SizeX) / float(SizeY) : 16.f / 9.f;
 	const float TanH = FMath::Tan(FMath::DegreesToRadians(PC->PlayerCameraManager->GetFOVAngle() * 0.5f));
 	const float TanV = TanH / Aspect;
-	ViewDistance = FMath::Max(HalfWidth / (TanH * ScreenFill), HalfHeight / (TanV * ScreenFill));
+	// + la demi-épaisseur : c'est la face avant (plus proche) qui doit tenir dans l'écran
+	ViewDistance = FMath::Max(HalfWidth / (TanH * ScreenFill), HalfHeight / (TanV * ScreenFill)) + HalfDepth;
 }
 
 // ---------------------------------------------------------------- Ouverture et fermeture
@@ -685,24 +745,30 @@ void APokedexDevice::UpdateAnimation(float DeltaSeconds)
 	Hinge->SetRelativeRotation(FRotator(0.f, FMath::Lerp(180.f, OpenLidYaw, LidOpen), 0.f));
 	ModelRoot->SetRelativeLocation(FMath::Lerp(ClosedOffset, OpenOffset, FMath::SmoothStep(0.f, 1.f, LidT)));
 
-	// Rotation par le joueur : libre pendant qu'on le tient, retour en douceur ensuite
+	// Rotation par le joueur : seulement clic droit maintenu (ou stick droit) ; il reste où on l'a laissé, sans bouger tout seul
 	UserYaw += StickYaw * 140.f * DeltaSeconds;
 	UserPitch += StickPitch * 100.f * DeltaSeconds;
-	const bool bHeld = bDragging || !FMath::IsNearlyZero(StickYaw) || !FMath::IsNearlyZero(StickPitch);
-	if (!bHeld)
-	{
-		UserYaw = FMath::FInterpTo(FRotator::NormalizeAxis(UserYaw), 0.f, DeltaSeconds, 5.f);
-		UserPitch = FMath::FInterpTo(FRotator::NormalizeAxis(UserPitch), 0.f, DeltaSeconds, 5.f);
-	}
 	UserYaw = FMath::Clamp(FRotator::NormalizeAxis(UserYaw), -MaxTurnYaw, MaxTurnYaw);
 	UserPitch = FMath::Clamp(FRotator::NormalizeAxis(UserPitch), -MaxTurnPitch, MaxTurnPitch);
-	const float Sway = Time - LastInteractTime > 1.5f ? 1.f : 0.f;
-	Pivot->SetRelativeRotation(FRotator(UserPitch + Sway * 1.2f * FMath::Sin(Time * 1.1f), UserYaw + Sway * 2.f * FMath::Sin(Time * 0.7f), 0.f));
+	Pivot->SetRelativeRotation(FRotator(UserPitch, UserYaw, 0.f));
 
-	// Devant la caméra, tourné vers elle
+	// Suit la caméra à chaque image : si elle tournait encore quand on a appuyé sur Tab (souris en mouvement,
+	// retard du bras de caméra), l'appareil finit quand même bien en face
+	if (APlayerController* CameraPC = Controller.Get())
+	{
+		if (CameraPC->PlayerCameraManager)
+		{
+			CameraLocation = CameraPC->PlayerCameraManager->GetCameraLocation();
+			CameraRotation = CameraPC->PlayerCameraManager->GetCameraRotation();
+		}
+	}
+
+	// Devant la caméra, tourné vers elle ; reculé quand il est tourné, pour que le bord qui avance ne sorte pas de l'écran
 	const FVector Forward = CameraRotation.Vector();
 	const FVector Up = FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::Z);
-	const float Distance = (ViewDistance + ZoomOffset) * GetActorScale3D().X;
+	const float TurnMargin = HalfWidth * FMath::Abs(FMath::Sin(FMath::DegreesToRadians(UserYaw)))
+		+ HalfHeight * FMath::Abs(FMath::Sin(FMath::DegreesToRadians(UserPitch)));
+	const float Distance = (ViewDistance + TurnMargin + ZoomOffset) * GetActorScale3D().X;
 	const FVector Location = CameraLocation + Forward * Distance - Up * (1.f - Rise) * Distance * 0.9f;
 	SetActorLocationAndRotation(Location, CameraRotation + FRotator((1.f - Rise) * -35.f, 0.f, 0.f));
 
@@ -868,7 +934,7 @@ void APokedexDevice::UpdatePanels(float DeltaSeconds)
 	const APokemonPlayerState* State = Controller.IsValid() ? Controller->GetPlayerState<APokemonPlayerState>() : nullptr;
 	if (MiniWidgets.IsValidIndex(0) && MiniWidgets[0])
 	{
-		MiniWidgets[0]->SetValues(FText::FromString(FDateTime::Now().ToString(TEXT("%H:%M"))),
+		MiniWidgets[0]->SetValues(PokemonClock::FormatTime(GetWorld()),
 			State ? FText::Format(LOCTEXT("MiniMoney", "{0} P$"), FText::AsNumber(State->Money)) : FText::GetEmpty());
 	}
 	if (MiniWidgets.IsValidIndex(1) && MiniWidgets[1])
@@ -1024,7 +1090,8 @@ void APokedexDevice::HandlePointerDown(const FKey& Button, const FVector2D& Pixe
 	LastPointer = Pixel;
 	LastInteractTime = Time;
 
-	if (Button == EKeys::RightMouseButton || Button == EKeys::MiddleMouseButton)
+	// Clic droit maintenu = tourner l'appareil (le clic gauche ne le fait plus tourner)
+	if (Button == EKeys::RightMouseButton)
 	{
 		bDragging = true;
 		return;
@@ -1037,7 +1104,6 @@ void APokedexDevice::HandlePointerDown(const FKey& Button, const FVector2D& Pixe
 	FHitResult Hit;
 	if (!TraceParts(Pixel, Hit))
 	{
-		bDragging = true;
 		return;
 	}
 
@@ -1065,52 +1131,13 @@ void APokedexDevice::HandlePointerDown(const FKey& Button, const FVector2D& Pixe
 		LensFlash = Time;
 		PressMenuButton(int32(EPokedexMenu::Camera));
 	}
-	else if (Key == TEXT("LidButton"))
-	{
-		PressPart(Hit.GetComponent());
-		HandleKey(EKeys::Enter);
-	}
-	else if (Key == TEXT("BackButton"))
-	{
-		PressPart(Hit.GetComponent());
-		HandleKey(EKeys::Escape);
-	}
-	else if (Key == TEXT("HomeButton"))
-	{
-		PressPart(Hit.GetComponent());
-		PlaySound(Model ? Model->ClickSound : nullptr);
-		FocusLid();
-	}
 	else if (Key == TEXT("PrevButton") || Key == TEXT("NextButton"))
 	{
 		PressPart(Hit.GetComponent());
 		CycleMenu(Key == TEXT("NextButton") ? 1 : -1);
 	}
-	else if (Key == TEXT("DexButton") || Key == TEXT("Lens") || Key == TEXT("LensRing"))
-	{
-		// L'objectif « scanne » : il s'allume et ouvre le Pokédex
-		PressPart(Key == TEXT("DexButton") ? Hit.GetComponent() : Parts.FindRef(TEXT("Lens")));
-		LensFlash = Time;
-		PressMenuButton(int32(EPokedexMenu::Pokedex));
-	}
-	else if (Key == TEXT("LedRed") || Key == TEXT("LedYellow") || Key == TEXT("LedGreen") || Key == TEXT("ScreenLeds") || Key == TEXT("LidLeds"))
-	{
-		LedRedFlash = Time;
-		LedYellowFlash = Time + 0.12f;
-		LensFlash = Time + 0.24f;
-		ScreenFlash = Time + 0.36f;
-		PlaySound(Model ? Model->BeepSound : nullptr, 1.2f);
-	}
-	else if (Key == TEXT("Hinge"))
-	{
-		// La charnière referme l'appareil
-		Close();
-	}
-	else
-	{
-		// Boîtier, volet, petits écrans : on l'attrape pour le tourner
-		bDragging = true;
-	}
+	// Le reste (objectif, voyants, languettes jaune et bleue, petit bouton rouge, bouton jaune du volet,
+	// petits écrans, boîtier, charnière) est du décor : pas cliquable (demandé par L'amie)
 }
 
 void APokedexDevice::HandlePointerUp(const FKey& Button, const FVector2D& Pixel)
@@ -1159,7 +1186,8 @@ void APokedexDevice::HandleWheel(float Delta)
 		Screen->Navigate(FIntPoint(0, Delta > 0.f ? -1 : 1));
 		return;
 	}
-	ZoomOffset = FMath::Clamp(ZoomOffset - Delta * 1.5f, -ViewDistance * 0.35f, ViewDistance * 0.6f);
+	// On ne peut que l'éloigner : rapproché, il sortirait de l'écran
+	ZoomOffset = FMath::Clamp(ZoomOffset - Delta * 1.5f, 0.f, ViewDistance * 0.6f);
 }
 
 void APokedexDevice::SetHovered(UPrimitiveComponent* Component)
@@ -1202,7 +1230,8 @@ void APokedexDevice::SetHovered(UPrimitiveComponent* Component)
 	PanelTimer = 0.f;
 
 	const FName Key = GetPartKey(Component);
-	const bool bClickable = Component && !IsInList(Key, GripParts);
+	// Main seulement sur ce qu'on peut cliquer : écran, 10 boutons, flèches du volet, croix, bouton appareil photo
+	const bool bClickable = Component && (Component == ScreenComponent.Get() || Key.ToString().StartsWith(TEXT("MenuButton")) || IsInList(Key, PushButtons));
 	if (InputWidget)
 	{
 		InputWidget->SetCursor(bClickable ? EMouseCursor::Hand : EMouseCursor::Default);
@@ -1402,7 +1431,9 @@ void APokedexDevice::PressPart(USceneComponent* Component)
 {
 	for (FPressable& Press : Pressables)
 	{
-		if (Press.Component.Get() == Component)
+		// L'icône appareil photo s'enfonce avec son bouton
+		const bool bCameraIcon = Component && Component == Parts.FindRef(TEXT("ConfirmButton")).Get() && Press.Component.Get() == CameraIconPanel.Get();
+		if (Press.Component.Get() == Component || bCameraIcon)
 		{
 			Press.PressTime = Time;
 		}

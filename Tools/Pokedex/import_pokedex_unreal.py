@@ -355,6 +355,8 @@ def import_ui_textures():
     """Icônes des boutons et carte de Kanto : textures d'interface (pas de mipmaps, pas de compression)."""
     icon_files = [os.path.join(ASSETS_DIR, "icons", "T_PokedexIcon_%s.png" % name) for name in ICONS]
     map_file = os.path.join(ASSETS_DIR, "map", "T_PokedexMap.png")
+    # + icône blanche du bouton rond noir (appareil photo, image de L'amie)
+    icon_files.append(os.path.join(ASSETS_DIR, "icons", "T_PokedexButton_Camera.png"))
     import_files([f for f in icon_files if os.path.exists(f)], ICON_DIR)
     import_files([map_file], MAP_DIR)
 
@@ -368,6 +370,7 @@ def import_ui_textures():
         return texture
 
     icons = [as_ui(ICON_DIR + "/T_PokedexIcon_" + name) for name in ICONS]
+    as_ui(ICON_DIR + "/T_PokedexButton_Camera")
     map_texture = as_ui(MAP_DIR + "/T_PokedexMap")
     with open(os.path.join(ASSETS_DIR, "map", "pokedex_map.json"), encoding="utf-8") as handle:
         map_data = json.load(handle)

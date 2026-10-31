@@ -12,6 +12,7 @@
 #include "Components/OverlaySlot.h"
 #include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
+#include "Core/GameClock.h"
 #include "Core/PokemonSaveGame.h"
 #include "Engine/Texture2D.h"
 #include "PokemonNewAgePlayerController.h"
@@ -274,14 +275,14 @@ void UGameHUDWidget::RefreshInfo()
 		PlaceText->SetText(Model && Model->MapPlaces.IsValidIndex(PlaceIndex) ? Model->MapPlaces[PlaceIndex].Name : LOCTEXT("Kanto", "Kanto"));
 	}
 
-	const FDateTime Now = FDateTime::Now();
+	// Heure du jeu (cycle jour / nuit de la map), pas celle du PC
 	if (TimeText)
 	{
-		TimeText->SetText(FText::FromString(Now.ToString(TEXT("%H:%M"))));
+		TimeText->SetText(PokemonClock::FormatTime(GetWorld()));
 	}
 	if (TemperatureText)
 	{
-		const float Hour = Now.GetHour() + Now.GetMinute() / 60.f;
+		const float Hour = PokemonClock::GetHour(GetWorld());
 		TemperatureText->SetText(FormatTemperature(BaseTemperature + TemperatureSwing * FMath::Cos((Hour - 15.f) / 24.f * UE_TWO_PI)));
 	}
 }

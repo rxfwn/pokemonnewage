@@ -84,7 +84,7 @@ public:
 
 	/** Marge autour de l'appareil ouvert quand on calcule la distance à la caméra (1 = bord à bord) */
 	UPROPERTY(EditAnywhere, Category="Pokedex")
-	float ScreenFill = 0.89f;
+	float ScreenFill = 0.86f;
 
 	/** Exposition fixe pendant le menu (EV100) : l'appareil a le même rendu de jour comme de nuit */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
@@ -109,9 +109,17 @@ public:
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
 	float FillLightIntensity = 250.f;
 
+	/** Contre-jour chaud qui souligne les bords de l'appareil (soleil derrière, comme sur la maquette) */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	float RimLightIntensity = 450.f;
+
+	/** Résolution des écrans et des icônes (2 = deux fois plus de pixels, texte net) */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu", meta=(ClampMin="1", ClampMax="4"))
+	float PanelRenderScale = 2.f;
+
 	/** Flou du décor (ouverture de l'objectif : plus petit = plus flou) */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
-	float BackgroundBlurFstop = 2.8f;
+	float BackgroundBlurFstop = 1.8f;
 
 	/** Hauteur de la figurine du Pokémon (fiche du Pokédex, résumé), en cm */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Figurine", meta=(Units="Centimeters"))
@@ -155,6 +163,8 @@ private:
 	/** Écrans et icônes posés sur les pièces (Widget Components) */
 	void CreatePanels();
 	UWidgetComponent* AddPanel(FName PartKey, UUserWidget* Widget, FVector2D PixelSize, bool bOpaque);
+	/** Pose le widget sur le panneau, rendu PanelRenderScale fois plus fin (même taille à l'écran) */
+	void SetPanelWidget(UWidgetComponent* Panel, UUserWidget* Widget, FVector2D PixelSize, float CmPerPixel);
 	/** Taille en cm (largeur, hauteur) et centre de la face avant d'une pièce, dans le repère de son parent */
 	bool GetPartFace(FName PartKey, FVector& OutCenter, FVector2D& OutSize) const;
 	void PlaceInFrontOfCamera();
@@ -223,6 +233,9 @@ private:
 	TObjectPtr<UPointLightComponent> FillLight;
 
 	UPROPERTY(VisibleAnywhere, Category="Pokedex")
+	TObjectPtr<UPointLightComponent> RimLight;
+
+	UPROPERTY(VisibleAnywhere, Category="Pokedex")
 	TObjectPtr<UPostProcessComponent> PostProcess;
 
 	/** Figurine : socle (tourne), et le modèle animé ou fixe */
@@ -256,6 +269,10 @@ private:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UPokedexIconWidget>> MenuIconWidgets;
+
+	/** Icône appareil photo sur le bouton rond noir */
+	UPROPERTY(Transient)
+	TObjectPtr<UWidgetComponent> CameraIconPanel;
 
 	/** Écran du haut du volet */
 	UPROPERTY(Transient)
@@ -334,6 +351,7 @@ private:
 	// Taille du modèle (MeasureModel)
 	float HalfWidth = 9.3f;
 	float HalfHeight = 7.6f;
+	float HalfDepth = 1.5f;
 	/** Décalage pour garder l'appareil au centre : fermé (boîtier seul) et ouvert */
 	FVector ClosedOffset = FVector(0.f, 4.3f, 0.f);
 	FVector OpenOffset = FVector::ZeroVector;
