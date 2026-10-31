@@ -277,10 +277,15 @@ TSharedRef<SWidget> UTitleScreenWidget::RebuildWidget()
 			LogoShadow->SetBrushFromTexture(Logo, false);
 			LogoShadow->SetColorAndOpacity(Shadow);
 			LogoShadow->SetRenderTranslation(FVector2D(3.f, 3.f));
-			LogoLayers->AddChildToOverlay(LogoShadow);
 			UImage* LogoImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
 			LogoImage->SetBrushFromTexture(Logo, false);
-			LogoLayers->AddChildToOverlay(LogoImage);
+			// Les deux images remplissent la boîte de 638 × 323 (sinon elles restent à 32 × 32 dans le coin)
+			for (UImage* Layer : { LogoShadow, LogoImage })
+			{
+				UOverlaySlot* LayerSlot = LogoLayers->AddChildToOverlay(Layer);
+				LayerSlot->SetHorizontalAlignment(HAlign_Fill);
+				LayerSlot->SetVerticalAlignment(VAlign_Fill);
+			}
 			USizeBox* LogoBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
 			LogoBox->SetWidthOverride(638.f);
 			LogoBox->SetHeightOverride(323.f);
