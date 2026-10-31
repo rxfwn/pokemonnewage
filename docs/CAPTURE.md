@@ -14,8 +14,10 @@ et le surnom (SCRUM-42), et l'entrée au Pokédex.
   sur le Pokémon).
 - **Lancer de Poké Ball** : la Ball part de la main du joueur en cloche, s'ouvre dans un éclair rouge, tombe,
   secoue 0 à 3 fois, puis clic et éclat doré (capturé) ou s'ouvre dans un éclair blanc (le Pokémon se libère).
-  Couleur selon la Ball : Poké Ball rouge, Super Ball bleue, Hyper Ball jaune, Master Ball violette. Le résultat
-  vient du serveur ; le lancer n'est qu'un spectacle joué chez le joueur.
+  C'est le vrai modèle de la Ball utilisée (modèles de L'amie, SCRUM-75) : le couvercle s'ouvre sur sa charnière
+  quand la Ball aspire le Pokémon, et saute quand il se libère. Le résultat vient du serveur ; le lancer n'est qu'un
+  spectacle joué chez le joueur.
+- **Évolution** : le Pokémon sort de la Ball où il a été capturé avant d'évoluer (voir `docs/PROGRESSION.md`).
 - **Après la capture** : le Pokémon va dans l'équipe, ou au PC de Léo si elle est pleine (soigné, comme dans les jeux).
   Première capture de l'espèce : message « Les données de … ont été ajoutées au Pokédex ». Puis la question du surnom
   (12 caractères au plus).
@@ -32,16 +34,25 @@ et le surnom (SCRUM-42), et l'entrée au Pokédex.
 | `Source/PokemonNewAge/Capture/PokeBallThrow.h` | L'acteur du lancer (trajectoire, secousses, éclairs, sons). |
 | `Source/PokemonNewAge/World/TallGrassZone.h` | La zone de hautes herbes et ses rencontres. |
 | `Tools/Capture/place_grass_zones.py` | Pose une zone sur chacun des 110 carrés d'herbe de Kanto, avec la table de la route la plus proche. |
-| `Tools/Capture/make_pokeball.py` | Modèle de la Ball (Blender ou `pip install bpy`) : `Generated/SM_PokeBall.fbx`. |
+| `Source/PokemonNewAge/Capture/PokeBallModel.h` | Charge les deux moitiés d'une Ball, place la charnière, ouvre le couvercle, lueur (lancer et évolution). |
+| `Tools/Capture/Balls/<Id>/` | Les 27 Balls de L'amie préparées : `SM_<Id>_Haut.fbx` et `SM_<Id>_Bas.fbx` (dans Git, hors LFS). |
+| `Tools/Capture/prepare_pokeballs.py` | Prépare ces FBX depuis les fichiers livrés (Blender ou `pip install bpy`) + planche d'aperçu. |
+| `Tools/Capture/make_pokeball.py` | Ancien modèle provisoire (secours) : `Generated/SM_PokeBall.fbx`. |
 | `Tools/Capture/make_ball_sounds.py` | Sons provisoires du lancer (synthétisés). |
-| `Tools/Capture/import_pokeball_unreal.py` | Importe la Ball, son matériau `M_PokeBall` et les sons dans `Content/Capture`. |
+| `Tools/Capture/import_pokeball_unreal.py` | Importe les Balls (moitiés, textures, `M_Ball`, `MI_<Id>`), l'ancien modèle et les sons dans `Content/Capture`. |
 
 ## Installer et tester dans Unreal
 
 1. **Fermer Unreal**, compiler (« PokemonNewAgeEditor Win64 Development Build »), rouvrir.
-2. **La Ball** : dézipper `capture/PokeBall_Generated.zip` (fichiers du projet) dans `Tools/Capture/Generated/`,
-   puis **Outils > Exécuter un script Python** (*Tools > Execute Python Script*) > `Tools/Capture/import_pokeball_unreal.py`.
-   Sans ce fichier, le jeu lance une simple sphère rouge : tout le reste marche quand même.
+2. **Les Balls** (SCRUM-75) : les moitiés sont déjà dans Git (`Tools/Capture/Balls`). Pour les textures, copier les
+   dossiers livrés `Pokeball_Part1` et `Pokeball_Part2` (ceux du ZIP, avec les dossiers `*_textures/2K`) dans
+   `Tools/Capture/Generated/Sources/` (dossier ignoré par Git : ~500 Mo qui ne doivent pas partir sur GitHub).
+   Pour les sons, dézipper aussi `capture/PokeBall_Generated.zip` dans `Tools/Capture/Generated/` (facultatif : le
+   script les refabrique sinon). Puis **Outils > Exécuter un script Python** (*Tools > Execute Python Script*) >
+   `Tools/Capture/import_pokeball_unreal.py` (quelques minutes : 108 textures 2K). Le **Journal de sortie**
+   (*Output Log*) doit dire « Balls de L'amie : 27 importées…, 27 avec leurs textures ».
+   Résultat : `Content/Capture/Balls/<Id>/` (`SM_<Id>_Haut`, `SM_<Id>_Bas`, `MI_<Id>`, `T_<Id>_D/_N/_R/_M`) et
+   `Content/Capture/Balls/M_Ball`. Relançable. Sans rien d'importé, le jeu lance une sphère rouge.
 3. **Les herbes** : ouvrir `L_Kanto`, puis **Outils > Exécuter un script Python** > `Tools/Capture/place_grass_zones.py`.
    Il pose 110 zones dans le dossier `Kanto_Gameplay/Rencontres` de l'Organiseur (*Outliner*) et n'efface rien d'autre :
    le décor fait à la main ne bouge pas. Relançable.
@@ -75,8 +86,14 @@ Sans Unreal (dans le cloud) : `./Tools/BattleSim/run.sh` lance aussi les tests d
 - **Pokémon sauvage en 3D** : quand un acteur montre le Pokémon sauvage, appeler `Set Ball Target` avec sa position
   pour que la Ball tombe à ses pieds (sinon elle tombe à 4,5 m devant le joueur), et le cacher pendant que la Ball
   est fermée.
-- **Changer la Ball ou ses sons** : créer un Blueprint enfant de `PokeBallThrow`, changer `Ball Mesh`, les sons, les
-  couleurs ou les durées, puis le mettre dans `Poke Ball Throw Class` du `CaptureComponent` (Blueprint du
-  PlayerController). Si le bouton ne regarde pas le joueur, régler `Button Yaw Offset`.
+- **Changer les sons, les durées ou l'ouverture** : créer un Blueprint enfant de `PokeBallThrow`, changer les sons,
+  les durées, `Open Angle` / `Broke Free Angle` (ouverture du couvercle) ou `Glow Strength` (éclat), puis le mettre
+  dans `Poke Ball Throw Class` du `CaptureComponent` (Blueprint du PlayerController). Si le bouton ne regarde pas le
+  joueur, régler `Button Yaw Offset`.
+- **Ajouter ou retoucher une Ball** : mettre son dossier (`<Nom>/<Nom>.fbx` avec les objets `<nom>_top` et `<nom>_bot`,
+  et `<Nom>_textures/2K/`) avec les autres, relancer `python Tools/Capture/prepare_pokeballs.py <dossier> --apercu a.png`
+  puis le script d'import. Le nom devient l'identifiant (`Moonball` → `MoonBall`) : il doit être celui de la ligne
+  de `DT_Items` pour que le lancer le trouve. Une Ball sans modèle prend celui de la Poké Ball. Matériau commun :
+  `M_Ball` (paramètres `Couleur`, `Normale`, `Rugosite`, `Metal`, `Eclat`, `CouleurEclat`).
 - **Pas encore fait** : Repousse (objet), herbes qui bougent au passage, cris des Pokémon, séquence « Pokédex » animée
   après la capture (le menu Pokédex 3D affiche déjà les espèces capturées).

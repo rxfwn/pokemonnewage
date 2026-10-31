@@ -22,6 +22,8 @@ class UStaticMeshComponent;
  *
  *  Modèles : /Game/Pokemon/Models/<Espèce>/SK_<Espèce> (ou SM_), comme le Pokédex ; une sphère s'ils manquent.
  *  Lueur : /Game/Progression/M_EvolutionGlow en matériau de surcouche (Overlay Material).
+ *  Entrée : le Pokémon sort de sa propre Poké Ball (celle de sa capture, modèles de PokeBallModel.h) ;
+ *  sans Ball importée, il est là dès le début comme avant.
  *  Un Blueprint enfant peut régler les durées, la lumière et la caméra dans le panneau Détails.
  */
 UCLASS()
@@ -33,9 +35,10 @@ public:
 
 	AEvolutionScene();
 
-	/** Lance la séquence devant le joueur. OnFinished(vrai si évolué) à la toute fin */
+	/** Lance la séquence devant le joueur. Ball : celle où le Pokémon a été capturé (None = Poké Ball).
+	 *  OnFinished(vrai si évolué) à la toute fin */
 	void Play(APlayerController* Controller, UProgressionWidget* InWidget, const FText& InPokemonName, FName FromSpecies, FName ToSpecies,
-		TFunction<void(bool)> OnFinished);
+		FName Ball, TFunction<void(bool)> OnFinished);
 
 	/** B : arrête l'évolution si le flash n'a pas encore eu lieu. Vrai si la demande est prise */
 	bool RequestCancel();
@@ -75,6 +78,21 @@ public:
 	UPROPERTY(EditAnywhere, Category="Evolution")
 	FLinearColor GlowColor = FLinearColor(0.75f, 0.9f, 1.f);
 
+	/** Taille de la Poké Ball d'où sort le Pokémon (cm ; plus grande qu'en vrai pour bien la voir) */
+	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
+	float BallDiameter = 16.f;
+
+	/** Moment où la Ball s'ouvre, après le début de l'entrée en scène (s) */
+	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
+	float BallOpenDelay = 0.6f;
+
+	/** Sortie du Pokémon : couvercle ouvert, il grandit dans un éclair rouge (s) */
+	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
+	float BallReleaseTime = 0.7f;
+
+	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
+	float BallOpenAngle = 80.f;
+
 	/** Hauteur de la sphère qui remplace un modèle absent (cm) */
 	UPROPERTY(EditAnywhere, Category="Evolution")
 	float PlaceholderHeight = 80.f;
@@ -112,6 +130,16 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category="Evolution")
 	TObjectPtr<UAudioComponent> Music;
 
+	/** Poké Ball d'où sort le Pokémon : moitié basse > charnière > couvercle */
+	UPROPERTY(VisibleAnywhere, Category="Evolution|Ball")
+	TObjectPtr<UStaticMeshComponent> BallBottom;
+
+	UPROPERTY(VisibleAnywhere, Category="Evolution|Ball")
+	TObjectPtr<USceneComponent> BallHinge;
+
+	UPROPERTY(VisibleAnywhere, Category="Evolution|Ball")
+	TObjectPtr<UStaticMeshComponent> BallTop;
+
 private:
 
 	enum class EPhase : uint8 { Intro, Glow, Morph, Flash, Reveal, Done, Cancelled };
@@ -124,6 +152,11 @@ private:
 	void EnterPhase(EPhase NewPhase);
 	void Finish(bool bEvolved);
 	void PlaySound(const TCHAR* Name);
+	/** Pose la Ball devant le Pokémon ; faux si aucune Ball n'est importée */
+	bool SetupBall(FName Ball, float PokemonHeight);
+	/** Entrée en scène avec la Ball : ouverture, sortie du Pokémon, la Ball se referme et disparaît */
+	void TickBallIntro();
+	void HideBall();
 
 	UPROPERTY(Transient) TObjectPtr<UProgressionWidget> Widget;
 	UPROPERTY(Transient) TObjectPtr<UMeshComponent> OldMesh;
@@ -145,4 +178,7 @@ private:
 	FVector NewBaseScale = FVector::OneVector;
 	float BaseLightIntensity = 0.f;
 	bool bCancelRequested = false;
+	bool bBallIntro = false;
+	bool bBallOpenSoundPlayed = false;
+	float BallBaseScale = 1.f;
 };

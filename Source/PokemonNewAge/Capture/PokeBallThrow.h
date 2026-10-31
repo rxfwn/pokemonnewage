@@ -13,15 +13,25 @@ class UStaticMeshComponent;
  *  Lancer de Poké Ball en 3D (SCRUM-40) : la Ball part de la main du joueur en cloche, s'ouvre dans un éclair
  *  au-dessus du Pokémon, tombe au sol, secoue 0 à 3 fois, puis clic (capturé) ou s'ouvre (le Pokémon se libère).
  *  Purement visuel et local : le résultat vient du serveur (UBattleSession), UCaptureComponent le fait jouer.
- *  Sans SM_PokeBall importé (Tools/Capture), une sphère de couleur la remplace.
+ *  Modèle : la Ball lancée en deux moitiés (SCRUM-75, PokeBallModel.h), dont le couvercle s'ouvre vraiment.
+ *  Sinon l'ancien SM_PokeBall teinté, et sans rien d'importé une sphère de couleur.
  */
 UCLASS()
 class APokeBallThrow : public AActor
 {
 	GENERATED_BODY()
 
+	/** Moitié basse de la Ball (ou Ball entière avec l'ancien modèle) */
 	UPROPERTY(VisibleAnywhere, Category="Components", meta=(AllowPrivateAccess="true"))
 	UStaticMeshComponent* Mesh;
+
+	/** Charnière du couvercle, à l'arrière de la Ball */
+	UPROPERTY(VisibleAnywhere, Category="Components", meta=(AllowPrivateAccess="true"))
+	USceneComponent* Hinge;
+
+	/** Moitié haute (couvercle avec le bouton) */
+	UPROPERTY(VisibleAnywhere, Category="Components", meta=(AllowPrivateAccess="true"))
+	UStaticMeshComponent* TopMesh;
 
 	UPROPERTY(VisibleAnywhere, Category="Components", meta=(AllowPrivateAccess="true"))
 	UPointLightComponent* Flash;
@@ -37,15 +47,26 @@ public:
 
 protected:
 
-	/** Modèle de la Ball (Tools/Capture/import_pokeball_unreal.py le crée) */
+	/** Ancien modèle d'une seule pièce, teinté selon la Ball : utilisé seulement si /Game/Capture/Balls est vide */
 	UPROPERTY(EditAnywhere, Category="Ball")
 	TSoftObjectPtr<UStaticMesh> BallMesh;
 
-	/** Paramètre de couleur de la moitié haute dans le matériau de la Ball (case 0) */
+	/** Ouverture du couvercle quand la Ball aspire le Pokémon, et quand il se libère */
+	UPROPERTY(EditAnywhere, Category="Ball", meta=(Units="Degrees"))
+	float OpenAngle = 70.f;
+
+	UPROPERTY(EditAnywhere, Category="Ball", meta=(Units="Degrees"))
+	float BrokeFreeAngle = 110.f;
+
+	/** Lueur des deux moitiés (paramètre Eclat de M_Ball) au plus fort de l'éclair */
+	UPROPERTY(EditAnywhere, Category="Ball")
+	float GlowStrength = 6.f;
+
+	/** Ancien modèle : paramètre de couleur de la moitié haute dans le matériau (case 0) */
 	UPROPERTY(EditAnywhere, Category="Ball")
 	FName ColorParameter = TEXT("CouleurHaut");
 
-	/** Couleur de la moitié haute selon la Ball (ligne de DT_Items) */
+	/** Ancien modèle : couleur de la moitié haute selon la Ball (ligne de DT_Items) */
 	UPROPERTY(EditAnywhere, Category="Ball")
 	TMap<FName, FLinearColor> BallColors;
 
@@ -118,6 +139,9 @@ private:
 	void EnterStage(EStage NewStage);
 	void PlaySound(const TSoftObjectPtr<USoundBase>& Sound) const;
 	void SetupMesh(FName Ball);
+	void SetLid(float Degrees, float Glow, const FLinearColor& GlowColor);
+	/** Le Pokémon se libère : la Ball en deux moitiés s'ouvre un peu plus longtemps */
+	float BrokeFreeDuration() const { return bTwoParts ? 0.6f : 0.3f; }
 
 	EStage Stage = EStage::Idle;
 	float StageTime = 0.f;
@@ -129,5 +153,7 @@ private:
 	FVector AirPoint = FVector::ZeroVector;
 	FVector GroundPoint = FVector::ZeroVector;
 	float BaseScale = 1.f;
+	/** Vrai avec les modèles en deux moitiés (le couvercle s'ouvre) */
+	bool bTwoParts = false;
 	FRotator RestRotation = FRotator::ZeroRotator;
 };

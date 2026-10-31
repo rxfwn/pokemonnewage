@@ -1,4 +1,5 @@
 #include "Capture/PokeBallThrow.h"
+#include "Capture/PokeBallModel.h"
 #include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -10,7 +11,7 @@
 
 namespace
 {
-	/** Remplaçants du moteur quand SM_PokeBall n'est pas importé */
+	/** Remplaçants du moteur quand aucune Ball n'est importée */
 	const TCHAR* FallbackMeshPath = TEXT("/Engine/BasicShapes/Sphere.Sphere");
 	const TCHAR* FallbackMaterialPath = TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial");
 }
@@ -24,6 +25,15 @@ APokeBallThrow::APokeBallThrow()
 	RootComponent = Mesh;
 	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Mesh->SetCastShadow(true);
+
+	Hinge = CreateDefaultSubobject<USceneComponent>(TEXT("Hinge"));
+	Hinge->SetupAttachment(Mesh);
+
+	TopMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TopMesh"));
+	TopMesh->SetupAttachment(Hinge);
+	TopMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	TopMesh->SetCastShadow(true);
+	TopMesh->SetVisibility(false);
 
 	Flash = CreateDefaultSubobject<UPointLightComponent>(TEXT("Flash"));
 	Flash->SetupAttachment(Mesh);
@@ -47,6 +57,18 @@ APokeBallThrow::APokeBallThrow()
 
 void APokeBallThrow::SetupMesh(FName Ball)
 {
+	// Modèles de L'amie : deux moitiés, le couvercle s'ouvre
+	const float TwoPartsSize = PokeBallModel::Apply(Ball, Mesh, Hinge, TopMesh);
+	bTwoParts = TwoPartsSize > 0.f;
+	if (bTwoParts)
+	{
+		BaseScale = BallDiameter / FMath::Max(TwoPartsSize, 0.01f);
+		SetActorScale3D(FVector(BaseScale));
+		return;
+	}
+
+	// Ancien modèle d'une pièce, teinté selon la Ball
+	TopMesh->SetVisibility(false);
 	UStaticMesh* Model = BallMesh.LoadSynchronous();
 	FName Parameter = ColorParameter;
 	if (!Model)
@@ -72,6 +94,15 @@ void APokeBallThrow::SetupMesh(FName Ball)
 	if (UMaterialInstanceDynamic* Material = Mesh->CreateAndSetMaterialInstanceDynamic(0))
 	{
 		Material->SetVectorParameterValue(Parameter, Color ? *Color : FLinearColor(0.8f, 0.05f, 0.04f));
+	}
+}
+
+void APokeBallThrow::SetLid(float Degrees, float Glow, const FLinearColor& GlowColor)
+{
+	if (bTwoParts)
+	{
+		PokeBallModel::SetOpenAngle(Hinge, Degrees);
+		PokeBallModel::SetGlow(Mesh, TopMesh, Glow * GlowStrength, GlowColor);
 	}
 }
 
@@ -168,12 +199,21 @@ void APokeBallThrow::Tick(float DeltaSeconds)
 		const float T = FMath::Clamp(StageTime / OpenDuration, 0.f, 1.f);
 		const float Pulse = FMath::Sin(T * PI);
 		Flash->SetIntensity(400.f * Pulse);
-		SetActorScale3D(FVector(BaseScale * (1.f + 0.25f * Pulse)));
 		SetActorRotation(RestRotation);
+		if (bTwoParts)
+		{
+			// Le couvercle s'ouvre puis se referme sur le Pokémon
+			SetLid(OpenAngle * Pulse, Pulse, FLinearColor(1.f, 0.2f, 0.15f));
+		}
+		else
+		{
+			SetActorScale3D(FVector(BaseScale * (1.f + 0.25f * Pulse)));
+		}
 		if (T >= 1.f)
 		{
 			Flash->SetIntensity(0.f);
 			SetActorScale3D(FVector(BaseScale));
+			SetLid(0.f, 0.f, FLinearColor::Black);
 			EnterStage(EStage::Drop);
 		}
 		break;
@@ -222,17 +262,27 @@ void APokeBallThrow::Tick(float DeltaSeconds)
 			// Clic : petit éclat doré, la Ball reste un moment puis disparaît
 			const float Glow = FMath::Clamp(1.f - StageTime / 0.4f, 0.f, 1.f);
 			Flash->SetIntensity(150.f * Glow);
+			SetLid(0.f, 0.3f * Glow, FLinearColor(1.f, 0.85f, 0.4f));
 			const float Fade = FMath::Clamp((ResultDuration - StageTime) / 0.3f, 0.f, 1.f);
 			SetActorScale3D(FVector(BaseScale * Fade));
 		}
 		else
 		{
 			// La Ball s'ouvre dans un éclair blanc et disparaît
-			const float T = FMath::Clamp(StageTime / 0.3f, 0.f, 1.f);
+			const float T = FMath::Clamp(StageTime / BrokeFreeDuration(), 0.f, 1.f);
 			Flash->SetIntensity(500.f * FMath::Sin(T * PI));
-			SetActorScale3D(FVector(BaseScale * (T < 0.5f ? 1.f + T : FMath::Max(0.f, 3.f * (1.f - T)))));
+			if (bTwoParts)
+			{
+				// Le couvercle saute, la Ball brille puis disparaît
+				SetLid(BrokeFreeAngle * FMath::Min(T * 3.f, 1.f), FMath::Sin(T * PI), FLinearColor::White);
+				SetActorScale3D(FVector(BaseScale * (T < 0.7f ? 1.f : FMath::Max(0.f, (1.f - T) / 0.3f))));
+			}
+			else
+			{
+				SetActorScale3D(FVector(BaseScale * (T < 0.5f ? 1.f + T : FMath::Max(0.f, 3.f * (1.f - T)))));
+			}
 		}
-		if (StageTime >= (bCaughtResult ? ResultDuration : 0.3f))
+		if (StageTime >= (bCaughtResult ? ResultDuration : BrokeFreeDuration()))
 		{
 			Destroy();
 		}
