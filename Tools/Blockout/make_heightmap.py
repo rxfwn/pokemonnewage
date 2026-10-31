@@ -59,7 +59,7 @@ RIM_LOW, RIM_HIGH = 5.0, 18.0   # talus au bord des routes (caché par les arbre
 RIM_WIDTH = 9.0          # largeur du talus (pente d'environ 40 à 60° : on ne le monte pas)
 FOREST_HILLS = 45.0      # collines boisées derrière le talus
 MOUNTAIN_BASE = 90.0     # hauteur des montagnes (là où la carte en montre)
-MOUNTAIN_PEAK = 300.0    # en plus, au cœur des massifs (pics fins)
+MOUNTAIN_PEAK = 260.0    # en plus, au cœur des massifs (pics fins)
 WARP = 260.0             # déformation des bords des routes et des côtes (pas de rectangles)
 V1_CLEARANCE = 75.0      # largeur garantie autour des chemins de la V1
 ROUTE_HILLS = 22.0       # collines au fond des routes larges (pentes douces)
@@ -73,7 +73,7 @@ GROUND_NOISE_SMALL = 0.4  # petites bosses d'environ 9 m (± 20 cm)
 PATH_MAX_SLOPE = 0.15     # pente maximale d'un chemin (15 %)
 PATH_MIN_ALTITUDE = 1.5   # un chemin ne passe jamais sous l'eau (ponts et jetées en blockout)
 PATH_FLAT = 4.0           # demi-largeur à plat autour du chemin (m)
-PATH_FALLOFF = 22.0       # le terrain rejoint le chemin en pente douce jusqu'à cette distance
+PATH_FALLOFF = 35.0       # le terrain rejoint le chemin en pente douce jusqu'à cette distance
 PAD_FALLOFF = 18.0        # bord des plateformes sous les bâtiments hors des villes
 PAD = 60                # cases ajoutées autour de la carte FRLG (la côte y suit Let's Go)
 
@@ -346,6 +346,15 @@ def cell_fields():
     # Piste cyclable : les bandes d'eau qui la longent sur la carte deviennent du sol.
     strip = grid[PAD + 250:PAD + 575, PAD + 255:PAD + 320]
     strip[strip >= 2] = 1
+    # Retouche : la baie centrale remonte le long de la piste cyclable (rectangles de mer).
+    for c0, r0, c1, r1 in layout.SEA_AREAS:
+        grid[PAD + r0:PAD + r1, PAD + c0:PAD + c1] = 2
+    # Retouche : l'eau du haut du cap (Route 24 et 25) devient des lacs en hauteur.
+    keep_lakes = np.zeros(grid.shape, bool)
+    for c0, r0, c1, r1 in layout.LAKE_AREAS:
+        part = grid[PAD + r0:PAD + r1, PAD + c0:PAD + c1]
+        part[part == 2] = 3
+        keep_lakes[PAD + r0:PAD + r1, PAD + c0:PAD + c1] = True
     walk = grid == 1
     lake = grid == 3
     # Fines bandes de terre le long des routes maritimes (bords de tuiles) : la mer.
@@ -356,13 +365,18 @@ def cell_fields():
     land_lg = letsgo_land(cols_i, rows_i)
 
     # Lacs que Let's Go met dans la mer : la mer.
-    lake_sea = lake & (land_lg < 0.5)
+    lake_sea = lake & (land_lg < 0.5) & ~keep_lakes
     lake &= ~lake_sea
     ground = walk | lake  # là où l'on marche (les lacs prennent l'altitude de la route)
 
-    # Hors des routes : la mer si Let's Go en met, sauf tout près des routes (une falaise).
+    # Hors des routes : la mer si Let's Go en met, sauf tout près des routes.
     near_ground = distance_from(ground) <= 8
     sea = (grid == 2) | lake_sea | ((grid == 0) & (land_lg < 0.5) & ~near_ground)
+    # Retouches : baie agrandie, anse comblée.
+    for c0, r0, c1, r1 in layout.LAND_AREAS:
+        area = np.zeros(grid.shape, bool)
+        area[PAD + r0:PAD + r1, PAD + c0:PAD + c1] = True
+        sea &= ~(area & (grid != 2))
 
     # Altitude des routes : interpolation le long des chemins entre villes et points de passage.
     controls = layout.TOWNS + layout.ROUTE_POINTS
@@ -384,10 +398,17 @@ def cell_fields():
 
     # Distances signées en cases : bord des routes (+ sur la route) et côte (+ sur la terre).
     corridor = np.where(ground, distance_from(~ground), -distance_from(ground))
-    corridor = masked_blur(corridor, np.ones(grid.shape, bool), 12)  # coins arrondis
+    corridor = masked_blur(corridor, np.ones(grid.shape, bool), 30)  # coins bien arrondis
     coast = np.where(sea, -distance_from(~sea), distance_from(sea))
     lake_sd = np.where(lake, distance_from(~lake), -distance_from(lake))
-    return grid, ground, lake, altitude, corridor, coast, lake_sd
+    # Chapelets de rochers le long des routes maritimes (comme sur la carte de Let's Go) :
+    # distance (en cases) au bord de l'eau des routes, dans les zones choisies.
+    route_water = np.zeros(grid.shape, bool)
+    for c0, r0, c1, r1 in layout.ROCK_ROUTES:
+        route_water[PAD + r0:PAD + r1, PAD + c0:PAD + c1] = True
+    route_water &= grid == 2
+    edge = np.where(route_water, distance_from(~route_water), -distance_from(route_water))
+    return grid, ground, lake, altitude, corridor, coast, lake_sd, edge
 
 
 # --- Étape 2 : le relief à pleine résolution -------------------------------------------
@@ -423,7 +444,7 @@ def massif_field(x, y):
 
 def relief(x, y, fields):
     """Hauteur avant érosion, et deux aides : poids d'érosion et hauteur minimale (falaises)."""
-    _, _, _, altitude_c, corridor_c, coast_c, lake_c = fields
+    _, _, _, altitude_c, corridor_c, coast_c, lake_c, edge_c = fields
     # Coordonnées déformées : bords des routes et côtes sinueux, pas les marches de la carte.
     wx = x + fbm(x, y, 900, 3, SEED + 4) * WARP + fbm(x, y, 180, 3, SEED + 5) * WARP * 0.3
     wy = y + fbm(x, y, 900, 3, SEED + 6) * WARP + fbm(x, y, 180, 3, SEED + 7) * WARP * 0.3
@@ -431,8 +452,10 @@ def relief(x, y, fields):
     column, row = column + PAD, row + PAD
     altitude = sample(altitude_c, column, row, 0.0)
     # Bords des routes irréguliers à deux échelles : pas de rectangles.
-    corridor = (sample(corridor_c, column, row, -60.0) * CELL + fbm(x, y, 160, 4, SEED + 10) * 30
+    raw = sample(corridor_c, column, row, -60.0) * CELL
+    corridor = (raw + fbm(x, y, 160, 4, SEED + 10) * 30
                 + fbm(x, y, 450, 3, SEED + 9) * 45 + fbm(x, y, 1100, 2, SEED + 8) * 80)
+    corridor = np.maximum(corridor, raw - 25)  # la forêt mord peu sur les routes, elles s'élargissent par endroits
     # La V1 reste praticable malgré la déformation : couloir garanti autour de ses chemins.
     corridor = np.maximum(corridor, V1_CLEARANCE - v1_path_distance(x, y))
     coast = sample(coast_c, column, row, -60.0) * CELL + fbm(x, y, 260, 4, SEED + 11) * 40
@@ -458,11 +481,13 @@ def relief(x, y, fields):
     crest = ridged(x, y, 560, 7, SEED + 17)
     body = smoothstep(0.0, 0.9, mountain)  # le massif lui-même, puis les arêtes et les pics fins
     peaks = (MOUNTAIN_BASE + MOUNTAIN_PEAK * mountain) * (0.35 * body + 0.65 * crest ** 1.4)
-    rise = smoothstep(40, 450, outside) * smoothstep(0.05, 0.6, mountain) * seaward
+    rise = smoothstep(30, 260, outside) * smoothstep(0.05, 0.6, mountain) * smoothstep(10, 180, coast)
     land = np.where(corridor >= 0, floor, altitude + rim + hills + peaks * rise)
+    land = np.where(land > 380, 380 + 90 * np.tanh((land - 380) / 90), land)  # sommets à 470 m au plus
 
     # Côtes : plage en pente douce, puis la forêt ou la route ; jamais de falaise.
-    shore_width = 45 + 110 * (0.5 + 0.5 * fbm(x, y, 700, 3, SEED + 18))
+    # Plus la terre est haute, plus la descente vers la mer est longue (pas de mur).
+    shore_width = 45 + 110 * (0.5 + 0.5 * fbm(x, y, 700, 3, SEED + 18)) + 0.8 * np.maximum(altitude, 0)
     beach = 0.3 + np.maximum(coast, 0) * BEACH_SLOPE
     shore = smoothstep(15, 15 + shore_width, coast)
     land = beach + (np.maximum(land, beach) - beach) * shore
@@ -477,6 +502,16 @@ def relief(x, y, fields):
     reach = smoothstep(260, 120, offshore) * smoothstep(0, 8, offshore)
     rocks = blobs * rocky * reach
     seabed = seabed + (0.5 + 3.5 * rocks - seabed) * smoothstep(0.0, 0.25, rocks)
+    # Côte est de la Route 12 : eau très peu profonde (on y fera un pont).
+    for c0, r0, c1, r1 in layout.SHALLOW_AREAS:
+        (ax, ay), (bx, by) = layout.from_frlg(c0, r1), layout.from_frlg(c1, r0)
+        box = np.maximum(np.maximum(ax - x, x - bx), np.maximum(ay - y, y - by))
+        seabed = np.maximum(seabed, -1.5 + (seabed + 1.5) * smoothstep(-60, 60, box))
+    # Rochers en pointillés au bord des routes maritimes (on ne sort pas du chemin d'eau).
+    edge = sample(edge_c, column, row, 60.0) * CELL
+    dots = smoothstep(0.5, 0.7, fractal_noise(x, y, 14, 2, SEED + 23))
+    line = smoothstep(12, 3, np.abs(edge + 6)) * dots
+    seabed = seabed + (0.6 + 1.6 * line - seabed) * smoothstep(0.0, 0.3, line) * (coast < 0)
     height = seabed + (land - seabed) * smoothstep(-3, 3, coast)
 
     # Lacs et rivières en hauteur : creusés de 2,5 m sous la route.
@@ -520,6 +555,24 @@ def town_terraces(height, x, y):
                   * smoothstep(width / 2, width / 2 - 0.8, np.abs(y - py)))
         height = height - 2.0 * inside
     return height
+
+
+def _ellipse(x, y, spec):
+    """Distance normalisée (1 = bord) à une ellipse en cases FRLG (colonne, ligne, demi-axes)."""
+    column, row, half_c, half_r = spec
+    cx, cy = layout.from_frlg(column, row)
+    return np.hypot((x - cx) / (half_r * CELL), (y - cy) / (half_c * CELL))
+
+
+def island_clearing(height, x, y):
+    """Île de la baie : une clairière basse (3 m) au milieu de la forêt, et un étang au centre."""
+    d = _ellipse(x, y, layout.ISLAND_CLEARING) + fbm(x, y, 120, 3, SEED + 43) * 0.12
+    if d.min() > 1.6:
+        return height
+    floor = 3.0 + fbm(x, y, 90, 3, SEED + 44) * 0.8
+    height = np.where(height > 0, height + (floor - height) * smoothstep(1.35, 0.95, d), height)
+    pond = _ellipse(x, y, layout.ISLAND_POND) + fbm(x, y, 60, 3, SEED + 45) * 0.15
+    return height + (-1.5 - height) * smoothstep(1.0, 0.75, pond)
 
 
 def pallet_basin(height, dx, dy, floor, x, y):
@@ -793,7 +846,7 @@ def main():
                  + fbm(x, y, 9, 2, SEED + 51) * GROUND_NOISE_SMALL)
         dry = smoothstep(0.5, 3.0, height[part]) * ~wet[part]
         height[part] += bumps * dry
-        height[part] = lookouts(town_terraces(height[part], x, y), x, y)
+        height[part] = lookouts(town_terraces(island_clearing(height[part], x, y), x, y), x, y)
     carve_paths(height)
     building_pads(height)
     print(f"Villes, chemins et plateformes : {time.time() - start:.0f} s")
