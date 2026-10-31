@@ -319,6 +319,9 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 	Settings.AutoExposureBias = 0.f;
 	Settings.bOverride_VignetteIntensity = true;
 	Settings.VignetteIntensity = 0.3f;
+	// Pas de flou de mouvement : si la caméra tournait quand on a appuyé sur Tab, l'appareil (qui la suit) était tout étalé
+	Settings.bOverride_MotionBlurAmount = true;
+	Settings.MotionBlurAmount = 0.f;
 	// Rendu « fin d'après-midi » : un peu de bloom, couleurs légèrement chaudes et saturées
 	Settings.bOverride_BloomIntensity = true;
 	Settings.BloomIntensity = 0.45f;
@@ -763,12 +766,10 @@ void APokedexDevice::UpdateAnimation(float DeltaSeconds)
 		}
 	}
 
-	// Devant la caméra, tourné vers elle ; reculé quand il est tourné, pour que le bord qui avance ne sorte pas de l'écran
+	// Devant la caméra, tourné vers elle (il ne recule pas quand on le tourne : la rotation est limitée à quelques degrés)
 	const FVector Forward = CameraRotation.Vector();
 	const FVector Up = FRotationMatrix(CameraRotation).GetUnitAxis(EAxis::Z);
-	const float TurnMargin = HalfWidth * FMath::Abs(FMath::Sin(FMath::DegreesToRadians(UserYaw)))
-		+ HalfHeight * FMath::Abs(FMath::Sin(FMath::DegreesToRadians(UserPitch)));
-	const float Distance = (ViewDistance + TurnMargin + ZoomOffset) * GetActorScale3D().X;
+	const float Distance = (ViewDistance + ZoomOffset) * GetActorScale3D().X;
 	const FVector Location = CameraLocation + Forward * Distance - Up * (1.f - Rise) * Distance * 0.9f;
 	SetActorLocationAndRotation(Location, CameraRotation + FRotator((1.f - Rise) * -35.f, 0.f, 0.f));
 

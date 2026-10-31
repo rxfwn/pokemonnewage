@@ -23,9 +23,9 @@ Les réglages attendent **Appliquer** ou **OK** ; les touches changent tout de s
 
 ## Le Pokédex 3D (Tab)
 
-Comme l'image de référence de L'amie (sans les mains) : Tab sort le Pokédex ouvert devant la caméra, il prend presque tout l'écran sans être coupé (`Screen Fill` 0,86, épaisseur comprise, recalculé si la fenêtre change de taille), décor du jeu flouté derrière. On le tourne à la souris jusqu'à 30° de côté et 20° en hauteur (`Max Turn Yaw` / `Max Turn Pitch`). Les voyants du haut et l'objectif restent allumés ; le bouton rond noir sous l'écran (petite icône appareil photo de L'amie) lance l'appareil photo. Le Pokédex suit la caméra pendant l'ouverture : il finit bien en face même si on tournait la caméra en appuyant sur Tab.
+Comme l'image de référence de L'amie (sans les mains) : Tab sort le Pokédex ouvert devant la caméra, il prend presque tout l'écran sans être coupé (`Screen Fill` 0,89, épaisseur comprise, recalculé si la fenêtre change de taille), décor du jeu flouté derrière. On le tourne à la souris de 5° au plus dans chaque sens (`Max Turn Yaw` / `Max Turn Pitch`). Les voyants du haut et l'objectif restent allumés ; le bouton rond noir sous l'écran (petite icône appareil photo de L'amie) lance l'appareil photo. Le Pokédex suit la caméra pendant l'ouverture : il finit bien en face même si on tournait la caméra en appuyant sur Tab.
 
-**Netteté** : écrans et icônes sont dessinés `Panel Render Scale` fois plus fins (2 par défaut : l'écran principal est rendu en 1920 × 1296).
+**Netteté** : écrans et icônes sont dessinés `Panel Render Scale` fois plus fins (2 par défaut : l'écran principal est rendu en 1920 × 1296). `M_PokedexWidget` (version 2) fait la moyenne de 16 points par pixel affiché, sinon le texte réduit « grésille ». Pas de flou de mouvement pendant le menu (l'appareil était tout étalé si la caméra tournait à l'ouverture).
 
 **Éclairage** (d'après l'image de L'amie, lumière de jour douce) : lumière principale chaude et large, lumière d'appoint bleutée (ciel), contre-jour chaud derrière en haut à droite (`Rim Light Intensity`), décor plus flouté (`Background Blur Fstop` 1,8), léger bloom et couleurs un peu chaudes.
 
@@ -117,7 +117,7 @@ Les pièces de l'appareil :
 
 Le reste est du décor, **pas cliquable** (demandé par L'amie) : objectif et voyants du haut, languettes jaune et bleue, petit bouton rouge de l'écran, voyants et fentes du volet, bouton rond jaune du volet, petits écrans « CAPTURÉS/VUS » et « BADGES », boîtier, charnière. La main de la souris n'apparaît que sur ce qui est cliquable.
 
-- **Tourner l'appareil** : seulement **clic droit maintenu** en bougeant la souris (ou stick droit). Il ne bouge jamais tout seul et reste où on l'a laissé. Plus il est tourné, plus il recule, pour ne jamais sortir de l'écran. La molette l'éloigne (jamais plus près que le cadrage de départ ; sur l'écran, elle fait défiler la liste).
+- **Tourner l'appareil** : seulement **clic droit maintenu** en bougeant la souris (ou stick droit). Il ne bouge jamais tout seul, reste où on l'a laissé et ne recule pas : la rotation est limitée à 5°. La molette l'éloigne (jamais plus près que le cadrage de départ ; sur l'écran, elle fait défiler la liste).
 - **Clavier** : flèches ou ZQSD (grille 5 × 2 sur le volet), Entrée pour valider, Échap ou Retour arrière pour revenir, Tab pour fermer.
 - **Manette** : croix, A, B, gâchettes hautes pour changer de menu, stick droit pour tourner, Start pour fermer.
 

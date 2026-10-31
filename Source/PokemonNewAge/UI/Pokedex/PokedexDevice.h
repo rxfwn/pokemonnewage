@@ -84,7 +84,7 @@ public:
 
 	/** Marge autour de l'appareil ouvert quand on calcule la distance à la caméra (1 = bord à bord) */
 	UPROPERTY(EditAnywhere, Category="Pokedex")
-	float ScreenFill = 0.86f;
+	float ScreenFill = 0.89f;
 
 	/** Exposition fixe pendant le menu (EV100) : l'appareil a le même rendu de jour comme de nuit */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
@@ -135,10 +135,10 @@ public:
 
 	/** Rotation maximale à la souris ou au stick (degrés de chaque côté) */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Commandes", meta=(Units="Degrees"))
-	float MaxTurnYaw = 30.f;
+	float MaxTurnYaw = 5.f;
 
 	UPROPERTY(EditAnywhere, Category="Pokedex|Commandes", meta=(Units="Degrees"))
-	float MaxTurnPitch = 20.f;
+	float MaxTurnPitch = 5.f;
 
 protected:
 

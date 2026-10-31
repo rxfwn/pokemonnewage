@@ -211,7 +211,43 @@ def make_widget_material():
     material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
     material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
 
-    slate = _texture(material, "SlateUI", unreal.MaterialSamplerType.SAMPLERTYPE_COLOR, None, -900, 0)
+    # L'écran est rendu en grand (Panel Render Scale) puis réduit à l'écran : sans lissage, le texte « grésille ».
+    # On fait donc la moyenne de 16 points dans chaque pixel affiché (filtre boîte selon la taille du pixel, ddx/ddy)
+    slate_tex = mel.create_material_expression(material, unreal.MaterialExpressionTextureObjectParameter, -1300, 0)
+    slate_tex.set_editor_property("parameter_name", "SlateUI")
+    slate_tex.set_editor_property("texture", unreal.load_asset("/Engine/EngineResources/DefaultTexture"))
+    uv = mel.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate, -1300, 200)
+    slate = mel.create_material_expression(material, unreal.MaterialExpressionCustom, -1050, 0)
+    slate.set_editor_property("output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT4)
+    slate.set_editor_property("description", "SlateUI lisse")
+    tex_input = unreal.CustomInput()
+    tex_input.set_editor_property("input_name", "Tex")
+    uv_input = unreal.CustomInput()
+    uv_input.set_editor_property("input_name", "UV")
+    slate.set_editor_property("inputs", [tex_input, uv_input])
+    slate.set_editor_property("code", "\n".join([
+        "float2 dx = ddx(UV);",
+        "float2 dy = ddy(UV);",
+        "float4 acc = 0;",
+        "for (int i = 0; i < 4; i++)",
+        "{",
+        "    for (int j = 0; j < 4; j++)",
+        "    {",
+        "        float2 o = ((i + 0.5) / 4.0 - 0.5) * dx + ((j + 0.5) / 4.0 - 0.5) * dy;",
+        "        acc += Texture2DSample(Tex, TexSampler, UV + o);",
+        "    }",
+        "}",
+        "return acc / 16.0;",
+    ]))
+    mel.connect_material_expressions(slate_tex, "", slate, "Tex")
+    mel.connect_material_expressions(uv, "", slate, "UV")
+    slate_rgb = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, -800, 0)
+    for channel in ("r", "g", "b"):
+        slate_rgb.set_editor_property(channel, True)
+    slate_a = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, -800, 150)
+    slate_a.set_editor_property("a", True)
+    mel.connect_material_expressions(slate, "", slate_rgb, "")
+    mel.connect_material_expressions(slate, "", slate_a, "")
     tint = _vector(material, "TintColorAndOpacity", (1.0, 1.0, 1.0, 1.0), -900, 300)
     brightness = _scalar(material, "Brightness", 1.0, -900, 500)
     _scalar(material, "OpacityFromTexture", 1.0, -900, 650)  # attendu par UWidgetComponent
@@ -224,16 +260,18 @@ def make_widget_material():
     opacity = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -400, 400)
 
     mel.connect_material_expressions(tint, "", tint_rgb, "")
-    mel.connect_material_expressions(slate, "RGB", color, "A")
+    mel.connect_material_expressions(slate_rgb, "", color, "A")
     mel.connect_material_expressions(tint_rgb, "", color, "B")
     mel.connect_material_expressions(color, "", lit, "A")
     mel.connect_material_expressions(brightness, "", lit, "B")
-    mel.connect_material_expressions(slate, "A", opacity, "A")
+    mel.connect_material_expressions(slate_a, "", opacity, "A")
     # Sortie « A » du paramètre directement (sa sortie par défaut n'a que RGB)
     mel.connect_material_expressions(tint, "A", opacity, "B")
     mel.connect_material_property(lit, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
     mel.recompile_material(material)
+    # Version lue par Content/Python/init_unreal.py : une version plus ancienne relance l'import à l'ouverture d'Unreal
+    eal.set_metadata_tag(material, "PokedexWidgetVersion", "2")
     eal.save_asset(path)
     return material
 
