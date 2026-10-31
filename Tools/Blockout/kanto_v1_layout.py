@@ -125,11 +125,11 @@ MASSIFS = [
     ("Route Victoire (sud)", 20, 290, 130, 1.0),
     ("Entre Route 23 et Route 2", 95, 230, 75, 0.9),
     ("Montagnes d'Argenta", 100, 90, 70, 0.9),
-    # Le nord : le Mont Sélénite et la côte rocheuse jusqu'à Azuria.
-    ("Mont Sélénite (ouest)", 190, 40, 110, 1.0),
-    ("Mont Sélénite", 310, 40, 110, 1.0),
-    ("Côte nord", 430, 25, 95, 0.85),
-    ("Côte nord (est)", 525, 5, 65, 0.7),
+    # Le nord : une grande chaîne le long de la côte, du Plateau Indigo jusqu'à la Route 24.
+    ("Mont Sélénite (ouest)", 190, 30, 110, 1.0),
+    ("Mont Sélénite", 300, 30, 110, 1.0),
+    ("Côte nord", 410, 20, 105, 1.0),
+    ("Côte nord (est)", 510, 15, 90, 0.95),
     # L'est : le Tunnel Roche.
     ("Tunnel Roche", 715, 195, 90, 1.0),
     # Rochers et petites crêtes dans les forêts (moins hauts).
@@ -143,11 +143,12 @@ MASSIFS = [
 
 # Retouches de la silhouette (en cases FRLG : colonne min, ligne min, colonne max, ligne max).
 # Mer : la baie centrale remonte au nord-ouest jusqu'à la forêt, le long de la piste cyclable.
-SEA_AREAS = [(297, 338, 335, 430)]
+SEA_AREAS = [(297, 338, 335, 430), (146, 595, 156, 660)]
 # Terre : l'anse au sud de la Route 25 est comblée (le cap de la maison de Léo est un massif).
 LAND_AREAS = [(600, 30, 800, 80)]
-# Routes maritimes bordées de rochers en pointillés (Routes 19, 20, 21 ; côte des Routes 12-13).
-ROCK_ROUTES = [(100, 600, 480, 820), (740, 280, 830, 600)]
+# Pas de petits bouts : îlots et mares de moins de 1500 cases (≈ 6 ha) retirés, sauf ces îles.
+MIN_ISLAND_CELLS = 1500
+KEEP_ISLANDS = [(145, 775), (300, 778)]  # Cramois'Île, Îles Écume
 # Eau en hauteur : la rivière de la Route 24 et l'étang de la Route 25 (lacs, pas la mer).
 LAKE_AREAS = [(585, -10, 810, 110)]
 # Eau très peu profonde (1,5 m au plus) : la côte est de la Route 12 (futur pont).
@@ -207,6 +208,7 @@ TERRACES = {
     "Bourg Palette": [(3, 2.5)],
     "Jadielle": [(-15, 4.0), (28, 4.0)],
     "Argenta": [(-19.5, 5.0), (29, 5.0)],
+    "Plateau Indigo": [(-18, 4.0), (-6, 4.0), (6, 4.0)],  # gradins jusqu'à la Ligue
 }
 RAMP_HALF_WIDTH = 5.0
 
