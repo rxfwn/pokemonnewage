@@ -1,4 +1,5 @@
 #include "UI/Progression/ProgressionWidget.h"
+#include "UI/GameFonts.h"
 #include "Progression/ProgressionComponent.h"
 #include "Blueprint/WidgetTree.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
@@ -125,10 +126,7 @@ UTextBlock* UProgressionWidget::MakeText(const FText& InText, int32 Size, const 
 	UTextBlock* Block = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
 	Block->SetText(InText);
 	Block->SetColorAndOpacity(FSlateColor(Color));
-	FSlateFontInfo Font = Block->GetFont();
-	Font.Size = Size;
-	Font.TypefaceFontName = bBold ? FName(TEXT("Bold")) : FName(TEXT("Regular"));
-	Block->SetFont(Font);
+	Block->SetFont(PokemonFonts::Get(Size, bBold));
 	return Block;
 }
 

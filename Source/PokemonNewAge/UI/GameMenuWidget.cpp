@@ -1,4 +1,5 @@
 #include "UI/GameMenuWidget.h"
+#include "UI/GameFonts.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/BackgroundBlur.h"
 #include "Components/Border.h"
@@ -36,9 +37,7 @@ namespace GameMenu
 		UTextBlock* Text = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
 		Text->SetText(Value);
 		Text->SetColorAndOpacity(FSlateColor(Color));
-		FSlateFontInfo Font = Text->GetFont();
-		Font.Size = Size;
-		Text->SetFont(Font);
+		Text->SetFont(PokemonFonts::Get(Size));
 		Text->SetJustification(ETextJustify::Center);
 		return Text;
 	}

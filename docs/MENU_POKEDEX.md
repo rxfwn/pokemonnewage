@@ -52,11 +52,11 @@ Fait en C++ (`UGameHUDWidget`) aux mesures de la maquette (1920 × 1080, mis à 
 
 - **Icône du Pokédex** en haut à droite (image de L'amie), sans texte de touche (Tab l'ouvre).
 - **Nom du lieu** en Futura 95, centré en haut, avec le trait blanc dessous : il apparaît 4 s quand on entre dans une ville ou sur une route.
-- **En bas à droite** : le lieu (Inter 24), l'heure du PC, la température (17 °C de moyenne, plus chaud à 15 h, réglable : `Base Temperature`, `Temperature Swing`) et le picto météo (pictos de L'amie : soleil par défaut, `SetWeather` pour nuage, pluie ou vent en attendant un vrai système météo).
+- **En bas à droite** : le lieu (Futura 24), l'heure du PC, la température (17 °C de moyenne, plus chaud à 15 h, réglable : `Base Temperature`, `Temperature Swing`) et le picto météo (pictos de L'amie : soleil par défaut, `SetWeather` pour nuage, pluie ou vent en attendant un vrai système météo).
 - **Boussole** : disque gris translucide, N en haut (le nord de Kanto), point blanc du joueur, cône de vue qui tourne avec la caméra, repère jaune du GPS sur le bord et distance au centre.
 - Il se cache pendant les combats, les menus, la boutique, le PC et l'appareil photo, ou avec Échap > Jeu > Afficher le HUD.
 
-Images et polices : `Tools/HUD/Assets/` (icône du Pokédex, cône, 4 pictos météo de L'amie ; polices Inter et Futura en `FF_*.ttf`), importées dans `/Game/UI/HUD` par `Tools/HUD/import_hud_unreal.py`, lancé aussi à la fin du script du Pokédex.
+Images et polices : `Tools/HUD/Assets/` (icône du Pokédex, cône, 4 pictos météo de L'amie ; polices Futura en `FF_*.ttf`), importées dans `/Game/UI/HUD` par `Tools/HUD/import_hud_unreal.py`, lancé aussi à la fin du script du Pokédex.
 
 ## 1. Compiler (Unreal fermé)
 
@@ -147,3 +147,15 @@ Il s'ouvre tout seul quand un combat commence : cadres des deux Pokémon (nom, n
 - **Boussole** : disque vide comme la maquette ; une vraie mini-carte dedans est possible plus tard.
 - Les sons sont synthétiques : on pourra les remplacer en gardant les mêmes noms.
 - Le nom du joueur est celui donné par Unreal (pas encore d'écran pour le choisir).
+
+## Police du jeu : Futura partout
+
+Demandé par L'amie le 2026-10-31 : toute l'interface (HUD, Pokédex 3D, Paramètres, dialogues, combat, boutique, PC, évolution) passe par `PokemonFonts::Get(Taille, bGras)` (`Source/PokemonNewAge/UI/GameFonts.h`). Il charge les Font Faces de `/Game/UI/HUD/Fonts` :
+
+| Fichier dans `Tools/HUD/Assets/fonts/` | Sert pour |
+| --- | --- |
+| `FF_Futura_Medium.ttf` (Futura Md BT) | le texte normal |
+| `FF_Futura_MediumItalic.ttf` (Futura Md BT italique) | l'italique (`PokemonFonts::EStyle::Italic`, menu de l'écran de titre) |
+| `FF_Futura_Bold.ttf` | le gras, et en secours tant que les deux autres manquent |
+
+Pour ajouter une police : mettre le .ttf avec ce nom, puis relancer `Tools/HUD/import_hud_unreal.py` (ou fermer et rouvrir Unreal si le Pokédex 3D n'est pas encore installé) et relancer le jeu. Sans aucune Font Face importée, le jeu reprend Roboto.

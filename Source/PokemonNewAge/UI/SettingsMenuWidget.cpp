@@ -1,4 +1,5 @@
 #include "UI/SettingsMenuWidget.h"
+#include "UI/GameFonts.h"
 #include "Blueprint/WidgetTree.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
 #include "Components/BackgroundBlur.h"
@@ -41,13 +42,7 @@ namespace SettingsMenu
 		UTextBlock* Label = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
 		Label->SetText(Value);
 		Label->SetColorAndOpacity(FSlateColor(Color));
-		FSlateFontInfo Font = Label->GetFont();
-		Font.Size = Size;
-		if (bBold)
-		{
-			Font.TypefaceFontName = FName(TEXT("Bold"));
-		}
-		Label->SetFont(Font);
+		Label->SetFont(PokemonFonts::Get(Size, bBold));
 		return Label;
 	}
 
