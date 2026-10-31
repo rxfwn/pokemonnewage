@@ -2,7 +2,7 @@
 
 Installe le Pokédex 3D (SCRUM-64) s'il manque : quand /Game/UI/Pokedex/DA_PokedexModel n'existe pas ou n'a pas
 les pièces du modèle de L'amie, lance Tools/Pokedex/import_pokedex_unreal.py (modèle, textures, icônes, carte,
-sons, HUD). Sinon ne fait rien. Pour réimporter de force : Outils > Exécuter un script Python > ce même script d'import.
+sons, HUD). Importe aussi les polices FF_*.ttf ajoutées dans Tools/HUD/Assets/fonts. Sinon ne fait rien. Pour réimporter de force : Outils > Exécuter un script Python > ce même script d'import.
 """
 
 import importlib.util
@@ -26,6 +26,25 @@ def pokedex_installed():
     except Exception:
         return False
     return any(str(key) == "Body" and value for key, value in parts.items())
+
+
+def missing_fonts():
+    """Polices de Tools/HUD/Assets/fonts pas encore importées (ex. Futura Md BT ajoutée après coup)."""
+    import glob
+    fonts = glob.glob(os.path.join(PROJECT_DIR, "Tools", "HUD", "Assets", "fonts", "FF_*.ttf"))
+    names = [os.path.splitext(os.path.basename(path))[0] for path in fonts]
+    return [name for name in names if not unreal.EditorAssetLibrary.does_asset_exist("/Game/UI/HUD/Fonts/" + name)]
+
+
+def install_fonts():
+    script = os.path.join(PROJECT_DIR, "Tools", "HUD", "import_hud_unreal.py")
+    if not missing_fonts() or not os.path.exists(script):
+        return
+    unreal.log("Nouvelles polices : import automatique (Tools/HUD/import_hud_unreal.py)...")
+    spec = importlib.util.spec_from_file_location("import_hud_unreal", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.import_hud()
 
 
 def install_pokedex():
@@ -53,6 +72,7 @@ def _on_tick(delta_seconds):
     unreal.unregister_slate_post_tick_callback(_handle)
     try:
         install_pokedex()
+        install_fonts()
     except Exception as error:
         unreal.log_error("Installation du Pokédex 3D ratée : %s (lancer Tools/Pokedex/import_pokedex_unreal.py à la main)" % error)
 
