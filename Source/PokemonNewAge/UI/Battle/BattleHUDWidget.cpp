@@ -1,4 +1,5 @@
 #include "UI/Battle/BattleHUDWidget.h"
+#include "UI/GameFonts.h"
 #include "Battle/BattleComponent.h"
 #include "Battle/BattleText.h"
 #include "Blueprint/WidgetTree.h"
@@ -252,10 +253,7 @@ UTextBlock* UBattleHUDWidget::MakeText(const FText& InText, int32 Size, const FL
 	UTextBlock* Block = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
 	Block->SetText(InText);
 	Block->SetColorAndOpacity(FSlateColor(Color));
-	FSlateFontInfo Font = Block->GetFont();
-	Font.Size = Size;
-	Font.TypefaceFontName = bBold ? FName(TEXT("Bold")) : FName(TEXT("Regular"));
-	Block->SetFont(Font);
+	Block->SetFont(PokemonFonts::Get(Size, bBold));
 	return Block;
 }
 

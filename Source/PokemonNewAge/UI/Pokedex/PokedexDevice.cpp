@@ -11,6 +11,7 @@
 #include "Components/WidgetComponent.h"
 #include "Components/WidgetInteractionComponent.h"
 #include "Core/PokemonPlayerState.h"
+#include "Engine/Engine.h"
 #include "Engine/StaticMesh.h"
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -162,6 +163,14 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 	if (!InController || !Model || !Model->Parts.FindRef(TEXT("Body")))
 	{
 		UE_LOG(LogPokemonNewAge, Warning, TEXT("Pokedex 3D : DA_PokedexModel introuvable ou incomplet, menu a plat utilise (voir docs/MENU_POKEDEX.md)"));
+#if WITH_EDITOR
+		// Visible tout de suite dans l'éditeur : le Pokédex 3D s'installe à l'ouverture d'Unreal (Content/Python/init_unreal.py)
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(INDEX_NONE, 8.f, FColor::Orange,
+				TEXT("Pokedex 3D pas installe : fermer et rouvrir Unreal (installation automatique), ou lancer Tools/Pokedex/import_pokedex_unreal.py"));
+		}
+#endif
 		return false;
 	}
 	Controller = InController;
@@ -519,9 +528,20 @@ void APokedexDevice::PlaceInFrontOfCamera()
 	CameraLocation = PC->PlayerCameraManager->GetCameraLocation();
 	CameraRotation = PC->PlayerCameraManager->GetCameraRotation();
 
+	UpdateFraming();
+}
+
+void APokedexDevice::UpdateFraming()
+{
+	APlayerController* PC = Controller.Get();
+	if (!PC || !PC->PlayerCameraManager)
+	{
+		return;
+	}
 	// Distance pour que l'appareil ouvert remplisse ScreenFill de l'écran, quel que soit le champ de vision
 	int32 SizeX = 16, SizeY = 9;
 	PC->GetViewportSize(SizeX, SizeY);
+	FramedViewportSize = FIntPoint(SizeX, SizeY);
 	const float Aspect = SizeY > 0 ? float(SizeX) / float(SizeY) : 16.f / 9.f;
 	const float TanH = FMath::Tan(FMath::DegreesToRadians(PC->PlayerCameraManager->GetFOVAngle() * 0.5f));
 	const float TanV = TanH / Aspect;
@@ -640,22 +660,45 @@ void APokedexDevice::UpdateAnimation(float DeltaSeconds)
 	const FVector Location = CameraLocation + Forward * Distance - Up * (1.f - Rise) * Distance * 0.9f;
 	SetActorLocationAndRotation(Location, CameraRotation + FRotator((1.f - Rise) * -35.f, 0.f, 0.f));
 
-	// Pièces enfoncées
+	// Le cadrage suit la taille de la fenêtre (plein écran, fenêtré, redimensionné)
+	if (APlayerController* PC = Controller.Get())
+	{
+		FIntPoint ViewportSize(0, 0);
+		PC->GetViewportSize(ViewportSize.X, ViewportSize.Y);
+		if (ViewportSize != FramedViewportSize)
+		{
+			UpdateFraming();
+		}
+	}
+
+	// Pièces enfoncées ; boutons du volet qui se soulèvent sous la souris ou la sélection
 	for (FPressable& Press : Pressables)
 	{
 		USceneComponent* Component = Press.Component.Get();
-		if (!Component || Press.PressTime < 0.f)
+		if (!Component)
 		{
 			continue;
 		}
-		const float T = (Time - Press.PressTime) / PressDuration;
-		float Depth = T < 0.3f ? T / 0.3f : 1.f - (T - 0.3f) / 0.7f;
-		if (T >= 1.f)
+		const int32 MenuIndex = MenuButtons.IndexOfByKey(Cast<UStaticMeshComponent>(Component));
+		const bool bLifted = MenuIndex != INDEX_NONE && (Component == Hovered.Get() || (MenuIndex == LidSelection && bLidFocus));
+		const float PreviousHover = Press.HoverAlpha;
+		Press.HoverAlpha = FMath::FInterpTo(Press.HoverAlpha, bLifted ? 1.f : 0.f, DeltaSeconds, 14.f);
+		if (Press.PressTime < 0.f && FMath::IsNearlyEqual(PreviousHover, Press.HoverAlpha, 1e-4f))
 		{
-			Depth = 0.f;
-			Press.PressTime = -1.f;
+			continue;
 		}
-		Component->SetRelativeLocation(Press.BaseLocation + FVector(PressDepth * FMath::Clamp(Depth, 0.f, 1.f), 0.f, 0.f));
+		float Depth = 0.f;
+		if (Press.PressTime >= 0.f)
+		{
+			const float T = (Time - Press.PressTime) / PressDuration;
+			Depth = T < 0.3f ? T / 0.3f : 1.f - (T - 0.3f) / 0.7f;
+			if (T >= 1.f)
+			{
+				Depth = 0.f;
+				Press.PressTime = -1.f;
+			}
+		}
+		Component->SetRelativeLocation(Press.BaseLocation + FVector(PressDepth * FMath::Clamp(Depth, 0.f, 1.f) - HoverLift * Press.HoverAlpha, 0.f, 0.f));
 	}
 
 	// Écrans qui s'allument, flou du décor (on l'enlève quand on tourne l'appareil, sinon ses bords seraient flous)

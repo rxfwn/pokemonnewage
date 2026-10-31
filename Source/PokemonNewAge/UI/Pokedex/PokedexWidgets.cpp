@@ -1,4 +1,5 @@
 #include "UI/Pokedex/PokedexWidgets.h"
+#include "UI/GameFonts.h"
 #include "UI/Pokedex/PokedexDevice.h"
 #include "Blueprint/SlateBlueprintLibrary.h"
 #include "Blueprint/WidgetTree.h"
@@ -106,10 +107,7 @@ namespace PokedexPanels
 	UTextBlock* MakePanelText(UWidgetTree* Tree, int32 Size, const FLinearColor& Color, bool bBold)
 	{
 		UTextBlock* Block = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
-		FSlateFontInfo Font = Block->GetFont();
-		Font.Size = Size;
-		Font.TypefaceFontName = bBold ? FName(TEXT("Bold")) : FName(TEXT("Regular"));
-		Block->SetFont(Font);
+		Block->SetFont(PokemonFonts::Get(Size, bBold));
 		Block->SetColorAndOpacity(FSlateColor(Color));
 		return Block;
 	}

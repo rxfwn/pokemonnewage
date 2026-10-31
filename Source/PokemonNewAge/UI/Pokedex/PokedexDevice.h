@@ -83,7 +83,7 @@ public:
 
 	/** Marge autour de l'appareil ouvert quand on calcule la distance à la caméra (1 = bord à bord) */
 	UPROPERTY(EditAnywhere, Category="Pokedex")
-	float ScreenFill = 0.82f;
+	float ScreenFill = 0.94f;
 
 	/** Exposition fixe pendant le menu (EV100) : l'appareil a le même rendu de jour comme de nuit */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
@@ -124,6 +124,7 @@ private:
 		TWeakObjectPtr<USceneComponent> Component;
 		FVector BaseLocation = FVector::ZeroVector;
 		float PressTime = -1.f;
+		float HoverAlpha = 0.f;
 	};
 
 	UStaticMeshComponent* AddPart(FName Key, USceneComponent* Parent);
@@ -137,6 +138,9 @@ private:
 	/** Taille en cm (largeur, hauteur) et centre de la face avant d'une pièce, dans le repère de son parent */
 	bool GetPartFace(FName PartKey, FVector& OutCenter, FVector2D& OutSize) const;
 	void PlaceInFrontOfCamera();
+
+	/** Distance à la caméra pour que l'appareil ouvert remplisse ScreenFill de la fenêtre (refait si elle change de taille) */
+	void UpdateFraming();
 	void UpdateAnimation(float DeltaSeconds);
 	void UpdateLights(float DeltaSeconds);
 	void UpdatePanels(float DeltaSeconds);
@@ -292,6 +296,7 @@ private:
 	FVector CameraLocation = FVector::ZeroVector;
 	FRotator CameraRotation = FRotator::ZeroRotator;
 	float ViewDistance = 32.f;
+	FIntPoint FramedViewportSize = FIntPoint::ZeroValue;
 
 	// Taille du modèle (MeasureModel)
 	float HalfWidth = 9.3f;
@@ -320,6 +325,8 @@ private:
 	static constexpr int32 MenuColumns = 5;
 	static constexpr float PressDuration = 0.2f;
 	static constexpr float PressDepth = 0.08f;
+	/** Les boutons du volet se soulèvent un peu sous la souris (cm) */
+	static constexpr float HoverLift = 0.05f;
 	static constexpr float OpenDuration = 0.95f;
 	static constexpr float CloseDuration = 0.6f;
 };

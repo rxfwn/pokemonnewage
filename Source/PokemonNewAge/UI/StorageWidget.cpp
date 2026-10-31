@@ -1,4 +1,5 @@
 #include "UI/StorageWidget.h"
+#include "UI/GameFonts.h"
 #include "Blueprint/WidgetTree.h"
 #include "Capture/CaptureComponent.h"
 #include "Components/Border.h"
@@ -33,9 +34,7 @@ namespace
 	UTextBlock* MakeText(UWidgetTree* Tree, int32 Size, const FLinearColor& Color, FName Name = NAME_None)
 	{
 		UTextBlock* Text = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), Name);
-		FSlateFontInfo Font = Text->GetFont();
-		Font.Size = Size;
-		Text->SetFont(Font);
+		Text->SetFont(PokemonFonts::Get(Size));
 		Text->SetColorAndOpacity(FSlateColor(Color));
 		return Text;
 	}

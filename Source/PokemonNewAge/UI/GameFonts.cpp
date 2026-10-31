@@ -1,0 +1,102 @@
+#include "UI/GameFonts.h"
+#include "Engine/FontFace.h"
+#include "Fonts/CompositeFont.h"
+#include "Styling/CoreStyle.h"
+#include "UObject/StrongObjectPtr.h"
+
+namespace PokemonFonts
+{
+	namespace
+	{
+		const TCHAR* FontFolder = TEXT("/Game/UI/HUD/Fonts");
+
+		/** Inclinaison de tout le texte (0 = droit, 0,18 comme l'écran de titre) */
+		constexpr float Skew = 0.18f;
+
+		/** Gardées en mémoire pour toute la partie : la police composite ne les référence pas pour le ramasse-miettes */
+		TArray<TStrongObjectPtr<UFontFace>> LoadedFaces;
+		TSharedPtr<const FCompositeFont> CachedFont;
+
+		UFontFace* LoadFace(const TCHAR* Name)
+		{
+			UFontFace* Face = LoadObject<UFontFace>(nullptr, *FString::Printf(TEXT("%s/%s.%s"), FontFolder, Name, Name), nullptr, LOAD_NoWarn | LOAD_Quiet);
+			if (Face)
+			{
+				LoadedFaces.Emplace(Face);
+			}
+			return Face;
+		}
+
+		TSharedPtr<const FCompositeFont> GetFont()
+		{
+			if (CachedFont.IsValid())
+			{
+				return CachedFont;
+			}
+			// Futura Medium pour le texte et l'italique, Futura Bold pour le gras, tout penché (L'amie, 2026-10-31) ;
+			// chacune remplace l'autre si elle manque (FF_Futura_Medium arrive avec l'écran de titre).
+			// Les accents (é, à, ç, ©, °) sont ajoutés au .ttf par Tools/HUD/add_futura_accents.py (écran de titre)
+			UFontFace* Bold = LoadFace(TEXT("FF_Futura_Bold"));
+			UFontFace* Medium = LoadFace(TEXT("FF_Futura_Medium"));
+			UFontFace* Italic = LoadFace(TEXT("FF_Futura_MediumItalic"));
+			Medium = Medium ? Medium : Bold;
+			Bold = Bold ? Bold : Medium;
+			Italic = Italic ? Italic : Medium;
+			if (!Medium)
+			{
+				return nullptr;
+			}
+			TSharedRef<FCompositeFont> Composite = MakeShared<FCompositeFont>();
+			auto AddTypeface = [](FTypeface& Typeface, const TCHAR* Name, UFontFace* Face)
+			{
+				FTypefaceEntry& Entry = Typeface.Fonts.AddDefaulted_GetRef();
+				Entry.Name = Name;
+				Entry.Font = FFontData(Face);
+			};
+			AddTypeface(Composite->DefaultTypeface, TEXT("Regular"), Medium);
+			AddTypeface(Composite->DefaultTypeface, TEXT("Bold"), Bold);
+			AddTypeface(Composite->DefaultTypeface, TEXT("Italic"), Italic);
+
+			CachedFont = Composite;
+			return CachedFont;
+		}
+	}
+
+	FSlateFontInfo Get(float Size, EStyle Style)
+	{
+		const TCHAR* Typeface = Style == EStyle::Bold ? TEXT("Bold") : Style == EStyle::Italic ? TEXT("Italic") : TEXT("Regular");
+		FSlateFontInfo Info = FCoreStyle::GetDefaultFontStyle(FName(Typeface), Size);
+		if (TSharedPtr<const FCompositeFont> Font = GetFont())
+		{
+			Info = FSlateFontInfo(Font, Size, FName(Typeface));
+		}
+		// Penché partout, comme la maquette de L'amie
+		Info.SkewAmount = Skew;
+		return Info;
+	}
+
+	FSlateFontInfo GetHUD(float Size, bool* bOutCondensed)
+	{
+		static TSharedPtr<const FCompositeFont> HUDFont;
+		static bool bCondensed = false;
+		if (!HUDFont.IsValid())
+		{
+			UFontFace* Face = LoadFace(TEXT("FF_Futura_BoldCondensed"));
+			bCondensed = Face != nullptr;
+			Face = Face ? Face : LoadFace(TEXT("FF_Futura_Bold"));
+			if (Face)
+			{
+				TSharedRef<FCompositeFont> Composite = MakeShared<FCompositeFont>();
+				FTypefaceEntry& Entry = Composite->DefaultTypeface.Fonts.AddDefaulted_GetRef();
+				Entry.Name = TEXT("Regular");
+				Entry.Font = FFontData(Face);
+				HUDFont = Composite;
+			}
+		}
+		if (bOutCondensed)
+		{
+			*bOutCondensed = bCondensed;
+		}
+		return HUDFont.IsValid() ? FSlateFontInfo(HUDFont, Size, FName(TEXT("Regular"))) : FCoreStyle::GetDefaultFontStyle(TEXT("Bold"), Size);
+	}
+}
