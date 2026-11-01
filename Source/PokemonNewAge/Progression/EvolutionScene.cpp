@@ -105,6 +105,9 @@ AEvolutionScene::AEvolutionScene()
 		Mesh->SetupAttachment(Root);
 		Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Mesh->SetVisibility(false);
+		// Lueurs très fortes et changeantes : hors de l'éclairage global (Lumen en faisait des taches sur le sol)
+		Mesh->bAffectDynamicIndirectLighting = false;
+		Mesh->bAffectDistanceFieldLighting = false;
 		return Mesh;
 	};
 	auto MakeStatic = [this](const TCHAR* Name)
@@ -113,6 +116,9 @@ AEvolutionScene::AEvolutionScene()
 		Mesh->SetupAttachment(Root);
 		Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Mesh->SetVisibility(false);
+		// Lueurs très fortes et changeantes : hors de l'éclairage global (Lumen en faisait des taches sur le sol)
+		Mesh->bAffectDynamicIndirectLighting = false;
+		Mesh->bAffectDistanceFieldLighting = false;
 		return Mesh;
 	};
 	OldSkeletal = MakeSkeletal(TEXT("OldSkeletal"));
@@ -132,6 +138,8 @@ AEvolutionScene::AEvolutionScene()
 	BallTop->SetupAttachment(BallHinge);
 	BallTop->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	BallTop->SetVisibility(false);
+	BallTop->bAffectDynamicIndirectLighting = false;
+	BallTop->bAffectDistanceFieldLighting = false;
 
 	LightCore = MakeStatic(TEXT("LightCore"));
 	Beam = MakeStatic(TEXT("Beam"));
@@ -140,6 +148,8 @@ AEvolutionScene::AEvolutionScene()
 	Sparks->SetupAttachment(Root);
 	Sparks->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Sparks->SetVisibility(false);
+	Sparks->bAffectDynamicIndirectLighting = false;
+	Sparks->bAffectDistanceFieldLighting = false;
 	for (UStaticMeshComponent* Effect : { LightCore.Get(), Beam.Get(), Shockwave.Get(), static_cast<UStaticMeshComponent*>(Sparks.Get()) })
 	{
 		Effect->SetCastShadow(false);
@@ -587,8 +597,8 @@ bool AEvolutionScene::SetupBall(FName Ball)
 		return false;
 	}
 	BallBaseScale = BallDiameter / ModelSize;
-	// Posée sur l'herbe à la place du Pokémon, le bouton (+X) vers la caméra
-	BallRest = FVector(0.f, 0.f, BallDiameter * 0.5f);
+	// Posée sur l'herbe juste devant le Pokémon (il en sort derrière elle), le bouton (+X) vers la caméra
+	BallRest = FVector(PokemonHeight * 0.3f + BallDiameter * 0.6f, 0.f, BallDiameter * 0.5f);
 	BallBottom->SetRelativeLocationAndRotation(BallRest, FRotator(0.f, EvolutionScene::BallYaw, 0.f));
 	BallBottom->SetRelativeScale3D(FVector(BallBaseScale));
 	BallBottom->SetVisibility(true);
@@ -678,18 +688,31 @@ void AEvolutionScene::TickBallPhase(float DeltaTime)
 
 	case EPhase::BallOpen:
 	{
-		// 2. Elle se soulève et s'entrouvre : la lumière passe par l'ouverture
+		// 2. Elle s'ouvre : le Pokémon en sort tout de suite, en silhouette de lumière, et la caméra recule pour le cadrer
 		const float Alpha = FMath::Clamp(PhaseTime / FMath::Max(BallOpenTime, 0.05f), 0.f, 1.f);
-		const float Lid = FMath::InterpEaseOut(0.f, 1.f, FMath::Min(Alpha * 2.5f, 1.f), 3.f);
+		const float Lid = FMath::InterpEaseOut(0.f, 1.f, FMath::Min(Alpha * 3.f, 1.f), 3.f);
 		PokeBallModel::SetOpenAngle(BallHinge, BallOpenAngle * Lid);
-		PokeBallModel::SetGlow(BallBottom, BallTop, 1.5f * Alpha, BallLightColor);
-		PlaceBall(3.f * FMath::Sin(PhaseTime * 38.f) * (1.f - Alpha), D * BallLift * Ease(Alpha));
-		LightCore->SetRelativeLocation(BallRest + FVector(0.f, 0.f, D * BallLift * Ease(Alpha)));
-		LightCore->SetRelativeScale3D(FVector(D * (0.25f + 0.45f * Alpha) / 100.f));
-		SetEffectGlow(CoreLight, Alpha, BallLightColor);
-		GlowLight->SetIntensity(GlowLightMax * 0.8f * Alpha);
+		PokeBallModel::SetGlow(BallBottom, BallTop, 0.4f * (1.f - Alpha), BallLightColor);
+		PlaceBall(0.f, D * BallLift * Ease(Alpha));
+		if (!bPokemonOut)
+		{
+			bPokemonOut = true;
+			if (OldMesh)
+			{
+				OldMesh->SetVisibility(true);
+			}
+			SetGlow(OldGlow, 1.f);
+		}
+		SetModelScale(OldMesh, FMath::InterpEaseOut(0.f, 1.f, FMath::Min(Alpha / 0.7f, 1.f), 2.f));
+		LightCore->SetRelativeLocation(BallCenter);
+		LightCore->SetRelativeScale3D(FVector(D * (0.3f + 0.4f * (1.f - Alpha)) / 100.f));
+		SetEffectGlow(CoreLight, 1.f - Alpha, BallLightColor);
+		GlowLight->SetIntensity(GlowLightMax * 0.35f * FMath::Sin(Alpha * UE_PI * 0.5f));
+		CameraBlend = FMath::SmoothStep(0.f, 1.f, Alpha);
+		UpdateCamera(CameraBlend);
 		if (Alpha >= 1.f)
 		{
+			LightCore->SetVisibility(false);
 			EnterPhase(EPhase::BallBeam);
 		}
 		break;
@@ -697,16 +720,15 @@ void AEvolutionScene::TickBallPhase(float DeltaTime)
 
 	case EPhase::BallBeam:
 	{
-		// 3. Un rayon de lumière monte de la Ball, les étincelles jaillissent
+		// 3. Une colonne de lumière monte autour du Pokémon, les étincelles jaillissent de la Ball
 		const float Alpha = FMath::Clamp(PhaseTime / FMath::Max(BeamTime, 0.05f), 0.f, 1.f);
-		PlaceBall(1.5f * FMath::Sin(PhaseTime * 45.f), D * BallLift);
 		const float Height = FMath::Max(PokemonHeight * 4.f, 600.f) * FMath::InterpEaseOut(0.f, 1.f, FMath::Min(Alpha * 3.f, 1.f), 2.f);
-		const float Width = D * (0.8f + 0.5f * Alpha) * (1.f + 0.12f * FMath::Sin(PhaseTime * 30.f));
-		Beam->SetRelativeLocation(BallCenter + FVector(0.f, 0.f, Height * 0.5f));
+		const float Width = FMath::Max(D, PokemonHeight * 0.6f) * (0.9f + 0.2f * Alpha) * (1.f + 0.05f * FMath::Sin(PhaseTime * 12.f));
+		Beam->SetRelativeLocation(FVector(0.f, 0.f, Height * 0.5f));
 		Beam->SetRelativeScale3D(FVector(Width / 100.f, Width / 100.f, FMath::Max(Height, 1.f) / 100.f));
-		SetEffectGlow(BeamLight, FMath::Min(Alpha * 4.f, 1.f), BallLightColor);
-		LightCore->SetRelativeScale3D(FVector(D * (0.7f + 0.4f * Alpha) / 100.f));
-		GlowLight->SetIntensity(GlowLightMax * (0.8f + 0.7f * Alpha));
+		SetEffectGlow(BeamLight, 0.6f * FMath::Min(Alpha * 4.f, 1.f), BallLightColor);
+		GlowLight->SetRelativeLocation(FVector(PokemonHeight * 0.4f, 0.f, PokemonHeight * 0.5f));
+		GlowLight->SetIntensity(GlowLightMax * (0.35f + 0.65f * Alpha));
 
 		SparkTimer += DeltaTime * BeamSparkRate;
 		const int32 Count = FMath::FloorToInt(SparkTimer);
@@ -721,30 +743,18 @@ void AEvolutionScene::TickBallPhase(float DeltaTime)
 
 	case EPhase::BallBurst:
 	{
-		// 4. Explosion blanche : la Ball disparaît, le Pokémon est là, en silhouette de lumière ; la caméra recule
+		// 4. Explosion blanche : la Ball disparaît, le Pokémon reste en silhouette de lumière
 		const float Alpha = FMath::Clamp(PhaseTime / FMath::Max(BurstTime, 0.05f), 0.f, 1.f);
 		const float Flash = Alpha < 0.15f ? Alpha / 0.15f : FMath::Max(0.f, 1.f - (Alpha - 0.15f) / 0.5f);
 		if (Widget)
 		{
 			Widget->SetFlash(0.85f * Flash);
 		}
-		if (Alpha >= 0.15f && !bPokemonOut)
+		if (Alpha >= 0.15f && BallBottom->IsVisible())
 		{
-			bPokemonOut = true;
 			BallBottom->SetVisibility(false);
 			BallTop->SetVisibility(false);
-			if (OldMesh)
-			{
-				OldMesh->SetVisibility(true);
-				SetModelScale(OldMesh, 1.f);
-			}
-			SetGlow(OldGlow, 1.f);
 		}
-
-		const float Grow = FMath::InterpEaseOut(0.f, 1.f, FMath::Min(Alpha / 0.3f, 1.f), 2.f);
-		LightCore->SetRelativeLocation(FMath::Lerp(BallCenter, FVector(0.f, 0.f, PokemonHeight * 0.5f), Grow));
-		LightCore->SetRelativeScale3D(FVector(FMath::Lerp(D * 1.1f, PokemonHeight * 1.3f, Grow) / 100.f));
-		SetEffectGlow(CoreLight, 1.f - FMath::Clamp((Alpha - 0.2f) / 0.5f, 0.f, 1.f), BallLightColor);
 
 		const float Wave = FMath::InterpEaseOut(0.f, 1.f, Alpha, 3.f);
 		Shockwave->SetRelativeLocation(FVector(0.f, 0.f, PokemonHeight * 0.4f));
@@ -752,14 +762,11 @@ void AEvolutionScene::TickBallPhase(float DeltaTime)
 		SetEffectGlow(ShockLight, FMath::Pow(1.f - Alpha, 1.5f), FLinearColor::White);
 
 		const float BeamFade = FMath::Clamp(1.f - Alpha * 2.5f, 0.f, 1.f);
-		SetEffectGlow(BeamLight, BeamFade, BallLightColor);
+		SetEffectGlow(BeamLight, 0.6f * BeamFade, BallLightColor);
 		Beam->SetVisibility(BeamFade > 0.f && Beam->GetStaticMesh() != nullptr);
 
-		GlowLight->SetRelativeLocation(FMath::Lerp(BallRest + FVector(D, 0.f, 0.f), FVector(PokemonHeight * 0.4f, 0.f, PokemonHeight * 0.5f), Wave));
 		GlowLight->SetLightColor(FMath::Lerp(BallLightColor, GlowColor, Alpha));
-		GlowLight->SetIntensity(FMath::Lerp(FlashLightMax * 0.6f, GlowLightMax, Alpha));
-		CameraBlend = FMath::SmoothStep(0.1f, 0.9f, Alpha);
-		UpdateCamera(CameraBlend);
+		GlowLight->SetIntensity(FMath::Lerp(FlashLightMax * 0.4f, GlowLightMax, Alpha));
 
 		if (Alpha >= 1.f)
 		{

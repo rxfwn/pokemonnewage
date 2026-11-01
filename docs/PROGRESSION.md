@@ -7,9 +7,9 @@ XP, niveaux, nouvelles attaques et évolutions. Le combat (docs/COMBAT.md) donna
 - **Écran de combat** : la barre d'XP se remplit en glissant (et repart de zéro à chaque niveau), le son de montée de niveau se joue et un panneau montre les stats (total et gain : « Attaque 24 +3 »).
 - **Séquence d'évolution en 3D** (SCRUM-47), une fois l'écran de combat fermé. L'entrée suit la maquette de L'amie (`/mnt/project-files/progression/maquette/Evolution_Pokeball_Anim.png`) :
   1. gros plan de nuit sur la **Poké Ball de sa capture**, posée sur l'herbe : elle tremble trois fois (« Quoi ? ») ;
-  2. elle se soulève et s'entrouvre, la lumière passe par l'ouverture et éclaire l'herbe ;
-  3. un **rayon de lumière** monte de la Ball, des étincelles jaillissent ;
-  4. **explosion blanche** (onde de choc, étincelles) : la Ball disparaît, le Pokémon est là en silhouette de lumière et la caméra recule pour le cadrer ;
+  2. elle s'ouvre : le Pokémon en sort tout de suite, en silhouette de lumière, pendant que la caméra recule pour le cadrer ;
+  3. une **colonne de lumière** monte autour de lui, des étincelles jaillissent de la Ball ;
+  4. **explosion blanche** (onde de choc, étincelles) : la Ball disparaît ;
   5. « Quoi ? Bulbizarre évolue ! » : sa silhouette et celle de sa nouvelle forme grandissent et rétrécissent à tour de rôle, de plus en plus vite, en musique ;
   6. flash blanc, la nouvelle forme apparaît en couleurs, fanfare : « Félicitations ! Ton Bulbizarre a évolué en Herbizarre ! » ;
   7. ensuite, les attaques de la nouvelle espèce à ce niveau (choix de l'attaque à oublier si besoin).
