@@ -1,9 +1,11 @@
 #include "UI/Battle/BattleHUDWidget.h"
 #include "UI/GameFonts.h"
+#include "UI/GlassPanel.h"
 #include "Battle/BattleComponent.h"
 #include "Battle/BattleText.h"
 #include "Blueprint/WidgetTree.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
+#include "Components/BackgroundBlur.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
 #include "Components/HorizontalBox.h"
@@ -28,7 +30,6 @@
 
 namespace BattleHUD
 {
-	const FLinearColor PanelColor(0.02f, 0.025f, 0.035f, 0.82f);
 	const FLinearColor Text(0.95f, 0.96f, 0.97f, 1.f);
 	const FLinearColor Dim(0.6f, 0.65f, 0.7f, 1.f);
 	const FLinearColor Good(0.3f, 0.85f, 0.4f, 1.f);
@@ -144,17 +145,15 @@ TSharedRef<SWidget> UBattleHUDWidget::RebuildWidget()
 		PlayerSlot->SetPadding(FMargin(60.f, 0.f, 0.f, 250.f));
 
 		// Boîte de texte en bas
-		UBorder* MessageFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MessageFrame"));
-		MessageFrame->SetBrush(FSlateRoundedBoxBrush(PanelColor, 14.f));
-		MessageFrame->SetPadding(FMargin(32.f, 22.f));
+		USizeBox* MessageSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		MessageSize->SetMinDesiredHeight(150.f);
+		UWidget* MessageFrame = PokemonGlass::Make(WidgetTree, MessageSize, FMargin(32.f, 22.f),
+			PokemonGlass::DefaultCornerRadius, TEXT("MessageFrame"));
 		UOverlaySlot* MessageSlot = Root->AddChildToOverlay(MessageFrame);
 		MessageSlot->SetHorizontalAlignment(HAlign_Fill);
 		MessageSlot->SetVerticalAlignment(VAlign_Bottom);
 		MessageSlot->SetPadding(FMargin(60.f, 0.f, 60.f, 40.f));
 
-		USizeBox* MessageSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
-		MessageSize->SetMinDesiredHeight(150.f);
-		MessageFrame->SetContent(MessageSize);
 		UHorizontalBox* MessageRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
 		MessageSize->SetContent(MessageRow);
 		MessageText = MakeText(FText::GetEmpty(), 30, Text);
@@ -166,28 +165,22 @@ TSharedRef<SWidget> UBattleHUDWidget::RebuildWidget()
 		ArrowSlot->SetVerticalAlignment(VAlign_Bottom);
 
 		// Menu des choix, à droite au-dessus de la boîte de texte
-		MenuFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MenuFrame"));
-		MenuFrame->SetBrush(FSlateRoundedBoxBrush(PanelColor, 14.f));
-		MenuFrame->SetPadding(FMargin(16.f));
+		MenuBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("MenuBox"));
+		MenuFrame = PokemonGlass::Make(WidgetTree, MenuBox, FMargin(16.f), PokemonGlass::DefaultCornerRadius, TEXT("MenuFrame"));
 		UOverlaySlot* MenuSlot = Root->AddChildToOverlay(MenuFrame);
 		MenuSlot->SetHorizontalAlignment(HAlign_Right);
 		MenuSlot->SetVerticalAlignment(VAlign_Bottom);
 		MenuSlot->SetPadding(FMargin(0.f, 0.f, 80.f, 210.f));
-		MenuBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("MenuBox"));
-		MenuFrame->SetContent(MenuBox);
 		MenuFrame->SetVisibility(ESlateVisibility::Collapsed);
 
 		// Stats gagnées à la montée de niveau, à gauche au-dessus du texte
-		StatsFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("StatsFrame"));
-		StatsFrame->SetBrush(FSlateRoundedBoxBrush(PanelColor, 14.f));
-		StatsFrame->SetPadding(FMargin(24.f, 16.f));
+		USizeBox* StatsSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		StatsSize->SetWidthOverride(380.f);
+		StatsFrame = PokemonGlass::Make(WidgetTree, StatsSize, FMargin(24.f, 16.f), PokemonGlass::DefaultCornerRadius, TEXT("StatsFrame"));
 		UOverlaySlot* StatsSlot = Root->AddChildToOverlay(StatsFrame);
 		StatsSlot->SetHorizontalAlignment(HAlign_Left);
 		StatsSlot->SetVerticalAlignment(VAlign_Bottom);
 		StatsSlot->SetPadding(FMargin(80.f, 0.f, 0.f, 230.f));
-		USizeBox* StatsSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
-		StatsSize->SetWidthOverride(380.f);
-		StatsFrame->SetContent(StatsSize);
 		StatsGrid = WidgetTree->ConstructWidget<UUniformGridPanel>(UUniformGridPanel::StaticClass());
 		StatsGrid->SetSlotPadding(FMargin(6.f, 3.f));
 		StatsSize->SetContent(StatsGrid);
@@ -199,14 +192,10 @@ TSharedRef<SWidget> UBattleHUDWidget::RebuildWidget()
 
 void UBattleHUDWidget::BuildInfoBox(FInfoBox& Box, bool bPlayer)
 {
-	Box.Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass());
-	Box.Frame->SetBrush(FSlateRoundedBoxBrush(PanelColor, 12.f));
-	Box.Frame->SetPadding(FMargin(22.f, 14.f));
-	Box.Frame->SetVisibility(ESlateVisibility::Hidden);
-
 	USizeBox* Size = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
 	Size->SetWidthOverride(440.f);
-	Box.Frame->SetContent(Size);
+	Box.Frame = PokemonGlass::Make(WidgetTree, Size, FMargin(22.f, 14.f));
+	Box.Frame->SetVisibility(ESlateVisibility::Hidden);
 	UVerticalBox* Column = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
 	Size->SetContent(Column);
 
@@ -254,6 +243,8 @@ UTextBlock* UBattleHUDWidget::MakeText(const FText& InText, int32 Size, const FL
 	Block->SetText(InText);
 	Block->SetColorAndOpacity(FSlateColor(Color));
 	Block->SetFont(PokemonFonts::Get(Size, bBold));
+	// Texte posé sur le verre (maquette Combat_Hud) : ombre légère
+	PokemonGlass::AddTextShadow(Block);
 	return Block;
 }
 

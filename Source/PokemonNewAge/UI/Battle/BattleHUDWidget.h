@@ -128,7 +128,7 @@ private:
 	/** Widgets d'un cadre (ils restent en vie par l'arbre de widgets) */
 	struct FInfoBox
 	{
-		TObjectPtr<UBorder> Frame;
+		TObjectPtr<UWidget> Frame;
 		TObjectPtr<UTextBlock> Name;
 		TObjectPtr<UTextBlock> Level;
 		TObjectPtr<UTextBlock> Status;
@@ -141,11 +141,11 @@ private:
 	UPROPERTY(Transient) TObjectPtr<UBattleComponent> Battle;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageText;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageArrow;
-	UPROPERTY(Transient) TObjectPtr<UBorder> MenuFrame;
+	UPROPERTY(Transient) TObjectPtr<UWidget> MenuFrame;
 	UPROPERTY(Transient) TObjectPtr<UVerticalBox> MenuBox;
 	UPROPERTY(Transient) TArray<TObjectPtr<UBattleHUDButtonBinding>> Bindings;
 	UPROPERTY(Transient) TObjectPtr<UButton> FirstButton;
-	UPROPERTY(Transient) TObjectPtr<UBorder> StatsFrame;
+	UPROPERTY(Transient) TObjectPtr<UWidget> StatsFrame;
 	UPROPERTY(Transient) TObjectPtr<UUniformGridPanel> StatsGrid;
 
 	FInfoBox Boxes[2];

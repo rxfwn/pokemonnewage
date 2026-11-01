@@ -1,5 +1,6 @@
 #include "UI/SettingsMenuWidget.h"
 #include "UI/GameFonts.h"
+#include "UI/GlassPanel.h"
 #include "Blueprint/WidgetTree.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
 #include "Components/BackgroundBlur.h"
@@ -24,7 +25,6 @@
 
 namespace SettingsMenu
 {
-	const FLinearColor PanelColor(0.07f, 0.08f, 0.1f, 0.93f);
 	const FLinearColor TabColor(0.16f, 0.17f, 0.2f, 1.f);
 	const FLinearColor TabSelectedColor(0.85f, 0.87f, 0.9f, 1.f);
 	const FLinearColor TextColor(0.94f, 0.95f, 0.96f);
@@ -261,13 +261,9 @@ TSharedRef<SWidget> USettingsMenuWidget::RebuildWidget()
 		PanelSlot->SetHorizontalAlignment(HAlign_Center);
 		PanelSlot->SetVerticalAlignment(VAlign_Center);
 
-		UBorder* Panel = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Panel"));
-		Panel->SetBrush(FSlateRoundedBoxBrush(PanelColor, 8.f, FLinearColor(1.f, 1.f, 1.f, 0.12f), 1.f));
-		Panel->SetPadding(FMargin(22.f, 16.f));
-		PanelSize->SetContent(Panel);
-
+		// Panneau en verre (maquette Options_Menu de L'amie)
 		UVerticalBox* Main = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("Main"));
-		Panel->SetContent(Main);
+		PanelSize->SetContent(PokemonGlass::Make(WidgetTree, Main, FMargin(22.f, 16.f), PokemonGlass::DefaultCornerRadius, TEXT("Panel")));
 		UVerticalBoxSlot* TitleSlot = Main->AddChildToVerticalBox(MakeText(WidgetTree, LOCTEXT("Title", "Paramètres"), 22, TextColor, true));
 		TitleSlot->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
 

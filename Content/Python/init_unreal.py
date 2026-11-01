@@ -2,7 +2,7 @@
 
 Installe le Pokédex 3D (SCRUM-64) s'il manque : quand /Game/UI/Pokedex/DA_PokedexModel n'existe pas ou n'a pas
 les pièces du modèle de L'amie, lance Tools/Pokedex/import_pokedex_unreal.py (modèle, textures, icônes, carte,
-sons, HUD). Importe aussi les polices FF_*.ttf de Tools/HUD/Assets/fonts nouvelles ou modifiées. Sinon ne fait rien. Pour réimporter de force : Outils > Exécuter un script Python > ce même script d'import.
+sons, HUD). Fait aussi le matériau de verre des menus (Tools/UI/make_glass_material.py). Importe aussi les polices FF_*.ttf de Tools/HUD/Assets/fonts nouvelles ou modifiées. Sinon ne fait rien. Pour réimporter de force : Outils > Exécuter un script Python > ce même script d'import.
 """
 
 import importlib.util
@@ -100,6 +100,19 @@ def install_fonts():
     module.import_hud()
 
 
+def install_glass():
+    """Matériau de verre des menus (M_UI_Glass, 2026-11-01) : fait ou refait s'il manque ou a changé de version."""
+    script = os.path.join(PROJECT_DIR, "Tools", "UI", "make_glass_material.py")
+    if not os.path.exists(script):
+        return
+    spec = importlib.util.spec_from_file_location("make_glass_material", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    if not module.glass_material_up_to_date():
+        unreal.log("Matériau de verre absent ou ancien : création automatique (Tools/UI/make_glass_material.py)...")
+        module.make_glass_material()
+
+
 def install_pokedex():
     if pokedex_installed() or not os.path.exists(FBX_PATH) or not os.path.exists(IMPORT_SCRIPT):
         return
@@ -127,6 +140,7 @@ def _on_tick(delta_seconds):
         install_pokedex()
         install_fonts()
         install_title_images()
+        install_glass()
     except Exception as error:
         unreal.log_error("Installation du Pokédex 3D ratée : %s (lancer Tools/Pokedex/import_pokedex_unreal.py à la main)" % error)
 
