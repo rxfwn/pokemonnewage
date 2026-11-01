@@ -4,9 +4,10 @@
 #include "Fonts/SlateFontInfo.h"
 
 /**
- *  Police de tout le jeu : Futura penchée (demandé par L'amie le 2026-10-31, maquette de l'écran de titre).
- *  Font Faces de /Game/UI/HUD/Fonts (Tools/HUD/import_hud_unreal.py) : FF_Futura_Medium pour le texte et l'italique,
- *  FF_Futura_Bold pour le gras, inclinées par SkewAmount. L'une remplace l'autre si elle manque ; Roboto penché sinon.
+ *  Police de tout le jeu (polices fournies par L'amie le 2026-11-01, maquettes Paramètres / combat / HUD) :
+ *  Font Faces de /Game/UI/HUD/Fonts (Tools/HUD/import_hud_unreal.py) : FF_Futura_MediumCondensed (Futura MdCn BT)
+ *  pour le texte, FF_Futura_BoldCondensed (Futura BdCn BT) pour le gras, droites ; Italic = MdCn penchée.
+ *  Avant leur import, Futura Medium / Bold ; Roboto sinon. Taille UMG = taille Figma x 0,75.
  */
 namespace PokemonFonts
 {

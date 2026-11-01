@@ -12,6 +12,8 @@ Pendant un combat, Tab, Échap et les raccourcis ne font rien : c'est l'écran d
 
 ## Le menu Échap (Paramètres)
 
+Disposition au pixel d'après la maquette **Options_Menu** de L'amie (CSS Figma du 2026-11-01) : jeu flouté et assombri (noir 82 %), titre « Paramètres » (437, 112, 64 px), onglets en grand texte à gauche alignés à droite sur x 389 (blanc pour l'onglet ouvert, 30 % pour les autres), panneau en verre 1210 × 627 en (437, 209) avec coins de 20 px, lignes de 40 px tous les 59 px à partir de (523, 275), valeurs entre chevrons `<` `>` (x 1119 → 1482), curseurs = barre dégradée 363 × 11 + rond blanc de 26 px, ascenseur dégradé en x 1612, boutons texte Ok / Annuler / Appliquer / Retour (48 px, y 863). Le tout est mis à l'échelle de la fenêtre (ScaleBox). Code : `Source/PokemonNewAge/UI/SettingsMenuWidget.cpp` (constantes en haut du fichier).
+
 | Onglet | Réglages |
 |---|---|
 | Audio | volume général, musique, bruitages |
@@ -159,11 +161,11 @@ Il s'ouvre tout seul quand un combat commence : cadres des deux Pokémon (nom, n
 - Les sons sont synthétiques : on pourra les remplacer en gardant les mêmes noms.
 - Le nom du joueur est celui donné par Unreal (pas encore d'écran pour le choisir).
 
-## Police du jeu : Futura penchée partout
+## Police du jeu : Futura MdCn BT et BdCn BT
 
-Demandé par L'amie le 2026-10-31 : toute l'interface (Pokédex 3D, Paramètres, dialogues, combat, boutique, PC, évolution) passe par `PokemonFonts::Get(Taille, bGras)` (`Source/PokemonNewAge/UI/GameFonts.h`). Texte normal : `FF_Futura_Medium` (Futura Cyrillic Medium fournie par L'amie) ; gras : `FF_Futura_Bold` ; les deux inclinées (`SkewAmount` 0,18, comme l'écran de titre). Pour redresser : `Skew` dans `GameFonts.cpp`.
+Polices fournies par L'amie le 2026-11-01 (« les bonnes typo ») : toute l'interface (Pokédex 3D, Paramètres, dialogues, combat, boutique, PC, évolution) passe par `PokemonFonts::Get(Taille, bGras)` (`Source/PokemonNewAge/UI/GameFonts.h`). Texte normal : `FF_Futura_MediumCondensed` (**Futura MdCn BT**) ; gras : `FF_Futura_BoldCondensed` (**Futura BdCn BT**) ; **droites** comme ses maquettes (le style Italic est la MdCn penchée). L'écran de titre garde la MdCn **penchée** (choix de L'amie). Taille UMG = taille Figma × 0,75. Fichiers : `Tools/HUD/Assets/fonts/`, importés tout seuls à l'ouverture d'Unreal ; tant qu'ils ne le sont pas, les anciennes Futura Medium / Bold servent.
 
-**Le HUD en jeu** suit la maquette de L'amie : Futura BdCn BT (gras condensé), **droite**, blanche, via `PokemonFonts::GetHUD`. Il prend `FF_Futura_BoldCondensed.ttf` si on l'ajoute dans `Tools/HUD/Assets/fonts/` ; en attendant il prend Futura Bold et la resserre à 82 % en largeur. Si l'une manque, l'autre la remplace ; sans aucune, Roboto.
+**Le HUD en jeu** prend la Futura BdCn BT via `PokemonFonts::GetHUD` (plus de resserrage).
 
-La Futura d'origine n'avait pas les accents : `Tools/HUD/add_futura_accents.py` (fil de l'écran de titre) les ajoute dans `FF_Futura_Bold.ttf` et `FF_Futura_Medium.ttf` (originaux gardés dans `fonts/original/`). À l'ouverture d'Unreal, `init_unreal.py` réimporte toute police dont le `.ttf` est plus récent que l'asset.
+Ces deux polices ont déjà les accents. Les anciennes Futura n'avaient pas les accents : `Tools/HUD/add_futura_accents.py` (fil de l'écran de titre) les ajoute dans `FF_Futura_Bold.ttf` et `FF_Futura_Medium.ttf` (originaux gardés dans `fonts/original/`). À l'ouverture d'Unreal, `init_unreal.py` réimporte toute police dont le `.ttf` est plus récent que l'asset.
 

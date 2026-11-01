@@ -19,7 +19,7 @@ import unreal
 
 MATERIAL_DIR = "/Game/UI/Materials"
 MATERIAL_NAME = "M_UI_Glass"
-VERSION = "1"
+VERSION = "2"
 
 asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
 eal = unreal.EditorAssetLibrary
@@ -40,10 +40,13 @@ float Dist = length(max(Q, 0.0)) + min(max(Q.x, Q.y), 0.0) - R;
 float Inside = saturate(0.5 - Dist / Pixel);
 float Rim = Inside * saturate(0.5 + (Dist + StrokeWidth) / Pixel);
 
-// Dégradés : 0 degré = de haut en bas, 90 = de gauche à droite
+// Dégradés comme le CSS de Figma : angle en degrés (90 = de gauche à droite, 180 = de haut en bas),
+// arrêts GradientStart / GradientEnd en fraction de la ligne du dégradé (0,4 % et 64,91 % -> 0,004 et 0,6491)
 float A = radians(GradientAngle);
-float2 Dir = float2(sin(A), cos(A));
-float T = saturate(dot(UV - 0.5, Dir) / max(0.5 * (abs(Dir.x) + abs(Dir.y)), 1e-4) * 0.5 + 0.5);
+float2 Dir = float2(sin(A), -cos(A));
+float HalfLine = max(0.5 * (abs(Size.x * Dir.x) + abs(Size.y * Dir.y)), 1e-4);
+float T = dot(P, Dir) / HalfLine * 0.5 + 0.5;
+T = saturate((T - GradientStart) / max(GradientEnd - GradientStart, 1e-4));
 
 // Reflet : plus fort là où le bord fait face à la lumière (et à l'opposé, comme dans Figma)
 float2 Normal = (Q.x > 0.0 && Q.y > 0.0) ? normalize(Q) * sign(P) : (Q.x > Q.y ? float2(sign(P.x), 0.0) : float2(0.0, sign(P.y)));
@@ -64,7 +67,9 @@ SCALARS = [
     ("DpiScale", 1.0),
     ("CornerRadius", 16.0),
     ("StrokeWidth", 2.0),
-    ("GradientAngle", 0.0),
+    ("GradientAngle", 180.0),
+    ("GradientStart", 0.0),
+    ("GradientEnd", 1.0),
     ("FillOpacityStart", 0.39),
     ("FillOpacityEnd", 0.13),
     ("StrokeOpacityStart", 0.01),

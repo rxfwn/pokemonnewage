@@ -15,7 +15,7 @@ fenêtres de dialogue) sur les menus du jeu.
 | Coins arrondis | `CornerRadius` (16 px, réglé par le C++) |
 | Depth 24 / Refraction 100 | pas faisable en interface (un matériau d'UI ne peut pas lire l'image du jeu derrière lui) : le flou et le reflet des bords donnent l'essentiel |
 
-Le dégradé va de haut en bas (`GradientAngle` 0 ; 90 = de gauche à droite).
+Les dégradés suivent le CSS de Figma : `GradientAngle` en degrés (180 = de haut en bas, 90 = de gauche à droite), arrêts `GradientStart` / `GradientEnd` (0,4 % et 64,91 % → 0,004 et 0,6491).
 
 ## Fichiers
 
