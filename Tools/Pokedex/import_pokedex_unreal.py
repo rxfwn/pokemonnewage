@@ -221,7 +221,8 @@ def make_widget_material():
     # Net malgré l'anticrénelage temporel et le flou du décor (version 4)
     material.set_editor_property("enable_responsive_aa", True)
     try:
-        material.set_editor_property("translucency_pass", unreal.MaterialTranslucencyPass.MTP_AFTER_DOF)
+        # Après le flou de mouvement : dessiné après l'upscale (TSR), à la pleine résolution de la fenêtre (version 7)
+        material.set_editor_property("translucency_pass", unreal.MaterialTranslucencyPass.MTP_AFTER_MOTION_BLUR)
     except Exception as error:
         unreal.log_warning("M_PokedexWidget : passe après le flou non réglée ({})".format(error))
 
@@ -305,7 +306,7 @@ def make_widget_material():
     mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
     mel.recompile_material(material)
     # Version lue par Content/Python/init_unreal.py : une version plus ancienne relance l'import à l'ouverture d'Unreal
-    eal.set_metadata_tag(material, "PokedexWidgetVersion", "6")
+    eal.set_metadata_tag(material, "PokedexWidgetVersion", "7")
     eal.save_asset(path)
     return material
 
