@@ -43,7 +43,8 @@ namespace PokedexDevice
 	const FLinearColor TileGlow(0.35f, 0.85f, 1.f);
 
 	/** Petit écart devant une face pour que l'interface ne se mélange pas à la vitre (cm) */
-	constexpr float PanelGap = 0.015f;
+	// Écart entre une pièce et l'écran posé dessus : trop petit, l'écran et la pièce se « battent » (texte doublé, icônes pâles)
+	constexpr float PanelGap = 0.06f;
 
 	template <size_t N>
 	bool IsInList(FName Key, const TCHAR* const (&List)[N])
@@ -436,7 +437,10 @@ void APokedexDevice::ApplyMaterials(UStaticMeshComponent* Part, FName Key)
 
 	for (int32 Slot = 0; Slot < Part->GetNumMaterials(); ++Slot)
 	{
-		UMaterialInterface* Parent = (MenuIndex >= 0 && Model->Material) ? Model->Material.Get() : Part->GetMaterial(Slot);
+		// Voyants et objectif : matériau uni (verre / plastique translucide) plutôt que la texture, plus réaliste
+		static const TCHAR* GlassParts[] = { TEXT("Lens"), TEXT("LedRed"), TEXT("LedYellow"), TEXT("LedGreen"), TEXT("ScreenLeds"), TEXT("LidLeds") };
+		const bool bGlass = IsInList(Key, GlassParts);
+		UMaterialInterface* Parent = ((MenuIndex >= 0 || bGlass) && Model->Material) ? Model->Material.Get() : Part->GetMaterial(Slot);
 		if (!Parent)
 		{
 			Parent = Model->Material;
@@ -457,22 +461,33 @@ void APokedexDevice::ApplyMaterials(UStaticMeshComponent* Part, FName Key)
 		}
 		else
 		{
-			// Voyants : leur couleur s'ajoute à la texture quand ils s'allument
-			const TPair<const TCHAR*, FLinearColor> Leds[] = {
-				{ TEXT("LedRed"), FLinearColor(1.f, 0.05f, 0.04f) },
-				{ TEXT("LedYellow"), FLinearColor(1.f, 0.75f, 0.1f) },
-				{ TEXT("LedGreen"), FLinearColor(0.15f, 1.f, 0.3f) },
-				{ TEXT("Lens"), FLinearColor(0.1f, 0.45f, 1.f) },
-				{ TEXT("ScreenLeds"), FLinearColor(1.f, 0.08f, 0.06f) },
-				{ TEXT("LidLeds"), FLinearColor(0.1f, 1.f, 0.75f) },
+			// Voyants : petites bulles de plastique teinté, brillantes ; objectif : verre bleu nuit d'appareil photo
+			struct FGlass { const TCHAR* Key; FLinearColor Base; FLinearColor Glow; float Roughness; float Metallic; };
+			const FGlass Glasses[] = {
+				{ TEXT("LedRed"),     FLinearColor(0.32f, 0.012f, 0.008f), FLinearColor(1.f, 0.08f, 0.04f), 0.12f, 0.f },
+				{ TEXT("LedYellow"),  FLinearColor(0.36f, 0.2f, 0.012f),  FLinearColor(1.f, 0.62f, 0.1f),  0.12f, 0.f },
+				{ TEXT("LedGreen"),   FLinearColor(0.015f, 0.03f, 0.02f), FLinearColor(0.2f, 1.f, 0.35f),  0.12f, 0.f },
+				{ TEXT("Lens"),       FLinearColor(0.006f, 0.012f, 0.03f), FLinearColor(0.15f, 0.4f, 1.f), 0.04f, 0.35f },
+				{ TEXT("ScreenLeds"), FLinearColor(0.3f, 0.012f, 0.008f), FLinearColor(1.f, 0.08f, 0.05f), 0.15f, 0.f },
+				{ TEXT("LidLeds"),    FLinearColor(0.02f, 0.12f, 0.1f),   FLinearColor(0.15f, 1.f, 0.8f),  0.15f, 0.f },
 			};
-			for (const TPair<const TCHAR*, FLinearColor>& Led : Leds)
+			for (const FGlass& Glass : Glasses)
 			{
-				if (Key == Led.Key)
+				if (Key == Glass.Key)
 				{
-					Material->SetVectorParameterValue(TEXT("EmissiveColor"), Led.Value);
+					Material->SetVectorParameterValue(TEXT("BaseColor"), Glass.Base);
+					Material->SetScalarParameterValue(TEXT("Roughness"), Glass.Roughness);
+					Material->SetScalarParameterValue(TEXT("Metallic"), Glass.Metallic);
+					Material->SetVectorParameterValue(TEXT("EmissiveColor"), Glass.Glow);
 					SetGlow(Material, 0.f);
 				}
+			}
+			if (!bGlass)
+			{
+				// Plastique du boîtier : moins rouge vif et moins brillant (image de référence de L'amie)
+				Material->SetVectorParameterValue(TEXT("Tint"), BodyTint);
+				Material->SetScalarParameterValue(TEXT("Desaturation"), BodyDesaturation);
+				Material->SetScalarParameterValue(TEXT("RoughnessBoost"), BodyRoughnessBoost);
 			}
 			if (Key == TEXT("Lens"))           { LensMaterial = Material; }
 			else if (Key == TEXT("LedRed"))     { LedRedMaterial = Material; }
@@ -745,6 +760,12 @@ void APokedexDevice::UpdateAnimation(float DeltaSeconds)
 	// Rotation par le joueur : seulement clic droit maintenu (ou stick droit) ; il reste où on l'a laissé, sans bouger tout seul
 	UserYaw += StickYaw * 140.f * DeltaSeconds;
 	UserPitch += StickPitch * 100.f * DeltaSeconds;
+	// Relâché : il revient doucement à sa place (demandé par L'amie)
+	if (!bDragging && FMath::IsNearlyZero(StickYaw) && FMath::IsNearlyZero(StickPitch))
+	{
+		UserYaw = FMath::FInterpTo(UserYaw, 0.f, DeltaSeconds, ReturnSpeed);
+		UserPitch = FMath::FInterpTo(UserPitch, 0.f, DeltaSeconds, ReturnSpeed);
+	}
 	UserYaw = FMath::Clamp(FRotator::NormalizeAxis(UserYaw), -MaxTurnYaw, MaxTurnYaw);
 	UserPitch = FMath::Clamp(FRotator::NormalizeAxis(UserPitch), -MaxTurnPitch, MaxTurnPitch);
 	// Rotation affichée qui rejoint la souris en douceur, et freine en approchant de la limite (pas d'arrêt sec)
@@ -800,7 +821,11 @@ void APokedexDevice::UpdateAnimation(float DeltaSeconds)
 			MenuIndex = MenuIcons.IndexOfByKey(Cast<UWidgetComponent>(Component));
 		}
 		const bool bButtonHovered = MenuIndex != INDEX_NONE && MenuButtons.IsValidIndex(MenuIndex) && Hovered.Get() == MenuButtons[MenuIndex].Get();
-		const bool bLifted = MenuIndex != INDEX_NONE && (bButtonHovered || (MenuIndex == LidSelection && bLidFocus));
+		// Les autres boutons (croix, < >, appareil photo et son icône) se soulèvent aussi sous la souris
+		UStaticMeshComponent* ConfirmPart = Parts.FindRef(TEXT("ConfirmButton"));
+		const bool bOtherHovered = MenuIndex == INDEX_NONE && Hovered.IsValid()
+			&& (Hovered.Get() == Component || (Component == CameraIconPanel.Get() && Hovered.Get() == ConfirmPart));
+		const bool bLifted = bOtherHovered || (MenuIndex != INDEX_NONE && (bButtonHovered || (MenuIndex == LidSelection && bLidFocus)));
 		const float PreviousHover = Press.HoverAlpha;
 		Press.HoverAlpha = FMath::FInterpTo(Press.HoverAlpha, bLifted ? 1.f : 0.f, DeltaSeconds, 14.f);
 		if (Press.PressTime < 0.f && FMath::IsNearlyEqual(PreviousHover, Press.HoverAlpha, 1e-4f))
@@ -846,19 +871,19 @@ void APokedexDevice::UpdateLights(float DeltaSeconds)
 	const float Booting = OpenAlpha < 1.f && !bClosing ? 1.f : 0.f;
 	if (LedGreenMaterial)
 	{
-		SetGlow(LedGreenMaterial, (1.f - Booting) * (2.5f + 1.5f * FMath::Sin(Time * 2.4f)) + 6.f * Flash(Time, LensFlash, 3.f));
+		SetGlow(LedGreenMaterial, LedGlow * ((1.f - Booting) * (0.8f + 0.4f * FMath::Sin(Time * 2.4f)) + 4.f * Flash(Time, LensFlash, 3.f)));
 	}
 	if (LedYellowMaterial)
 	{
-		SetGlow(LedYellowMaterial, OpenAlpha * 2.f + 10.f * Flash(Time, LedYellowFlash, 10.f));
+		SetGlow(LedYellowMaterial, LedGlow * (OpenAlpha * 0.8f + 6.f * Flash(Time, LedYellowFlash, 10.f)));
 	}
 	if (LedRedMaterial)
 	{
-		SetGlow(LedRedMaterial, OpenAlpha * 2.f + 10.f * Flash(Time, LedRedFlash, 6.f) + (bClosing ? 4.f : 0.f));
+		SetGlow(LedRedMaterial, LedGlow * (OpenAlpha * 0.8f + 6.f * Flash(Time, LedRedFlash, 6.f) + (bClosing ? 2.f : 0.f)));
 	}
 	if (LensMaterial)
 	{
-		SetGlow(LensMaterial, OpenAlpha * 1.2f + 8.f * Flash(Time, LensFlash, 4.f));
+		SetGlow(LensMaterial, OpenAlpha * 0.08f + 3.f * Flash(Time, LensFlash, 4.f));
 	}
 	if (ScreenLedsMaterial)
 	{
@@ -876,9 +901,9 @@ void APokedexDevice::UpdateLights(float DeltaSeconds)
 		{
 			Strength = 0.6f + 0.3f * FMath::Sin(Time * 6.f);
 		}
-		else if (bSelected || bHover)
+		else if (bSelected)
 		{
-			Strength = 0.4f;
+			Strength = 0.25f;
 		}
 		Strength += 3.f * Flash(Time, MenuFlash[Index], 6.f);
 		LastMenuFlash = FMath::Max(LastMenuFlash, MenuFlash[Index]);
@@ -888,7 +913,8 @@ void APokedexDevice::UpdateLights(float DeltaSeconds)
 		}
 		if (MenuIconWidgets.IsValidIndex(Index) && MenuIconWidgets[Index])
 		{
-			MenuIconWidgets[Index]->SetHighlighted(bSelected || bHover, bSelected && bLidFocus);
+			// Survol : l'icône grossit un peu avec son bouton qui se soulève, sans halo (demandé par L'amie)
+			MenuIconWidgets[Index]->SetHighlighted(bSelected || bHover, false);
 		}
 	}
 	if (LidLedsMaterial)
@@ -1205,7 +1231,8 @@ void APokedexDevice::SetHovered(UPrimitiveComponent* Component)
 	auto Highlight = [this](UPrimitiveComponent* Part, bool bOn)
 	{
 		const FName Key = GetPartKey(Part);
-		if (!IsInList(Key, PushButtons) || Key == TEXT("Lens"))
+		// Plus de surbrillance au survol : les boutons se soulèvent à la place (demandé par L'amie)
+		if (bOn || !IsInList(Key, PushButtons))
 		{
 			return;
 		}

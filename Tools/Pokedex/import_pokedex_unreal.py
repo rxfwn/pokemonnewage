@@ -169,10 +169,18 @@ def _texture(material, name, sampler, default, x, y):
     return node
 
 
-def _new_material(name):
+def _new_material(name, version=None):
+    """Nouveau matériau, ou None s'il existe déjà. Avec version : un matériau d'une autre version est vidé et refait
+    (sans le supprimer, pour garder ses instances MI_Pokedex_*)."""
     path = CONTENT_DIR + "/" + name
     if eal.does_asset_exist(path):
-        return path, None
+        if version is None:
+            return path, None
+        material = eal.load_asset(path)
+        if eal.get_metadata_tag(material, "PokedexVersion") == version:
+            return path, None
+        mel.delete_all_material_expressions(material)
+        return path, material
     return path, asset_tools.create_asset(name, CONTENT_DIR, unreal.Material, unreal.MaterialFactoryNew())
 
 
@@ -210,6 +218,12 @@ def make_widget_material():
     material = asset_tools.create_asset("M_PokedexWidget", CONTENT_DIR, unreal.Material, unreal.MaterialFactoryNew())
     material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
     material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
+    # Net malgré l'anticrénelage temporel et le flou du décor (version 4)
+    material.set_editor_property("enable_responsive_aa", True)
+    try:
+        material.set_editor_property("translucency_pass", unreal.MaterialTranslucencyPass.MTP_AFTER_DOF)
+    except Exception as error:
+        unreal.log_warning("M_PokedexWidget : passe après le flou non réglée ({})".format(error))
 
     # L'écran est rendu en grand (Panel Render Scale) puis réduit à l'écran : sans lissage, le texte « grésille ».
     # 4 lectures normales de la texture (mêmes couleurs que le matériau d'Unreal) à ±1/4 de pixel affiché, moyennées.
@@ -284,14 +298,15 @@ def make_widget_material():
     mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
     mel.recompile_material(material)
     # Version lue par Content/Python/init_unreal.py : une version plus ancienne relance l'import à l'ouverture d'Unreal
-    eal.set_metadata_tag(material, "PokedexWidgetVersion", "3")
+    eal.set_metadata_tag(material, "PokedexWidgetVersion", "4")
     eal.save_asset(path)
     return material
 
 
 def make_textured_material(textures):
     """M_PokedexTextured : textures du modèle (couleur, ORM, normales, émissif) + lumière ajoutée par le C++ (voyants)."""
-    path, material = _new_material("M_PokedexTextured")
+    # Version 2 : Desaturation et RoughnessBoost (plastique moins rouge vif et moins brillant, réglés par le C++)
+    path, material = _new_material("M_PokedexTextured", "2")
     if material is None:
         return eal.load_asset(path)
 
@@ -303,15 +318,24 @@ def make_textured_material(textures):
 
     color_map = _texture(material, "BaseColorMap", unreal.MaterialSamplerType.SAMPLERTYPE_COLOR, default("BaseColor"), -900, -400)
     tint = _vector(material, "Tint", (1.0, 1.0, 1.0, 1.0), -900, -150)
+    desaturation = _scalar(material, "Desaturation", 0.0, -900, -250)
+    desaturated = mel.create_material_expression(material, unreal.MaterialExpressionDesaturation, -700, -350)
+    mel.connect_material_expressions(color_map, "RGB", desaturated, "")
+    mel.connect_material_expressions(desaturation, "", desaturated, "Fraction")
     tinted = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -600, -300)
-    mel.connect_material_expressions(color_map, "RGB", tinted, "A")
+    mel.connect_material_expressions(desaturated, "", tinted, "A")
     mel.connect_material_expressions(tint, "", tinted, "B")
     mel.connect_material_property(tinted, "", unreal.MaterialProperty.MP_BASE_COLOR)
 
-    # ORM (glTF) : R occlusion, G rugosité, B métal
+    # ORM (glTF) : R occlusion, G rugosité, B métal ; RoughnessBoost rapproche la rugosité de 1 (plus mat)
     orm = _texture(material, "ORMMap", unreal.MaterialSamplerType.SAMPLERTYPE_MASKS, default("ORM"), -900, 50)
+    roughness_boost = _scalar(material, "RoughnessBoost", 0.0, -900, 200)
+    roughness = mel.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, -600, 100)
+    roughness.set_editor_property("const_b", 1.0)
+    mel.connect_material_expressions(orm, "G", roughness, "A")
+    mel.connect_material_expressions(roughness_boost, "", roughness, "Alpha")
     mel.connect_material_property(orm, "R", unreal.MaterialProperty.MP_AMBIENT_OCCLUSION)
-    mel.connect_material_property(orm, "G", unreal.MaterialProperty.MP_ROUGHNESS)
+    mel.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)
     mel.connect_material_property(orm, "B", unreal.MaterialProperty.MP_METALLIC)
 
     normal = _texture(material, "NormalMap", unreal.MaterialSamplerType.SAMPLERTYPE_NORMAL, default("Normal"), -900, 350)
@@ -334,6 +358,7 @@ def make_textured_material(textures):
     mel.connect_material_property(total, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
 
     mel.recompile_material(material)
+    eal.set_metadata_tag(material, "PokedexVersion", "2")
     eal.save_asset(path)
     return material
 

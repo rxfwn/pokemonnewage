@@ -113,6 +113,22 @@ public:
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
 	float RimLightIntensity = 450.f;
 
+	/** Plastique du boîtier : teinte multipliée à la texture (moins rouge vif) */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	FLinearColor BodyTint = FLinearColor(0.92f, 0.9f, 0.88f);
+
+	/** Plastique du boîtier : 0 = couleurs de la texture, 1 = gris */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu", meta=(ClampMin="0", ClampMax="1"))
+	float BodyDesaturation = 0.22f;
+
+	/** Plastique du boîtier : 0 = brillance de la texture, 1 = tout mat */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu", meta=(ClampMin="0", ClampMax="1"))
+	float BodyRoughnessBoost = 0.35f;
+
+	/** Force des voyants allumés (1 = discrets, comme de vraies LED) */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	float LedGlow = 1.f;
+
 	/** Résolution des écrans et des icônes (2 = deux fois plus de pixels, texte net) */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu", meta=(ClampMin="1", ClampMax="4"))
 	float PanelRenderScale = 2.f;
@@ -139,6 +155,10 @@ public:
 
 	UPROPERTY(EditAnywhere, Category="Pokedex|Commandes", meta=(Units="Degrees"))
 	float MaxTurnPitch = 5.f;
+
+	/** Vitesse du retour en place quand on lâche le clic droit (plus petit = plus doux) */
+	UPROPERTY(EditAnywhere, Category="Pokedex")
+	float ReturnSpeed = 3.f;
 
 	/** Douceur de la rotation (plus petit = plus lent et plus fluide) */
 	UPROPERTY(EditAnywhere, Category="Pokedex")
@@ -384,7 +404,7 @@ private:
 	static constexpr float PressDuration = 0.2f;
 	static constexpr float PressDepth = 0.08f;
 	/** Les boutons du volet se soulèvent un peu sous la souris (cm) */
-	static constexpr float HoverLift = 0.05f;
+	static constexpr float HoverLift = 0.12f;
 	static constexpr float OpenDuration = 0.95f;
 	static constexpr float CloseDuration = 0.6f;
 };
