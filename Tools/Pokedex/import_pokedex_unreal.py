@@ -226,7 +226,8 @@ def make_widget_material():
         unreal.log_warning("M_PokedexWidget : passe après le flou non réglée ({})".format(error))
 
     # L'écran est rendu en grand (Panel Render Scale) puis réduit à l'écran : sans lissage, le texte « grésille ».
-    # 4 lectures normales de la texture (mêmes couleurs que le matériau d'Unreal) à ±1/4 de pixel affiché, moyennées.
+    # 4 lectures normales de la texture (mêmes couleurs que le matériau d'Unreal) à ±1/8 de pixel affiché, moyennées
+    # (version 6 : ±1/4 rendait le texte flou une fois les écrans vraiment opaques).
     # (Version 2 : nœud Custom à 16 points, couleurs délavées et traits trop effacés.)
     slate_tex = mel.create_material_expression(material, unreal.MaterialExpressionTextureObjectParameter, -1700, 0)
     slate_tex.set_editor_property("parameter_name", "SlateUI")
@@ -237,7 +238,7 @@ def make_widget_material():
     mel.connect_material_expressions(uv, "", ddx, "")
     mel.connect_material_expressions(uv, "", ddy, "")
     samples = []
-    for index, (a, b) in enumerate(((-0.25, -0.25), (0.25, -0.25), (-0.25, 0.25), (0.25, 0.25))):
+    for index, (a, b) in enumerate(((-0.12, -0.12), (0.12, -0.12), (-0.12, 0.12), (0.12, 0.12))):
         y = -300 + index * 220
         off_x = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -1400, y)
         off_x.set_editor_property("const_b", a)
@@ -304,7 +305,7 @@ def make_widget_material():
     mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
     mel.recompile_material(material)
     # Version lue par Content/Python/init_unreal.py : une version plus ancienne relance l'import à l'ouverture d'Unreal
-    eal.set_metadata_tag(material, "PokedexWidgetVersion", "5")
+    eal.set_metadata_tag(material, "PokedexWidgetVersion", "6")
     eal.save_asset(path)
     return material
 

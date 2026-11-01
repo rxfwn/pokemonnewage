@@ -327,6 +327,9 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 	// Pas de flou de mouvement : si la caméra tournait quand on a appuyé sur Tab, l'appareil (qui la suit) était tout étalé
 	Settings.bOverride_MotionBlurAmount = true;
 	Settings.MotionBlurAmount = 0.f;
+	// Bloom faible : sinon chaque lettre claire des écrans a un halo et le texte paraît flou
+	Settings.bOverride_BloomIntensity = true;
+	Settings.BloomIntensity = MenuBloom;
 
 	// Fermé, sous l'écran
 	Hinge->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));

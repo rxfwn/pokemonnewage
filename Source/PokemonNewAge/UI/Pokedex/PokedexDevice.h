@@ -125,6 +125,10 @@ public:
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu", meta=(ClampMin="0", ClampMax="1"))
 	float BodyRoughnessBoost = 0.f;
 
+	/** Halo lumineux pendant le menu (0 = aucun ; le jeu en a 0,675 par défaut) : bas pour un texte net sur les écrans */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	float MenuBloom = 0.1f;
+
 	/** Force des voyants allumés (1 = discrets, comme de vraies LED) */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
 	float LedGlow = 1.f;
