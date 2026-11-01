@@ -78,6 +78,7 @@ namespace PokedexDevice
 
 	/** Matériau des écrans et icônes, créé par import_pokedex_unreal.py (paramètre Brightness) */
 	const TCHAR* WidgetMaterialPath = TEXT("/Game/UI/Pokedex/M_PokedexWidget.M_PokedexWidget");
+	const TCHAR* LensMaterialPath = TEXT("/Game/UI/Pokedex/M_PokedexLens.M_PokedexLens");
 	const TCHAR* CameraIconPath = TEXT("/Game/UI/Pokedex/Icons/T_PokedexButton_Camera.T_PokedexButton_Camera");
 }
 
@@ -309,6 +310,11 @@ bool APokedexDevice::InitializeFor(APokemonNewAgePlayerController* InController)
 	FillLight->SetSpecularScale(0.15f);
 	RimLight->SetSpecularScale(0.6f);
 	GlowScale = 0.6f * ExposureUnit(ExposureEV100);
+	if (LensMaterial)
+	{
+		// Lumière propre de la texture de l'objectif, à l'échelle de l'exposition du menu
+		LensMaterial->SetScalarParameterValue(TEXT("TextureGlow"), LensTextureGlow * GlowScale);
+	}
 	WidgetBrightness = ScreenBrightness * ExposureUnit(ExposureEV100);
 	FPostProcessSettings& Settings = PostProcess->Settings;
 	Settings.bOverride_DepthOfFieldFocalDistance = true;
@@ -450,6 +456,13 @@ void APokedexDevice::ApplyMaterials(UStaticMeshComponent* Part, FName Key)
 		static const TCHAR* GlassParts[] = { TEXT("Lens"), TEXT("LedRed"), TEXT("LedYellow"), TEXT("LedGreen"), TEXT("ScreenLeds"), TEXT("LidLeds") };
 		const bool bGlass = IsInList(Key, GlassParts);
 		UMaterialInterface* Parent = ((MenuIndex >= 0 || bGlass) && Model->Material) ? Model->Material.Get() : Part->GetMaterial(Slot);
+		// Objectif : vrai verre d'appareil photo (M_PokedexLens, texture projetée de face), s'il est importé
+		UMaterialInterface* LensParent = Key == TEXT("Lens")
+			? LoadObject<UMaterialInterface>(nullptr, LensMaterialPath, nullptr, LOAD_NoWarn | LOAD_Quiet) : nullptr;
+		if (LensParent)
+		{
+			Parent = LensParent;
+		}
 		if (!Parent)
 		{
 			Parent = Model->Material;
@@ -497,6 +510,16 @@ void APokedexDevice::ApplyMaterials(UStaticMeshComponent* Part, FName Key)
 				Material->SetVectorParameterValue(TEXT("Tint"), BodyTint);
 				Material->SetScalarParameterValue(TEXT("Desaturation"), BodyDesaturation);
 				Material->SetScalarParameterValue(TEXT("RoughnessBoost"), BodyRoughnessBoost);
+			}
+			if (LensParent)
+			{
+				// Centre et diamètre de l'objectif dans le repère de la pièce (sommets en coordonnées de l'appareil)
+				if (const UStaticMesh* Mesh = Part->GetStaticMesh())
+				{
+					const FBoxSphereBounds Bounds = Mesh->GetBounds();
+					Material->SetVectorParameterValue(TEXT("LensCenter"), FLinearColor(Bounds.Origin.X, Bounds.Origin.Y, Bounds.Origin.Z));
+					Material->SetScalarParameterValue(TEXT("LensSize"), 2.f * FMath::Max(Bounds.BoxExtent.Y, Bounds.BoxExtent.Z));
+				}
 			}
 			if (Key == TEXT("Lens"))           { LensMaterial = Material; }
 			else if (Key == TEXT("LedRed"))     { LedRedMaterial = Material; }

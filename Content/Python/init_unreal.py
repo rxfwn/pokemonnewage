@@ -27,6 +27,9 @@ def pokedex_installed():
     widget_material = eal.load_asset("/Game/UI/Pokedex/M_PokedexWidget")
     if not widget_material or eal.get_metadata_tag(widget_material, "PokedexWidgetVersion") != "7":
         return False
+    # Objectif d'appareil photo (ajouté le 2026-11-01)
+    if not eal.does_asset_exist("/Game/UI/Pokedex/M_PokedexLens"):
+        return False
     textured = eal.load_asset("/Game/UI/Pokedex/M_PokedexTextured")
     if not textured or eal.get_metadata_tag(textured, "PokedexVersion") != "2":
         return False

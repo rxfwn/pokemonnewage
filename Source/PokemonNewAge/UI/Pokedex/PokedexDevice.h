@@ -133,6 +133,10 @@ public:
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
 	bool bUseFxaaInMenu = true;
 
+	/** Objectif : un peu de lumière propre à sa texture, pour qu'il reste lisible dans l'ombre (0 = aucune) */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	float LensTextureGlow = 0.15f;
+
 	/** Force des voyants allumés (1 = discrets, comme de vraies LED) */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
 	float LedGlow = 1.f;
