@@ -43,6 +43,8 @@ namespace PokedexDevice
 	const FLinearColor TileGlow(0.35f, 0.85f, 1.f);
 	/** Fond des icônes du volet (la touche blanc cassé sous l'icône) */
 	const FLinearColor IconTileColor(0.8f, 0.84f, 0.86f);
+	/** Part de la touche couverte par le panneau de l'icône */
+	constexpr float IconPanelFill = 0.8f;
 
 	/** Petit écart devant une face pour que l'interface ne se mélange pas à la vitre (cm) */
 	// Écart entre une pièce et l'écran posé dessus : trop petit, l'écran et la pièce se « battent » (texte doublé, icônes pâles)
@@ -607,7 +609,8 @@ void APokedexDevice::CreatePanels()
 		if (GetPartFace(Key, Center, Size))
 		{
 			Icon = CreateWidget<UPokedexIconWidget>(PC, UPokedexIconWidget::StaticClass());
-			Icon->SetPixelSize(Size * UPokedexPanelWidget::PixelsPerCm);
+			// Un peu plus petit que la touche : ses bords arrondis restent visibles autour de l'icône
+			Icon->SetPixelSize(Size * UPokedexPanelWidget::PixelsPerCm * IconPanelFill);
 			Icon->SetIcon(Model->MenuIcons.IsValidIndex(Index) ? Model->MenuIcons[Index].Get() : nullptr);
 			// Panneau opaque couleur de touche : les icônes de L'amie sont dessinées dessus dans l'écran lui-même,
 			// sans transparence (en transparent, leurs couleurs sombres disparaissaient : icônes pâles, globe invisible)
