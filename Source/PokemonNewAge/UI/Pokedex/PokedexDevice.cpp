@@ -106,6 +106,7 @@ APokedexDevice::APokedexDevice()
 	ScreenComponent->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
 	ScreenComponent->SetRelativeScale3D(FVector(1.f / UPokedexPanelWidget::PixelsPerCm));
 	ScreenComponent->SetBlendMode(EWidgetBlendMode::Opaque);
+	ScreenComponent->SetCastShadow(false);
 	ScreenComponent->SetTickWhenOffscreen(true);
 	ScreenComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	ScreenComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -534,6 +535,8 @@ UWidgetComponent* APokedexDevice::AddPanel(FName PartKey, UUserWidget* Widget, F
 	Panel->SetBlendMode(bOpaque ? EWidgetBlendMode::Opaque : EWidgetBlendMode::Transparent);
 	Panel->SetBackgroundColor(bOpaque ? Background : FLinearColor::Transparent);
 	Panel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// Pas d'ombre de l'écran sur sa pièce (copie sombre du texte décalée derrière)
+	Panel->SetCastShadow(false);
 	Panel->SetTickWhenOffscreen(true);
 	Panel->PrimaryComponentTick.bTickEvenWhenPaused = true;
 	if (WidgetMaterial)
@@ -861,6 +864,8 @@ void APokedexDevice::UpdateAnimation(float DeltaSeconds)
 			if (UMaterialInstanceDynamic* PanelMaterial = Panel->GetMaterialInstance())
 			{
 				PanelMaterial->SetScalarParameterValue(TEXT("Brightness"), WidgetBrightness);
+				// Panneau opaque : opacité 1 partout, même au bord des lettres (sinon texte « doublé » sur l'écran du volet)
+				PanelMaterial->SetScalarParameterValue(TEXT("OpacityFromTexture"), Panel->GetBlendMode() == EWidgetBlendMode::Opaque ? 0.f : 1.f);
 			}
 		}
 	}
