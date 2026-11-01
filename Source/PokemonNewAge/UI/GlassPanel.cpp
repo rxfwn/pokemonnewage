@@ -6,6 +6,7 @@
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
 #include "Components/TextBlock.h"
+#include "UI/SoftShadowTextBlock.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 
@@ -110,5 +111,10 @@ namespace PokemonGlass
 			Text->SetShadowOffset(FVector2D(3.f, 4.f));
 			Text->SetShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.25f));
 		}
+	}
+
+	UTextBlock* MakeShadowedText(UWidgetTree* Tree, FName Name)
+	{
+		return Tree->ConstructWidget<USoftShadowTextBlock>(USoftShadowTextBlock::StaticClass(), Name);
 	}
 }

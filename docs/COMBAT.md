@@ -65,12 +65,13 @@ Sans Unreal (dans le cloud) : `./Tools/BattleSim/run.sh` lance les mêmes tests 
 
 Construit en C++ (`UBattleHUDWidget`) au pixel près d'après les maquettes Figma de L'amie (Combat_Hud, Combat_Hud-1, Types, Life_Bar ; copies dans `/mnt/project-files/combat/maquette/`). Toute la disposition est en coordonnées 1920 x 1080 (ScaleBox > SizeBox > Canvas), tailles de police = px Figma x 0,75.
 
-- **Cadres des Pokémon** (566 x 162, verre `M_UI_Glass`) : adversaire en haut à gauche (49, 21), joueur en bas à droite (1274, 626). Nom 64 px, « N.xx » 48 px à droite, « PV » orange #FFA412, barre de PV 452 x 27 verte (> 50 %), orange (> 20 %) puis rouge. Les nombres de PV ne sont plus affichés (comme la maquette). Le joueur garde une fine barre d'XP sous ses PV, et le statut (PAR, BRU…) s'affiche devant le niveau.
-- **Boîte de texte** (47, 817), 1210 x 207, texte 64 px, flèche orange quand il faut appuyer.
-- **Menu principal** (1274, 817) : 4 boutons en dégradé 265 x 85 Attaquer / Sac / Pokémon / Fuite.
-- **Attaques** : cartes en verre avec nom, étiquette de type (couleurs de la planche Types) et PP ; bouton retour au milieu. Une attaque sans PP est grisée.
+- **Cadres des Pokémon** (566 x 162, verre `M_UI_Glass`) : adversaire en haut à gauche (49, 21), joueur en bas à droite (1274, 626). Nom 64 px, « N.xx » 48 px à droite, « PV » orange #FFA412, barre de PV 452 x 27 verte (> 50 %), orange (> 20 %) puis rouge, au rendu de la planche Life_Bar (relevé au pixel le 2026-11-01 : contour intérieur clair, relief, ombre portée floue ; les images ont 8 px de marge pour l'ombre). Les nombres de PV ne sont plus affichés (comme la maquette). Le joueur garde une fine barre d'XP sous ses PV, et le statut (PAR, BRU…) s'affiche devant le niveau.
+- **Boîte de texte** (47, 817), 1210 x 207 à côté du menu, et sur toute la largeur (jusqu'à 1840) quand le menu n'est pas affiché ; texte 64 px, sans chevron (retirés aussi des dialogues et de l'écran d'évolution, demandé le 2026-11-01).
+- **Menu principal** (1274, 817) : 4 boutons en dégradé 265 x 85 Attaquer / Sac / Pokémon / Fuite, centrés dans le panneau (12 px de marge de chaque côté).
+- **Attaques** : cartes en verre avec nom, étiquette de type (couleurs de la planche Types) et PP ; bouton retour au croisement des 4 cartes. Une attaque sans PP est grisée ; un emplacement sans attaque reste une carte en verre vide (pas cliquable).
+- **Ombres du texte** : floues comme le CSS (text-shadow 3px 4px 4px noir 25 %), par `USoftShadowTextBlock` (9 copies très transparentes du texte) ; utilisé par tous les écrans en verre (combat, dialogues, boutique, PC, Paramètres).
 - **Sac, Équipe, Oublier une attaque** : mêmes cartes en verre (quantité « x3 », niveau, PV), avec défilement s'il y en a plus de 4.
-- Survol ou focus : la carte grossit un peu (1,05).
+- Survol à la souris, ou focus quand on joue au clavier / à la manette : la carte grossit un peu (1,05).
 - Les images sont faites par `Tools/HUD/make_battle_assets.py` (dessinées en 2x) et importées toutes seules dans `/Game/UI/HUD` à l'ouverture de l'éditeur (`init_unreal.py`). Sans elles, l'écran retombe sur des panneaux en verre et des barres unies.
 - Types que L'amie n'a pas encore dessinés (Poison, Vol, Roche…) : couleurs foncées choisies dans le même style, à remplacer quand elle les fera. Les icônes de type de la planche ne sont pas encore utilisées (la maquette ne les montre pas).
 

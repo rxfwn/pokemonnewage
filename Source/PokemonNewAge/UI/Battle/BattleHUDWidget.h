@@ -84,6 +84,8 @@ protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual FReply NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 
 	UFUNCTION()
 	void HandleEvents(const TArray<FBattleEvent>& Events, const FBattleSnapshot& Snapshot);
@@ -116,6 +118,8 @@ private:
 
 	// Menus
 	void ClearMenu();
+	/** Boîte de texte sur toute la largeur (pas de menu à droite) ou à sa place à gauche du menu */
+	void SetMessageWide(bool bWide);
 	void ShowMainMenu();
 	void ShowMoves();
 	void ShowBag();
@@ -157,7 +161,8 @@ private:
 
 	UPROPERTY(Transient) TObjectPtr<UBattleComponent> Battle;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageText;
-	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageArrow;
+	UPROPERTY(Transient) TObjectPtr<UCanvasPanelSlot> MessageFrameSlot;
+	UPROPERTY(Transient) TObjectPtr<UCanvasPanelSlot> MessageTextSlot;
 	UPROPERTY(Transient) TObjectPtr<UCanvasPanel> Canvas;
 	UPROPERTY(Transient) TObjectPtr<UWidget> MenuFrame;
 	UPROPERTY(Transient) TObjectPtr<UScrollBox> MenuScroll;
@@ -193,6 +198,8 @@ private:
 	float TargetExp = 0.f;
 
 	EMenu Menu = EMenu::None;
+	/** Le joueur choisit au clavier ou à la manette : la carte qui a le focus grossit (à la souris, seule celle survolée) */
+	bool bKeyboardNavigation = false;
 	EPartyMode PartyMode = EPartyMode::Switch;
 	FName PendingItem;
 

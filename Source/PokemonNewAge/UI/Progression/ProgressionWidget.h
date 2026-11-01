@@ -83,7 +83,6 @@ private:
 
 	UPROPERTY(Transient) TObjectPtr<UBorder> MessageFrame;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageText;
-	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageArrow;
 	UPROPERTY(Transient) TObjectPtr<UBorder> StatsFrame;
 	UPROPERTY(Transient) TObjectPtr<UUniformGridPanel> StatsGrid;
 	UPROPERTY(Transient) TObjectPtr<UBorder> MenuFrame;

@@ -28,7 +28,6 @@ namespace ProgressionUI
 	const FLinearColor Text(0.95f, 0.96f, 0.97f, 1.f);
 	const FLinearColor Dim(0.6f, 0.65f, 0.7f, 1.f);
 	const FLinearColor Good(0.3f, 0.85f, 0.4f, 1.f);
-	const FLinearColor Warn(0.98f, 0.75f, 0.2f, 1.f);
 
 	FLinearColor Darken(const FLinearColor& Color, float Factor)
 	{
@@ -85,9 +84,6 @@ TSharedRef<SWidget> UProgressionWidget::RebuildWidget()
 		MessageText = MakeText(FText::GetEmpty(), 30, Text);
 		MessageText->SetAutoWrapText(true);
 		MessageRow->AddChildToHorizontalBox(MessageText)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-		MessageArrow = MakeText(FText::FromString(TEXT("v")), 26, Warn, true);
-		MessageRow->AddChildToHorizontalBox(MessageArrow)->SetVerticalAlignment(VAlign_Bottom);
-		MessageArrow->SetVisibility(ESlateVisibility::Hidden);
 
 		// Panneau des stats, à droite au-dessus du texte
 		StatsFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("StatsFrame"));
@@ -147,7 +143,6 @@ void UProgressionWidget::ShowMessage(const FText& InText, bool bInWaitForInput, 
 	MessageDone = MoveTemp(OnDone);
 	MessageFrame->SetVisibility(ESlateVisibility::Visible);
 	MessageText->SetText(FText::GetEmpty());
-	MessageArrow->SetVisibility(ESlateVisibility::Hidden);
 }
 
 void UProgressionWidget::SetCaption(const FText& InText)
@@ -156,7 +151,6 @@ void UProgressionWidget::SetCaption(const FText& InText)
 	MessageDone = nullptr;
 	MessageFrame->SetVisibility(ESlateVisibility::Visible);
 	MessageText->SetText(InText);
-	MessageArrow->SetVisibility(ESlateVisibility::Hidden);
 }
 
 void UProgressionWidget::SetFlash(float Alpha)
@@ -170,7 +164,6 @@ void UProgressionWidget::SetFlash(float Alpha)
 void UProgressionWidget::FinishMessage()
 {
 	bMessageActive = false;
-	MessageArrow->SetVisibility(ESlateVisibility::Hidden);
 	TFunction<void()> Done = MoveTemp(MessageDone);
 	MessageDone = nullptr;
 	if (Done)
@@ -225,19 +218,12 @@ void UProgressionWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 	{
 		MessageText->SetText(FText::FromString(FullMessage.Left(After)));
 	}
-	if (After >= FullMessage.Len())
+	if (After >= FullMessage.Len() && !bWaitForInput)
 	{
-		if (bWaitForInput)
+		MessageHold += InDeltaTime;
+		if (MessageHold >= AutoHoldTime)
 		{
-			MessageArrow->SetVisibility(ESlateVisibility::HitTestInvisible);
-		}
-		else
-		{
-			MessageHold += InDeltaTime;
-			if (MessageHold >= AutoHoldTime)
-			{
-				FinishMessage();
-			}
+			FinishMessage();
 		}
 	}
 }
@@ -278,7 +264,6 @@ void UProgressionWidget::ShowStatsPanel(bool bTotals)
 		ValueSlot->SetHorizontalAlignment(HAlign_Right);
 	}
 	StatsFrame->SetVisibility(ESlateVisibility::HitTestInvisible);
-	MessageArrow->SetVisibility(ESlateVisibility::HitTestInvisible);
 }
 
 // ---------------------------------------------------------------- Choix de l'attaque à oublier
