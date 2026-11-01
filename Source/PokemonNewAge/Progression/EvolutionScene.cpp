@@ -91,6 +91,8 @@ AEvolutionScene::AEvolutionScene()
 	KeyLight->SetOuterConeAngle(28.f);
 	KeyLight->SetInnerConeAngle(14.f);
 	KeyLight->SetCastShadows(true);
+	// Éclairage direct seulement : dans le noir autour, Lumen faisait des taches sur le sol avec son rebond
+	KeyLight->SetIndirectLightingIntensity(0.f);
 
 	GlowLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("GlowLight"));
 	GlowLight->SetupAttachment(Root);
@@ -98,6 +100,7 @@ AEvolutionScene::AEvolutionScene()
 	GlowLight->SetIntensity(0.f);
 	GlowLight->SetAttenuationRadius(900.f);
 	GlowLight->SetCastShadows(false);
+	GlowLight->SetIndirectLightingIntensity(0.f);
 
 	auto MakeSkeletal = [this](const TCHAR* Name)
 	{
@@ -598,7 +601,14 @@ bool AEvolutionScene::SetupBall(FName Ball)
 	}
 	BallBaseScale = BallDiameter / ModelSize;
 	// Posée sur l'herbe juste devant le Pokémon (il en sort derrière elle), le bouton (+X) vers la caméra
-	BallRest = FVector(PokemonHeight * 0.3f + BallDiameter * 0.6f, 0.f, BallDiameter * 0.5f);
+	// Devant le modèle (sa face avant, d'après ses bornes), pour ne pas être cachée dedans quand il apparaît
+	float Front = PokemonHeight * 0.3f;
+	if (OldMesh)
+	{
+		const FBoxSphereBounds Bounds = OldMesh->CalcBounds(OldMesh->GetRelativeTransform());
+		Front = Bounds.Origin.X + Bounds.BoxExtent.X;
+	}
+	BallRest = FVector(Front + BallDiameter * 0.6f, 0.f, BallDiameter * 0.5f);
 	BallBottom->SetRelativeLocationAndRotation(BallRest, FRotator(0.f, EvolutionScene::BallYaw, 0.f));
 	BallBottom->SetRelativeScale3D(FVector(BallBaseScale));
 	BallBottom->SetVisibility(true);
@@ -704,6 +714,9 @@ void AEvolutionScene::TickBallPhase(float DeltaTime)
 			SetGlow(OldGlow, 1.f);
 		}
 		SetModelScale(OldMesh, FMath::InterpEaseOut(0.f, 1.f, FMath::Min(Alpha / 0.7f, 1.f), 2.f));
+		// La Ball s'efface une fois le Pokémon sorti
+		const float BallFade = FMath::Clamp((Alpha - 0.55f) / 0.45f, 0.f, 1.f);
+		BallBottom->SetRelativeScale3D(FVector(BallBaseScale * FMath::Max(1.f - FMath::InterpEaseIn(0.f, 1.f, BallFade, 2.f), 0.001f)));
 		LightCore->SetRelativeLocation(BallCenter);
 		LightCore->SetRelativeScale3D(FVector(D * (0.3f + 0.4f * (1.f - Alpha)) / 100.f));
 		SetEffectGlow(CoreLight, 1.f - Alpha, BallLightColor);
@@ -713,6 +726,8 @@ void AEvolutionScene::TickBallPhase(float DeltaTime)
 		if (Alpha >= 1.f)
 		{
 			LightCore->SetVisibility(false);
+			BallBottom->SetVisibility(false);
+			BallTop->SetVisibility(false);
 			EnterPhase(EPhase::BallBeam);
 		}
 		break;
