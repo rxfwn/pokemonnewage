@@ -1,5 +1,6 @@
 #include "UI/ShopWidget.h"
 #include "UI/GameFonts.h"
+#include "UI/GlassPanel.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
 #include "Components/HorizontalBox.h"
@@ -20,11 +21,11 @@
 namespace
 {
 	// Mêmes couleurs que la boîte de dialogue
-	const FLinearColor BoxColor(0.97f, 0.96f, 0.93f, 0.96f);
-	const FLinearColor InkColor(0.08f, 0.08f, 0.10f);
-	const FLinearColor DimColor(0.38f, 0.38f, 0.42f);
+	// Boîtes en verre (maquettes Figma de L'amie, 2026-11-01) : texte blanc avec ombre
+	const FLinearColor InkColor = PokemonGlass::TextColor;
+	const FLinearColor DimColor(0.78f, 0.79f, 0.82f);
 	const FLinearColor TitleColor(0.13f, 0.25f, 0.45f, 0.97f);
-	const FLinearColor AccentColor(0.85f, 0.18f, 0.16f);
+	const FLinearColor AccentColor(1.f, 0.62f, 0.12f);
 
 	/** Lignes visibles de la liste (elle défile autour de la sélection) */
 	constexpr int32 VisibleRows = 8;
@@ -34,6 +35,7 @@ namespace
 		UTextBlock* Text = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), Name);
 		Text->SetFont(PokemonFonts::Get(Size));
 		Text->SetColorAndOpacity(FSlateColor(Color));
+		PokemonGlass::AddTextShadow(Text);
 		return Text;
 	}
 
@@ -43,6 +45,16 @@ namespace
 		Box->SetBrushColor(Color);
 		Box->SetPadding(Padding);
 		return Box;
+	}
+
+	/** Boîte en verre : rend la bordure transparente qui reçoit le contenu ; OutFrame = le panneau à placer */
+	UBorder* MakeGlassBox(UWidgetTree* Tree, const FMargin& Padding, UWidget*& OutFrame)
+	{
+		UBorder* Inner = Tree->ConstructWidget<UBorder>(UBorder::StaticClass());
+		Inner->SetBrushColor(FLinearColor::Transparent);
+		Inner->SetPadding(Padding);
+		OutFrame = PokemonGlass::Make(Tree, Inner, FMargin(0.f));
+		return Inner;
 	}
 
 	FText Money(int32 Amount)
@@ -104,8 +116,9 @@ TSharedRef<SWidget> UShopWidget::RebuildWidget()
 		UVerticalBoxSlot* MiddleSlot = Inside->AddChildToVerticalBox(Middle);
 		MiddleSlot->SetPadding(FMargin(0.f, 10.f));
 
-		UBorder* MenuBox = MakeBox(WidgetTree, BoxColor, FMargin(24.f, 16.f));
-		UHorizontalBoxSlot* MenuSlot = Middle->AddChildToHorizontalBox(MenuBox);
+		UWidget* MenuBoxFrame = nullptr;
+		UBorder* MenuBox = MakeGlassBox(WidgetTree, FMargin(24.f, 16.f), MenuBoxFrame);
+		UHorizontalBoxSlot* MenuSlot = Middle->AddChildToHorizontalBox(MenuBoxFrame);
 		MenuSlot->SetVerticalAlignment(VAlign_Top);
 		MenuSlot->SetPadding(FMargin(0.f, 0.f, 10.f, 0.f));
 		MenuList = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("MenuList"));
@@ -114,8 +127,9 @@ TSharedRef<SWidget> UShopWidget::RebuildWidget()
 		USizeBox* ListSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
 		ListSize->SetMinDesiredHeight(420.f);
 		Middle->AddChildToHorizontalBox(ListSize)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-		UBorder* ListBox = MakeBox(WidgetTree, BoxColor, FMargin(28.f, 16.f));
-		ListSize->SetContent(ListBox);
+		UWidget* ListBoxFrame = nullptr;
+		UBorder* ListBox = MakeGlassBox(WidgetTree, FMargin(28.f, 16.f), ListBoxFrame);
+		ListSize->SetContent(ListBoxFrame);
 		UVerticalBox* ListColumn = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
 		ListBox->SetContent(ListColumn);
 		// En-tête aux mêmes largeurs de colonnes que les lignes de la liste
@@ -146,8 +160,9 @@ TSharedRef<SWidget> UShopWidget::RebuildWidget()
 		USizeBox* MessageSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
 		MessageSize->SetMinDesiredHeight(120.f);
 		Inside->AddChildToVerticalBox(MessageSize);
-		UBorder* MessageBox = MakeBox(WidgetTree, BoxColor, FMargin(32.f, 20.f));
-		MessageSize->SetContent(MessageBox);
+		UWidget* MessageBoxFrame = nullptr;
+		UBorder* MessageBox = MakeGlassBox(WidgetTree, FMargin(32.f, 20.f), MessageBoxFrame);
+		MessageSize->SetContent(MessageBoxFrame);
 		MessageText = MakeText(WidgetTree, 26, InkColor, TEXT("MessageText"));
 		MessageText->SetAutoWrapText(true);
 		MessageBox->SetContent(MessageText);

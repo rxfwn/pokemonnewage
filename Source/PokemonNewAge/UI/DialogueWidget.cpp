@@ -1,6 +1,8 @@
 #include "UI/DialogueWidget.h"
 #include "UI/GameFonts.h"
+#include "UI/GlassPanel.h"
 #include "Blueprint/WidgetTree.h"
+#include "Components/BackgroundBlur.h"
 #include "Components/Border.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
@@ -17,16 +19,17 @@
 
 namespace
 {
-	const FLinearColor BoxColor(0.97f, 0.96f, 0.93f, 0.96f);
-	const FLinearColor InkColor(0.08f, 0.08f, 0.10f);
+	// Boîtes en verre (maquettes Figma de L'amie, 2026-11-01) : texte blanc avec ombre, choix en orange comme « PV »
+	const FLinearColor InkColor = PokemonGlass::TextColor;
 	const FLinearColor NamePlateColor(0.13f, 0.25f, 0.45f, 0.97f);
-	const FLinearColor AccentColor(0.85f, 0.18f, 0.16f);
+	const FLinearColor AccentColor(1.f, 0.62f, 0.12f);
 
 	UTextBlock* MakeText(UWidgetTree* Tree, int32 Size, const FLinearColor& Color, FName Name = NAME_None)
 	{
 		UTextBlock* Text = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), Name);
 		Text->SetFont(PokemonFonts::Get(Size));
 		Text->SetColorAndOpacity(FSlateColor(Color));
+		PokemonGlass::AddTextShadow(Text);
 		return Text;
 	}
 }
@@ -54,12 +57,9 @@ TSharedRef<SWidget> UDialogueWidget::RebuildWidget()
 		ColumnSlot->SetPadding(FMargin(40.f, 0.f, 40.f, 40.f));
 
 		// Réponses Oui / Non
-		ChoicesPanel = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("ChoicesPanel"));
-		ChoicesPanel->SetBrushColor(BoxColor);
-		ChoicesPanel->SetPadding(FMargin(28.f, 14.f));
-		ChoicesPanel->SetVisibility(ESlateVisibility::Collapsed);
 		ChoicesList = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("ChoicesList"));
-		ChoicesPanel->SetContent(ChoicesList);
+		ChoicesPanel = PokemonGlass::Make(WidgetTree, ChoicesList, FMargin(28.f, 14.f), PokemonGlass::DefaultCornerRadius, TEXT("ChoicesPanel"));
+		ChoicesPanel->SetVisibility(ESlateVisibility::Collapsed);
 		UVerticalBoxSlot* ChoicesSlot = Column->AddChildToVerticalBox(ChoicesPanel);
 		ChoicesSlot->SetHorizontalAlignment(HAlign_Right);
 		ChoicesSlot->SetPadding(FMargin(0.f, 0.f, 0.f, 10.f));
@@ -80,13 +80,9 @@ TSharedRef<SWidget> UDialogueWidget::RebuildWidget()
 		BoxSize->SetMinDesiredHeight(170.f);
 		Column->AddChildToVerticalBox(BoxSize);
 
-		UBorder* Box = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Box"));
-		Box->SetBrushColor(BoxColor);
-		Box->SetPadding(FMargin(36.f, 26.f, 36.f, 18.f));
-		BoxSize->SetContent(Box);
-
 		UVerticalBox* Inside = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("Inside"));
-		Box->SetContent(Inside);
+		BoxSize->SetContent(PokemonGlass::Make(WidgetTree, Inside, FMargin(36.f, 26.f, 36.f, 18.f),
+			PokemonGlass::DefaultCornerRadius, TEXT("Box")));
 
 		BodyText = MakeText(WidgetTree, 28, InkColor, TEXT("BodyText"));
 		BodyText->SetAutoWrapText(true);

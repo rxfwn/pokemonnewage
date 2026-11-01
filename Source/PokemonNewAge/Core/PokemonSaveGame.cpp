@@ -83,7 +83,8 @@ void UPokemonSaveLibrary::ApplyOptions(const UObject* WorldContextObject, const 
 		AudioDevice->SetTransientPrimaryVolume(FMath::Clamp(Options->MasterVolume, 0.f, 1.f));
 	}
 
-	// Musique et bruitages : mélange SM_Options créé par Tools/Pokedex/import_pokedex_unreal.py (rien ne se passe sans lui)
+	// Musique, Vfx, bruits de pas et météo : mélange SM_Options et classes de son créés par Tools/Audio/make_sound_classes.py
+	// (lancé tout seul à l'ouverture de l'éditeur ; rien ne se passe sans eux)
 	USoundMix* Mix = LoadObject<USoundMix>(nullptr, TEXT("/Game/Audio/SM_Options.SM_Options"), nullptr, LOAD_NoWarn | LOAD_Quiet);
 	if (!Mix)
 	{
@@ -92,6 +93,8 @@ void UPokemonSaveLibrary::ApplyOptions(const UObject* WorldContextObject, const 
 	const TPair<const TCHAR*, float> Classes[] = {
 		{ TEXT("/Game/Audio/SC_Music.SC_Music"), Options->MusicVolume },
 		{ TEXT("/Game/Audio/SC_Effects.SC_Effects"), Options->EffectsVolume },
+		{ TEXT("/Game/Audio/SC_Footsteps.SC_Footsteps"), Options->FootstepsVolume },
+		{ TEXT("/Game/Audio/SC_Weather.SC_Weather"), Options->WeatherVolume },
 	};
 	for (const TPair<const TCHAR*, float>& Class : Classes)
 	{

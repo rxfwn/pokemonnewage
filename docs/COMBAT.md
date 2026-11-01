@@ -35,6 +35,8 @@ Combat au tour par tour façon Rouge Feu, avec les règles des jeux récents. To
 | `Core/PokemonPlayerState.h` | Équipe, PC, sac, argent, badges, drapeaux d'histoire, Pokédex vu/capturé. |
 | `Data/Pokemon/DT_Items.json` | Objets de la V1 (soins, Poké Balls, objets rares), généré par `Tools/Data/build_items.py`. |
 | `Tests/BattleTests.cpp` | 11 tests de logique. |
+| `UI/Battle/BattleHUDWidget.h` | Écran de combat (SCRUM-36), voir plus bas. |
+| `Tools/HUD/make_battle_assets.py` | Images de l'écran de combat (boutons en dégradé, barres de PV, flèche retour). |
 
 ## Multijoueur (SCRUM-68)
 
@@ -58,6 +60,19 @@ Combat au tour par tour façon Rouge Feu, avec les règles des jeux récents. To
 4. Tests automatiques : **Outils > Session Frontend** (*Tools > Session Frontend*), onglet **Automation**, cocher `PokemonNewAge.Battle`, **Lancer les tests** (*Start Tests*).
 
 Sans Unreal (dans le cloud) : `./Tools/BattleSim/run.sh` lance les mêmes tests avec un faux moteur minimal, et `./Tools/BattleSim/run.sh fuzz` simule plus de 5 000 combats avec les vraies données (tous les dresseurs V1, toutes les tables de rencontre).
+
+## Écran de combat (maquette Combat_Hud, 2026-11-01)
+
+Construit en C++ (`UBattleHUDWidget`) au pixel près d'après les maquettes Figma de L'amie (Combat_Hud, Combat_Hud-1, Types, Life_Bar ; copies dans `/mnt/project-files/combat/maquette/`). Toute la disposition est en coordonnées 1920 x 1080 (ScaleBox > SizeBox > Canvas), tailles de police = px Figma x 0,75.
+
+- **Cadres des Pokémon** (566 x 162, verre `M_UI_Glass`) : adversaire en haut à gauche (49, 21), joueur en bas à droite (1274, 626). Nom 64 px, « N.xx » 48 px à droite, « PV » orange #FFA412, barre de PV 452 x 27 verte (> 50 %), orange (> 20 %) puis rouge. Les nombres de PV ne sont plus affichés (comme la maquette). Le joueur garde une fine barre d'XP sous ses PV, et le statut (PAR, BRU…) s'affiche devant le niveau.
+- **Boîte de texte** (47, 817), 1210 x 207, texte 64 px, flèche orange quand il faut appuyer.
+- **Menu principal** (1274, 817) : 4 boutons en dégradé 265 x 85 Attaquer / Sac / Pokémon / Fuite.
+- **Attaques** : cartes en verre avec nom, étiquette de type (couleurs de la planche Types) et PP ; bouton retour au milieu. Une attaque sans PP est grisée.
+- **Sac, Équipe, Oublier une attaque** : mêmes cartes en verre (quantité « x3 », niveau, PV), avec défilement s'il y en a plus de 4.
+- Survol ou focus : la carte grossit un peu (1,05).
+- Les images sont faites par `Tools/HUD/make_battle_assets.py` (dessinées en 2x) et importées toutes seules dans `/Game/UI/HUD` à l'ouverture de l'éditeur (`init_unreal.py`). Sans elles, l'écran retombe sur des panneaux en verre et des barres unies.
+- Types que L'amie n'a pas encore dessinés (Poison, Vol, Roche…) : couleurs foncées choisies dans le même style, à remplacer quand elle les fera. Les icônes de type de la planche ne sont pas encore utilisées (la maquette ne les montre pas).
 
 ## Brancher le reste
 

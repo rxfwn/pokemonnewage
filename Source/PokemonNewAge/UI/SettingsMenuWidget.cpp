@@ -1,16 +1,24 @@
 #include "UI/SettingsMenuWidget.h"
 #include "UI/GameFonts.h"
+#include "UI/GlassPanel.h"
 #include "Blueprint/WidgetTree.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
 #include "Components/BackgroundBlur.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
+#include "Components/ButtonSlot.h"
+#include "Components/CanvasPanel.h"
+#include "Components/CanvasPanelSlot.h"
+#include "Components/Image.h"
+#include "Components/ScaleBox.h"
+#include "Components/Spacer.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
 #include "Components/ScrollBox.h"
 #include "Components/SizeBox.h"
+#include "Components/SizeBoxSlot.h"
 #include "Components/Slider.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
@@ -24,39 +32,185 @@
 
 namespace SettingsMenu
 {
-	const FLinearColor PanelColor(0.07f, 0.08f, 0.1f, 0.93f);
-	const FLinearColor TabColor(0.16f, 0.17f, 0.2f, 1.f);
-	const FLinearColor TabSelectedColor(0.85f, 0.87f, 0.9f, 1.f);
-	const FLinearColor TextColor(0.94f, 0.95f, 0.96f);
-	const FLinearColor DimColor(0.62f, 0.65f, 0.7f);
-	const FLinearColor BoxColor(0.97f, 0.97f, 0.97f);
-	const FLinearColor BoxTextColor(0.05f, 0.05f, 0.07f);
-	const FLinearColor ButtonColor(0.22f, 0.24f, 0.28f, 1.f);
-	const FLinearColor DangerColor(0.75f, 0.2f, 0.2f, 1.f);
+	// Maquette Options_Menu de L'amie (1920 x 1080, CSS exporté de Figma, 2026-11-01).
+	// Positions en pixels de la maquette = unités UMG ; tailles de police UMG = px Figma x 0,75.
+	constexpr float FontScale = 0.75f;
+	const FVector2D DesignSize(1920.f, 1080.f);
+	const FVector2D PanelPos(437.f, 209.f);
+	const FVector2D PanelSize(1210.f, 627.f);
+	const FVector2D TitlePos(437.f, 112.f);
+	constexpr float TabLeft = 130.f;
+	constexpr float TabWidth = 259.f;
+	const float TabTops[] = { 275.f, 408.f, 541.f, 674.f };
+	constexpr float RowsLeft = 523.f;
+	constexpr float FirstRowTop = 275.f;
+	/** Haut de la liste qui défile (au-dessus de la 1re ligne, pour qu'elle ne soit pas coupée net) */
+	constexpr float ListTop = 230.f;
+	constexpr float RowHeight = 48.f;
+	constexpr float RowPitch = 59.f;
+	/** Espace en plus au-dessus d'un titre de section (« QUALITÉ » : 675 au lieu de 629) */
+	constexpr float HeaderGap = 46.f;
+	/** Zone des valeurs : de 1119 à 1482 (chevrons, curseurs), soit 596 px après le début des noms */
+	constexpr float LabelWidth = 1119.f - RowsLeft;
+	constexpr float ControlWidth = 363.f;
+	constexpr float SliderBarHeight = 11.f;
+	constexpr float KnobSize = 26.f;
+	const FVector2D ActionButtonSize(272.f, 55.f);
+	/** Bas : bords droits des textes Ok, Annuler, Appliquer, Retour */
+	const float BottomRights[] = { 989.f, 1200.f, 1444.f, 1630.f };
+	constexpr float BottomTop = 863.f;
+	/** Ascenseur (Rectangle 6) : 11 px de large en x 1612, du haut de la liste jusqu'au bas du panneau */
+	constexpr float ScrollX = 1612.f;
+	constexpr float ScrollTop = 263.f;
+	constexpr float ScrollBottom = 812.f;
+
+	const FLinearColor TextColor(1.f, 1.f, 1.f, 1.f);
+	const FLinearColor TabDimColor(1.f, 1.f, 1.f, 0.3f);
+	const FLinearColor StatusColor(1.f, 1.f, 1.f, 0.6f);
+	const FLinearColor DimBackground(0.f, 0.f, 0.f, 0.82f);
+
+	/** Rectangle 5 : linear-gradient(87.81deg, rgba(217,217,217,0.3834) 0.4%, rgba(255,255,255,0.0923) 64.91%), coins 20 */
+	PokemonGlass::FGlassLook PanelLook()
+	{
+		PokemonGlass::FGlassLook Look;
+		Look.CornerRadius = 20.f;
+		Look.GradientAngle = 87.81f;
+		Look.GradientStart = 0.004f;
+		Look.GradientEnd = 0.6491f;
+		Look.LayerOpacity = 0.71f;
+		Look.FillOpacityStart = 0.3834f / 0.71f;
+		Look.FillOpacityEnd = 0.0923f / 0.71f;
+		return Look;
+	}
+
+	/** Rectangles 6, 7, 8 : linear-gradient(92.05deg, rgba(217,217,217,0.5751) 1.99%, rgba(255,255,255,0.142) 64.43%), arrondis */
+	PokemonGlass::FGlassLook BarLook(bool bVertical)
+	{
+		PokemonGlass::FGlassLook Look;
+		Look.CornerRadius = 20.f;
+		// L'ascenseur est la même barre tournée de 90 degrés
+		Look.GradientAngle = bVertical ? 182.05f : 92.05f;
+		Look.GradientStart = 0.0199f;
+		Look.GradientEnd = 0.6443f;
+		Look.FillOpacityStart = 0.5751f;
+		Look.FillOpacityEnd = 0.142f;
+		Look.LayerOpacity = 1.f;
+		Look.StrokeOpacityStart = 0.f;
+		Look.StrokeOpacityEnd = 0.f;
+		Look.LightIntensity = 0.f;
+		return Look;
+	}
+
+	enum class EButtonLook : uint8
+	{
+		/** Texte seul (onglets, chevrons, Ok...) : léger fond blanc au survol */
+		Text,
+		/** Bouton gris en verre (touche d'une commande, « Maj gauche ») */
+		Glass,
+		/** Bouton rouge (« Effacer la partie ») */
+		Danger
+	};
 
 	/** Limites d'images par seconde proposées (0 = sans limite) */
 	const float FrameLimits[] = { 0.f, 30.f, 60.f, 120.f, 144.f, 240.f };
 
-	UTextBlock* MakeText(UWidgetTree* Tree, const FText& Value, int32 Size, const FLinearColor& Color, bool bBold = false)
+	/** Texte des maquettes : Futura MdCn BT, taille en px Figma, blanc avec ombre */
+	UTextBlock* MakeText(UWidgetTree* Tree, const FText& Value, float FigmaSize, const FLinearColor& Color = TextColor)
 	{
 		UTextBlock* Label = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
 		Label->SetText(Value);
 		Label->SetColorAndOpacity(FSlateColor(Color));
-		Label->SetFont(PokemonFonts::Get(Size, bBold));
+		Label->SetFont(PokemonFonts::Get(FigmaSize * FontScale));
+		PokemonGlass::AddTextShadow(Label);
 		return Label;
 	}
 
-	UButton* MakeButton(UWidgetTree* Tree, const FText& Label, const FLinearColor& Color, float Width)
+	UButton* MakeButton(UWidgetTree* Tree, UWidget* Content, EButtonLook Look)
 	{
 		UButton* Button = Tree->ConstructWidget<UButton>(UButton::StaticClass());
-		Button->SetBackgroundColor(Color);
-		USizeBox* Box = Tree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
-		Box->SetMinDesiredWidth(Width);
-		UTextBlock* Text = MakeText(Tree, Label, 15, TextColor);
-		Text->SetJustification(ETextJustify::Center);
-		Box->SetContent(Text);
-		Button->SetContent(Box);
+		FButtonStyle Style = Button->GetStyle();
+		const float Radius = Look == EButtonLook::Text ? 8.f : 6.f;
+		FLinearColor Fill(1.f, 1.f, 1.f, 0.f);
+		FLinearColor Outline(1.f, 1.f, 1.f, 0.f);
+		if (Look == EButtonLook::Glass)
+		{
+			Fill = FLinearColor(1.f, 1.f, 1.f, 0.2f);
+			Outline = FLinearColor(1.f, 1.f, 1.f, 0.45f);
+		}
+		else if (Look == EButtonLook::Danger)
+		{
+			Fill = FLinearColor(0.45f, 0.04f, 0.04f, 0.85f);
+			Outline = FLinearColor(1.f, 0.6f, 0.6f, 0.45f);
+		}
+		const float OutlineWidth = Look == EButtonLook::Text ? 0.f : 1.f;
+		auto Brighter = [](FLinearColor Color, float Add) { Color.A = FMath::Min(1.f, Color.A + Add); return Color; };
+		if (Look == EButtonLook::Text)
+		{
+			// Pas de bloc (retour de L'amie) : au survol, le texte grossit et passe en blanc (AnimateTextButton)
+			Style.SetNormal(FSlateNoResource());
+			Style.SetHovered(FSlateNoResource());
+			Style.SetPressed(FSlateNoResource());
+		}
+		else
+		{
+			Style.SetNormal(FSlateRoundedBoxBrush(Fill, Radius, Outline, OutlineWidth));
+			Style.SetHovered(FSlateRoundedBoxBrush(Brighter(Fill, 0.12f), Radius, Outline, OutlineWidth));
+			Style.SetPressed(FSlateRoundedBoxBrush(Brighter(Fill, 0.25f), Radius, Outline, OutlineWidth));
+		}
+		Style.SetNormalPadding(FMargin(0.f));
+		Style.SetPressedPadding(FMargin(0.f));
+		Button->SetStyle(Style);
+		Button->SetBackgroundColor(FLinearColor::White);
+		Button->SetContent(Content);
+		if (UButtonSlot* ContentSlot = Cast<UButtonSlot>(Content->Slot))
+		{
+			ContentSlot->SetPadding(FMargin(0.f));
+			ContentSlot->SetHorizontalAlignment(HAlign_Fill);
+			ContentSlot->SetVerticalAlignment(VAlign_Fill);
+		}
 		return Button;
+	}
+
+	/** Survol d'un bouton texte : le texte grossit de 12 % (en douceur) et passe en blanc */
+	constexpr float HoverScale = 1.12f;
+
+	void AnimateTextButton(UButton* Button, UTextBlock* Label, const FLinearColor& RestColor, float DeltaTime)
+	{
+		if (!Button || !Label)
+		{
+			return;
+		}
+		const bool bHover = Button->IsHovered() || Button->HasKeyboardFocus();
+		const float Current = Label->GetRenderTransform().Scale.X;
+		const float Scale = FMath::FInterpTo(Current, bHover ? HoverScale : 1.f, DeltaTime, 18.f);
+		if (!FMath::IsNearlyEqual(Scale, Current, 0.0005f))
+		{
+			Label->SetRenderScale(FVector2D(Scale, Scale));
+		}
+		Label->SetColorAndOpacity(FSlateColor(bHover ? TextColor : RestColor));
+	}
+
+	USizeBox* MakeBox(UWidgetTree* Tree, const FVector2D& Size, UWidget* Content)
+	{
+		USizeBox* Box = Tree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		if (Size.X > 0.f)
+		{
+			Box->SetWidthOverride(Size.X);
+		}
+		if (Size.Y > 0.f)
+		{
+			Box->SetHeightOverride(Size.Y);
+		}
+		Box->SetContent(Content);
+		return Box;
+	}
+
+	UCanvasPanelSlot* Place(UCanvasPanel* Canvas, UWidget* Widget, const FVector2D& Position, const FVector2D& Size)
+	{
+		UCanvasPanelSlot* CanvasSlot = Canvas->AddChildToCanvas(Widget);
+		CanvasSlot->SetPosition(Position);
+		CanvasSlot->SetSize(Size);
+		return CanvasSlot;
 	}
 
 	TArray<FText> QualityNames()
@@ -74,6 +228,18 @@ namespace SettingsMenu
 	{
 		return FText::FromString(FString::Printf(TEXT("%d"), FMath::RoundToInt(Value * 100.f)));
 	}
+
+	/** Nom d'une touche sans « Manette : » devant (on est déjà dans la partie Manette) */
+	FText KeyLabel(const FKey& Key)
+	{
+		FString Name = Key.GetDisplayName(false).ToString();
+		int32 Colon = INDEX_NONE;
+		if (Key.IsGamepadKey() && Name.FindChar(TEXT(':'), Colon))
+		{
+			Name = Name.RightChop(Colon + 1).TrimStartAndEnd();
+		}
+		return FText::FromString(Name);
+	}
 }
 
 using namespace SettingsMenu;
@@ -84,71 +250,115 @@ TSharedRef<SWidget> USettingsRowWidget::RebuildWidget()
 {
 	if (WidgetTree && !WidgetTree->RootWidget)
 	{
+		// Ligne de 48 px de haut tous les 59 px (Résolution 275, Mode d'affichage 334...) ; les titres de section
+		// ont 46 px de plus au-dessus, les boutons (55 px) un peu plus de place
+		const bool bButton = Kind == ESettingRowKind::Key || Kind == ESettingRowKind::Action;
+		const float Height = bButton ? ActionButtonSize.Y : RowHeight;
+		UVerticalBox* Root = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("Root"));
+		WidgetTree->RootWidget = Root;
 		UHorizontalBox* Line = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("Line"));
-		WidgetTree->RootWidget = Line;
+		UVerticalBoxSlot* LineSlot = Root->AddChildToVerticalBox(MakeBox(WidgetTree, FVector2D(0.f, Height), Line));
+		LineSlot->SetPadding(FMargin(0.f, Kind == ESettingRowKind::Header ? HeaderGap : 0.f, 0.f,
+			bButton ? 15.f : RowPitch - RowHeight));
 
+		// Nom du réglage (les titres de section en majuscules, même taille)
+		UTextBlock* Name = MakeText(WidgetTree, Kind == ESettingRowKind::Header ? Label.ToUpper() : Label, 40.f);
+		UHorizontalBoxSlot* LabelSlot = Line->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(LabelWidth, 0.f), Name));
+		LabelSlot->SetVerticalAlignment(VAlign_Center);
 		if (Kind == ESettingRowKind::Header)
 		{
-			UHorizontalBoxSlot* HeaderSlot = Line->AddChildToHorizontalBox(MakeText(WidgetTree, Label, 15, DimColor, true));
-			HeaderSlot->SetPadding(FMargin(0.f, 14.f, 0.f, 4.f));
 			return Super::RebuildWidget();
 		}
 
-		// Nom du réglage
-		USizeBox* LabelBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
-		LabelBox->SetWidthOverride(250.f);
-		LabelBox->SetContent(MakeText(WidgetTree, Label, 16, TextColor));
-		UHorizontalBoxSlot* LabelSlot = Line->AddChildToHorizontalBox(LabelBox);
-		LabelSlot->SetVerticalAlignment(VAlign_Center);
+		UOverlay* Control = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("Control"));
+		UHorizontalBoxSlot* ControlSlot = Line->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(ControlWidth, Height), Control));
+		ControlSlot->SetVerticalAlignment(VAlign_Center);
 
-		if (Kind == ESettingRowKind::Key || Kind == ESettingRowKind::Action)
+		if (bButton)
 		{
-			MainButton = MakeButton(WidgetTree, ButtonText, Kind == ESettingRowKind::Action && Id == FName(TEXT("DeleteSave")) ? DangerColor : ButtonColor, 220.f);
-			ButtonLabel = Cast<UTextBlock>(Cast<USizeBox>(MainButton->GetContent())->GetContent());
+			// Bouton de 272 x 55 (« Effacer la partie » rouge, touches en verre gris)
+			ButtonLabel = MakeText(WidgetTree, ButtonText, 40.f);
+			ButtonLabel->SetJustification(ETextJustify::Center);
+			// Les noms longs (« Touche spéciale gauche ») rétrécissent pour rester dans le bouton
+			UScaleBox* LabelFit = WidgetTree->ConstructWidget<UScaleBox>(UScaleBox::StaticClass(), TEXT("ButtonLabelFit"));
+			LabelFit->SetStretch(EStretch::ScaleToFit);
+			LabelFit->SetStretchDirection(EStretchDirection::DownOnly);
+			LabelFit->AddChild(ButtonLabel);
+			USizeBox* ButtonBox = MakeBox(WidgetTree, ActionButtonSize, LabelFit);
+			if (USizeBoxSlot* TextSlot = Cast<USizeBoxSlot>(LabelFit->Slot))
+			{
+				TextSlot->SetPadding(FMargin(12.f, 0.f));
+				TextSlot->SetHorizontalAlignment(HAlign_Fill);
+				TextSlot->SetVerticalAlignment(VAlign_Center);
+			}
+			const bool bDanger = Kind == ESettingRowKind::Action && Id == FName(TEXT("DeleteSave"));
+			MainButton = MakeButton(WidgetTree, ButtonBox, bDanger ? EButtonLook::Danger : EButtonLook::Glass);
 			MainButton->OnClicked.AddDynamic(this, &USettingsRowWidget::HandleButton);
-			Line->AddChildToHorizontalBox(MainButton)->SetVerticalAlignment(VAlign_Center);
+			UOverlaySlot* ButtonSlot = Control->AddChildToOverlay(MainButton);
+			ButtonSlot->SetHorizontalAlignment(HAlign_Center);
+			ButtonSlot->SetVerticalAlignment(VAlign_Center);
 			return Super::RebuildWidget();
 		}
-
-		// Case blanche avec la valeur, comme dans la référence de L'amie
-		UBorder* Box = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass());
-		Box->SetBrush(FSlateRoundedBoxBrush(BoxColor, 3.f));
-		Box->SetPadding(FMargin(8.f, 2.f));
-		USizeBox* BoxSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
-		BoxSize->SetMinDesiredWidth(Kind == ESettingRowKind::Choice ? 190.f : 70.f);
-		ValueText = MakeText(WidgetTree, FText::GetEmpty(), 15, BoxTextColor, true);
-		ValueText->SetJustification(ETextJustify::Center);
-		BoxSize->SetContent(ValueText);
-		Box->SetContent(BoxSize);
 
 		if (Kind == ESettingRowKind::Choice)
 		{
-			UButton* Previous = MakeButton(WidgetTree, FText::FromString(TEXT("<")), ButtonColor, 34.f);
+			// <  valeur  > : chevrons aux bords (x 1119 et 1482), valeur centrée entre les deux
+			UHorizontalBox* Choice = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+			UOverlaySlot* ChoiceSlot = Control->AddChildToOverlay(Choice);
+			ChoiceSlot->SetHorizontalAlignment(HAlign_Fill);
+			ChoiceSlot->SetVerticalAlignment(VAlign_Fill);
+
+			PreviousLabel = MakeText(WidgetTree, FText::FromString(TEXT("<")), 40.f);
+			PreviousLabel->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
+			UButton* Previous = MakeButton(WidgetTree, PreviousLabel, EButtonLook::Text);
 			Previous->OnClicked.AddDynamic(this, &USettingsRowWidget::HandlePrevious);
-			Line->AddChildToHorizontalBox(Previous)->SetVerticalAlignment(VAlign_Center);
-			UHorizontalBoxSlot* BoxSlot = Line->AddChildToHorizontalBox(Box);
-			BoxSlot->SetPadding(FMargin(6.f, 0.f));
-			BoxSlot->SetVerticalAlignment(VAlign_Center);
-			UButton* Next = MakeButton(WidgetTree, FText::FromString(TEXT(">")), ButtonColor, 34.f);
+			Choice->AddChildToHorizontalBox(Previous)->SetVerticalAlignment(VAlign_Center);
+
+			ValueText = MakeText(WidgetTree, FText::GetEmpty(), 40.f);
+			ValueText->SetJustification(ETextJustify::Center);
+			UHorizontalBoxSlot* ValueSlot = Choice->AddChildToHorizontalBox(ValueText);
+			ValueSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+			ValueSlot->SetVerticalAlignment(VAlign_Center);
+
+			NextLabel = MakeText(WidgetTree, FText::FromString(TEXT(">")), 40.f);
+			NextLabel->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
+			UButton* Next = MakeButton(WidgetTree, NextLabel, EButtonLook::Text);
+			PreviousButton = Previous;
+			NextButton = Next;
 			Next->OnClicked.AddDynamic(this, &USettingsRowWidget::HandleNext);
-			Line->AddChildToHorizontalBox(Next)->SetVerticalAlignment(VAlign_Center);
+			Choice->AddChildToHorizontalBox(Next)->SetVerticalAlignment(VAlign_Center);
 			MainButton = Previous;
 		}
 		else
 		{
-			UHorizontalBoxSlot* BoxSlot = Line->AddChildToHorizontalBox(Box);
-			BoxSlot->SetVerticalAlignment(VAlign_Center);
+			// Barre en dégradé de 363 x 11 et rond blanc de 26 px (pas de chiffre, comme la maquette)
+			UImage* Bar = PokemonGlass::MakeImage(WidgetTree, BarLook(false));
+			UOverlaySlot* BarSlot = Control->AddChildToOverlay(MakeBox(WidgetTree, FVector2D(0.f, SliderBarHeight), Bar));
+			BarSlot->SetHorizontalAlignment(HAlign_Fill);
+			BarSlot->SetVerticalAlignment(VAlign_Center);
+
 			ValueSlider = WidgetTree->ConstructWidget<USlider>(USlider::StaticClass());
 			ValueSlider->SetMinValue(Min);
 			ValueSlider->SetMaxValue(Max);
 			ValueSlider->SetStepSize(Step);
-			ValueSlider->SetSliderBarColor(FLinearColor(0.45f, 0.47f, 0.5f));
-			ValueSlider->SetSliderHandleColor(FLinearColor::White);
+			ValueSlider->SetIndentHandle(false);
+			FSliderStyle Style = ValueSlider->GetWidgetStyle();
+			FSlateRoundedBoxBrush Knob(FLinearColor::White, KnobSize * 0.5f);
+			Knob.ImageSize = FVector2D(KnobSize, KnobSize);
+			FSlateRoundedBoxBrush KnobHovered(FLinearColor(0.88f, 0.88f, 0.9f, 1.f), KnobSize * 0.5f);
+			KnobHovered.ImageSize = Knob.ImageSize;
+			Style.SetNormalBarImage(FSlateNoResource());
+			Style.SetHoveredBarImage(FSlateNoResource());
+			Style.SetDisabledBarImage(FSlateNoResource());
+			Style.SetNormalThumbImage(Knob);
+			Style.SetHoveredThumbImage(KnobHovered);
+			Style.SetDisabledThumbImage(Knob);
+			Style.SetBarThickness(0.f);
+			ValueSlider->SetWidgetStyle(Style);
 			ValueSlider->OnValueChanged.AddDynamic(this, &USettingsRowWidget::HandleSlider);
-			UHorizontalBoxSlot* SliderSlot = Line->AddChildToHorizontalBox(ValueSlider);
-			SliderSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-			SliderSlot->SetPadding(FMargin(16.f, 0.f, 8.f, 0.f));
-			SliderSlot->SetVerticalAlignment(VAlign_Center);
+			UOverlaySlot* SliderSlot = Control->AddChildToOverlay(ValueSlider);
+			SliderSlot->SetHorizontalAlignment(HAlign_Fill);
+			SliderSlot->SetVerticalAlignment(VAlign_Fill);
 		}
 		RefreshValue();
 	}
@@ -176,6 +386,13 @@ void USettingsRowWidget::RefreshValue()
 	{
 		ButtonLabel->SetText(ButtonText);
 	}
+}
+
+void USettingsRowWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+	AnimateTextButton(PreviousButton, PreviousLabel, TextColor, InDeltaTime);
+	AnimateTextButton(NextButton, NextLabel, TextColor, InDeltaTime);
 }
 
 UWidget* USettingsRowWidget::GetFocusTarget() const
@@ -241,6 +458,7 @@ TSharedRef<SWidget> USettingsMenuWidget::RebuildWidget()
 		UOverlay* Root = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass(), TEXT("Root"));
 		WidgetTree->RootWidget = Root;
 
+		// Jeu flouté puis assombri (Rectangle 1 : noir à 82 %)
 		UBackgroundBlur* Blur = WidgetTree->ConstructWidget<UBackgroundBlur>(UBackgroundBlur::StaticClass(), TEXT("Blur"));
 		Blur->SetBlurStrength(6.f);
 		UOverlaySlot* BlurSlot = Root->AddChildToOverlay(Blur);
@@ -248,39 +466,36 @@ TSharedRef<SWidget> USettingsMenuWidget::RebuildWidget()
 		BlurSlot->SetVerticalAlignment(VAlign_Fill);
 
 		UBorder* Dim = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Dim"));
-		Dim->SetBrushColor(FLinearColor(0.f, 0.f, 0.f, 0.45f));
+		Dim->SetBrushColor(DimBackground);
 		UOverlaySlot* DimSlot = Root->AddChildToOverlay(Dim);
 		DimSlot->SetHorizontalAlignment(HAlign_Fill);
 		DimSlot->SetVerticalAlignment(VAlign_Fill);
 
-		// Panneau central
-		USizeBox* PanelSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("PanelSize"));
-		PanelSize->SetWidthOverride(1080.f);
-		PanelSize->SetHeightOverride(660.f);
-		UOverlaySlot* PanelSlot = Root->AddChildToOverlay(PanelSize);
-		PanelSlot->SetHorizontalAlignment(HAlign_Center);
-		PanelSlot->SetVerticalAlignment(VAlign_Center);
+		// Toute la maquette en 1920 x 1080, mise à l'échelle de la fenêtre (centrée si l'écran n'est pas en 16:9)
+		UScaleBox* Scale = WidgetTree->ConstructWidget<UScaleBox>(UScaleBox::StaticClass(), TEXT("Scale"));
+		Scale->SetStretch(EStretch::ScaleToFit);
+		UOverlaySlot* ScaleSlot = Root->AddChildToOverlay(Scale);
+		ScaleSlot->SetHorizontalAlignment(HAlign_Fill);
+		ScaleSlot->SetVerticalAlignment(VAlign_Fill);
+		UCanvasPanel* Canvas = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("Canvas"));
+		Scale->SetContent(MakeBox(WidgetTree, DesignSize, Canvas));
 
-		UBorder* Panel = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Panel"));
-		Panel->SetBrush(FSlateRoundedBoxBrush(PanelColor, 8.f, FLinearColor(1.f, 1.f, 1.f, 0.12f), 1.f));
-		Panel->SetPadding(FMargin(22.f, 16.f));
-		PanelSize->SetContent(Panel);
+		// Panneau en verre (Rectangle 5)
+		Place(Canvas, PokemonGlass::Make(WidgetTree, nullptr, FMargin(0.f), PanelLook(), TEXT("Panel")), PanelPos, PanelSize);
 
-		UVerticalBox* Main = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("Main"));
-		Panel->SetContent(Main);
-		UVerticalBoxSlot* TitleSlot = Main->AddChildToVerticalBox(MakeText(WidgetTree, LOCTEXT("Title", "Paramètres"), 22, TextColor, true));
-		TitleSlot->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
+		// Titre
+		UTextBlock* Title = MakeText(WidgetTree, LOCTEXT("Title", "Paramètres"), 64.f);
+		Place(Canvas, Title, TitlePos, FVector2D(1355.f, 97.f));
 
-		// Onglets à gauche, réglages à droite
-		UHorizontalBox* Body = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("Body"));
-		Main->AddChildToVerticalBox(Body)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-
-		UVerticalBox* Tabs = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("Tabs"));
-		Body->AddChildToHorizontalBox(Tabs)->SetPadding(FMargin(0.f, 0.f, 18.f, 0.f));
+		// Onglets à gauche, alignés à droite sur x 389 ; celui ouvert en blanc, les autres à 30 %
 		const FText TabNames[] = { LOCTEXT("TabAudio", "Audio"), LOCTEXT("TabVideo", "Vidéo"), LOCTEXT("TabControls", "Commandes"), LOCTEXT("TabGame", "Jeu") };
 		for (int32 Index = 0; Index < UE_ARRAY_COUNT(TabNames); ++Index)
 		{
-			UButton* TabButton = MakeButton(WidgetTree, TabNames[Index], TabColor, 150.f);
+			UTextBlock* TabLabel = MakeText(WidgetTree, TabNames[Index], 64.f, TabDimColor);
+			TabLabel->SetJustification(ETextJustify::Right);
+			// Grossit vers la gauche : le bord droit reste aligné sur x 389
+			TabLabel->SetRenderTransformPivot(FVector2D(1.f, 0.5f));
+			UButton* TabButton = MakeButton(WidgetTree, TabLabel, EButtonLook::Text);
 			switch (Index)
 			{
 			case 0: TabButton->OnClicked.AddDynamic(this, &USettingsMenuWidget::OnAudioTab); break;
@@ -288,37 +503,88 @@ TSharedRef<SWidget> USettingsMenuWidget::RebuildWidget()
 			case 2: TabButton->OnClicked.AddDynamic(this, &USettingsMenuWidget::OnControlsTab); break;
 			default: TabButton->OnClicked.AddDynamic(this, &USettingsMenuWidget::OnGameTab); break;
 			}
-			Tabs->AddChildToVerticalBox(TabButton)->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
+			Place(Canvas, TabButton, FVector2D(TabLeft, TabTops[Index]), FVector2D(TabWidth, 77.f));
 			TabButtons.Add(TabButton);
+			TabLabels.Add(TabLabel);
 		}
 
+		// Réglages : liste qui défile, coupée au bas du panneau ; ascenseur maison à droite
 		RowList = WidgetTree->ConstructWidget<UScrollBox>(UScrollBox::StaticClass(), TEXT("Rows"));
-		Body->AddChildToHorizontalBox(RowList)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+		RowList->SetScrollBarVisibility(ESlateVisibility::Collapsed);
+		RowList->SetAnimateWheelScrolling(true);
+		Place(Canvas, RowList, FVector2D(RowsLeft, ListTop), FVector2D(ScrollX - 20.f - RowsLeft, PanelPos.Y + PanelSize.Y - ListTop));
 
-		// Message et boutons du bas
-		UHorizontalBox* Bottom = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("Bottom"));
-		Main->AddChildToVerticalBox(Bottom)->SetPadding(FMargin(0.f, 12.f, 0.f, 0.f));
-		StatusText = MakeText(WidgetTree, FText::GetEmpty(), 14, DimColor);
-		UHorizontalBoxSlot* StatusSlot = Bottom->AddChildToHorizontalBox(StatusText);
-		StatusSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-		StatusSlot->SetVerticalAlignment(VAlign_Center);
-		const TPair<FText, int32> Buttons[] = {
-			{ LOCTEXT("Ok", "OK"), 0 }, { LOCTEXT("Cancel", "Annuler"), 1 }, { LOCTEXT("Apply", "Appliquer"), 2 }, { LOCTEXT("Back", "Retour"), 3 } };
-		for (const TPair<FText, int32>& Entry : Buttons)
+		ScrollThumb = PokemonGlass::MakeImage(WidgetTree, BarLook(true), TEXT("ScrollThumb"));
+		ScrollThumbSlot = Place(Canvas, ScrollThumb, FVector2D(ScrollX, ScrollTop), FVector2D(SliderBarHeight, ScrollBottom - ScrollTop));
+
+		// Message (pas dans la maquette : discret, en bas à gauche du panneau)
+		StatusText = MakeText(WidgetTree, FText::GetEmpty(), 30.f, StatusColor);
+		StatusText->SetAutoWrapText(true);
+		Place(Canvas, StatusText, FVector2D(PanelPos.X, 880.f), FVector2D(470.f, 80.f));
+
+		// Ok, Annuler, Appliquer, Retour : texte seul, 48 px, alignés à droite
+		const FText Buttons[] = { LOCTEXT("Ok", "Ok"), LOCTEXT("Cancel", "Annuler"), LOCTEXT("Apply", "Appliquer"), LOCTEXT("Back", "Retour") };
+		const float Widths[] = { 58.f, 163.f, 196.f, 138.f };
+		for (int32 Index = 0; Index < UE_ARRAY_COUNT(Buttons); ++Index)
 		{
-			UButton* Button = MakeButton(WidgetTree, Entry.Key, ButtonColor, 110.f);
-			switch (Entry.Value)
+			UTextBlock* Label = MakeText(WidgetTree, Buttons[Index], 48.f);
+			Label->SetJustification(ETextJustify::Right);
+			Label->SetRenderTransformPivot(FVector2D(1.f, 0.5f));
+			UButton* Button = MakeButton(WidgetTree, Label, EButtonLook::Text);
+			BottomButtons.Add(Button);
+			BottomLabels.Add(Label);
+			switch (Index)
 			{
 			case 0: Button->OnClicked.AddDynamic(this, &USettingsMenuWidget::OnOkClicked); break;
 			case 1: Button->OnClicked.AddDynamic(this, &USettingsMenuWidget::OnCancelClicked); break;
 			case 2: Button->OnClicked.AddDynamic(this, &USettingsMenuWidget::OnApplyClicked); break;
 			default: Button->OnClicked.AddDynamic(this, &USettingsMenuWidget::OnBackClicked); break;
 			}
-			UHorizontalBoxSlot* ButtonSlot = Bottom->AddChildToHorizontalBox(Button);
-			ButtonSlot->SetPadding(FMargin(8.f, 0.f, 0.f, 0.f));
+			// Un peu de marge autour du mot pour le survol, le texte reste à sa place
+			if (UButtonSlot* LabelSlot = Cast<UButtonSlot>(Label->Slot))
+			{
+				LabelSlot->SetPadding(FMargin(10.f, 0.f));
+			}
+			Place(Canvas, Button, FVector2D(BottomRights[Index] - Widths[Index] - 10.f, BottomTop), FVector2D(Widths[Index] + 20.f, 57.f));
 		}
 	}
 	return Super::RebuildWidget();
+}
+
+void USettingsMenuWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+	UpdateScrollThumb();
+	for (int32 Index = 0; Index < TabButtons.Num() && Index < TabLabels.Num(); ++Index)
+	{
+		AnimateTextButton(TabButtons[Index], TabLabels[Index], Index == int32(Tab) ? TextColor : TabDimColor, InDeltaTime);
+	}
+	for (int32 Index = 0; Index < BottomButtons.Num() && Index < BottomLabels.Num(); ++Index)
+	{
+		AnimateTextButton(BottomButtons[Index], BottomLabels[Index], TextColor, InDeltaTime);
+	}
+}
+
+void USettingsMenuWidget::UpdateScrollThumb()
+{
+	if (!RowList || !ScrollThumbSlot)
+	{
+		return;
+	}
+	// Taille de la barre = part visible de la liste ; cachée quand tout tient
+	const float Visible = RowList->GetCachedGeometry().GetLocalSize().Y;
+	const float Hidden = RowList->GetScrollOffsetOfEnd();
+	if (Visible <= 1.f || Hidden <= 1.f)
+	{
+		ScrollThumb->SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+	ScrollThumb->SetVisibility(ESlateVisibility::HitTestInvisible);
+	const float Track = ScrollBottom - ScrollTop;
+	const float Thumb = FMath::Max(40.f, Track * Visible / (Visible + Hidden));
+	const float Progress = FMath::Clamp(RowList->GetScrollOffset() / Hidden, 0.f, 1.f);
+	ScrollThumbSlot->SetPosition(FVector2D(ScrollX, ScrollTop + (Track - Thumb) * Progress));
+	ScrollThumbSlot->SetSize(FVector2D(SliderBarHeight, Thumb));
 }
 
 void USettingsMenuWidget::NativeConstruct()
@@ -352,6 +618,8 @@ void USettingsMenuWidget::LoadValues()
 		Values.MasterVolume = Options->MasterVolume;
 		Values.MusicVolume = Options->MusicVolume;
 		Values.EffectsVolume = Options->EffectsVolume;
+		Values.FootstepsVolume = Options->FootstepsVolume;
+		Values.WeatherVolume = Options->WeatherVolume;
 		Values.TextSpeed = Options->TextSpeed;
 		Values.CameraSensitivity = Options->CameraSensitivity;
 		Values.bInvertCameraY = Options->bInvertCameraY;
@@ -385,6 +653,8 @@ void USettingsMenuWidget::ApplyValues()
 		Options->MasterVolume = Values.MasterVolume;
 		Options->MusicVolume = Values.MusicVolume;
 		Options->EffectsVolume = Values.EffectsVolume;
+		Options->FootstepsVolume = Values.FootstepsVolume;
+		Options->WeatherVolume = Values.WeatherVolume;
 		Options->TextSpeed = Values.TextSpeed;
 		Options->CameraSensitivity = Values.CameraSensitivity;
 		Options->bInvertCameraY = Values.bInvertCameraY;
@@ -466,9 +736,9 @@ void USettingsMenuWidget::ShowTab(ETab NewTab)
 	Tab = NewTab;
 	CapturingKey = NAME_None;
 	bConfirmDelete = false;
-	for (int32 Index = 0; Index < TabButtons.Num(); ++Index)
+	for (int32 Index = 0; Index < TabLabels.Num(); ++Index)
 	{
-		TabButtons[Index]->SetBackgroundColor(Index == int32(Tab) ? TabSelectedColor : TabColor);
+		TabLabels[Index]->SetColorAndOpacity(FSlateColor(Index == int32(Tab) ? TextColor : TabDimColor));
 	}
 	if (!RowList)
 	{
@@ -476,6 +746,10 @@ void USettingsMenuWidget::ShowTab(ETab NewTab)
 	}
 	RowList->ClearChildren();
 	Rows.Reset();
+	// La 1re ligne en y 275 (la liste commence un peu plus haut)
+	USpacer* Top = WidgetTree->ConstructWidget<USpacer>(USpacer::StaticClass());
+	Top->SetSize(FVector2D(1.f, FirstRowTop - ListTop));
+	RowList->AddChild(Top);
 
 	auto PercentFormat = [](float Value) { return Percent(Value); };
 	auto Quality = [this](FName Id, const FText& Label, int32 Value) { AddChoice(Id, Label, QualityNames(), Value); };
@@ -485,7 +759,10 @@ void USettingsMenuWidget::ShowTab(ETab NewTab)
 	case ETab::Audio:
 		AddSlider(TEXT("MasterVolume"), LOCTEXT("MasterVolume", "Volume général"), 0.f, 1.f, 0.05f, Values.MasterVolume, PercentFormat);
 		AddSlider(TEXT("MusicVolume"), LOCTEXT("MusicVolume", "Musique"), 0.f, 1.f, 0.05f, Values.MusicVolume, PercentFormat);
-		AddSlider(TEXT("EffectsVolume"), LOCTEXT("EffectsVolume", "Bruitages"), 0.f, 1.f, 0.05f, Values.EffectsVolume, PercentFormat);
+		// Comme la maquette Options_Menu : Bruits de pas et Météo à part, les autres bruitages dans Vfx
+		AddSlider(TEXT("FootstepsVolume"), LOCTEXT("FootstepsVolume", "Bruits de pas"), 0.f, 1.f, 0.05f, Values.FootstepsVolume, PercentFormat);
+		AddSlider(TEXT("WeatherVolume"), LOCTEXT("WeatherVolume", "Météo"), 0.f, 1.f, 0.05f, Values.WeatherVolume, PercentFormat);
+		AddSlider(TEXT("EffectsVolume"), LOCTEXT("EffectsVolume", "Vfx"), 0.f, 1.f, 0.05f, Values.EffectsVolume, PercentFormat);
 		break;
 
 	case ETab::Video:
@@ -503,13 +780,13 @@ void USettingsMenuWidget::ShowTab(ETab NewTab)
 		}
 		AddChoice(TEXT("Resolution"), LOCTEXT("Resolution", "Résolution"), ResolutionNames, ResolutionIndex);
 		AddChoice(TEXT("WindowMode"), LOCTEXT("WindowMode", "Mode d'affichage"),
-			{ LOCTEXT("Fullscreen", "Plein écran"), LOCTEXT("Borderless", "Plein écran fenêtré"), LOCTEXT("Windowed", "Fenêtré") }, Values.WindowMode);
+			{ LOCTEXT("Fullscreen", "Plein écran non fenêtré"), LOCTEXT("Borderless", "Plein écran fenêtré"), LOCTEXT("Windowed", "Fenêtré") }, Values.WindowMode);
 		AddToggle(TEXT("VSync"), LOCTEXT("VSync", "Synchro verticale"), Values.bVSync);
 		TArray<FText> LimitNames;
 		int32 LimitIndex = 0;
 		for (int32 Index = 0; Index < UE_ARRAY_COUNT(FrameLimits); ++Index)
 		{
-			LimitNames.Add(FrameLimits[Index] <= 0.f ? LOCTEXT("NoLimit", "Sans limite") : FText::AsNumber(FMath::RoundToInt(FrameLimits[Index])));
+			LimitNames.Add(FrameLimits[Index] <= 0.f ? LOCTEXT("NoLimit", "Sans limites") : FText::AsNumber(FMath::RoundToInt(FrameLimits[Index])));
 			if (FMath::IsNearlyEqual(FrameLimits[Index], Values.FrameRateLimit))
 			{
 				LimitIndex = Index;
@@ -550,12 +827,12 @@ void USettingsMenuWidget::ShowTab(ETab NewTab)
 				AddHeader(LOCTEXT("Gamepad", "MANETTE"));
 			}
 			USettingsRowWidget* Row = AddRow(Entry.Id, ESettingRowKind::Key, Entry.Name);
-			Row->ButtonText = Entry.Key.GetDisplayName(false);
+			Row->ButtonText = SettingsMenu::KeyLabel(Entry.Key);
 			RowList->AddChild(Row);
 			Rows.Add(Row);
 		}
 		USettingsRowWidget* Reset = AddRow(TEXT("ResetKeys"), ESettingRowKind::Action, FText::GetEmpty());
-		Reset->ButtonText = LOCTEXT("ResetKeys", "Remettre les touches d'origine");
+		Reset->ButtonText = LOCTEXT("ResetKeys", "Touches d'origine");
 		RowList->AddChild(Reset);
 		Rows.Add(Reset);
 		break;
@@ -565,11 +842,11 @@ void USettingsMenuWidget::ShowTab(ETab NewTab)
 	{
 		AddChoice(TEXT("TextSpeed"), LOCTEXT("TextSpeed", "Vitesse du texte"),
 			{ LOCTEXT("Slow", "Lente"), LOCTEXT("Normal", "Normale"), LOCTEXT("Fast", "Rapide") }, Values.TextSpeed);
-		AddToggle(TEXT("ShowHUD"), LOCTEXT("ShowHUD", "Afficher le HUD (lieu, heure, boussole)"), Values.bShowHUD);
+		AddToggle(TEXT("ShowHUD"), LOCTEXT("ShowHUD", "Afficher le HUD"), Values.bShowHUD);
 		AddToggle(TEXT("AutoSave"), LOCTEXT("AutoSave", "Sauvegarde automatique"), Values.bAutoSave);
 		AddHeader(LOCTEXT("SaveHeader", "PARTIE"));
 		USettingsRowWidget* Delete = AddRow(TEXT("DeleteSave"), ESettingRowKind::Action, LOCTEXT("DeleteLabel", "Recommencer de zéro"));
-		Delete->ButtonText = LOCTEXT("DeleteSave", "Effacer la sauvegarde");
+		Delete->ButtonText = LOCTEXT("DeleteSave", "Effacer la partie");
 		RowList->AddChild(Delete);
 		Rows.Add(Delete);
 		USettingsRowWidget* Quit = AddRow(TEXT("Quit"), ESettingRowKind::Action, FText::GetEmpty());
@@ -598,6 +875,8 @@ void USettingsMenuWidget::OnRowChanged(USettingsRowWidget* Row)
 	if (Is(TEXT("MasterVolume"))) { Values.MasterVolume = Row->Value; }
 	else if (Is(TEXT("MusicVolume"))) { Values.MusicVolume = Row->Value; }
 	else if (Is(TEXT("EffectsVolume"))) { Values.EffectsVolume = Row->Value; }
+	else if (Is(TEXT("FootstepsVolume"))) { Values.FootstepsVolume = Row->Value; }
+	else if (Is(TEXT("WeatherVolume"))) { Values.WeatherVolume = Row->Value; }
 	else if (Is(TEXT("Resolution")) && Resolutions.IsValidIndex(Row->Index)) { Values.Resolution = Resolutions[Row->Index]; }
 	else if (Is(TEXT("WindowMode"))) { Values.WindowMode = Row->Index; }
 	else if (Is(TEXT("VSync"))) { Values.bVSync = bOn; }
@@ -638,7 +917,7 @@ void USettingsMenuWidget::OnRowAction(USettingsRowWidget* Row)
 	if (Row->Kind == ESettingRowKind::Key)
 	{
 		CapturingKey = Row->Id;
-		Row->ButtonText = LOCTEXT("PressKey", "Appuie sur une touche...");
+		Row->ButtonText = LOCTEXT("PressKey", "Appuie...");
 		Row->RefreshValue();
 		SetStatus(LOCTEXT("CaptureHint", "Appuie sur la nouvelle touche (Échap : annuler)."));
 		return;
@@ -654,13 +933,13 @@ void USettingsMenuWidget::OnRowAction(USettingsRowWidget* Row)
 		if (!bConfirmDelete)
 		{
 			bConfirmDelete = true;
-			Row->ButtonText = LOCTEXT("ConfirmDelete", "Sûr ? Cliquer encore");
+			Row->ButtonText = LOCTEXT("ConfirmDelete", "Sûr ? Encore");
 			Row->RefreshValue();
 			return;
 		}
 		bConfirmDelete = false;
 		const bool bDeleted = UPokemonSaveLibrary::DeleteSaveGame();
-		Row->ButtonText = LOCTEXT("DeleteSave", "Effacer la sauvegarde");
+		Row->ButtonText = LOCTEXT("DeleteSave", "Effacer la partie");
 		Row->RefreshValue();
 		SetStatus(bDeleted ? LOCTEXT("Deleted", "Sauvegarde effacée : le prochain lancement repartira de zéro.")
 			: LOCTEXT("NothingToDelete", "Il n'y a pas de sauvegarde."));
@@ -697,7 +976,7 @@ FReply USettingsMenuWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometry, 
 		else
 		{
 			Controller->SetKeyBinding(Id, Key);
-			SetStatus(FText::Format(LOCTEXT("KeySet", "Touche changée : {0}."), Key.GetDisplayName(false)));
+			SetStatus(FText::Format(LOCTEXT("KeySet", "Touche changée : {0}."), SettingsMenu::KeyLabel(Key)));
 		}
 	}
 	ShowTab(ETab::Controls);

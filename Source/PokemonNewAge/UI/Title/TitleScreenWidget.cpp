@@ -74,15 +74,17 @@ namespace TitleScreenUI
 	}
 
 	/**
-	 *  Futura penchée partout (choix de L'amie du 2026-10-31) : Futura Medium pour le menu et les textes,
-	 *  Futura Bold pour les titres. On lit d'abord le .ttf du dossier Tools (il a les accents ajoutés par
+	 *  Futura penchée (choix de L'amie du 2026-10-31, puis 2026-11-01 : MdCn BT) : Futura MdCn BT pour le menu
+	 *  et les textes, BdCn BT pour les titres. On lit d'abord le .ttf du dossier Tools (il a les accents ajoutés par
 	 *  Tools/HUD/add_futura_accents.py, même si l'asset importé est plus ancien), puis l'asset, puis Roboto.
 	 */
 	FSlateFontInfo Futura(float Size, bool bBold, bool /*bItalic*/, const FSlateFontInfo& Fallback)
 	{
 		FSlateFontInfo Font;
 		bool bFound = false;
-		const TCHAR* Faces[] = { bBold ? TEXT("FF_Futura_Bold") : TEXT("FF_Futura_Medium"), TEXT("FF_Futura_Bold") };
+		// Futura MdCn BT penchée (choix de L'amie du 2026-11-01), BdCn BT pour le gras ; anciennes Futura sinon
+		const TCHAR* Faces[] = { bBold ? TEXT("FF_Futura_BoldCondensed") : TEXT("FF_Futura_MediumCondensed"),
+			bBold ? TEXT("FF_Futura_Bold") : TEXT("FF_Futura_Medium"), TEXT("FF_Futura_Bold") };
 		for (const TCHAR* Name : Faces)
 		{
 			const FString File = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / TEXT("Tools/HUD/Assets/fonts") / (FString(Name) + TEXT(".ttf")));
@@ -330,8 +332,9 @@ TSharedRef<SWidget> UTitleScreenWidget::RebuildWidget()
 				LayerSlot->SetVerticalAlignment(VAlign_Fill);
 			}
 			USizeBox* LogoBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+			// 638 px de large comme la maquette ; hauteur d'après l'image (logo Pokémon Éclair du 2026-11-01 : 1276 × 666)
 			LogoBox->SetWidthOverride(638.f);
-			LogoBox->SetHeightOverride(323.f);
+			LogoBox->SetHeightOverride(Logo->GetSizeX() > 0 ? 638.f * float(Logo->GetSizeY()) / float(Logo->GetSizeX()) : 323.f);
 			LogoBox->SetContent(LogoLayers);
 			LogoBlock = LogoBox;
 		}
