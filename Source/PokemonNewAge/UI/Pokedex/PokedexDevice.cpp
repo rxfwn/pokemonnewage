@@ -19,6 +19,7 @@
 #include "Widgets/Layout/SDPIScaler.h"
 #include "Kismet/GameplayStatics.h"
 #include "UObject/UObjectIterator.h"
+#include "HAL/IConsoleManager.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PokemonNewAge.h"
 #include "PokemonNewAgePlayerController.h"
@@ -680,8 +681,30 @@ void APokedexDevice::UpdateFraming()
 
 // ---------------------------------------------------------------- Ouverture et fermeture
 
+void APokedexDevice::SetMenuAntiAliasing(bool bMenu)
+{
+	// L'anticrénelage temporel (TSR / TAA) floute le texte des écrans (testé par L'amie : ShowFlag.AntiAliasing 0 = net).
+	// Pendant le menu on passe en FXAA (le décor est flouté de toute façon), puis on remet le réglage du jeu.
+	IConsoleVariable* Method = IConsoleManager::Get().FindConsoleVariable(TEXT("r.AntiAliasingMethod"));
+	if (!Method || !bUseFxaaInMenu)
+	{
+		return;
+	}
+	if (bMenu && SavedAntiAliasing < 0)
+	{
+		SavedAntiAliasing = Method->GetInt();
+		Method->Set(1, ECVF_SetByCode);
+	}
+	else if (!bMenu && SavedAntiAliasing >= 0)
+	{
+		Method->Set(SavedAntiAliasing, ECVF_SetByCode);
+		SavedAntiAliasing = -1;
+	}
+}
+
 void APokedexDevice::Open()
 {
+	SetMenuAntiAliasing(true);
 	bClosing = false;
 	OpenAlpha = 0.f;
 	PlaySound(Model ? Model->OpenSound : nullptr);
@@ -719,6 +742,7 @@ void APokedexDevice::Close(bool bImmediate)
 
 void APokedexDevice::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	SetMenuAntiAliasing(false);
 	if (InputWidget)
 	{
 		InputWidget->RemoveFromParent();
@@ -753,6 +777,7 @@ void APokedexDevice::UpdateAnimation(float DeltaSeconds)
 		{
 			if (APokemonNewAgePlayerController* PC = Controller.Get())
 			{
+				SetMenuAntiAliasing(false);
 				PC->OnPokedexClosed(this);
 			}
 			Destroy();

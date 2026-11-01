@@ -129,6 +129,10 @@ public:
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
 	float MenuBloom = 0.1f;
 
+	/** FXAA pendant le menu au lieu du TSR/TAA du jeu (qui floute le texte des écrans) */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	bool bUseFxaaInMenu = true;
+
 	/** Force des voyants allumés (1 = discrets, comme de vraies LED) */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
 	float LedGlow = 1.f;
@@ -202,6 +206,9 @@ private:
 
 	/** Distance à la caméra pour que l'appareil ouvert remplisse ScreenFill de la fenêtre (refait si elle change de taille) */
 	void UpdateFraming();
+	/** FXAA pendant le menu, réglage du jeu remis ensuite */
+	void SetMenuAntiAliasing(bool bMenu);
+	int32 SavedAntiAliasing = -1;
 
 	/** EV100 qui affiche la map correctement d'après la lumière de son soleil */
 	float EstimateWorldExposure() const;
