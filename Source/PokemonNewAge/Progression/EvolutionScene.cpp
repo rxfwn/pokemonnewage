@@ -91,6 +91,12 @@ AEvolutionScene::AEvolutionScene()
 	KeyLight->SetOuterConeAngle(28.f);
 	KeyLight->SetInnerConeAngle(14.f);
 	KeyLight->SetCastShadows(true);
+	// Ombre douce et fine : avec une source ponctuelle, l'ombre de la Ball sur le sol montrait les pixels
+	// de la carte d'ombre (bords en escalier, taches)
+	KeyLight->SetSourceRadius(12.f);
+	KeyLight->SetSoftSourceRadius(12.f);
+	KeyLight->ShadowResolutionScale = 3.f;
+	KeyLight->SetShadowSlopeBias(0.6f);
 	// Éclairage direct seulement : dans le noir autour, Lumen faisait des taches sur le sol avec son rebond
 	KeyLight->SetIndirectLightingIntensity(0.f);
 
