@@ -60,12 +60,12 @@ def missing_fonts():
     return stale
 
 
-def stale_images(folder, content_subdir, only_existing=False):
-    """Images PNG de Tools/<folder>/Assets pas encore importées (sauf only_existing), ou plus récentes que leur asset."""
+def stale_images(folder, content_subdir, only_existing=False, assets="Assets"):
+    """Images PNG de Tools/<folder>/<assets> pas encore importées (sauf only_existing), ou plus récentes que leur asset."""
     import glob
     content_dir = unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_content_dir())
     stale = []
-    for path in glob.glob(os.path.join(PROJECT_DIR, "Tools", folder, "Assets", "*.png")):
+    for path in glob.glob(os.path.join(PROJECT_DIR, "Tools", folder, assets, "*.png")):
         name = os.path.splitext(os.path.basename(path))[0]
         asset_file = os.path.join(content_dir, content_subdir, name + ".uasset")
         if not os.path.exists(asset_file):
@@ -91,7 +91,10 @@ def install_title_images():
 def install_fonts():
     script = os.path.join(PROJECT_DIR, "Tools", "HUD", "import_hud_unreal.py")
     # Polices ou images du HUD nouvelles ou modifiées (ex. boussole de la maquette v2, 2026-11-01)
-    if not (missing_fonts() or stale_images("HUD", os.path.join("UI", "HUD"))) or not os.path.exists(script):
+    # (et icônes des objets du Sac de combat, Tools/HUD/Assets/Items, 2026-11-01)
+    if not (missing_fonts() or stale_images("HUD", os.path.join("UI", "HUD"))
+            or stale_images("HUD", os.path.join("UI", "HUD", "Items"), assets=os.path.join("Assets", "Items"))) \
+            or not os.path.exists(script):
         return
     unreal.log("Polices ou images du HUD nouvelles ou modifiées : import automatique (Tools/HUD/import_hud_unreal.py)...")
     spec = importlib.util.spec_from_file_location("import_hud_unreal", script)

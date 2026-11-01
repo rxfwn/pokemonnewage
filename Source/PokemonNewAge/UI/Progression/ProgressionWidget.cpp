@@ -28,7 +28,6 @@ namespace ProgressionUI
 	const FLinearColor Text(0.95f, 0.96f, 0.97f, 1.f);
 	const FLinearColor Dim(0.6f, 0.65f, 0.7f, 1.f);
 	const FLinearColor Good(0.3f, 0.85f, 0.4f, 1.f);
-	const FLinearColor Warn(0.98f, 0.75f, 0.2f, 1.f);
 
 	// Boîte de texte en verre (maquette de L'amie, Evolution_Pokeball_Anim : 1920 × 1080) : le verre commun des menus
 	// (UI/GlassPanel.h) ; à 92 px des bords, 34 px du bas, 206 px de haut ; Futura BdCn
@@ -85,7 +84,6 @@ TSharedRef<SWidget> UProgressionWidget::RebuildWidget()
 		MessageSize->SetContent(MessageRow);
 		MessageText = MakeText(FText::GetEmpty(), 30, PokemonGlass::TextColor);
 		MessageText->SetFont(PokemonFonts::GetHUD(MessageFontSize));
-		PokemonGlass::AddTextShadow(MessageText);
 		MessageText->SetAutoWrapText(true);
 		MessageRow->AddChildToHorizontalBox(MessageText)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 
@@ -117,7 +115,7 @@ TSharedRef<SWidget> UProgressionWidget::RebuildWidget()
 
 UTextBlock* UProgressionWidget::MakeText(const FText& InText, int32 Size, const FLinearColor& Color, bool bBold)
 {
-	UTextBlock* Block = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+	UTextBlock* Block = PokemonGlass::MakeShadowedText(WidgetTree); // ombre floue, comme les autres menus
 	Block->SetText(InText);
 	Block->SetColorAndOpacity(FSlateColor(Color));
 	Block->SetFont(PokemonFonts::Get(Size, bBold));

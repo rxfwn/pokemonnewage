@@ -32,10 +32,9 @@ namespace
 
 	UTextBlock* MakeText(UWidgetTree* Tree, int32 Size, const FLinearColor& Color, FName Name = NAME_None)
 	{
-		UTextBlock* Text = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), Name);
+		UTextBlock* Text = PokemonGlass::MakeShadowedText(Tree, Name);
 		Text->SetFont(PokemonFonts::Get(Size));
 		Text->SetColorAndOpacity(FSlateColor(Color));
-		PokemonGlass::AddTextShadow(Text);
 		return Text;
 	}
 

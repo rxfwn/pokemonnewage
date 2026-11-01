@@ -4,7 +4,8 @@
 -> Tools/HUD/import_hud_unreal.py. Le script du Pokédex (Tools/Pokedex/import_pokedex_unreal.py) le lance aussi à la fin.
 
 Ce qu'il fait :
-  1. importe Tools/HUD/Assets/*.png dans /Game/UI/HUD (icône du Pokédex, cône de la boussole, pictos météo),
+  1. importe Tools/HUD/Assets/*.png dans /Game/UI/HUD (icône du Pokédex, cône de la boussole, pictos météo, écran de
+     combat) et Tools/HUD/Assets/Items/*.png dans /Game/UI/HUD/Items (icônes des objets du Sac, T_Item_<Id>),
      réglés en textures d'interface (pas de mipmaps, pas de compression) ;
   2. importe les polices de la maquette (Tools/HUD/Assets/fonts/FF_*.ttf : Futura Medium, Medium italique, Bold)
      dans /Game/UI/HUD/Fonts (une Font Face par fichier, lue par PokemonFonts::Get pour toute l'interface).
@@ -18,6 +19,7 @@ import unreal
 
 HUD_DIR = "/Game/UI/HUD"
 FONT_DIR = HUD_DIR + "/Fonts"
+ITEMS_DIR = HUD_DIR + "/Items"
 PROJECT_DIR = unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir())
 ASSETS_DIR = os.path.join(PROJECT_DIR, "Tools", "HUD", "Assets")
 
@@ -53,6 +55,11 @@ def import_hud():
     images = sorted(glob.glob(os.path.join(ASSETS_DIR, "*.png")))
     import_files(images, HUD_DIR)
     textures = [as_ui(HUD_DIR + "/" + os.path.splitext(os.path.basename(path))[0]) for path in images]
+
+    # Icônes des objets du Sac (Tools/HUD/Assets/Items/T_Item_<Id>.png, Id = ligne de DT_Items) -> /Game/UI/HUD/Items
+    items = sorted(glob.glob(os.path.join(ASSETS_DIR, "Items", "*.png")))
+    import_files(items, ITEMS_DIR)
+    textures += [as_ui(ITEMS_DIR + "/" + os.path.splitext(os.path.basename(path))[0]) for path in items]
 
     # Sans les copies d'origine (FF_Futura_Bold.orig.ttf, gardée par add_futura_accents.py)
     fonts = sorted(path for path in glob.glob(os.path.join(ASSETS_DIR, "fonts", "FF_*.ttf"))

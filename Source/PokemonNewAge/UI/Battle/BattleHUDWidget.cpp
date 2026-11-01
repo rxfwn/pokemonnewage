@@ -14,6 +14,7 @@
 #include "Components/Image.h"
 #include "Components/ScaleBox.h"
 #include "Components/ScrollBox.h"
+#include "Components/ScrollBoxSlot.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Overlay.h"
@@ -48,20 +49,51 @@ namespace BattleHUD
 	/** Dans un cadre : barre de PV en (88, 111), 451,72 x 26,85 ; « PV » en (23, 98) ; nom en (23, 2) ; niveau à 26 px du bord droit */
 	const FVector2D HPBarPos(87.85f, 110.98f);
 	const FVector2D HPBarSize(451.72f, 26.85f);
+	/** Marge autour des images de barre pour leur ombre floue (BAR_PAD de make_battle_assets.py) */
+	constexpr float HPBarPad = 8.f;
 	const FVector2D MessagePos(47.f, 817.f);
 	const FVector2D MessageSize(1210.f, 207.f);
 	const FVector2D MessageTextPos(82.f, 836.f);
 	const FVector2D MenuPos(1274.f, 817.f);
 	const FVector2D MenuSize(566.f, 207.f);
-	/** Cartes 265 x 85 espacées de 12 px (1286 -> 1563, 830 -> 927) */
+	/** Sans menu à droite, la boîte de texte prend toute la largeur jusqu'au bord droit du menu */
+	const FVector2D MessageWideSize(MenuPos.X + MenuSize.X - MessagePos.X, MessageSize.Y);
+	/** Cartes 265 x 85 espacées de 12 px, centrées dans le panneau du menu (même marge de chaque côté) */
 	const FVector2D CardSize(265.f, 85.f);
 	constexpr float CardGap = 12.f;
-	constexpr float MainCardsTop = 830.f;
-	constexpr float MoveCardsTop = 826.f;
-	constexpr float CardsLeft = 1286.f;
-	/** Bouton retour 54 x 54 entre les attaques (centre en 1554, 916) */
-	const FVector2D BackPos(1527.f, 889.f);
+	const float CardsLeft = MenuPos.X + (MenuSize.X - (2.f * CardSize.X + CardGap)) * 0.5f;
+	const float CardsTop = MenuPos.Y + (MenuSize.Y - (2.f * CardSize.Y + CardGap)) * 0.5f;
+	/** Bouton retour 54 x 54 au croisement des 4 cartes */
 	const FVector2D BackSize(54.f, 54.f);
+	const FVector2D BackPos(CardsLeft + CardSize.X + CardGap * 0.5f - BackSize.X * 0.5f, CardsTop + CardSize.Y + CardGap * 0.5f - BackSize.Y * 0.5f);
+
+	// Sac (maquette Combat_Hud_Bag) : grand panneau à droite (il cache le cadre du joueur), colonne d'onglets de 117 px
+	// à gauche, liste de cartes 404 x 85 espacées de 12 px à droite, dans un second verre qui la découpe
+	const FVector2D BagPos(1281.f, 267.f);
+	const FVector2D BagSize(566.f, 757.f);
+	constexpr float BagTabWidth = 117.f;
+	/** Haut des 5 onglets puis de la zone du bouton retour, dans le panneau (traits de la maquette en 384, 502, 620, 738, 856) */
+	const float BagTabEdges[] = { 0.f, 117.f, 235.f, 353.f, 471.f, 589.f };
+	const FVector2D BagTabIconSize(69.f, 69.f);
+	/** Bouton retour (Calque_1 51 x 45 en 1311, 950) */
+	const FVector2D BagBackIconPos(30.f, 683.f);
+	const FVector2D BagBackIconSize(51.f, 45.f);
+	/** Liste : cartes en x 1410 (12 px du bord du verre), la première en y 283 (16 px) */
+	const FVector2D BagCardSize(404.f, 85.f);
+	constexpr float BagListLeft = 12.f;
+	constexpr float BagListTop = 16.f;
+	/** Dans une carte : icône 55 x 55 en (13, 15), nom 36 px en x 74, « x 999 » aligné à droite en x 372 */
+	const FVector2D BagItemIconPos(13.f, 15.f);
+	const FVector2D BagItemIconSize(55.f, 55.f);
+	constexpr float BagNameLeft = 74.f;
+	constexpr float BagCountRight = 372.f;
+	constexpr float BagTextTop = 21.f;
+	/** Ascenseur 11 x 52 à droite des cartes (x 1824), entre les marges de la liste */
+	constexpr float BagThumbLeft = 543.f;
+	const FVector2D BagThumbSize(11.f, 52.f);
+	/** Onglets non choisis assombris (Rectangles 11 et 12 : noir 20 % -> 14 %) ; traits de séparation clairs */
+	const FLinearColor BagShade(0.f, 0.f, 0.f, 0.17f);
+	const FLinearColor BagLine(1.f, 1.f, 1.f, 0.25f);
 
 	const FLinearColor Text(1.f, 1.f, 1.f, 1.f);
 	const FLinearColor Dim(1.f, 1.f, 1.f, 0.55f);
@@ -116,17 +148,22 @@ namespace BattleHUD
 		return LoadObject<UTexture2D>(nullptr, *FString::Printf(TEXT("/Game/UI/HUD/%s.%s"), Name, Name), nullptr, LOAD_NoWarn | LOAD_Quiet);
 	}
 
-	/** Image de la maquette (dessinée au double) affichée à la taille de la maquette ; bBox : étirée sans déformer les bouts ronds */
-	FSlateBrush MakeBrush(UTexture2D* Texture, const FVector2D& Size, bool bBox = false)
+	/** Image de la maquette (dessinée au double) affichée à la taille de la maquette */
+	FSlateBrush MakeBrush(UTexture2D* Texture, const FVector2D& Size)
 	{
 		FSlateBrush Brush;
 		Brush.SetResourceObject(Texture);
 		Brush.ImageSize = Size;
-		if (bBox)
-		{
-			Brush.DrawAs = ESlateBrushDrawType::Box;
-			Brush.Margin = FMargin(13.f / 452.f, 0.f);
-		}
+		return Brush;
+	}
+
+	/** Barre de PV ou son fond : image avec sa marge d'ombre, étirée en « boîte » (les bouts ronds et l'ombre ne se déforment pas) */
+	FSlateBrush MakeBarBrush(UTexture2D* Texture)
+	{
+		const FVector2D Size = HPBarSize + FVector2D(2.f * HPBarPad);
+		FSlateBrush Brush = MakeBrush(Texture, Size);
+		Brush.DrawAs = ESlateBrushDrawType::Box;
+		Brush.Margin = FMargin((HPBarPad + HPBarSize.Y * 0.5f) / Size.X, 0.f);
 		return Brush;
 	}
 
@@ -232,17 +269,11 @@ TSharedRef<SWidget> UBattleHUDWidget::RebuildWidget()
 		BuildInfoBox(Boxes[0], true);
 		Place(Canvas, Boxes[0].Frame, PlayerBoxPos, InfoSize);
 
-		// Boîte de texte en bas à gauche
-		Place(Canvas, PokemonGlass::Make(WidgetTree, nullptr, FMargin(0.f), PanelLook(), TEXT("MessageFrame")), MessagePos, MessageSize);
+		// Boîte de texte en bas à gauche, sur toute la largeur quand le menu n'est pas là (SetMessageWide)
+		MessageFrameSlot = Place(Canvas, PokemonGlass::Make(WidgetTree, nullptr, FMargin(0.f), PanelLook(), TEXT("MessageFrame")), MessagePos, MessageWideSize);
 		MessageText = MakeText(FText::GetEmpty(), 64.f * FontScale, Text);
 		MessageText->SetAutoWrapText(true);
-		Place(Canvas, MessageText, MessageTextPos, FVector2D(MessagePos.X + MessageSize.X - MessageTextPos.X - 70.f, MessageSize.Y - 30.f));
-		// Flèche « suite » : chevron orange tourné vers le bas, dans le coin
-		MessageArrow = MakeText(FText::FromString(TEXT(">")), 40.f * FontScale, HPLabel, true);
-		MessageArrow->SetJustification(ETextJustify::Center);
-		MessageArrow->SetRenderTransformAngle(90.f);
-		MessageArrow->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
-		Place(Canvas, MessageArrow, FVector2D(MessagePos.X + MessageSize.X - 64.f, MessagePos.Y + MessageSize.Y - 66.f), FVector2D(40.f, 48.f));
+		MessageTextSlot = Place(Canvas, MessageText, MessageTextPos, FVector2D(MessagePos.X + MessageWideSize.X - MessageTextPos.X - 35.f, MessageSize.Y - 30.f));
 
 		// Menu en bas à droite : panneau en verre, cartes dans une liste (2 colonnes) qui défile si besoin
 		MenuFrame = PokemonGlass::Make(WidgetTree, nullptr, FMargin(0.f), PanelLook(), TEXT("MenuFrame"));
@@ -253,8 +284,8 @@ TSharedRef<SWidget> UBattleHUDWidget::RebuildWidget()
 		MenuGrid = WidgetTree->ConstructWidget<UUniformGridPanel>(UUniformGridPanel::StaticClass(), TEXT("MenuGrid"));
 		MenuGrid->SetSlotPadding(FMargin(CardGap * 0.5f));
 		MenuScroll->AddChild(MenuGrid);
-		MenuScrollSlot = Place(Canvas, MenuScroll, FVector2D(CardsLeft - CardGap * 0.5f, MainCardsTop - CardGap * 0.5f),
-			FVector2D(2.f * (CardSize.X + CardGap), MenuPos.Y + MenuSize.Y - (MoveCardsTop - CardGap * 0.5f) - 4.f));
+		MenuScrollSlot = Place(Canvas, MenuScroll, FVector2D(CardsLeft - CardGap * 0.5f, CardsTop - CardGap * 0.5f),
+			FVector2D(2.f * (CardSize.X + CardGap), 2.f * (CardSize.Y + CardGap)));
 
 		// Bouton retour (Rectangle 24 + picto Calque_1)
 		UOverlay* BackContent = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass());
@@ -284,6 +315,8 @@ TSharedRef<SWidget> UBattleHUDWidget::RebuildWidget()
 		MenuFrame->SetVisibility(ESlateVisibility::Collapsed);
 		MenuScroll->SetVisibility(ESlateVisibility::Collapsed);
 		BackButton->SetVisibility(ESlateVisibility::Collapsed);
+
+		BuildBag();
 
 		// Stats gagnées à la montée de niveau : verre à gauche, au-dessus de la boîte de texte
 		USizeBox* StatsSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
@@ -325,16 +358,18 @@ void UBattleHUDWidget::BuildInfoBox(FInfoBox& Box, bool bPlayer)
 	HP->SetJustification(ETextJustify::Center);
 	Place(Inside, HP, FVector2D(23.f, 98.f), FVector2D(38.74f, 51.f));
 
+	// Les images de barre ont une marge pour l'ombre : on les place HPBarPad plus haut et plus à gauche
 	UImage* Track = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
 	if (HPTrackTexture)
 	{
-		Track->SetBrush(MakeBrush(HPTrackTexture, HPBarSize, true));
+		Track->SetBrush(MakeBarBrush(HPTrackTexture));
+		Place(Inside, Track, HPBarPos - FVector2D(HPBarPad), HPBarSize + FVector2D(2.f * HPBarPad));
 	}
 	else
 	{
 		Track->SetBrush(FSlateRoundedBoxBrush(FLinearColor(1.f, 1.f, 1.f, 0.1f), 13.f));
+		Place(Inside, Track, HPBarPos, HPBarSize);
 	}
-	Place(Inside, Track, HPBarPos, HPBarSize);
 
 	Box.HPFill = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
 	Box.HPFillSlot = Place(Inside, Box.HPFill, HPBarPos, HPBarSize);
@@ -365,7 +400,7 @@ void UBattleHUDWidget::SetHPBar(FInfoBox& Box, float Ratio)
 		Box.HPColor = ColorIndex;
 		if (UTexture2D* Fill = HPFillTextures[ColorIndex])
 		{
-			Box.HPFill->SetBrush(MakeBrush(Fill, HPBarSize, true));
+			Box.HPFill->SetBrush(MakeBarBrush(Fill));
 		}
 		else
 		{
@@ -376,17 +411,18 @@ void UBattleHUDWidget::SetHPBar(FInfoBox& Box, float Ratio)
 	// La barre se raccourcit par la droite ; les bouts restent ronds (image en « boîte »)
 	const float Width = HPBarSize.X * FMath::Clamp(Ratio, 0.f, 1.f);
 	Box.HPFill->SetVisibility(Width > 0.5f ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-	Box.HPFillSlot->SetSize(FVector2D(FMath::Max(Width, HPBarSize.Y), HPBarSize.Y));
+	const float Pad = HPFillTextures[ColorIndex] ? HPBarPad : 0.f;
+	Box.HPFillSlot->SetPosition(HPBarPos - FVector2D(Pad));
+	Box.HPFillSlot->SetSize(FVector2D(FMath::Max(Width, HPBarSize.Y) + 2.f * Pad, HPBarSize.Y + 2.f * Pad));
 }
 
 UTextBlock* UBattleHUDWidget::MakeText(const FText& InText, float Size, const FLinearColor& Color, bool bBold)
 {
-	UTextBlock* Block = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+	// Texte posé sur le verre (maquette Combat_Hud) : ombre floue
+	UTextBlock* Block = PokemonGlass::MakeShadowedText(WidgetTree);
 	Block->SetText(InText);
 	Block->SetColorAndOpacity(FSlateColor(Color));
 	Block->SetFont(PokemonFonts::Get(Size, bBold));
-	// Texte posé sur le verre (maquette Combat_Hud) : ombre légère
-	PokemonGlass::AddTextShadow(Block);
 	return Block;
 }
 
@@ -676,7 +712,6 @@ void UBattleHUDWidget::ShowMessage(const FText& InText)
 	MessageHold = 0.f;
 	bMessageActive = true;
 	MessageText->SetText(FText::GetEmpty());
-	MessageArrow->SetVisibility(ESlateVisibility::Hidden);
 }
 
 bool UBattleHUDWidget::IsMessageBusy() const
@@ -717,7 +752,6 @@ void UBattleHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 		const bool bBarsMoving = FMath::Abs(DisplayedHP[0] - TargetHP[0]) > 0.5f || FMath::Abs(DisplayedHP[1] - TargetHP[1]) > 0.5f || IsExpBarMoving();
 		if (After >= FullMessage.Len() && !bBarsMoving)
 		{
-			MessageArrow->SetVisibility(Queue.Num() > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 			MessageHold += InDeltaTime;
 			if (MessageHold >= HoldTime)
 			{
@@ -747,7 +781,7 @@ void UBattleHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 		{
 			continue;
 		}
-		const bool bHover = Button->GetIsEnabled() && (Button->IsHovered() || Button->HasKeyboardFocus());
+		const bool bHover = Button->GetIsEnabled() && (Button->IsHovered() || (bKeyboardNavigation && Button->HasKeyboardFocus()));
 		const float Current = Button->GetRenderTransform().Scale.X;
 		const float Scale = FMath::FInterpTo(Current, bHover ? 1.05f : 1.f, InDeltaTime, 18.f);
 		if (!FMath::IsNearlyEqual(Scale, Current, 0.0005f))
@@ -757,6 +791,10 @@ void UBattleHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 	}
 
 	UpdateExpBar(InDeltaTime);
+	if (Menu == EMenu::Bag)
+	{
+		UpdateBagThumb();
+	}
 
 	if (CloseTimer > 0.f)
 	{
@@ -819,14 +857,36 @@ void UBattleHUDWidget::ClearMenu()
 	MenuFrame->SetVisibility(ESlateVisibility::Collapsed);
 	MenuScroll->SetVisibility(ESlateVisibility::Collapsed);
 	BackButton->SetVisibility(ESlateVisibility::Collapsed);
+	SetMessageWide(true);
+	if (BagFrame)
+	{
+		BagFrame->SetVisibility(ESlateVisibility::Collapsed);
+		BagItems->ClearChildren();
+		Boxes[0].Frame->SetRenderOpacity(1.f);
+	}
+}
+
+void UBattleHUDWidget::SetMessageWide(bool bWide)
+{
+	const FVector2D FrameSize = bWide ? MessageWideSize : MessageSize;
+	MessageFrameSlot->SetSize(FrameSize);
+	MessageTextSlot->SetSize(FVector2D(MessagePos.X + FrameSize.X - MessageTextPos.X - 35.f, MessageSize.Y - 30.f));
 }
 
 void UBattleHUDWidget::OpenMenu(EMenu NewMenu, bool bBackButton)
 {
 	Menu = NewMenu;
-	// Menu principal en y 830, attaques et listes en y 826 (comme la maquette)
-	MenuScrollSlot->SetPosition(FVector2D(CardsLeft - CardGap * 0.5f, (NewMenu == EMenu::Main ? MainCardsTop : MoveCardsTop) - CardGap * 0.5f));
+	// Une seule carte (Sac avec un seul objet...) : case vide à droite pour garder 2 colonnes, sinon la carte prend toute la largeur
+	if (CardCount == 1)
+	{
+		USizeBox* Spacer = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		Spacer->SetWidthOverride(CardSize.X);
+		Spacer->SetHeightOverride(CardSize.Y);
+		Spacer->SetVisibility(ESlateVisibility::Hidden);
+		MenuGrid->AddChildToUniformGrid(Spacer, 0, 1);
+	}
 	MenuScroll->ScrollToStart();
+	SetMessageWide(false);
 	MenuFrame->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	MenuScroll->SetVisibility(ESlateVisibility::Visible);
 	BackButton->SetVisibility(bBackButton ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
@@ -933,7 +993,6 @@ void UBattleHUDWidget::ShowMainMenu()
 	ClearMenu();
 	const FPokemonInstance* Active = GetDisplayedPokemon(Snapshot.LocalSide);
 	MessageText->SetText(Active ? FText::Format(LOCTEXT("WhatWillDo", "Que doit faire {0} ?"), UPokemonLibrary::GetDisplayName(GetDatabase(), *Active)) : FText::GetEmpty());
-	MessageArrow->SetVisibility(ESlateVisibility::Hidden);
 
 	// Attaquer (rouge), Sac (jaune), Pokémon (vert), Fuite (bleu)
 	AddCard(LOCTEXT("Fight", "Attaquer"), EBattleHUDAction::Fight, 0, 0);
@@ -959,7 +1018,8 @@ void UBattleHUDWidget::ShowMoves()
 	{
 		if (!Active->Moves.IsValidIndex(MoveIndex) || Active->Moves[MoveIndex].Move.IsNone())
 		{
-			AddCard(FText::FromString(TEXT("-")), EBattleHUDAction::Move, MoveIndex, -1, false);
+			// Emplacement libre : carte en verre vide, aussi visible que les autres, mais qu'on ne peut pas choisir
+			AddCard(FText::GetEmpty(), EBattleHUDAction::Move, MoveIndex, -1, false)->SetRenderOpacity(1.f);
 			continue;
 		}
 		const FPokemonMoveSlot& MoveSlot = Active->Moves[MoveIndex];
@@ -971,30 +1031,293 @@ void UBattleHUDWidget::ShowMoves()
 	OpenMenu(EMenu::Moves, true);
 }
 
+void UBattleHUDWidget::BuildBag()
+{
+	BagFrame = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("BagFrame"));
+	Place(Canvas, BagFrame, BagPos, BagSize);
+	Place(BagFrame, PokemonGlass::Make(WidgetTree, nullptr, FMargin(0.f), PanelLook(), TEXT("BagPanel")), FVector2D::ZeroVector, BagSize);
+
+	// Colonne des onglets : icône centrée, voile sombre sur ceux qui ne sont pas choisis, trait entre deux onglets.
+	// La dernière case (sous les onglets) est le bouton retour, toujours assombrie.
+	const TCHAR* TabTextures[] = { TEXT("T_Bag_Tab_Medicine"), TEXT("T_Bag_Tab_Balls"), TEXT("T_Bag_Tab_Battle"), TEXT("T_Bag_Tab_Other"), TEXT("T_Bag_Tab_Berries") };
+	const FText TabLabels[] = { LOCTEXT("BagMedicine", "Soins"), LOCTEXT("BagBalls", "Balls"), LOCTEXT("BagBattle", "Combat"),
+		LOCTEXT("BagOther", "Autres"), LOCTEXT("BagBerries", "Baies") };
+	constexpr int32 TabCount = int32(EBagTab::Count);
+	for (int32 Tab = 0; Tab <= TabCount; ++Tab)
+	{
+		const bool bBack = Tab == TabCount;
+		const float Top = BagTabEdges[Tab];
+		const float Bottom = bBack ? BagSize.Y : BagTabEdges[Tab + 1];
+		const FVector2D CellSize(BagTabWidth, Bottom - Top);
+
+		UOverlay* Cell = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass());
+		// Coins du panneau : haut gauche pour le premier onglet, bas gauche pour le bouton retour
+		UImage* Shade = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+		Shade->SetBrush(FSlateRoundedBoxBrush(BagShade, FVector4(Tab == 0 ? 20.f : 0.f, 0.f, 0.f, bBack ? 20.f : 0.f)));
+		UOverlaySlot* ShadeSlot = Cell->AddChildToOverlay(Shade);
+		ShadeSlot->SetHorizontalAlignment(HAlign_Fill);
+		ShadeSlot->SetVerticalAlignment(VAlign_Fill);
+
+		UTexture2D* IconTexture = nullptr;
+		if (bBack)
+		{
+			IconTexture = LoadHUDTexture(TEXT("T_Bag_Back"));
+			IconTexture = IconTexture ? IconTexture : BackTexture.Get();
+		}
+		else
+		{
+			IconTexture = LoadHUDTexture(TabTextures[Tab]);
+			if (!IconTexture && EBagTab(Tab) == EBagTab::Balls)
+			{
+				IconTexture = LoadObject<UTexture2D>(nullptr, TEXT("/Game/UI/HUD/Items/T_Item_PokeBall.T_Item_PokeBall"), nullptr, LOAD_NoWarn | LOAD_Quiet);
+			}
+		}
+		UWidget* Icon = nullptr;
+		if (IconTexture)
+		{
+			UImage* Image = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+			Image->SetBrush(MakeBrush(IconTexture, bBack ? BagBackIconSize : BagTabIconSize));
+			Icon = Image;
+		}
+		else
+		{
+			// Icône pas encore fournie : le nom de l'onglet
+			Icon = MakeText(bBack ? FText::GetEmpty() : TabLabels[Tab], 28.f * FontScale, Text);
+		}
+		UOverlaySlot* IconSlot = Cell->AddChildToOverlay(Icon);
+		IconSlot->SetHorizontalAlignment(HAlign_Center);
+		IconSlot->SetVerticalAlignment(VAlign_Center);
+		if (bBack)
+		{
+			// Calque_1 est plus bas que le centre de la case
+			IconSlot->SetVerticalAlignment(VAlign_Top);
+			IconSlot->SetPadding(FMargin(0.f, BagBackIconPos.Y - Top, 0.f, 0.f));
+		}
+
+		UButton* Button = MakeCardButton(Cell);
+		UBattleHUDButtonBinding* Binding = NewObject<UBattleHUDButtonBinding>(this);
+		Binding->Action = bBack ? EBattleHUDAction::Back : EBattleHUDAction::BagTab;
+		Binding->Index = Tab;
+		Binding->HUD = this;
+		Button->OnClicked.AddDynamic(Binding, &UBattleHUDButtonBinding::HandleClicked);
+		BagBindings.Add(Binding);
+		Place(BagFrame, Button, FVector2D(0.f, Top), CellSize);
+		if (bBack)
+		{
+			BagBackButton = Button;
+		}
+		else
+		{
+			BagTabButtons.Add(Button);
+			BagTabShades.Add(Shade);
+		}
+
+		if (Tab > 0)
+		{
+			UImage* Line = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+			Line->SetBrush(FSlateRoundedBoxBrush(BagLine, 0.f));
+			Line->SetVisibility(ESlateVisibility::HitTestInvisible);
+			Place(BagFrame, Line, FVector2D(0.f, Top), FVector2D(BagTabWidth, 1.f));
+		}
+	}
+
+	// Liste à droite : second verre (Rectangle 20) et cartes qui défilent dedans (coupées à ses bords)
+	const FVector2D ListPos(BagTabWidth, 0.f);
+	const FVector2D ListSize(BagSize.X - BagTabWidth, BagSize.Y);
+	Place(BagFrame, PokemonGlass::Make(WidgetTree, nullptr, FMargin(0.f), PanelLook(), TEXT("BagListPanel")), ListPos, ListSize);
+	BagList = WidgetTree->ConstructWidget<UScrollBox>(UScrollBox::StaticClass(), TEXT("BagList"));
+	BagList->SetScrollBarVisibility(ESlateVisibility::Collapsed);
+	BagList->SetAnimateWheelScrolling(true);
+	BagList->SetConsumeMouseWheel(EConsumeMouseWheel::Always);
+	BagItems = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("BagItems"));
+	BagList->AddChild(BagItems);
+	if (UScrollBoxSlot* ItemsSlot = Cast<UScrollBoxSlot>(BagItems->Slot))
+	{
+		ItemsSlot->SetPadding(FMargin(BagListLeft, BagListTop, ListSize.X - BagListLeft - BagCardSize.X, BagListTop - CardGap));
+		ItemsSlot->SetHorizontalAlignment(HAlign_Left);
+	}
+	Place(BagFrame, BagList, ListPos, ListSize);
+
+	BagEmptyText = MakeText(LOCTEXT("BagEmpty", "Aucun objet"), 36.f * FontScale, Dim);
+	BagEmptyText->SetJustification(ETextJustify::Center);
+	Place(BagFrame, BagEmptyText, ListPos + FVector2D(BagListLeft, BagListTop + BagTextTop), FVector2D(BagCardSize.X, 43.f));
+
+	// Ascenseur (Rectangle 11 tourné) : pilule claire
+	BagThumb = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+	BagThumb->SetBrush(FSlateRoundedBoxBrush(FLinearColor(1.f, 1.f, 1.f, 0.45f), BagThumbSize.X * 0.5f));
+	BagThumb->SetVisibility(ESlateVisibility::HitTestInvisible);
+	BagThumbSlot = Place(BagFrame, BagThumb, FVector2D(BagThumbLeft, BagListTop), BagThumbSize);
+
+	BagFrame->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+UBattleHUDWidget::EBagTab UBattleHUDWidget::GetBagTab(FName ItemId, const FItemRow& Item) const
+{
+	if (!Item.bUsableInBattle)
+	{
+		return EBagTab::Count;
+	}
+	if (Item.Category == EItemCategory::PokeBall || Item.IsPokeBall())
+	{
+		return EBagTab::Balls;
+	}
+	if (Item.Category == EItemCategory::Medicine)
+	{
+		return EBagTab::Medicine;
+	}
+	const FString Name = ItemId.ToString();
+	if (Name.EndsWith(TEXT("Berry")))
+	{
+		return EBagTab::Berries;
+	}
+	// Objets de combat (Attaque +, Vitesse +, Défense Spé...) : X Attack, X Speed, Dire Hit, Guard Spec
+	if (Name.StartsWith(TEXT("X")) || Name == TEXT("DireHit") || Name == TEXT("GuardSpec"))
+	{
+		return EBagTab::Battle;
+	}
+	return EBagTab::Other;
+}
+
 void UBattleHUDWidget::ShowBag()
 {
 	ClearMenu();
+	Menu = EMenu::Bag;
 	const UPokemonDatabase* Database = GetDatabase();
 	const int32 Local = Snapshot.LocalSide;
-	int32 Count = 0;
+
+	// Combien d'objets dans chaque onglet, pour ouvrir sur un onglet qui n'est pas vide
+	int32 Counts[int32(EBagTab::Count)] = {};
+	if (Snapshot.Sides.IsValidIndex(Local) && Database)
+	{
+		for (const FItemStack& Stack : Snapshot.Sides[Local].Inventory)
+		{
+			const FItemRow* Item = Database->FindItem(Stack.Item);
+			const EBagTab Tab = Item && Stack.Count > 0 ? GetBagTab(Stack.Item, *Item) : EBagTab::Count;
+			if (Tab != EBagTab::Count)
+			{
+				++Counts[int32(Tab)];
+			}
+		}
+	}
+	int32 Total = 0;
+	for (int32 Count : Counts)
+	{
+		Total += Count;
+	}
+	if (BagTab == EBagTab::Count || Counts[int32(BagTab)] == 0)
+	{
+		// Combat sauvage : les Balls d'abord ; sinon le premier onglet qui a quelque chose
+		BagTab = Snapshot.BattleType == EBattleType::Wild && Counts[int32(EBagTab::Balls)] > 0 ? EBagTab::Balls : EBagTab::Medicine;
+		for (int32 Tab = 0; Counts[int32(BagTab)] == 0 && Tab < int32(EBagTab::Count); ++Tab)
+		{
+			if (Counts[Tab] > 0)
+			{
+				BagTab = EBagTab(Tab);
+			}
+		}
+	}
+
+	MessageText->SetText(Total == 0 ? LOCTEXT("NoItems", "Aucun objet utilisable.") : LOCTEXT("WhichItem", "Quel objet utiliser ?"));
+	SetMessageWide(false);
+	// Le grand panneau du Sac passe sur le cadre du joueur : on le cache le temps du Sac
+	Boxes[0].Frame->SetRenderOpacity(0.f);
+	BagFrame->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	ShowBagTab(BagTab);
+}
+
+void UBattleHUDWidget::ShowBagTab(EBagTab Tab)
+{
+	BagTab = Tab;
+	BagItems->ClearChildren();
+	Bindings.Reset();
+	MenuButtons.Reset();
+	FirstButton = nullptr;
+	for (int32 Index = 0; Index < BagTabShades.Num(); ++Index)
+	{
+		BagTabShades[Index]->SetVisibility(Index == int32(Tab) ? ESlateVisibility::Hidden : ESlateVisibility::HitTestInvisible);
+	}
+
+	const UPokemonDatabase* Database = GetDatabase();
+	const int32 Local = Snapshot.LocalSide;
 	if (Snapshot.Sides.IsValidIndex(Local) && Database)
 	{
 		for (int32 Index = 0; Index < Snapshot.Sides[Local].Inventory.Num(); ++Index)
 		{
 			const FItemStack& Stack = Snapshot.Sides[Local].Inventory[Index];
 			const FItemRow* Item = Database->FindItem(Stack.Item);
-			if (!Item || !Item->bUsableInBattle || Stack.Count <= 0)
+			if (!Item || Stack.Count <= 0 || GetBagTab(Stack.Item, *Item) != Tab)
 			{
 				continue;
 			}
-			AddCard(Item->DisplayName, EBattleHUDAction::Item, Index, -1, true, FText::GetEmpty(), LevelTag,
-				FText::Format(LOCTEXT("ItemCount", "x{0}"), Stack.Count));
-			++Count;
+
+			// Carte 404 x 85 : verre, icône de l'objet, nom, « x 10 » à droite
+			UOverlay* Content = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass());
+			UOverlaySlot* GlassSlot = Content->AddChildToOverlay(PokemonGlass::MakeImage(WidgetTree, PanelLook(10.f)));
+			GlassSlot->SetHorizontalAlignment(HAlign_Fill);
+			GlassSlot->SetVerticalAlignment(VAlign_Fill);
+			UCanvasPanel* Layout = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass());
+			UOverlaySlot* LayoutSlot = Content->AddChildToOverlay(Layout);
+			LayoutSlot->SetHorizontalAlignment(HAlign_Fill);
+			LayoutSlot->SetVerticalAlignment(VAlign_Fill);
+
+			const FString IconName = FString::Printf(TEXT("T_Item_%s"), *Stack.Item.ToString());
+			if (UTexture2D* IconTexture = LoadObject<UTexture2D>(nullptr, *FString::Printf(TEXT("/Game/UI/HUD/Items/%s.%s"), *IconName, *IconName), nullptr, LOAD_NoWarn | LOAD_Quiet))
+			{
+				UImage* Icon = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+				Icon->SetBrush(MakeBrush(IconTexture, BagItemIconSize));
+				Place(Layout, Icon, BagItemIconPos, BagItemIconSize);
+			}
+			Place(Layout, MakeText(Item->DisplayName, 36.f * FontScale, Text), FVector2D(BagNameLeft, BagTextTop), FVector2D(BagCountRight - BagNameLeft - 70.f, 43.f));
+			UTextBlock* Count = MakeText(FText::Format(LOCTEXT("BagCount", "x {0}"), Stack.Count), 36.f * FontScale, Text);
+			Count->SetJustification(ETextJustify::Right);
+			Place(Layout, Count, FVector2D(BagCountRight - 120.f, BagTextTop), FVector2D(120.f, 43.f));
+
+			USizeBox* Size = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+			Size->SetWidthOverride(BagCardSize.X);
+			Size->SetHeightOverride(BagCardSize.Y);
+			Size->SetContent(Content);
+			UButton* Button = MakeCardButton(Size);
+			UBattleHUDButtonBinding* Binding = NewObject<UBattleHUDButtonBinding>(this);
+			Binding->Action = EBattleHUDAction::Item;
+			Binding->Index = Index;
+			Binding->HUD = this;
+			Button->OnClicked.AddDynamic(Binding, &UBattleHUDButtonBinding::HandleClicked);
+			Bindings.Add(Binding);
+			BagItems->AddChildToVerticalBox(Button)->SetPadding(FMargin(0.f, 0.f, 0.f, CardGap));
+			MenuButtons.Add(Button);
+			if (!FirstButton)
+			{
+				FirstButton = Button;
+			}
 		}
 	}
-	MessageText->SetText(Count == 0 ? LOCTEXT("NoItems", "Aucun objet utilisable.") : LOCTEXT("WhichItem", "Quel objet utiliser ?"));
-	MessageArrow->SetVisibility(ESlateVisibility::Hidden);
-	OpenMenu(EMenu::Bag, true);
+
+	BagEmptyText->SetVisibility(MenuButtons.Num() == 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	BagList->ScrollToStart();
+	UpdateBagThumb();
+	if (UButton* Focus = FirstButton ? FirstButton.Get() : BagTabButtons[int32(Tab)].Get())
+	{
+		Focus->SetKeyboardFocus();
+	}
+}
+
+void UBattleHUDWidget::UpdateBagThumb()
+{
+	if (!BagThumbSlot || !BagList)
+	{
+		return;
+	}
+	// Cachée quand toutes les cartes tiennent ; sinon elle descend avec la liste
+	const float Hidden = BagList->GetScrollOffsetOfEnd();
+	if (Hidden <= 1.f)
+	{
+		BagThumb->SetVisibility(ESlateVisibility::Hidden);
+		return;
+	}
+	BagThumb->SetVisibility(ESlateVisibility::HitTestInvisible);
+	const float Track = BagSize.Y - 2.f * BagListTop - BagThumbSize.Y;
+	const float Progress = FMath::Clamp(BagList->GetScrollOffset() / Hidden, 0.f, 1.f);
+	BagThumbSlot->SetPosition(FVector2D(BagThumbLeft, BagListTop + Track * Progress));
 }
 
 void UBattleHUDWidget::ShowParty(EPartyMode Mode)
@@ -1011,7 +1334,6 @@ void UBattleHUDWidget::ShowParty(EPartyMode Mode)
 
 	MessageText->SetText(Mode == EPartyMode::Replacement ? LOCTEXT("SendWho", "Quel Pokémon envoyer ?")
 		: (Mode == EPartyMode::ItemTarget ? LOCTEXT("UseOnWho", "Sur quel Pokémon ?") : LOCTEXT("SwitchWho", "Quel Pokémon envoyer au combat ?")));
-	MessageArrow->SetVisibility(ESlateVisibility::Hidden);
 
 	// Une carte par Pokémon : nom, niveau (étiquette grise), PV (ou K.O. / statut)
 	for (int32 Index = 0; Index < Side.Party.Num(); ++Index)
@@ -1046,7 +1368,6 @@ void UBattleHUDWidget::ShowForgetMove(int32 PartyIndex, FName NewMove)
 
 	MessageText->SetText(FText::Format(LOCTEXT("ForgetWhich", "{0} veut apprendre {1}, mais connaît déjà 4 capacités. Laquelle oublier ?"),
 		Pokemon ? UPokemonLibrary::GetDisplayName(Database, *Pokemon) : FText::GetEmpty(), MoveName));
-	MessageArrow->SetVisibility(ESlateVisibility::Hidden);
 
 	for (int32 MoveIndex = 0; Pokemon && MoveIndex < Pokemon->Moves.Num(); ++MoveIndex)
 	{
@@ -1141,6 +1462,9 @@ void UBattleHUDWidget::OnButton(EBattleHUDAction Action, int32 Index)
 		Battle->ResolveMoveLearn(ForgetSlot);
 		break;
 	}
+	case EBattleHUDAction::BagTab:
+		ShowBagTab(EBagTab(FMath::Clamp(Index, 0, int32(EBagTab::Count) - 1)));
+		break;
 	case EBattleHUDAction::Back:
 		if (Menu == EMenu::Party && PartyMode == EPartyMode::ItemTarget)
 		{
@@ -1182,6 +1506,21 @@ FReply UBattleHUDWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKey
 		}
 	}
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
+}
+
+FReply UBattleHUDWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent)
+{
+	bKeyboardNavigation = true;
+	return Super::NativeOnPreviewKeyDown(InGeometry, InKeyEvent);
+}
+
+FReply UBattleHUDWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	if (!InMouseEvent.GetCursorDelta().IsNearlyZero())
+	{
+		bKeyboardNavigation = false;
+	}
+	return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
 }
 
 FReply UBattleHUDWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)

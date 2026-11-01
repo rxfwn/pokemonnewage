@@ -117,11 +117,10 @@ namespace SettingsMenu
 	/** Texte des maquettes : Futura MdCn BT, taille en px Figma, blanc avec ombre */
 	UTextBlock* MakeText(UWidgetTree* Tree, const FText& Value, float FigmaSize, const FLinearColor& Color = TextColor)
 	{
-		UTextBlock* Label = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+		UTextBlock* Label = PokemonGlass::MakeShadowedText(Tree);
 		Label->SetText(Value);
 		Label->SetColorAndOpacity(FSlateColor(Color));
 		Label->SetFont(PokemonFonts::Get(FigmaSize * FontScale));
-		PokemonGlass::AddTextShadow(Label);
 		return Label;
 	}
 

@@ -21,6 +21,7 @@ class UUniformGridPanel;
 class UPokemonDatabase;
 class UPanelWidget;
 class UWidget;
+struct FItemRow;
 
 /** Ce que fait un bouton de l'écran de combat. */
 UENUM()
@@ -35,6 +36,8 @@ enum class EBattleHUDAction : uint8
 	PartyPick,
 	ForgetMove,
 	KeepMoves,
+	/** Onglet du Sac (Index = EBagTab) */
+	BagTab,
 	Back
 };
 
@@ -84,6 +87,8 @@ protected:
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual FReply NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 
 	UFUNCTION()
 	void HandleEvents(const TArray<FBattleEvent>& Events, const FBattleSnapshot& Snapshot);
@@ -100,6 +105,8 @@ private:
 	enum class EMenu : uint8 { None, Main, Moves, Bag, Party, ForgetMove };
 	/** Pourquoi on choisit un Pokémon dans l'équipe */
 	enum class EPartyMode : uint8 { Switch, Replacement, ItemTarget };
+	/** Onglets du Sac, de haut en bas (maquette Combat_Hud_Bag) : Soins, Balls, objets de combat, autres, Baies */
+	enum class EBagTab : uint8 { Medicine, Balls, Battle, Other, Berries, Count };
 
 	// Lecture des événements
 	void StartNextEvent();
@@ -116,9 +123,17 @@ private:
 
 	// Menus
 	void ClearMenu();
+	/** Boîte de texte sur toute la largeur (pas de menu à droite) ou à sa place à gauche du menu */
+	void SetMessageWide(bool bWide);
 	void ShowMainMenu();
 	void ShowMoves();
 	void ShowBag();
+	/** Grand panneau du Sac (onglets à gauche, liste qui défile à droite), construit une fois et caché */
+	void BuildBag();
+	void ShowBagTab(EBagTab Tab);
+	/** Onglet où ranger un objet ; Count = pas dans le Sac de combat */
+	EBagTab GetBagTab(FName ItemId, const FItemRow& Item) const;
+	void UpdateBagThumb();
 	void ShowParty(EPartyMode Mode);
 	void ShowForgetMove(int32 PartyIndex, FName NewMove);
 	void ShowLevelUpStats(const FBattleEvent& Event);
@@ -157,7 +172,8 @@ private:
 
 	UPROPERTY(Transient) TObjectPtr<UBattleComponent> Battle;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageText;
-	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageArrow;
+	UPROPERTY(Transient) TObjectPtr<UCanvasPanelSlot> MessageFrameSlot;
+	UPROPERTY(Transient) TObjectPtr<UCanvasPanelSlot> MessageTextSlot;
 	UPROPERTY(Transient) TObjectPtr<UCanvasPanel> Canvas;
 	UPROPERTY(Transient) TObjectPtr<UWidget> MenuFrame;
 	UPROPERTY(Transient) TObjectPtr<UScrollBox> MenuScroll;
@@ -174,6 +190,18 @@ private:
 	UPROPERTY(Transient) TArray<TObjectPtr<UBattleHUDButtonBinding>> Bindings;
 	UPROPERTY(Transient) TObjectPtr<UButton> FirstButton;
 	UPROPERTY(Transient) TObjectPtr<UWidget> StatsFrame;
+	// Sac
+	UPROPERTY(Transient) TObjectPtr<UCanvasPanel> BagFrame;
+	UPROPERTY(Transient) TObjectPtr<UScrollBox> BagList;
+	UPROPERTY(Transient) TObjectPtr<UVerticalBox> BagItems;
+	UPROPERTY(Transient) TObjectPtr<UTextBlock> BagEmptyText;
+	UPROPERTY(Transient) TObjectPtr<UImage> BagThumb;
+	UPROPERTY(Transient) TObjectPtr<UCanvasPanelSlot> BagThumbSlot;
+	UPROPERTY(Transient) TArray<TObjectPtr<UImage>> BagTabShades;
+	UPROPERTY(Transient) TArray<TObjectPtr<UButton>> BagTabButtons;
+	UPROPERTY(Transient) TArray<TObjectPtr<UBattleHUDButtonBinding>> BagBindings;
+	UPROPERTY(Transient) TObjectPtr<UButton> BagBackButton;
+	EBagTab BagTab = EBagTab::Count;
 	UPROPERTY(Transient) TObjectPtr<UUniformGridPanel> StatsGrid;
 
 	FInfoBox Boxes[2];
@@ -193,6 +221,8 @@ private:
 	float TargetExp = 0.f;
 
 	EMenu Menu = EMenu::None;
+	/** Le joueur choisit au clavier ou à la manette : la carte qui a le focus grossit (à la souris, seule celle survolée) */
+	bool bKeyboardNavigation = false;
 	EPartyMode PartyMode = EPartyMode::Switch;
 	FName PendingItem;
 

@@ -65,6 +65,9 @@ namespace PokemonGlass
 	/** Seulement l'image au matériau, sans flou du décor (barres des curseurs, ascenseur...) */
 	UImage* MakeImage(UWidgetTree* Tree, const FGlassLook& Look, FName Name = NAME_None);
 
-	/** Ombre sous le texte des maquettes (CSS text-shadow 3px 4px, noir à 25 % ; Unreal ne la floute pas) */
+	/** Ombre nette sous un texte déjà créé (CSS text-shadow 3px 4px, noir à 25 %, sans le flou) */
 	void AddTextShadow(UTextBlock* Text);
+
+	/** Texte avec l'ombre floue des maquettes (text-shadow 3px 4px 4px noir à 25 %, USoftShadowTextBlock) */
+	UTextBlock* MakeShadowedText(UWidgetTree* Tree, FName Name = NAME_None);
 }

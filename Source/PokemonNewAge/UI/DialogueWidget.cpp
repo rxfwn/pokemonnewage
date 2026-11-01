@@ -26,10 +26,9 @@ namespace
 
 	UTextBlock* MakeText(UWidgetTree* Tree, int32 Size, const FLinearColor& Color, FName Name = NAME_None)
 	{
-		UTextBlock* Text = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), Name);
+		UTextBlock* Text = PokemonGlass::MakeShadowedText(Tree, Name);
 		Text->SetFont(PokemonFonts::Get(Size));
 		Text->SetColorAndOpacity(FSlateColor(Color));
-		PokemonGlass::AddTextShadow(Text);
 		return Text;
 	}
 }
@@ -88,11 +87,6 @@ TSharedRef<SWidget> UDialogueWidget::RebuildWidget()
 		BodyText->SetAutoWrapText(true);
 		UVerticalBoxSlot* BodySlot = Inside->AddChildToVerticalBox(BodyText);
 		BodySlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-
-		ContinueArrow = MakeText(WidgetTree, 22, AccentColor, TEXT("ContinueArrow"));
-		ContinueArrow->SetText(FText::FromString(TEXT("▼")));
-		UVerticalBoxSlot* ArrowSlot = Inside->AddChildToVerticalBox(ContinueArrow);
-		ArrowSlot->SetHorizontalAlignment(HAlign_Right);
 	}
 
 	return Super::RebuildWidget();
@@ -105,7 +99,6 @@ void UDialogueWidget::ShowLine(const FText& SpeakerName, const FText& Text, cons
 	SelectedChoice = 0;
 	VisibleLetters = LettersPerSecond > 0.f ? 0 : FullText.Len();
 	LetterProgress = 0.f;
-	BlinkTime = 0.f;
 	bPlayTypingSound = !bHasVoice && TypingSound != nullptr;
 
 	NameText->SetText(SpeakerName);
@@ -139,18 +132,11 @@ void UDialogueWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 			}
 		}
 	}
-	else if (CurrentChoices.Num() == 0)
-	{
-		// La flèche clignote quand on peut continuer
-		BlinkTime += InDeltaTime;
-		ContinueArrow->SetRenderOpacity(FMath::Fmod(BlinkTime, 1.f) < 0.6f ? 1.f : 0.f);
-	}
 }
 
 void UDialogueWidget::RefreshText()
 {
 	BodyText->SetText(FText::FromString(FullText.Left(VisibleLetters)));
-	ContinueArrow->SetRenderOpacity(0.f);
 }
 
 void UDialogueWidget::RefreshChoices()
