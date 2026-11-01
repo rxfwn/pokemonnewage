@@ -1,9 +1,9 @@
 #include "UI/Progression/ProgressionWidget.h"
 #include "UI/GameFonts.h"
+#include "UI/GlassPanel.h"
 #include "Progression/ProgressionComponent.h"
 #include "Blueprint/WidgetTree.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
-#include "Components/BackgroundBlur.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
 #include "Components/HorizontalBox.h"
@@ -25,18 +25,13 @@
 namespace ProgressionUI
 {
 	// Mêmes couleurs que l'écran de combat
-	const FLinearColor PanelColor(0.02f, 0.025f, 0.035f, 0.82f);
 	const FLinearColor Text(0.95f, 0.96f, 0.97f, 1.f);
 	const FLinearColor Dim(0.6f, 0.65f, 0.7f, 1.f);
 	const FLinearColor Good(0.3f, 0.85f, 0.4f, 1.f);
 	const FLinearColor Warn(0.98f, 0.75f, 0.2f, 1.f);
 
-	// Boîte de texte en verre (maquette de L'amie, Evolution_Pokeball_Anim : 1920 × 1080) : verre blanc à 30 %,
-	// décor flouté derrière, liseré clair ; à 92 px des bords, 34 px du bas, 206 px de haut ; Futura BdCn
-	const FLinearColor GlassFill(1.f, 1.f, 1.f, 0.3f);
-	const FLinearColor GlassOutline(1.f, 1.f, 1.f, 0.75f);
-	constexpr float GlassRadius = 24.f;
-	constexpr float GlassBlur = 12.f;
+	// Boîte de texte en verre (maquette de L'amie, Evolution_Pokeball_Anim : 1920 × 1080) : le verre commun des menus
+	// (UI/GlassPanel.h) ; à 92 px des bords, 34 px du bas, 206 px de haut ; Futura BdCn
 	constexpr float MessageFontSize = 34.f;
 
 	FLinearColor Darken(const FLinearColor& Color, float Factor)
@@ -78,64 +73,46 @@ TSharedRef<SWidget> UProgressionWidget::RebuildWidget()
 		FlashSlot->SetHorizontalAlignment(HAlign_Fill);
 		FlashSlot->SetVerticalAlignment(VAlign_Fill);
 
-		// Boîte de texte en bas, en verre : le flou d'arrière-plan derrière, le verre teinté et son liseré devant
-		UBackgroundBlur* MessageBlur = WidgetTree->ConstructWidget<UBackgroundBlur>(UBackgroundBlur::StaticClass(), TEXT("MessageBlur"));
-		MessageBlur->SetBlurStrength(GlassBlur);
-		MessageBlur->SetCornerRadius(FVector4(GlassRadius, GlassRadius, GlassRadius, GlassRadius));
-		MessageBlur->SetPadding(FMargin(0.f));
-		MessageFrame = MessageBlur;
-		UOverlaySlot* MessageSlot = Root->AddChildToOverlay(MessageBlur);
+		// Boîte de texte en bas, en verre comme les autres fenêtres du jeu
+		USizeBox* MessageSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		MessageSize->SetMinDesiredHeight(206.f - 32.f - 24.f);
+		MessageFrame = PokemonGlass::Make(WidgetTree, MessageSize, FMargin(50.f, 32.f, 40.f, 24.f), PokemonGlass::DefaultCornerRadius, TEXT("MessageFrame"));
+		UOverlaySlot* MessageSlot = Root->AddChildToOverlay(MessageFrame);
 		MessageSlot->SetHorizontalAlignment(HAlign_Fill);
 		MessageSlot->SetVerticalAlignment(VAlign_Bottom);
 		MessageSlot->SetPadding(FMargin(92.f, 0.f, 92.f, 34.f));
-		UBorder* MessageGlass = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MessageGlass"));
-		MessageGlass->SetBrush(FSlateRoundedBoxBrush(GlassFill, GlassRadius, GlassOutline, 1.5f));
-		MessageGlass->SetPadding(FMargin(50.f, 32.f, 40.f, 24.f));
-		MessageBlur->SetContent(MessageGlass);
-		USizeBox* MessageSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
-		MessageSize->SetMinDesiredHeight(206.f - 32.f - 24.f);
-		MessageGlass->SetContent(MessageSize);
 		UHorizontalBox* MessageRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
 		MessageSize->SetContent(MessageRow);
-		MessageText = MakeText(FText::GetEmpty(), 30, Text);
+		MessageText = MakeText(FText::GetEmpty(), 30, PokemonGlass::TextColor);
 		MessageText->SetFont(PokemonFonts::GetHUD(MessageFontSize));
-		// Petite ombre : le texte blanc reste lisible sur le verre clair
-		MessageText->SetShadowOffset(FVector2D(1.5f, 2.f));
-		MessageText->SetShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.4f));
+		PokemonGlass::AddTextShadow(MessageText);
 		MessageText->SetAutoWrapText(true);
 		MessageRow->AddChildToHorizontalBox(MessageText)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-		MessageArrow = MakeText(FText::FromString(TEXT("v")), 26, Text, true);
-		MessageArrow->SetShadowOffset(FVector2D(1.5f, 2.f));
-		MessageArrow->SetShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.4f));
+		MessageArrow = MakeText(FText::FromString(TEXT("v")), 26, PokemonGlass::TextColor, true);
+		PokemonGlass::AddTextShadow(MessageArrow);
 		MessageRow->AddChildToHorizontalBox(MessageArrow)->SetVerticalAlignment(VAlign_Bottom);
 		MessageArrow->SetVisibility(ESlateVisibility::Hidden);
 
 		// Panneau des stats, à droite au-dessus du texte
-		StatsFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("StatsFrame"));
-		StatsFrame->SetBrush(FSlateRoundedBoxBrush(PanelColor, 14.f));
-		StatsFrame->SetPadding(FMargin(24.f, 16.f));
+		USizeBox* StatsSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		StatsFrame = PokemonGlass::Make(WidgetTree, StatsSize, FMargin(24.f, 16.f), PokemonGlass::DefaultCornerRadius, TEXT("StatsFrame"));
 		UOverlaySlot* StatsSlot = Root->AddChildToOverlay(StatsFrame);
 		StatsSlot->SetHorizontalAlignment(HAlign_Right);
 		StatsSlot->SetVerticalAlignment(VAlign_Bottom);
 		StatsSlot->SetPadding(FMargin(0.f, 0.f, 92.f, 262.f));
-		USizeBox* StatsSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
 		StatsSize->SetWidthOverride(360.f);
-		StatsFrame->SetContent(StatsSize);
 		StatsGrid = WidgetTree->ConstructWidget<UUniformGridPanel>(UUniformGridPanel::StaticClass());
 		StatsGrid->SetSlotPadding(FMargin(6.f, 4.f));
 		StatsSize->SetContent(StatsGrid);
 		StatsFrame->SetVisibility(ESlateVisibility::Collapsed);
 
 		// Choix de l'attaque à oublier
-		MenuFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MenuFrame"));
-		MenuFrame->SetBrush(FSlateRoundedBoxBrush(PanelColor, 14.f));
-		MenuFrame->SetPadding(FMargin(16.f));
+		MenuBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("MenuBox"));
+		MenuFrame = PokemonGlass::Make(WidgetTree, MenuBox, FMargin(16.f), PokemonGlass::DefaultCornerRadius, TEXT("MenuFrame"));
 		UOverlaySlot* MenuSlot = Root->AddChildToOverlay(MenuFrame);
 		MenuSlot->SetHorizontalAlignment(HAlign_Right);
 		MenuSlot->SetVerticalAlignment(VAlign_Bottom);
 		MenuSlot->SetPadding(FMargin(0.f, 0.f, 92.f, 256.f));
-		MenuBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("MenuBox"));
-		MenuFrame->SetContent(MenuBox);
 		MenuFrame->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	SetIsFocusable(true);

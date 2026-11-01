@@ -14,7 +14,7 @@ XP, niveaux, nouvelles attaques et évolutions. Le combat (docs/COMBAT.md) donna
   6. flash blanc, la nouvelle forme apparaît en couleurs, fanfare : « Félicitations ! Ton Bulbizarre a évolué en Herbizarre ! » ;
   7. ensuite, les attaques de la nouvelle espèce à ce niveau (choix de l'attaque à oublier si besoin).
   - Sans modèle de Ball importé, l'ancienne entrée est gardée : le Pokémon est là dès le début et se met à briller.
-  - La boîte de texte est en **verre** comme sur la maquette : décor flouté derrière (*Background Blur*), verre blanc à 30 %, liseré clair, Futura BdCn.
+  - La boîte de texte, le panneau des stats et le choix d'attaque sont en **verre** comme les autres fenêtres (`PokemonGlass`, docs/VERRE_UI.md), aux mesures de la maquette, en Futura BdCn.
   - **B** (ou Échap, ou clic droit) avant le flash : « Hein ? Bulbizarre n'a pas évolué ! ». Il le reproposera au prochain niveau.
 - **Objets hors combat** (Pokédex > Sac > « Objets, baies et CT ») avec la liste **APTE / PAS APTE / DÉJÀ APPRIS** :
   - **Super Bonbon** : +1 niveau, stats, attaques du niveau, puis évolution s'il y a lieu ;

@@ -81,13 +81,13 @@ private:
 	const UPokemonDatabase* GetDatabase() const;
 	UTextBlock* MakeText(const FText& Text, int32 Size, const FLinearColor& Color, bool bBold = false);
 
-	/** Boîte de texte en verre (flou d'arrière-plan + verre teinté) */
+	/** Panneaux en verre (PokemonGlass::Make) */
 	UPROPERTY(Transient) TObjectPtr<UWidget> MessageFrame;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageText;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageArrow;
-	UPROPERTY(Transient) TObjectPtr<UBorder> StatsFrame;
+	UPROPERTY(Transient) TObjectPtr<UWidget> StatsFrame;
 	UPROPERTY(Transient) TObjectPtr<UUniformGridPanel> StatsGrid;
-	UPROPERTY(Transient) TObjectPtr<UBorder> MenuFrame;
+	UPROPERTY(Transient) TObjectPtr<UWidget> MenuFrame;
 	UPROPERTY(Transient) TObjectPtr<UVerticalBox> MenuBox;
 	UPROPERTY(Transient) TObjectPtr<UBorder> FlashBorder;
 	UPROPERTY(Transient) TArray<TObjectPtr<UProgressionButtonBinding>> Bindings;
