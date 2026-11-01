@@ -228,6 +228,18 @@ namespace SettingsMenu
 	{
 		return FText::FromString(FString::Printf(TEXT("%d"), FMath::RoundToInt(Value * 100.f)));
 	}
+
+	/** Nom d'une touche sans « Manette : » devant (on est déjà dans la partie Manette) */
+	FText KeyLabel(const FKey& Key)
+	{
+		FString Name = Key.GetDisplayName(false).ToString();
+		int32 Colon = INDEX_NONE;
+		if (Key.IsGamepadKey() && Name.FindChar(TEXT(':'), Colon))
+		{
+			Name = Name.RightChop(Colon + 1).TrimStartAndEnd();
+		}
+		return FText::FromString(Name);
+	}
 }
 
 using namespace SettingsMenu;
@@ -267,9 +279,16 @@ TSharedRef<SWidget> USettingsRowWidget::RebuildWidget()
 			// Bouton de 272 x 55 (« Effacer la partie » rouge, touches en verre gris)
 			ButtonLabel = MakeText(WidgetTree, ButtonText, 40.f);
 			ButtonLabel->SetJustification(ETextJustify::Center);
-			USizeBox* ButtonBox = MakeBox(WidgetTree, ActionButtonSize, ButtonLabel);
-			if (USizeBoxSlot* TextSlot = Cast<USizeBoxSlot>(ButtonLabel->Slot))
+			// Les noms longs (« Touche spéciale gauche ») rétrécissent pour rester dans le bouton
+			UScaleBox* LabelFit = WidgetTree->ConstructWidget<UScaleBox>(UScaleBox::StaticClass(), TEXT("ButtonLabelFit"));
+			LabelFit->SetStretch(EStretch::ScaleToFit);
+			LabelFit->SetStretchDirection(EStretchDirection::DownOnly);
+			LabelFit->AddChild(ButtonLabel);
+			USizeBox* ButtonBox = MakeBox(WidgetTree, ActionButtonSize, LabelFit);
+			if (USizeBoxSlot* TextSlot = Cast<USizeBoxSlot>(LabelFit->Slot))
 			{
+				TextSlot->SetPadding(FMargin(12.f, 0.f));
+				TextSlot->SetHorizontalAlignment(HAlign_Fill);
 				TextSlot->SetVerticalAlignment(VAlign_Center);
 			}
 			const bool bDanger = Kind == ESettingRowKind::Action && Id == FName(TEXT("DeleteSave"));
@@ -808,7 +827,7 @@ void USettingsMenuWidget::ShowTab(ETab NewTab)
 				AddHeader(LOCTEXT("Gamepad", "MANETTE"));
 			}
 			USettingsRowWidget* Row = AddRow(Entry.Id, ESettingRowKind::Key, Entry.Name);
-			Row->ButtonText = Entry.Key.GetDisplayName(false);
+			Row->ButtonText = SettingsMenu::KeyLabel(Entry.Key);
 			RowList->AddChild(Row);
 			Rows.Add(Row);
 		}
@@ -957,7 +976,7 @@ FReply USettingsMenuWidget::NativeOnPreviewKeyDown(const FGeometry& InGeometry, 
 		else
 		{
 			Controller->SetKeyBinding(Id, Key);
-			SetStatus(FText::Format(LOCTEXT("KeySet", "Touche changée : {0}."), Key.GetDisplayName(false)));
+			SetStatus(FText::Format(LOCTEXT("KeySet", "Touche changée : {0}."), SettingsMenu::KeyLabel(Key)));
 		}
 	}
 	ShowTab(ETab::Controls);
