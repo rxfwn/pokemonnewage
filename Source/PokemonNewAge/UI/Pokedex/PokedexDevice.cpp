@@ -41,6 +41,8 @@ namespace PokedexDevice
 	/** Couleur des boutons du volet (sous les icônes), allumés quand on les choisit */
 	const FLinearColor TileColor(0.62f, 0.86f, 0.93f);
 	const FLinearColor TileGlow(0.35f, 0.85f, 1.f);
+	/** Fond des icônes du volet (la touche blanc cassé sous l'icône) */
+	const FLinearColor IconTileColor(0.8f, 0.84f, 0.86f);
 
 	/** Petit écart devant une face pour que l'interface ne se mélange pas à la vitre (cm) */
 	// Écart entre une pièce et l'écran posé dessus : trop petit, l'écran et la pièce se « battent » (texte doublé, icônes pâles)
@@ -515,7 +517,7 @@ bool APokedexDevice::GetPartFace(FName PartKey, FVector& OutCenter, FVector2D& O
 	return OutSize.X > 0.1f && OutSize.Y > 0.1f;
 }
 
-UWidgetComponent* APokedexDevice::AddPanel(FName PartKey, UUserWidget* Widget, FVector2D PixelSize, bool bOpaque)
+UWidgetComponent* APokedexDevice::AddPanel(FName PartKey, UUserWidget* Widget, FVector2D PixelSize, bool bOpaque, FLinearColor Background)
 {
 	UStaticMeshComponent* Part = Parts.FindRef(PartKey);
 	FVector Center;
@@ -530,7 +532,7 @@ UWidgetComponent* APokedexDevice::AddPanel(FName PartKey, UUserWidget* Widget, F
 	Panel->SetRelativeLocation(Center);
 	Panel->SetRelativeRotation(FRotator(0.f, 180.f, 0.f));
 	Panel->SetBlendMode(bOpaque ? EWidgetBlendMode::Opaque : EWidgetBlendMode::Transparent);
-	Panel->SetBackgroundColor(bOpaque ? FLinearColor::Black : FLinearColor::Transparent);
+	Panel->SetBackgroundColor(bOpaque ? Background : FLinearColor::Transparent);
 	Panel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Panel->SetTickWhenOffscreen(true);
 	Panel->PrimaryComponentTick.bTickEvenWhenPaused = true;
@@ -601,7 +603,9 @@ void APokedexDevice::CreatePanels()
 			Icon = CreateWidget<UPokedexIconWidget>(PC, UPokedexIconWidget::StaticClass());
 			Icon->SetPixelSize(Size * UPokedexPanelWidget::PixelsPerCm);
 			Icon->SetIcon(Model->MenuIcons.IsValidIndex(Index) ? Model->MenuIcons[Index].Get() : nullptr);
-			Panel = AddPanel(Key, Icon, Icon->GetPixelSize(), false);
+			// Panneau opaque couleur de touche : les icônes de L'amie sont dessinées dessus dans l'écran lui-même,
+			// sans transparence (en transparent, leurs couleurs sombres disparaissaient : icônes pâles, globe invisible)
+			Panel = AddPanel(Key, Icon, Icon->GetPixelSize(), true, IconTileColor);
 			if (Panel)
 			{
 				Pressables.Add({ Panel, Panel->GetRelativeLocation(), -1.f });
@@ -843,7 +847,8 @@ void APokedexDevice::UpdateAnimation(float DeltaSeconds)
 				Press.PressTime = -1.f;
 			}
 		}
-		Component->SetRelativeLocation(Press.BaseLocation + FVector(PressDepth * FMath::Clamp(Depth, 0.f, 1.f) - HoverLift * Press.HoverAlpha, 0.f, 0.f));
+		// Survol : le bouton s'enfonce un peu (demandé par L'amie), le clic l'enfonce encore
+		Component->SetRelativeLocation(Press.BaseLocation + FVector(FMath::Max(PressDepth * FMath::Clamp(Depth, 0.f, 1.f), HoverLift * Press.HoverAlpha), 0.f, 0.f));
 	}
 
 	// Écrans qui s'allument, flou du décor (on l'enlève quand on tourne l'appareil, sinon ses bords seraient flous)

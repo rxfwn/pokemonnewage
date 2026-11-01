@@ -277,7 +277,11 @@ def make_widget_material():
     mel.connect_material_expressions(slate, "", slate_a, "")
     tint = _vector(material, "TintColorAndOpacity", (1.0, 1.0, 1.0, 1.0), -900, 300)
     brightness = _scalar(material, "Brightness", 1.0, -900, 500)
-    _scalar(material, "OpacityFromTexture", 1.0, -900, 650)  # attendu par UWidgetComponent
+    # Réglé par UWidgetComponent : 1 pour un panneau transparent, 0 pour un panneau opaque (alors opacité 1 partout,
+    # sinon les bords du texte laissent voir la pièce derrière : texte « doublé »)
+    opacity_from_texture = _scalar(material, "OpacityFromTexture", 1.0, -900, 650)
+    texture_opacity = mel.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, -550, 300)
+    texture_opacity.set_editor_property("const_a", 1.0)
     color = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -600, 100)
     tint_rgb = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, -700, 300)
     tint_rgb.set_editor_property("r", True)
@@ -291,14 +295,16 @@ def make_widget_material():
     mel.connect_material_expressions(tint_rgb, "", color, "B")
     mel.connect_material_expressions(color, "", lit, "A")
     mel.connect_material_expressions(brightness, "", lit, "B")
-    mel.connect_material_expressions(slate_a, "", opacity, "A")
+    mel.connect_material_expressions(slate_a, "", texture_opacity, "B")
+    mel.connect_material_expressions(opacity_from_texture, "", texture_opacity, "Alpha")
+    mel.connect_material_expressions(texture_opacity, "", opacity, "A")
     # Sortie « A » du paramètre directement (sa sortie par défaut n'a que RGB)
     mel.connect_material_expressions(tint, "A", opacity, "B")
     mel.connect_material_property(lit, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
     mel.recompile_material(material)
     # Version lue par Content/Python/init_unreal.py : une version plus ancienne relance l'import à l'ouverture d'Unreal
-    eal.set_metadata_tag(material, "PokedexWidgetVersion", "4")
+    eal.set_metadata_tag(material, "PokedexWidgetVersion", "5")
     eal.save_asset(path)
     return material
 
