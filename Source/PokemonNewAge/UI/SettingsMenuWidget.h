@@ -67,6 +67,7 @@ public:
 protected:
 
 	virtual TSharedRef<SWidget> RebuildWidget() override;
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 	UFUNCTION() void HandleSlider(float NewValue);
 	UFUNCTION() void HandlePrevious();
@@ -79,6 +80,11 @@ private:
 	UPROPERTY(Transient) TObjectPtr<USlider> ValueSlider;
 	UPROPERTY(Transient) TObjectPtr<UButton> MainButton;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> ButtonLabel;
+	/** Chevrons < > (grossissent au survol) */
+	UPROPERTY(Transient) TObjectPtr<UButton> PreviousButton;
+	UPROPERTY(Transient) TObjectPtr<UButton> NextButton;
+	UPROPERTY(Transient) TObjectPtr<UTextBlock> PreviousLabel;
+	UPROPERTY(Transient) TObjectPtr<UTextBlock> NextLabel;
 };
 
 /**
@@ -188,6 +194,8 @@ private:
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> StatusText;
 	UPROPERTY(Transient) TArray<TObjectPtr<UButton>> TabButtons;
 	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> TabLabels;
+	UPROPERTY(Transient) TArray<TObjectPtr<UButton>> BottomButtons;
+	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> BottomLabels;
 	UPROPERTY(Transient) TObjectPtr<UImage> ScrollThumb;
 	UPROPERTY(Transient) TObjectPtr<UCanvasPanelSlot> ScrollThumbSlot;
 	UPROPERTY(Transient) TArray<TObjectPtr<USettingsRowWidget>> Rows;

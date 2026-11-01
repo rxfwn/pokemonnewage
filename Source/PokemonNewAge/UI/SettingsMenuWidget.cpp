@@ -144,9 +144,19 @@ namespace SettingsMenu
 		}
 		const float OutlineWidth = Look == EButtonLook::Text ? 0.f : 1.f;
 		auto Brighter = [](FLinearColor Color, float Add) { Color.A = FMath::Min(1.f, Color.A + Add); return Color; };
-		Style.SetNormal(FSlateRoundedBoxBrush(Fill, Radius, Outline, OutlineWidth));
-		Style.SetHovered(FSlateRoundedBoxBrush(Look == EButtonLook::Text ? FLinearColor(1.f, 1.f, 1.f, 0.1f) : Brighter(Fill, 0.12f), Radius, Outline, OutlineWidth));
-		Style.SetPressed(FSlateRoundedBoxBrush(Look == EButtonLook::Text ? FLinearColor(1.f, 1.f, 1.f, 0.18f) : Brighter(Fill, 0.25f), Radius, Outline, OutlineWidth));
+		if (Look == EButtonLook::Text)
+		{
+			// Pas de bloc (retour de L'amie) : au survol, le texte grossit et passe en blanc (AnimateTextButton)
+			Style.SetNormal(FSlateNoResource());
+			Style.SetHovered(FSlateNoResource());
+			Style.SetPressed(FSlateNoResource());
+		}
+		else
+		{
+			Style.SetNormal(FSlateRoundedBoxBrush(Fill, Radius, Outline, OutlineWidth));
+			Style.SetHovered(FSlateRoundedBoxBrush(Brighter(Fill, 0.12f), Radius, Outline, OutlineWidth));
+			Style.SetPressed(FSlateRoundedBoxBrush(Brighter(Fill, 0.25f), Radius, Outline, OutlineWidth));
+		}
 		Style.SetNormalPadding(FMargin(0.f));
 		Style.SetPressedPadding(FMargin(0.f));
 		Button->SetStyle(Style);
@@ -159,6 +169,25 @@ namespace SettingsMenu
 			ContentSlot->SetVerticalAlignment(VAlign_Fill);
 		}
 		return Button;
+	}
+
+	/** Survol d'un bouton texte : le texte grossit de 12 % (en douceur) et passe en blanc */
+	constexpr float HoverScale = 1.12f;
+
+	void AnimateTextButton(UButton* Button, UTextBlock* Label, const FLinearColor& RestColor, float DeltaTime)
+	{
+		if (!Button || !Label)
+		{
+			return;
+		}
+		const bool bHover = Button->IsHovered() || Button->HasKeyboardFocus();
+		const float Current = Label->GetRenderTransform().Scale.X;
+		const float Scale = FMath::FInterpTo(Current, bHover ? HoverScale : 1.f, DeltaTime, 18.f);
+		if (!FMath::IsNearlyEqual(Scale, Current, 0.0005f))
+		{
+			Label->SetRenderScale(FVector2D(Scale, Scale));
+		}
+		Label->SetColorAndOpacity(FSlateColor(bHover ? TextColor : RestColor));
 	}
 
 	USizeBox* MakeBox(UWidgetTree* Tree, const FVector2D& Size, UWidget* Content)
@@ -260,7 +289,9 @@ TSharedRef<SWidget> USettingsRowWidget::RebuildWidget()
 			ChoiceSlot->SetHorizontalAlignment(HAlign_Fill);
 			ChoiceSlot->SetVerticalAlignment(VAlign_Fill);
 
-			UButton* Previous = MakeButton(WidgetTree, MakeText(WidgetTree, FText::FromString(TEXT("<")), 40.f), EButtonLook::Text);
+			PreviousLabel = MakeText(WidgetTree, FText::FromString(TEXT("<")), 40.f);
+			PreviousLabel->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
+			UButton* Previous = MakeButton(WidgetTree, PreviousLabel, EButtonLook::Text);
 			Previous->OnClicked.AddDynamic(this, &USettingsRowWidget::HandlePrevious);
 			Choice->AddChildToHorizontalBox(Previous)->SetVerticalAlignment(VAlign_Center);
 
@@ -270,7 +301,11 @@ TSharedRef<SWidget> USettingsRowWidget::RebuildWidget()
 			ValueSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 			ValueSlot->SetVerticalAlignment(VAlign_Center);
 
-			UButton* Next = MakeButton(WidgetTree, MakeText(WidgetTree, FText::FromString(TEXT(">")), 40.f), EButtonLook::Text);
+			NextLabel = MakeText(WidgetTree, FText::FromString(TEXT(">")), 40.f);
+			NextLabel->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
+			UButton* Next = MakeButton(WidgetTree, NextLabel, EButtonLook::Text);
+			PreviousButton = Previous;
+			NextButton = Next;
 			Next->OnClicked.AddDynamic(this, &USettingsRowWidget::HandleNext);
 			Choice->AddChildToHorizontalBox(Next)->SetVerticalAlignment(VAlign_Center);
 			MainButton = Previous;
@@ -332,6 +367,13 @@ void USettingsRowWidget::RefreshValue()
 	{
 		ButtonLabel->SetText(ButtonText);
 	}
+}
+
+void USettingsRowWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+	AnimateTextButton(PreviousButton, PreviousLabel, TextColor, InDeltaTime);
+	AnimateTextButton(NextButton, NextLabel, TextColor, InDeltaTime);
 }
 
 UWidget* USettingsRowWidget::GetFocusTarget() const
@@ -432,6 +474,8 @@ TSharedRef<SWidget> USettingsMenuWidget::RebuildWidget()
 		{
 			UTextBlock* TabLabel = MakeText(WidgetTree, TabNames[Index], 64.f, TabDimColor);
 			TabLabel->SetJustification(ETextJustify::Right);
+			// Grossit vers la gauche : le bord droit reste aligné sur x 389
+			TabLabel->SetRenderTransformPivot(FVector2D(1.f, 0.5f));
 			UButton* TabButton = MakeButton(WidgetTree, TabLabel, EButtonLook::Text);
 			switch (Index)
 			{
@@ -466,7 +510,10 @@ TSharedRef<SWidget> USettingsMenuWidget::RebuildWidget()
 		{
 			UTextBlock* Label = MakeText(WidgetTree, Buttons[Index], 48.f);
 			Label->SetJustification(ETextJustify::Right);
+			Label->SetRenderTransformPivot(FVector2D(1.f, 0.5f));
 			UButton* Button = MakeButton(WidgetTree, Label, EButtonLook::Text);
+			BottomButtons.Add(Button);
+			BottomLabels.Add(Label);
 			switch (Index)
 			{
 			case 0: Button->OnClicked.AddDynamic(this, &USettingsMenuWidget::OnOkClicked); break;
@@ -489,6 +536,14 @@ void USettingsMenuWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaT
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 	UpdateScrollThumb();
+	for (int32 Index = 0; Index < TabButtons.Num() && Index < TabLabels.Num(); ++Index)
+	{
+		AnimateTextButton(TabButtons[Index], TabLabels[Index], Index == int32(Tab) ? TextColor : TabDimColor, InDeltaTime);
+	}
+	for (int32 Index = 0; Index < BottomButtons.Num() && Index < BottomLabels.Num(); ++Index)
+	{
+		AnimateTextButton(BottomButtons[Index], BottomLabels[Index], TextColor, InDeltaTime);
+	}
 }
 
 void USettingsMenuWidget::UpdateScrollThumb()
