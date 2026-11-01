@@ -88,10 +88,6 @@ TSharedRef<SWidget> UProgressionWidget::RebuildWidget()
 		PokemonGlass::AddTextShadow(MessageText);
 		MessageText->SetAutoWrapText(true);
 		MessageRow->AddChildToHorizontalBox(MessageText)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-		MessageArrow = MakeText(FText::FromString(TEXT("v")), 26, PokemonGlass::TextColor, true);
-		PokemonGlass::AddTextShadow(MessageArrow);
-		MessageRow->AddChildToHorizontalBox(MessageArrow)->SetVerticalAlignment(VAlign_Bottom);
-		MessageArrow->SetVisibility(ESlateVisibility::Hidden);
 
 		// Panneau des stats, à droite au-dessus du texte
 		USizeBox* StatsSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
@@ -145,7 +141,6 @@ void UProgressionWidget::ShowMessage(const FText& InText, bool bInWaitForInput, 
 	MessageDone = MoveTemp(OnDone);
 	MessageFrame->SetVisibility(ESlateVisibility::Visible);
 	MessageText->SetText(FText::GetEmpty());
-	MessageArrow->SetVisibility(ESlateVisibility::Hidden);
 }
 
 void UProgressionWidget::SetCaption(const FText& InText)
@@ -154,7 +149,6 @@ void UProgressionWidget::SetCaption(const FText& InText)
 	MessageDone = nullptr;
 	MessageFrame->SetVisibility(ESlateVisibility::Visible);
 	MessageText->SetText(InText);
-	MessageArrow->SetVisibility(ESlateVisibility::Hidden);
 }
 
 void UProgressionWidget::SetFlash(float Alpha)
@@ -168,7 +162,6 @@ void UProgressionWidget::SetFlash(float Alpha)
 void UProgressionWidget::FinishMessage()
 {
 	bMessageActive = false;
-	MessageArrow->SetVisibility(ESlateVisibility::Hidden);
 	TFunction<void()> Done = MoveTemp(MessageDone);
 	MessageDone = nullptr;
 	if (Done)
@@ -223,19 +216,13 @@ void UProgressionWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 	{
 		MessageText->SetText(FText::FromString(FullMessage.Left(After)));
 	}
-	if (After >= FullMessage.Len())
+	// Texte complet : on attend A (pas de chevron, demandé par L'amie), ou on passe tout seul
+	if (After >= FullMessage.Len() && !bWaitForInput)
 	{
-		if (bWaitForInput)
+		MessageHold += InDeltaTime;
+		if (MessageHold >= AutoHoldTime)
 		{
-			MessageArrow->SetVisibility(ESlateVisibility::HitTestInvisible);
-		}
-		else
-		{
-			MessageHold += InDeltaTime;
-			if (MessageHold >= AutoHoldTime)
-			{
-				FinishMessage();
-			}
+			FinishMessage();
 		}
 	}
 }
@@ -276,7 +263,6 @@ void UProgressionWidget::ShowStatsPanel(bool bTotals)
 		ValueSlot->SetHorizontalAlignment(HAlign_Right);
 	}
 	StatsFrame->SetVisibility(ESlateVisibility::HitTestInvisible);
-	MessageArrow->SetVisibility(ESlateVisibility::HitTestInvisible);
 }
 
 // ---------------------------------------------------------------- Choix de l'attaque à oublier

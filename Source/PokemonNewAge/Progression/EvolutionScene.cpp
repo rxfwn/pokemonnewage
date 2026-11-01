@@ -206,7 +206,9 @@ void AEvolutionScene::Play(APlayerController* Controller, UProgressionWidget* In
 	const FVector Target(0.f, 0.f, Height * 0.5f);
 	PokemonShotTarget = Target;
 	PokemonShotLocation = FVector(Distance, 0.f, Height * 0.55f + 25.f);
-	BallShotLocation = BallRest + FVector(BallDiameter * BallShotDistance, 0.f, BallDiameter * 1.1f);
+	// Caméra assez basse : le sol fuit vite dans le flou derrière la Ball (son grain ne se voit pas)
+	BallShotLocation = BallRest + FVector(BallDiameter * BallShotDistance, 0.f, BallDiameter * 0.8f);
+	PokemonFstop = Camera->PostProcessSettings.DepthOfFieldFstop;
 	CameraBlend = bBallIntro ? 0.f : 1.f;
 	UpdateCamera(CameraBlend);
 
@@ -861,12 +863,16 @@ void AEvolutionScene::TickSparks(float DeltaTime)
 
 void AEvolutionScene::UpdateCamera(float Blend)
 {
-	const FVector BallTarget = BallRest + FVector(0.f, 0.f, BallDiameter * 0.4f);
+	// Gros plan : la Ball au milieu de l'image, un peu plus haut pour rester au-dessus de la boîte de texte
+	const FVector BallTarget = BallRest - FVector(0.f, 0.f, BallDiameter * BallShotRaise);
 	const FVector Location = FMath::Lerp(BallShotLocation, PokemonShotLocation, Blend);
 	const FVector Target = FMath::Lerp(BallTarget, PokemonShotTarget, Blend);
 	Camera->SetRelativeLocation(Location);
 	Camera->SetRelativeRotation((Target - Location).Rotation());
-	Camera->PostProcessSettings.DepthOfFieldFocalDistance = FMath::Max((Target - Location).Size(), 10.f);
+	// Mise au point sur la Ball (son centre), puis sur le Pokémon
+	const FVector Focus = FMath::Lerp(BallRest, PokemonShotTarget, Blend);
+	Camera->PostProcessSettings.DepthOfFieldFocalDistance = FMath::Max((Focus - Location).Size(), 10.f);
+	Camera->PostProcessSettings.DepthOfFieldFstop = FMath::Lerp(BallShotFstop, PokemonFstop, Blend);
 }
 
 void AEvolutionScene::SetEffectGlow(UMaterialInstanceDynamic* Material, float Amount, const FLinearColor& Color)

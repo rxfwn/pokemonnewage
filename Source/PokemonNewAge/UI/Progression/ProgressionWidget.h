@@ -84,7 +84,6 @@ private:
 	/** Panneaux en verre (PokemonGlass::Make) */
 	UPROPERTY(Transient) TObjectPtr<UWidget> MessageFrame;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageText;
-	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageArrow;
 	UPROPERTY(Transient) TObjectPtr<UWidget> StatsFrame;
 	UPROPERTY(Transient) TObjectPtr<UUniformGridPanel> StatsGrid;
 	UPROPERTY(Transient) TObjectPtr<UWidget> MenuFrame;

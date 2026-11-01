@@ -84,7 +84,7 @@ public:
 
 	/** Taille de la Poké Ball d'où sort le Pokémon (cm ; plus grande qu'en vrai pour bien la voir) */
 	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
-	float BallDiameter = 16.f;
+	float BallDiameter = 24.f;
 
 	/** La Ball tremble sur l'herbe (s), nombre d'oscillations et inclinaison (degrés) */
 	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
@@ -118,6 +118,16 @@ public:
 	/** Distance de la caméra à la Ball au début, en diamètres de Ball */
 	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
 	float BallShotDistance = 4.2f;
+
+	/** Ouverture de l'objectif pendant le gros plan : assez fermée pour que toute la Ball soit nette
+	 *  (le flou d'arrière-plan de la caméra revient quand elle recule vers le Pokémon) */
+	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
+	float BallShotFstop = 6.f;
+
+	/** Hauteur de la Ball à l'écran pendant le gros plan : 0 = au centre, positif = plus haut (en diamètres),
+	 *  pour qu'elle reste au-dessus de la boîte de texte */
+	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
+	float BallShotRaise = 0.15f;
 
 	/** Hauteur de la sphère qui remplace un modèle absent (cm) */
 	UPROPERTY(EditAnywhere, Category="Evolution")
@@ -246,6 +256,7 @@ private:
 	FVector PokemonShotTarget = FVector::ZeroVector;
 	FVector BallShotLocation = FVector::ZeroVector;
 	float CameraBlend = 1.f;
+	float PokemonFstop = 1.2f;
 	float PokemonHeight = 0.f;
 	float SparkTimer = 0.f;
 	int32 LastWobble = -1;
