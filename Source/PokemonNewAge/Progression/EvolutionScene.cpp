@@ -90,13 +90,9 @@ AEvolutionScene::AEvolutionScene()
 	KeyLight->SetAttenuationRadius(1500.f);
 	KeyLight->SetOuterConeAngle(28.f);
 	KeyLight->SetInnerConeAngle(14.f);
-	KeyLight->SetCastShadows(true);
-	// Ombre douce et fine : avec une source ponctuelle, l'ombre de la Ball sur le sol montrait les pixels
-	// de la carte d'ombre (bords en escalier, taches)
-	KeyLight->SetSourceRadius(12.f);
-	KeyLight->SetSoftSourceRadius(12.f);
-	KeyLight->ShadowResolutionScale = 3.f;
-	KeyLight->SetShadowSlopeBias(0.6f);
+	// Pas d'ombre projetée par la lumière de scène : même adoucie, l'ombre de la Ball et du Pokémon
+	// faisait des taches sur le sol en bas à droite. Le soleil du niveau garde les ombres normales.
+	KeyLight->SetCastShadows(false);
 	// Éclairage direct seulement : dans le noir autour, Lumen faisait des taches sur le sol avec son rebond
 	KeyLight->SetIndirectLightingIntensity(0.f);
 
