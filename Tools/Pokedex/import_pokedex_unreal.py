@@ -169,6 +169,15 @@ def _texture(material, name, sampler, default, x, y):
     return node
 
 
+def _mask(material, channels, x, y):
+    """ComponentMask avec exactement ces canaux (« rgb », « gb », « a »...) : les autres sont décochés,
+    sinon Unreal garde ses cases cochées par défaut (Mask (R G B) au lieu de (G B) : erreur de type)."""
+    node = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, x, y)
+    for channel in "rgba":
+        node.set_editor_property(channel, channel in channels)
+    return node
+
+
 def _new_material(name, version=None):
     """Nouveau matériau, ou None s'il existe déjà. Avec version : un matériau d'une autre version est vidé et refait
     (sans le supprimer, pour garder ses instances MI_Pokedex_*)."""
@@ -270,11 +279,8 @@ def make_widget_material():
     slate = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -760, 0)
     slate.set_editor_property("const_b", 0.25)
     mel.connect_material_expressions(total, "", slate, "A")
-    slate_rgb = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, -700, 0)
-    for channel in ("r", "g", "b"):
-        slate_rgb.set_editor_property(channel, True)
-    slate_a = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, -700, 150)
-    slate_a.set_editor_property("a", True)
+    slate_rgb = _mask(material, "rgb", -700, 0)
+    slate_a = _mask(material, "a", -700, 150)
     mel.connect_material_expressions(slate, "", slate_rgb, "")
     mel.connect_material_expressions(slate, "", slate_a, "")
     tint = _vector(material, "TintColorAndOpacity", (1.0, 1.0, 1.0, 1.0), -900, 300)
@@ -306,7 +312,7 @@ def make_widget_material():
     mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
     mel.recompile_material(material)
     # Version lue par Content/Python/init_unreal.py : une version plus ancienne relance l'import à l'ouverture d'Unreal
-    eal.set_metadata_tag(material, "PokedexWidgetVersion", "7")
+    eal.set_metadata_tag(material, "PokedexWidgetVersion", "8")
     eal.save_asset(path)
     return material
 
@@ -322,20 +328,16 @@ def make_lens_material():
     import_files([lens_file], TEXTURE_DIR)
     lens_texture = eal.load_asset(TEXTURE_DIR + "/T_PokedexLens")
 
-    path, material = _new_material("M_PokedexLens", "1")
+    path, material = _new_material("M_PokedexLens", "2")
     if material is None:
         return eal.load_asset(path)
 
     # UV = ((Y, Z) local - centre) / taille, V inversé (la face regarde -X, Y vers la droite, Z vers le haut)
     local = mel.create_material_expression(material, unreal.MaterialExpressionLocalPosition, -1500, 0)
-    local_yz = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, -1350, 0)
-    local_yz.set_editor_property("g", True)
-    local_yz.set_editor_property("b", True)
+    local_yz = _mask(material, "gb", -1350, 0)
     mel.connect_material_expressions(local, "", local_yz, "")
     center = _vector(material, "LensCenter", (0.0, 0.0, 0.0, 0.0), -1500, 150)
-    center_yz = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, -1350, 150)
-    center_yz.set_editor_property("g", True)
-    center_yz.set_editor_property("b", True)
+    center_yz = _mask(material, "gb", -1350, 150)
     mel.connect_material_expressions(center, "", center_yz, "")
     size = _scalar(material, "LensSize", 2.0, -1350, 300)
     diff = mel.create_material_expression(material, unreal.MaterialExpressionSubtract, -1200, 50)
@@ -378,7 +380,7 @@ def make_lens_material():
     mel.connect_material_property(emissive, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
 
     mel.recompile_material(material)
-    eal.set_metadata_tag(material, "PokedexVersion", "1")
+    eal.set_metadata_tag(material, "PokedexVersion", "2")
     eal.save_asset(path)
     return material
 
