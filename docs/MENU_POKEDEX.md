@@ -16,10 +16,10 @@ Disposition au pixel d'après la maquette **Options_Menu** de L'amie (CSS Figma 
 
 | Onglet | Réglages |
 |---|---|
-| Audio | volume général, musique, bruitages |
+| Audio | volume général, musique, bruits de pas, météo, Vfx (classes de son `SC_Music`, `SC_Footsteps`, `SC_Weather`, `SC_Effects` de `/Game/Audio`, créées par `Tools/Audio/make_sound_classes.py` à l'ouverture d'Unreal ; un son suit un réglage quand sa **Classe de son** est la bonne) |
 | Vidéo | résolution, mode d'affichage (plein écran, plein écran fenêtré, fenêtré), synchro verticale, images par seconde max., champ de vision, échelle de résolution, qualité globale, distance d'affichage, anticrénelage, ombres, textures, effets, post-traitement, végétation |
 | Commandes | sensibilité et inversion de la caméra, **toutes les touches** (clavier puis manette : clic sur la touche, puis appuyer sur la nouvelle ; si elle servait déjà, les deux commandes échangent), « Remettre les touches d'origine » |
-| Jeu | vitesse du texte, afficher le HUD, sauvegarde automatique, effacer la sauvegarde (deux clics), quitter le jeu |
+| Jeu | vitesse du texte, afficher le HUD, sauvegarde automatique, « Effacer la partie » (deux clics), « Quitter le jeu » |
 
 Les réglages attendent **Appliquer** ou **OK** ; les touches changent tout de suite. Ils sont gardés dans `Saved/SaveGames/Options.sav` et `GameUserSettings.ini`. LB / RB changent d'onglet à la manette.
 

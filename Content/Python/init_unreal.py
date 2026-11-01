@@ -113,6 +113,19 @@ def install_glass():
         module.make_glass_material()
 
 
+def install_sound_classes():
+    """Classes de son des volumes (Musique, Bruits de pas, Météo, Vfx) et mélange SM_Options, s'il en manque une."""
+    script = os.path.join(PROJECT_DIR, "Tools", "Audio", "make_sound_classes.py")
+    if not os.path.exists(script):
+        return
+    spec = importlib.util.spec_from_file_location("make_sound_classes", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    if module.missing():
+        unreal.log("Classes de son manquantes : création automatique (Tools/Audio/make_sound_classes.py)...")
+        module.make_sound_classes()
+
+
 def install_pokedex():
     if pokedex_installed() or not os.path.exists(FBX_PATH) or not os.path.exists(IMPORT_SCRIPT):
         return
@@ -141,6 +154,7 @@ def _on_tick(delta_seconds):
         install_fonts()
         install_title_images()
         install_glass()
+        install_sound_classes()
     except Exception as error:
         unreal.log_error("Installation du Pokédex 3D ratée : %s (lancer Tools/Pokedex/import_pokedex_unreal.py à la main)" % error)
 

@@ -544,6 +544,8 @@ void USettingsMenuWidget::LoadValues()
 		Values.MasterVolume = Options->MasterVolume;
 		Values.MusicVolume = Options->MusicVolume;
 		Values.EffectsVolume = Options->EffectsVolume;
+		Values.FootstepsVolume = Options->FootstepsVolume;
+		Values.WeatherVolume = Options->WeatherVolume;
 		Values.TextSpeed = Options->TextSpeed;
 		Values.CameraSensitivity = Options->CameraSensitivity;
 		Values.bInvertCameraY = Options->bInvertCameraY;
@@ -577,6 +579,8 @@ void USettingsMenuWidget::ApplyValues()
 		Options->MasterVolume = Values.MasterVolume;
 		Options->MusicVolume = Values.MusicVolume;
 		Options->EffectsVolume = Values.EffectsVolume;
+		Options->FootstepsVolume = Values.FootstepsVolume;
+		Options->WeatherVolume = Values.WeatherVolume;
 		Options->TextSpeed = Values.TextSpeed;
 		Options->CameraSensitivity = Values.CameraSensitivity;
 		Options->bInvertCameraY = Values.bInvertCameraY;
@@ -681,7 +685,10 @@ void USettingsMenuWidget::ShowTab(ETab NewTab)
 	case ETab::Audio:
 		AddSlider(TEXT("MasterVolume"), LOCTEXT("MasterVolume", "Volume général"), 0.f, 1.f, 0.05f, Values.MasterVolume, PercentFormat);
 		AddSlider(TEXT("MusicVolume"), LOCTEXT("MusicVolume", "Musique"), 0.f, 1.f, 0.05f, Values.MusicVolume, PercentFormat);
-		AddSlider(TEXT("EffectsVolume"), LOCTEXT("EffectsVolume", "Bruitages"), 0.f, 1.f, 0.05f, Values.EffectsVolume, PercentFormat);
+		// Comme la maquette Options_Menu : Bruits de pas et Météo à part, les autres bruitages dans Vfx
+		AddSlider(TEXT("FootstepsVolume"), LOCTEXT("FootstepsVolume", "Bruits de pas"), 0.f, 1.f, 0.05f, Values.FootstepsVolume, PercentFormat);
+		AddSlider(TEXT("WeatherVolume"), LOCTEXT("WeatherVolume", "Météo"), 0.f, 1.f, 0.05f, Values.WeatherVolume, PercentFormat);
+		AddSlider(TEXT("EffectsVolume"), LOCTEXT("EffectsVolume", "Vfx"), 0.f, 1.f, 0.05f, Values.EffectsVolume, PercentFormat);
 		break;
 
 	case ETab::Video:
@@ -794,6 +801,8 @@ void USettingsMenuWidget::OnRowChanged(USettingsRowWidget* Row)
 	if (Is(TEXT("MasterVolume"))) { Values.MasterVolume = Row->Value; }
 	else if (Is(TEXT("MusicVolume"))) { Values.MusicVolume = Row->Value; }
 	else if (Is(TEXT("EffectsVolume"))) { Values.EffectsVolume = Row->Value; }
+	else if (Is(TEXT("FootstepsVolume"))) { Values.FootstepsVolume = Row->Value; }
+	else if (Is(TEXT("WeatherVolume"))) { Values.WeatherVolume = Row->Value; }
 	else if (Is(TEXT("Resolution")) && Resolutions.IsValidIndex(Row->Index)) { Values.Resolution = Resolutions[Row->Index]; }
 	else if (Is(TEXT("WindowMode"))) { Values.WindowMode = Row->Index; }
 	else if (Is(TEXT("VSync"))) { Values.bVSync = bOn; }

@@ -129,6 +129,8 @@ private:
 		float MasterVolume = 1.f;
 		float MusicVolume = 1.f;
 		float EffectsVolume = 1.f;
+		float FootstepsVolume = 1.f;
+		float WeatherVolume = 1.f;
 		int32 TextSpeed = 1;
 		float CameraSensitivity = 1.f;
 		bool bInvertCameraY = false;
