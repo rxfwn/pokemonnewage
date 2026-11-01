@@ -7,6 +7,7 @@
 #include "Animation/AnimSequence.h"
 #include "Camera/CameraComponent.h"
 #include "Components/AudioComponent.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SpotLightComponent.h"
@@ -35,11 +36,19 @@ namespace EvolutionScene
 	/** Lumière de la lueur au plus fort (lumens) */
 	constexpr float GlowLightMax = 6000.f;
 	constexpr float FlashLightMax = 40000.f;
-	/** La Ball se referme et disparaît après la sortie du Pokémon (s) */
-	constexpr float BallCloseTime = 0.45f;
 	/** Son d'ouverture de la Ball (celui du lancer, Tools/Capture/import_pokeball_unreal.py) */
 	const TCHAR* BallOpenSound = TEXT("/Game/Capture/Sons/SW_Ball_Open.SW_Ball_Open");
-	const FLinearColor BallLightColor(1.f, 0.25f, 0.2f);
+	/** Lumière pleine (rayon, étincelles, boule de lumière) : Tools/Progression/import_progression_unreal.py */
+	const TCHAR* LightMaterial = TEXT("/Game/Progression/M_EvolutionLight.M_EvolutionLight");
+	/** Ball tournée de 3/4 pour qu'on voie le bouton et la charnière */
+	constexpr float BallYaw = 25.f;
+	/** Repos de la Ball avant de trembler (s) */
+	constexpr float WobbleRest = 0.35f;
+	/** La Ball flotte un peu en s'ouvrant (en diamètres) */
+	constexpr float BallLift = 0.35f;
+	/** Étincelles : nombre maximum, cadence pendant le rayon (par seconde) */
+	constexpr int32 MaxSparks = 220;
+	constexpr float BeamSparkRate = 110.f;
 
 	UObject* LoadModelAsset(const FString& Species, const FString& Prefix)
 	{
@@ -123,6 +132,18 @@ AEvolutionScene::AEvolutionScene()
 	BallTop->SetupAttachment(BallHinge);
 	BallTop->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	BallTop->SetVisibility(false);
+
+	LightCore = MakeStatic(TEXT("LightCore"));
+	Beam = MakeStatic(TEXT("Beam"));
+	Shockwave = MakeStatic(TEXT("Shockwave"));
+	Sparks = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("Sparks"));
+	Sparks->SetupAttachment(Root);
+	Sparks->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Sparks->SetVisibility(false);
+	for (UStaticMeshComponent* Effect : { LightCore.Get(), Beam.Get(), Shockwave.Get(), static_cast<UStaticMeshComponent*>(Sparks.Get()) })
+	{
+		Effect->SetCastShadow(false);
+	}
 }
 
 // ---------------------------------------------------------------- Mise en place
@@ -170,27 +191,30 @@ void AEvolutionScene::Play(APlayerController* Controller, UProgressionWidget* In
 	SetGlow(OldGlow, 0.f);
 	SetGlow(NewGlow, 1.f);
 
-	// Le Pokémon sortira de sa Ball : invisible (taille 0) jusqu'à l'ouverture
-	bBallIntro = OldMesh && SetupBall(Ball, OldHeight);
+	// Le Pokémon sortira de sa Ball : caché jusqu'à l'explosion de lumière
+	PokemonHeight = FMath::Max(OldHeight, 30.f);
+	bBallIntro = OldMesh && SetupBall(Ball);
 	if (bBallIntro)
 	{
-		SetModelScale(OldMesh, 0.f);
+		OldMesh->SetVisibility(false);
+		SetupEffects();
 	}
 
-	// Cadrage : le plus grand des deux Pokémon tient dans l'image
+	// Cadrage : le plus grand des deux Pokémon tient dans l'image ; au début, gros plan sur la Ball
 	const float Height = FMath::Max3(OldHeight, NewHeight, 30.f);
 	const float Distance = FMath::Max(220.f, Height * 2.8f);
 	const FVector Target(0.f, 0.f, Height * 0.5f);
-	const FVector CameraLocation(Distance, 0.f, Height * 0.55f + 25.f);
-	Camera->SetRelativeLocation(CameraLocation);
-	Camera->SetRelativeRotation((Target - CameraLocation).Rotation());
-	Camera->PostProcessSettings.DepthOfFieldFocalDistance = Distance;
+	PokemonShotTarget = Target;
+	PokemonShotLocation = FVector(Distance, 0.f, Height * 0.55f + 25.f);
+	BallShotLocation = BallRest + FVector(BallDiameter * BallShotDistance, 0.f, BallDiameter * 1.1f);
+	CameraBlend = bBallIntro ? 0.f : 1.f;
+	UpdateCamera(CameraBlend);
 
 	const FVector KeyLocation(Distance * 0.6f, Distance * 0.45f, Height * 1.6f + 80.f);
 	KeyLight->SetRelativeLocation(KeyLocation);
 	KeyLight->SetRelativeRotation((Target - KeyLocation).Rotation());
-	GlowLight->SetRelativeLocation(FVector(Height * 0.4f, 0.f, Height * 0.5f));
-	GlowLight->SetLightColor(GlowColor);
+	GlowLight->SetRelativeLocation(bBallIntro ? BallRest + FVector(BallDiameter, 0.f, 0.f) : FVector(Height * 0.4f, 0.f, Height * 0.5f));
+	GlowLight->SetLightColor(bBallIntro ? BallLightColor : GlowColor);
 	BaseLightIntensity = KeyLight->Intensity;
 
 	// Le joueur s'efface, la caméra glisse vers la scène
@@ -205,6 +229,16 @@ void AEvolutionScene::Play(APlayerController* Controller, UProgressionWidget* In
 		Controller->SetViewTargetWithBlend(this, 0.8f, VTBlend_Cubic);
 	}
 
+	if (bBallIntro)
+	{
+		// « Quoi ? » pendant que la Ball tremble ; le nom vient quand la transformation commence
+		if (Widget)
+		{
+			Widget->SetCaption(LOCTEXT("What", "Quoi ?"));
+		}
+		EnterPhase(EPhase::BallWobble);
+		return;
+	}
 	if (Widget)
 	{
 		Widget->SetCaption(FText::Format(LOCTEXT("Evolving", "Quoi ? {0} évolue !"), PokemonName));
@@ -292,23 +326,71 @@ void AEvolutionScene::EnterPhase(EPhase NewPhase)
 	Phase = NewPhase;
 	PhaseTime = 0.f;
 
-	if (Phase != EPhase::Intro && bBallIntro)
+	if (!IsBallPhase() && bBallIntro)
 	{
 		// Entrée interrompue (annulation) ou finie : plus de Ball, le Pokémon en entier
 		HideBall();
+		if (OldMesh)
+		{
+			OldMesh->SetVisibility(true);
+		}
 		SetModelScale(OldMesh, 1.f);
+		if (Widget)
+		{
+			Widget->SetFlash(0.f);
+		}
+		GlowLight->SetRelativeLocation(FVector(PokemonHeight * 0.4f, 0.f, PokemonHeight * 0.5f));
 		GlowLight->SetLightColor(GlowColor);
 		GlowLight->SetIntensity(0.f);
 		bBallIntro = false;
 	}
 
-	switch (Phase)
+	auto StartMusic = [this]()
 	{
-	case EPhase::Glow:
+		if (Music->IsPlaying())
+		{
+			return;
+		}
 		if (USoundBase* Loop = UProgressionComponent::LoadSound(TEXT("SW_Evolution_Music")))
 		{
 			Music->SetSound(Loop);
 			Music->Play();
+		}
+	};
+
+	switch (Phase)
+	{
+	case EPhase::BallOpen:
+		if (USoundBase* Sound = LoadObject<USoundBase>(nullptr, EvolutionScene::BallOpenSound, nullptr, LOAD_NoWarn | LOAD_Quiet))
+		{
+			UGameplayStatics::PlaySound2D(this, Sound);
+		}
+		LightCore->SetVisibility(LightCore->GetStaticMesh() != nullptr);
+		break;
+
+	case EPhase::BallBeam:
+		PlaySound(TEXT("SW_Evolution_Start"));
+		Beam->SetVisibility(Beam->GetStaticMesh() != nullptr);
+		SparkTimer = 0.f;
+		break;
+
+	case EPhase::BallBurst:
+		PlaySound(TEXT("SW_Evolution_Flash"));
+		Shockwave->SetVisibility(Shockwave->GetStaticMesh() != nullptr);
+		SpawnSparks(90, 32.f, 0.f);
+		break;
+
+	case EPhase::Glow:
+		StartMusic();
+		break;
+
+	case EPhase::Morph:
+		StartMusic();
+		MorphPhase = 0.f;
+		if (NewMesh)
+		{
+			NewMesh->SetVisibility(true);
+			SetModelScale(NewMesh, 0.f);
 		}
 		break;
 
@@ -354,21 +436,38 @@ void AEvolutionScene::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	PhaseTime += DeltaTime;
+	TickSparks(DeltaTime);
+	if (!IsBallPhase() && CameraBlend < 1.f)
+	{
+		// Annulation pendant l'entrée : la caméra recule jusqu'au Pokémon
+		CameraBlend = FMath::FInterpConstantTo(CameraBlend, 1.f, DeltaTime, 1.2f);
+		UpdateCamera(FMath::SmoothStep(0.f, 1.f, CameraBlend));
+	}
 
 	switch (Phase)
 	{
 	case EPhase::Intro:
-		if (bBallIntro)
-		{
-			TickBallIntro();
-		}
 		if (bCancelRequested)
 		{
 			EnterPhase(EPhase::Cancelled);
 		}
-		else if (PhaseTime >= (bBallIntro ? FMath::Max(IntroTime, BallOpenDelay + BallReleaseTime + EvolutionScene::BallCloseTime + 0.3f) : IntroTime))
+		else if (PhaseTime >= IntroTime)
 		{
 			EnterPhase(EPhase::Glow);
+		}
+		break;
+
+	case EPhase::BallWobble:
+	case EPhase::BallOpen:
+	case EPhase::BallBeam:
+	case EPhase::BallBurst:
+		if (bCancelRequested)
+		{
+			EnterPhase(EPhase::Cancelled);
+		}
+		else
+		{
+			TickBallPhase(DeltaTime);
 		}
 		break;
 
@@ -384,12 +483,6 @@ void AEvolutionScene::Tick(float DeltaTime)
 		}
 		else if (Alpha >= 1.f)
 		{
-			MorphPhase = 0.f;
-			if (NewMesh)
-			{
-				NewMesh->SetVisibility(true);
-				SetModelScale(NewMesh, 0.f);
-			}
 			EnterPhase(EPhase::Morph);
 		}
 		break;
@@ -484,7 +577,7 @@ void AEvolutionScene::Tick(float DeltaTime)
 	}
 }
 
-bool AEvolutionScene::SetupBall(FName Ball, float PokemonHeight)
+bool AEvolutionScene::SetupBall(FName Ball)
 {
 	const float ModelSize = PokeBallModel::Apply(Ball, BallBottom, BallHinge, BallTop);
 	if (ModelSize <= 0.f)
@@ -492,72 +585,311 @@ bool AEvolutionScene::SetupBall(FName Ball, float PokemonHeight)
 		return false;
 	}
 	BallBaseScale = BallDiameter / ModelSize;
-	// Devant le Pokémon, côté caméra (+X), tournée de 3/4 pour qu'on voie le bouton et la charnière
-	BallBottom->SetRelativeLocationAndRotation(FVector(40.f + PokemonHeight * 0.2f, 0.f, BallDiameter * 0.5f), FRotator(0.f, 25.f, 0.f));
+	// Posée sur l'herbe à la place du Pokémon, le bouton (+X) vers la caméra
+	BallRest = FVector(0.f, 0.f, BallDiameter * 0.5f);
+	BallBottom->SetRelativeLocationAndRotation(BallRest, FRotator(0.f, EvolutionScene::BallYaw, 0.f));
 	BallBottom->SetRelativeScale3D(FVector(BallBaseScale));
 	BallBottom->SetVisibility(true);
 	BallTop->SetVisibility(true);
 	PokeBallModel::SetOpenAngle(BallHinge, 0.f);
-	PokeBallModel::SetGlow(BallBottom, BallTop, 0.f, EvolutionScene::BallLightColor);
-	bBallOpenSoundPlayed = false;
+	PokeBallModel::SetGlow(BallBottom, BallTop, 0.f, BallLightColor);
+	LastWobble = -1;
+	bPokemonOut = false;
 	return true;
 }
 
-void AEvolutionScene::TickBallIntro()
+void AEvolutionScene::SetupEffects()
+{
+	UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+	UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+	UMaterialInterface* Rim = UProgressionComponent::LoadGlowMaterial();
+	UMaterialInterface* Full = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr,
+		EvolutionScene::LightMaterial, nullptr, LOAD_NoWarn | LOAD_Quiet));
+	if (!Full)
+	{
+		Full = Rim;
+	}
+	if (!Full || !Sphere || !Cylinder)
+	{
+		// Matériaux pas encore importés : la Ball s'ouvre sans effets de lumière
+		return;
+	}
+
+	auto Setup = [this](UStaticMeshComponent* Mesh, UStaticMesh* Shape, UMaterialInterface* Material) -> UMaterialInstanceDynamic*
+	{
+		Mesh->SetStaticMesh(Shape);
+		UMaterialInstanceDynamic* Instance = UMaterialInstanceDynamic::Create(Material, this);
+		Mesh->SetMaterial(0, Instance);
+		Mesh->SetVisibility(false);
+		return Instance;
+	};
+	CoreLight = Setup(LightCore, Sphere, Full);
+	BeamLight = Setup(Beam, Cylinder, Full);
+	// L'onde de choc est plus claire sur ses bords : des arcs de lumière autour du Pokémon
+	ShockLight = Setup(Shockwave, Sphere, Rim ? Rim : Full);
+	SparkLight = Setup(Sparks, Sphere, Full);
+	SetEffectGlow(SparkLight, 1.f, BallLightColor);
+}
+
+void AEvolutionScene::TickBallPhase(float DeltaTime)
 {
 	using namespace EvolutionScene;
-	const float Release = FMath::Max(BallReleaseTime, 0.05f);
-	const float Opening = (PhaseTime - BallOpenDelay) / Release;
-	if (Opening < 0.f)
+	const float D = BallDiameter;
+	const float Radius = D * 0.5f;
+
+	// Pose la Ball : inclinaison (roulis, elle roule un peu sur l'herbe) et hauteur
+	auto PlaceBall = [this, Radius](float Roll, float Lift)
 	{
-		return;
-	}
-	if (!bBallOpenSoundPlayed)
+		const FVector Right = FRotator(0.f, BallYaw, 0.f).RotateVector(FVector::RightVector);
+		BallBottom->SetRelativeLocationAndRotation(BallRest + Right * (-Radius * FMath::DegreesToRadians(Roll)) + FVector(0.f, 0.f, Lift),
+			FRotator(0.f, BallYaw, Roll));
+	};
+	auto Ease = [](float Alpha) { return FMath::InterpEaseInOut(0.f, 1.f, FMath::Clamp(Alpha, 0.f, 1.f), 2.f); };
+	const FVector BallCenter = BallRest + FVector(0.f, 0.f, D * BallLift);
+
+	switch (Phase)
 	{
-		bBallOpenSoundPlayed = true;
-		if (USoundBase* Sound = LoadObject<USoundBase>(nullptr, BallOpenSound, nullptr, LOAD_NoWarn | LOAD_Quiet))
+	case EPhase::BallWobble:
+	{
+		// 1. La Ball tremble sur l'herbe, comme pendant une capture
+		const float Active = FMath::Max(WobbleTime - WobbleRest - 0.25f, 0.1f);
+		const float U = (PhaseTime - WobbleRest) / Active;
+		float Roll = 0.f;
+		if (U > 0.f && U < 1.f)
 		{
-			UGameplayStatics::PlaySound2D(this, Sound);
+			const float Cycles = U * FMath::Max(WobbleCount, 1);
+			Roll = WobbleAngle * FMath::Sin(Cycles * 2.f * UE_PI);
+			const int32 Index = FMath::FloorToInt(Cycles * 2.f);
+			if (Index != LastWobble)
+			{
+				LastWobble = Index;
+				PlaySound(TEXT("SW_Evolution_Wobble"));
+			}
 		}
-		GlowLight->SetLightColor(BallLightColor);
+		PlaceBall(Roll, 0.f);
+		if (PhaseTime >= WobbleTime)
+		{
+			EnterPhase(EPhase::BallOpen);
+		}
+		break;
 	}
 
-	if (Opening <= 1.f)
+	case EPhase::BallOpen:
 	{
-		// Le couvercle s'ouvre vite, le Pokémon grandit dans un éclair rouge, sa silhouette prend ses couleurs
-		const float Lid = FMath::InterpEaseOut(0.f, 1.f, FMath::Min(Opening * 3.f, 1.f), 2.f);
-		const float Pulse = FMath::Sin(Opening * UE_PI);
+		// 2. Elle se soulève et s'entrouvre : la lumière passe par l'ouverture
+		const float Alpha = FMath::Clamp(PhaseTime / FMath::Max(BallOpenTime, 0.05f), 0.f, 1.f);
+		const float Lid = FMath::InterpEaseOut(0.f, 1.f, FMath::Min(Alpha * 2.5f, 1.f), 3.f);
 		PokeBallModel::SetOpenAngle(BallHinge, BallOpenAngle * Lid);
-		PokeBallModel::SetGlow(BallBottom, BallTop, 6.f * Pulse, BallLightColor);
-		SetModelScale(OldMesh, FMath::InterpEaseOut(0.f, 1.f, Opening, 2.f));
-		SetGlow(OldGlow, 1.f - Opening);
-		GlowLight->SetIntensity(GlowLightMax * 0.6f * Pulse);
+		PokeBallModel::SetGlow(BallBottom, BallTop, 1.5f * Alpha, BallLightColor);
+		PlaceBall(3.f * FMath::Sin(PhaseTime * 38.f) * (1.f - Alpha), D * BallLift * Ease(Alpha));
+		LightCore->SetRelativeLocation(BallRest + FVector(0.f, 0.f, D * BallLift * Ease(Alpha)));
+		LightCore->SetRelativeScale3D(FVector(D * (0.25f + 0.45f * Alpha) / 100.f));
+		SetEffectGlow(CoreLight, Alpha, BallLightColor);
+		GlowLight->SetIntensity(GlowLightMax * 0.8f * Alpha);
+		if (Alpha >= 1.f)
+		{
+			EnterPhase(EPhase::BallBeam);
+		}
+		break;
+	}
+
+	case EPhase::BallBeam:
+	{
+		// 3. Un rayon de lumière monte de la Ball, les étincelles jaillissent
+		const float Alpha = FMath::Clamp(PhaseTime / FMath::Max(BeamTime, 0.05f), 0.f, 1.f);
+		PlaceBall(1.5f * FMath::Sin(PhaseTime * 45.f), D * BallLift);
+		const float Height = FMath::Max(PokemonHeight * 4.f, 600.f) * FMath::InterpEaseOut(0.f, 1.f, FMath::Min(Alpha * 3.f, 1.f), 2.f);
+		const float Width = D * (0.8f + 0.5f * Alpha) * (1.f + 0.12f * FMath::Sin(PhaseTime * 30.f));
+		Beam->SetRelativeLocation(BallCenter + FVector(0.f, 0.f, Height * 0.5f));
+		Beam->SetRelativeScale3D(FVector(Width / 100.f, Width / 100.f, FMath::Max(Height, 1.f) / 100.f));
+		SetEffectGlow(BeamLight, FMath::Min(Alpha * 4.f, 1.f), BallLightColor);
+		LightCore->SetRelativeScale3D(FVector(D * (0.7f + 0.4f * Alpha) / 100.f));
+		GlowLight->SetIntensity(GlowLightMax * (0.8f + 0.7f * Alpha));
+
+		SparkTimer += DeltaTime * BeamSparkRate;
+		const int32 Count = FMath::FloorToInt(SparkTimer);
+		SparkTimer -= Count;
+		SpawnSparks(Count, 26.f, 0.45f);
+		if (Alpha >= 1.f)
+		{
+			EnterPhase(EPhase::BallBurst);
+		}
+		break;
+	}
+
+	case EPhase::BallBurst:
+	{
+		// 4. Explosion blanche : la Ball disparaît, le Pokémon est là, en silhouette de lumière ; la caméra recule
+		const float Alpha = FMath::Clamp(PhaseTime / FMath::Max(BurstTime, 0.05f), 0.f, 1.f);
+		const float Flash = Alpha < 0.15f ? Alpha / 0.15f : FMath::Max(0.f, 1.f - (Alpha - 0.15f) / 0.5f);
+		if (Widget)
+		{
+			Widget->SetFlash(0.85f * Flash);
+		}
+		if (Alpha >= 0.15f && !bPokemonOut)
+		{
+			bPokemonOut = true;
+			BallBottom->SetVisibility(false);
+			BallTop->SetVisibility(false);
+			if (OldMesh)
+			{
+				OldMesh->SetVisibility(true);
+				SetModelScale(OldMesh, 1.f);
+			}
+			SetGlow(OldGlow, 1.f);
+		}
+
+		const float Grow = FMath::InterpEaseOut(0.f, 1.f, FMath::Min(Alpha / 0.3f, 1.f), 2.f);
+		LightCore->SetRelativeLocation(FMath::Lerp(BallCenter, FVector(0.f, 0.f, PokemonHeight * 0.5f), Grow));
+		LightCore->SetRelativeScale3D(FVector(FMath::Lerp(D * 1.1f, PokemonHeight * 1.3f, Grow) / 100.f));
+		SetEffectGlow(CoreLight, 1.f - FMath::Clamp((Alpha - 0.2f) / 0.5f, 0.f, 1.f), BallLightColor);
+
+		const float Wave = FMath::InterpEaseOut(0.f, 1.f, Alpha, 3.f);
+		Shockwave->SetRelativeLocation(FVector(0.f, 0.f, PokemonHeight * 0.4f));
+		Shockwave->SetRelativeScale3D(FVector(FMath::Lerp(D, FMath::Max(PokemonHeight * 2.6f, 180.f), Wave) / 100.f));
+		SetEffectGlow(ShockLight, FMath::Pow(1.f - Alpha, 1.5f), FLinearColor::White);
+
+		const float BeamFade = FMath::Clamp(1.f - Alpha * 2.5f, 0.f, 1.f);
+		SetEffectGlow(BeamLight, BeamFade, BallLightColor);
+		Beam->SetVisibility(BeamFade > 0.f && Beam->GetStaticMesh() != nullptr);
+
+		GlowLight->SetRelativeLocation(FMath::Lerp(BallRest + FVector(D, 0.f, 0.f), FVector(PokemonHeight * 0.4f, 0.f, PokemonHeight * 0.5f), Wave));
+		GlowLight->SetLightColor(FMath::Lerp(BallLightColor, GlowColor, Alpha));
+		GlowLight->SetIntensity(FMath::Lerp(FlashLightMax * 0.6f, GlowLightMax, Alpha));
+		CameraBlend = FMath::SmoothStep(0.1f, 0.9f, Alpha);
+		UpdateCamera(CameraBlend);
+
+		if (Alpha >= 1.f)
+		{
+			if (Widget)
+			{
+				Widget->SetCaption(FText::Format(LOCTEXT("Evolving", "Quoi ? {0} évolue !"), PokemonName));
+			}
+			EnterPhase(EPhase::Morph);
+		}
+		break;
+	}
+
+	default:
+		break;
+	}
+}
+
+void AEvolutionScene::SpawnSparks(int32 Count, float Speed, float Up)
+{
+	if (!SparkLight || Count <= 0)
+	{
 		return;
 	}
-
-	// Le Pokémon est sorti : la Ball se referme, rapetisse et disparaît
-	SetModelScale(OldMesh, 1.f);
-	SetGlow(OldGlow, 0.f);
-	GlowLight->SetIntensity(0.f);
-	const float Closing = FMath::Clamp((PhaseTime - BallOpenDelay - Release) / BallCloseTime, 0.f, 1.f);
-	PokeBallModel::SetOpenAngle(BallHinge, BallOpenAngle * (1.f - FMath::Min(Closing * 2.f, 1.f)));
-	PokeBallModel::SetGlow(BallBottom, BallTop, 0.f, BallLightColor);
-	BallBottom->SetRelativeScale3D(FVector(BallBaseScale * FMath::Max(1.f - Closing, 0.001f)));
-	if (Closing >= 1.f)
+	const float D = BallDiameter;
+	const FVector Origin = BallRest + FVector(0.f, 0.f, D * EvolutionScene::BallLift);
+	for (int32 Index = 0; Index < Count; ++Index)
 	{
-		HideBall();
+		FSpark Spark;
+		FVector Direction = FMath::VRand();
+		Direction.Z = FMath::Abs(Direction.Z) * (1.f - Up) + Up * FMath::FRandRange(0.4f, 1.4f);
+		Direction = Direction.GetSafeNormal();
+		Spark.Location = Origin + Direction * D * 0.3f;
+		// Vitesse en diamètres de Ball par seconde
+		Spark.Velocity = Direction * Speed * D * FMath::FRandRange(0.5f, 1.2f);
+		Spark.Life = FMath::FRandRange(0.35f, 0.8f);
+		Spark.Length = D * FMath::FRandRange(0.35f, 1.f);
+
+		// Réserve pleine : on remplace la plus vieille
+		if (SparkList.Num() < EvolutionScene::MaxSparks)
+		{
+			SparkList.Add(Spark);
+		}
+		else
+		{
+			int32 Oldest = 0;
+			for (int32 Other = 1; Other < SparkList.Num(); ++Other)
+			{
+				if (SparkList[Other].Age / SparkList[Other].Life > SparkList[Oldest].Age / SparkList[Oldest].Life)
+				{
+					Oldest = Other;
+				}
+			}
+			SparkList[Oldest] = Spark;
+		}
+	}
+	Sparks->SetVisibility(true);
+}
+
+void AEvolutionScene::TickSparks(float DeltaTime)
+{
+	if (SparkList.Num() == 0 || !Sparks->IsVisible())
+	{
+		return;
+	}
+	const float D = BallDiameter;
+	const float Drag = FMath::Exp(-2.5f * DeltaTime);
+	TArray<FTransform> Transforms;
+	Transforms.Reserve(SparkList.Num());
+	bool bAnyAlive = false;
+	for (FSpark& Spark : SparkList)
+	{
+		Spark.Age += DeltaTime;
+		const float Life = Spark.Age / Spark.Life;
+		if (Life >= 1.f)
+		{
+			Transforms.Add(FTransform(FQuat::Identity, Spark.Location, FVector(0.f)));
+			continue;
+		}
+		bAnyAlive = true;
+		Spark.Velocity *= Drag;
+		Spark.Velocity.Z -= 4.f * D * DeltaTime;
+		Spark.Location += Spark.Velocity * DeltaTime;
+		// Un trait étiré dans sa direction, qui s'amincit en mourant
+		const float Fade = FMath::Sqrt(1.f - Life);
+		const float Width = D * 0.05f * Fade;
+		Transforms.Add(FTransform(Spark.Velocity.Rotation().Quaternion(), Spark.Location,
+			FVector(Spark.Length * Fade / 100.f, Width / 100.f, Width / 100.f)));
+	}
+
+	while (Sparks->GetInstanceCount() < Transforms.Num())
+	{
+		Sparks->AddInstance(FTransform(FQuat::Identity, FVector::ZeroVector, FVector(0.f)));
+	}
+	Sparks->BatchUpdateInstancesTransforms(0, Transforms, false, true, true);
+	if (!bAnyAlive)
+	{
+		SparkList.Reset();
+		Sparks->SetVisibility(false);
+	}
+}
+
+void AEvolutionScene::UpdateCamera(float Blend)
+{
+	const FVector BallTarget = BallRest + FVector(0.f, 0.f, BallDiameter * 0.4f);
+	const FVector Location = FMath::Lerp(BallShotLocation, PokemonShotLocation, Blend);
+	const FVector Target = FMath::Lerp(BallTarget, PokemonShotTarget, Blend);
+	Camera->SetRelativeLocation(Location);
+	Camera->SetRelativeRotation((Target - Location).Rotation());
+	Camera->PostProcessSettings.DepthOfFieldFocalDistance = FMath::Max((Target - Location).Size(), 10.f);
+}
+
+void AEvolutionScene::SetEffectGlow(UMaterialInstanceDynamic* Material, float Amount, const FLinearColor& Color)
+{
+	if (Material)
+	{
+		Material->SetScalarParameterValue(EvolutionScene::GlowParam, FMath::Clamp(Amount, 0.f, 1.f));
+		Material->SetVectorParameterValue(EvolutionScene::ColorParam, Color);
 	}
 }
 
 void AEvolutionScene::HideBall()
 {
-	BallBottom->SetVisibility(false);
-	BallTop->SetVisibility(false);
+	for (UStaticMeshComponent* Mesh : { BallBottom.Get(), BallTop.Get(), LightCore.Get(), Beam.Get(), Shockwave.Get() })
+	{
+		Mesh->SetVisibility(false);
+	}
 }
 
 bool AEvolutionScene::RequestCancel()
 {
-	if (Phase == EPhase::Intro || Phase == EPhase::Glow || Phase == EPhase::Morph)
+	// Jusqu'au flash, y compris pendant l'entrée par la Ball
+	if (Phase <= EPhase::Morph)
 	{
 		bCancelRequested = true;
 		return true;

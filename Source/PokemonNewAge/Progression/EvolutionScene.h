@@ -6,6 +6,7 @@
 
 class UAudioComponent;
 class UCameraComponent;
+class UInstancedStaticMeshComponent;
 class UMaterialInstanceDynamic;
 class UMeshComponent;
 class UPointLightComponent;
@@ -22,8 +23,11 @@ class UStaticMeshComponent;
  *
  *  Modèles : /Game/Pokemon/Models/<Espèce>/SK_<Espèce> (ou SM_), comme le Pokédex ; une sphère s'ils manquent.
  *  Lueur : /Game/Progression/M_EvolutionGlow en matériau de surcouche (Overlay Material).
- *  Entrée : le Pokémon sort de sa propre Poké Ball (celle de sa capture, modèles de PokeBallModel.h) ;
- *  sans Ball importée, il est là dès le début comme avant.
+ *  Entrée (maquette de L'amie, docs/PROGRESSION.md) : la Ball de sa capture (PokeBallModel.h) tremble sur l'herbe,
+ *  s'ouvre en laissant passer la lumière, un rayon monte avec des étincelles, puis une explosion blanche laisse
+ *  le Pokémon déjà en silhouette de lumière et la transformation commence. Rayon, étincelles et onde de choc :
+ *  formes de base du moteur avec /Game/Progression/M_EvolutionLight. Sans Ball importée, le Pokémon est là dès
+ *  le début comme avant.
  *  Un Blueprint enfant peut régler les durées, la lumière et la caméra dans le panneau Détails.
  */
 UCLASS()
@@ -82,16 +86,38 @@ public:
 	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
 	float BallDiameter = 16.f;
 
-	/** Moment où la Ball s'ouvre, après le début de l'entrée en scène (s) */
+	/** La Ball tremble sur l'herbe (s), nombre d'oscillations et inclinaison (degrés) */
 	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
-	float BallOpenDelay = 0.6f;
-
-	/** Sortie du Pokémon : couvercle ouvert, il grandit dans un éclair rouge (s) */
-	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
-	float BallReleaseTime = 0.7f;
+	float WobbleTime = 2.f;
 
 	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
-	float BallOpenAngle = 80.f;
+	int32 WobbleCount = 3;
+
+	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
+	float WobbleAngle = 22.f;
+
+	/** Ouverture : le couvercle s'entrouvre, la lumière sort (s) */
+	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
+	float BallOpenTime = 1.f;
+
+	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
+	float BallOpenAngle = 45.f;
+
+	/** Rayon de lumière qui monte, avec les étincelles (s) */
+	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
+	float BeamTime = 1.2f;
+
+	/** Explosion blanche qui laisse le Pokémon en silhouette ; la caméra recule pendant ce temps (s) */
+	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
+	float BurstTime = 1.f;
+
+	/** Couleur de la lumière sortie de la Ball (rayon, étincelles) */
+	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
+	FLinearColor BallLightColor = FLinearColor(0.7f, 0.85f, 1.f);
+
+	/** Distance de la caméra à la Ball au début, en diamètres de Ball */
+	UPROPERTY(EditAnywhere, Category="Evolution|Ball")
+	float BallShotDistance = 4.2f;
 
 	/** Hauteur de la sphère qui remplace un modèle absent (cm) */
 	UPROPERTY(EditAnywhere, Category="Evolution")
@@ -140,9 +166,34 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category="Evolution|Ball")
 	TObjectPtr<UStaticMeshComponent> BallTop;
 
+	/** Boule de lumière dans la Ball, qui grossit et éclate */
+	UPROPERTY(VisibleAnywhere, Category="Evolution|Ball")
+	TObjectPtr<UStaticMeshComponent> LightCore;
+
+	/** Rayon de lumière vertical */
+	UPROPERTY(VisibleAnywhere, Category="Evolution|Ball")
+	TObjectPtr<UStaticMeshComponent> Beam;
+
+	/** Onde de choc de l'explosion (sphère plus claire sur les bords) */
+	UPROPERTY(VisibleAnywhere, Category="Evolution|Ball")
+	TObjectPtr<UStaticMeshComponent> Shockwave;
+
+	/** Étincelles (traits de lumière étirés dans leur direction) */
+	UPROPERTY(VisibleAnywhere, Category="Evolution|Ball")
+	TObjectPtr<UInstancedStaticMeshComponent> Sparks;
+
 private:
 
-	enum class EPhase : uint8 { Intro, Glow, Morph, Flash, Reveal, Done, Cancelled };
+	enum class EPhase : uint8 { Intro, BallWobble, BallOpen, BallBeam, BallBurst, Glow, Morph, Flash, Reveal, Done, Cancelled };
+
+	struct FSpark
+	{
+		FVector Location = FVector::ZeroVector;
+		FVector Velocity = FVector::ZeroVector;
+		float Age = 0.f;
+		float Life = 0.f;
+		float Length = 0.f;
+	};
 
 	/** Charge le modèle d'une espèce dans l'un des deux composants, pieds au sol et face à la caméra. Hauteur (cm) */
 	float LoadModel(FName Species, USkeletalMeshComponent* Skeletal, UStaticMeshComponent* Static, UMeshComponent*& OutMesh);
@@ -152,11 +203,20 @@ private:
 	void EnterPhase(EPhase NewPhase);
 	void Finish(bool bEvolved);
 	void PlaySound(const TCHAR* Name);
-	/** Pose la Ball devant le Pokémon ; faux si aucune Ball n'est importée */
-	bool SetupBall(FName Ball, float PokemonHeight);
-	/** Entrée en scène avec la Ball : ouverture, sortie du Pokémon, la Ball se referme et disparaît */
-	void TickBallIntro();
+	/** Pose la Ball sur l'herbe, à la place du Pokémon ; faux si aucune Ball n'est importée */
+	bool SetupBall(FName Ball);
+	/** Les quatre temps de l'entrée par la Ball (maquette) */
+	void TickBallPhase(float DeltaTime);
+	/** Cache la Ball et ses effets (fin de l'entrée ou annulation) */
 	void HideBall();
+	void SetupEffects();
+	void SetEffectGlow(UMaterialInstanceDynamic* Material, float Amount, const FLinearColor& Color);
+	/** Lance des étincelles depuis la Ball : Up 0 = dans toutes les directions, 1 = vers le haut */
+	void SpawnSparks(int32 Count, float Speed, float Up);
+	void TickSparks(float DeltaTime);
+	/** Caméra : 0 = gros plan sur la Ball, 1 = cadrage du Pokémon */
+	void UpdateCamera(float Blend);
+	bool IsBallPhase() const { return Phase >= EPhase::BallWobble && Phase <= EPhase::BallBurst; }
 
 	UPROPERTY(Transient) TObjectPtr<UProgressionWidget> Widget;
 	UPROPERTY(Transient) TObjectPtr<UMeshComponent> OldMesh;
@@ -179,6 +239,20 @@ private:
 	float BaseLightIntensity = 0.f;
 	bool bCancelRequested = false;
 	bool bBallIntro = false;
-	bool bBallOpenSoundPlayed = false;
+	bool bPokemonOut = false;
 	float BallBaseScale = 1.f;
+	FVector BallRest = FVector::ZeroVector;
+	FVector PokemonShotLocation = FVector::ZeroVector;
+	FVector PokemonShotTarget = FVector::ZeroVector;
+	FVector BallShotLocation = FVector::ZeroVector;
+	float CameraBlend = 1.f;
+	float PokemonHeight = 0.f;
+	float SparkTimer = 0.f;
+	int32 LastWobble = -1;
+	TArray<FSpark> SparkList;
+
+	UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> CoreLight;
+	UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> BeamLight;
+	UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> ShockLight;
+	UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> SparkLight;
 };

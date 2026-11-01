@@ -81,7 +81,8 @@ private:
 	const UPokemonDatabase* GetDatabase() const;
 	UTextBlock* MakeText(const FText& Text, int32 Size, const FLinearColor& Color, bool bBold = false);
 
-	UPROPERTY(Transient) TObjectPtr<UBorder> MessageFrame;
+	/** Boîte de texte en verre (flou d'arrière-plan + verre teinté) */
+	UPROPERTY(Transient) TObjectPtr<UWidget> MessageFrame;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageText;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageArrow;
 	UPROPERTY(Transient) TObjectPtr<UBorder> StatsFrame;

@@ -5,12 +5,16 @@ XP, niveaux, nouvelles attaques et évolutions. Le combat (docs/COMBAT.md) donna
 ## Ce qui est géré
 
 - **Écran de combat** : la barre d'XP se remplit en glissant (et repart de zéro à chaque niveau), le son de montée de niveau se joue et un panneau montre les stats (total et gain : « Attaque 24 +3 »).
-- **Séquence d'évolution en 3D** (SCRUM-47), une fois l'écran de combat fermé :
-  1. la caméra quitte le dresseur et se pose face au Pokémon, juste devant lui ; le décor s'assombrit et se floute ;
-  2. « Quoi ? Bulbizarre évolue ! » ; le Pokémon devient une silhouette de lumière ;
-  3. sa silhouette et celle de sa nouvelle forme grandissent et rétrécissent à tour de rôle, de plus en plus vite, en musique ;
-  4. flash blanc, la nouvelle forme apparaît en couleurs, fanfare : « Félicitations ! Ton Bulbizarre a évolué en Herbizarre ! » ;
-  5. ensuite, les attaques de la nouvelle espèce à ce niveau (choix de l'attaque à oublier si besoin).
+- **Séquence d'évolution en 3D** (SCRUM-47), une fois l'écran de combat fermé. L'entrée suit la maquette de L'amie (`/mnt/project-files/progression/maquette/Evolution_Pokeball_Anim.png`) :
+  1. gros plan de nuit sur la **Poké Ball de sa capture**, posée sur l'herbe : elle tremble trois fois (« Quoi ? ») ;
+  2. elle se soulève et s'entrouvre, la lumière passe par l'ouverture et éclaire l'herbe ;
+  3. un **rayon de lumière** monte de la Ball, des étincelles jaillissent ;
+  4. **explosion blanche** (onde de choc, étincelles) : la Ball disparaît, le Pokémon est là en silhouette de lumière et la caméra recule pour le cadrer ;
+  5. « Quoi ? Bulbizarre évolue ! » : sa silhouette et celle de sa nouvelle forme grandissent et rétrécissent à tour de rôle, de plus en plus vite, en musique ;
+  6. flash blanc, la nouvelle forme apparaît en couleurs, fanfare : « Félicitations ! Ton Bulbizarre a évolué en Herbizarre ! » ;
+  7. ensuite, les attaques de la nouvelle espèce à ce niveau (choix de l'attaque à oublier si besoin).
+  - Sans modèle de Ball importé, l'ancienne entrée est gardée : le Pokémon est là dès le début et se met à briller.
+  - La boîte de texte est en **verre** comme sur la maquette : décor flouté derrière (*Background Blur*), verre blanc à 30 %, liseré clair, Futura BdCn.
   - **B** (ou Échap, ou clic droit) avant le flash : « Hein ? Bulbizarre n'a pas évolué ! ». Il le reproposera au prochain niveau.
 - **Objets hors combat** (Pokédex > Sac > « Objets, baies et CT ») avec la liste **APTE / PAS APTE / DÉJÀ APPRIS** :
   - **Super Bonbon** : +1 niveau, stats, attaques du niveau, puis évolution s'il y a lieu ;
@@ -31,10 +35,10 @@ XP, niveaux, nouvelles attaques et évolutions. Le combat (docs/COMBAT.md) donna
 | `Progression/EvolutionScene.h` | La séquence 3D (caméra, lumières, silhouettes, flash, sons). Durées et couleurs réglables dans un Blueprint enfant. |
 | `UI/Progression/ProgressionWidget.h` | Boîte de texte, panneau des stats, choix de l'attaque à oublier, flash blanc. |
 | `Tools/Progression/make_progression_sounds.py` | Sons provisoires synthétisés (mélodies originales). |
-| `Tools/Progression/import_progression_unreal.py` | Importe les sons et crée le matériau de lueur `M_EvolutionGlow`. |
+| `Tools/Progression/import_progression_unreal.py` | Importe les sons et crée les matériaux `M_EvolutionGlow` (lueur) et `M_EvolutionLight` (rayon, étincelles). |
 | `Tests/ProgressionTests.cpp` | 4 tests (Super Bonbon, pierres, CT, évolution). |
 
-Assets attendus (créés par le script) : `/Game/Progression/M_EvolutionGlow`, `/Game/Progression/Sounds/SW_LevelUp`, `SW_MoveLearned`, `SW_Evolution_Start`, `SW_Evolution_Music`, `SW_Evolution_Flash`, `SW_Evolution_Done`, `SW_Evolution_Cancel`. S'ils manquent, tout marche quand même, sans lueur ni son.
+Assets attendus (créés par le script) : `/Game/Progression/M_EvolutionGlow`, `/Game/Progression/M_EvolutionLight` (rayon, étincelles, boule de lumière), `/Game/Progression/Sounds/SW_LevelUp`, `SW_MoveLearned`, `SW_Evolution_Wobble`, `SW_Evolution_Start`, `SW_Evolution_Music`, `SW_Evolution_Flash`, `SW_Evolution_Done`, `SW_Evolution_Cancel`. S'ils manquent, tout marche quand même, sans lueur ni son.
 
 Modèles : ceux du fil « modèles 3D » (`/Game/Pokemon/Models/<Espèce>/SK_<Espèce>`, animation `A_<Espèce>_Idle`). Une espèce sans modèle (Herbizarre pour l'instant, par exemple) est remplacée par une sphère lumineuse.
 
@@ -43,7 +47,7 @@ Modèles : ceux du fil « modèles 3D » (`/Game/Pokemon/Models/<Espèce>/SK_<Es
 1. Fermer Unreal, compiler (« PokemonNewAgeEditor Win64 Development Build »), rouvrir.
 2. **Outils > Exécuter un script Python** (*Tools > Execute Python Script*) :
    - `Tools/Data/build_items.py` n'est pas à lancer (le JSON est déjà à jour), mais relancer `Tools/Data/import_data_tables.py` : DT_Items reçoit les nouveaux objets et DT_Species les évolutions corrigées ;
-   - puis `Tools/Progression/import_progression_unreal.py` (sons et lueur).
+   - puis `Tools/Progression/import_progression_unreal.py` (sons, lueur et lumières ; à relancer après chaque mise à jour de la séquence).
 3. Lancer le jeu (PIE) dans `L_Kanto`, console (touche **²**) :
    - `DonnerPokemon Bulbasaur 15` puis `SuperBonbon 1` : panneau des stats, puis la séquence (Herbizarre). Appuyer sur **B** pendant l'alternance pour l'annuler, refaire `SuperBonbon 1` pour la revoir jusqu'au bout ;
    - `VoirEvolution Pikachu Raichu` : rejoue la séquence sans rien changer (pratique pour régler l'image) ;
@@ -57,7 +61,7 @@ Sans Unreal (dans le cloud) : `./Tools/BattleSim/run.sh` (tests) et `./Tools/Bat
 
 ## Régler la séquence
 
-Créer un Blueprint enfant d'**EvolutionScene** (*Content/Progression/BP_EvolutionScene*), puis dans le Blueprint du PlayerController : composant **ProgressionComponent** > **Evolution Scene Class** = ce Blueprint. Réglages : durées (Intro, Glow, Morph, Reveal), la Poké Ball d'où sort le Pokémon au début (catégorie **Evolution > Ball** : taille, moment d'ouverture, angle du couvercle ; c'est la Ball de sa capture, modèles importés par `Tools/Capture/import_pokeball_unreal.py`, voir `docs/CAPTURE.md`), vitesses de l'alternance, distance devant le joueur, couleur de la lueur, et la caméra / les lumières / le post-process (flou, vignette) dans ses composants. Un Niagara d'étincelles peut s'y ajouter sans code.
+Créer un Blueprint enfant d'**EvolutionScene** (*Content/Progression/BP_EvolutionScene*), puis dans le Blueprint du PlayerController : composant **ProgressionComponent** > **Evolution Scene Class** = ce Blueprint. Réglages : durées (Intro, Glow, Morph, Reveal), la Poké Ball d'où sort le Pokémon au début (catégorie **Evolution > Ball** : taille, tremblements (durée, nombre, angle), ouverture (durée, angle du couvercle), durée du rayon et de l'explosion, couleur de la lumière, distance du gros plan ; c'est la Ball de sa capture, modèles importés par `Tools/Capture/import_pokeball_unreal.py`, voir `docs/CAPTURE.md`), vitesses de l'alternance, distance devant le joueur, couleur de la lueur, et la caméra / les lumières / le post-process (flou, vignette) dans ses composants. Le rayon, les étincelles et l'onde de choc sont faits avec des formes de base et `M_EvolutionLight` (son paramètre **Intensite** règle leur éclat) ; un Niagara peut les remplacer ou s'y ajouter sans code.
 
 ## Pas encore fait
 

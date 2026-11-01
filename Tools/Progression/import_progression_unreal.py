@@ -8,9 +8,11 @@ Il :
      les importe dans /Game/Progression/Sounds et les range dans la classe de son SC_Effects (volume « Bruitages »),
      sauf la musique de l'évolution, rangée dans SC_Music ;
   2. crée /Game/Progression/M_EvolutionGlow : la lueur de la séquence d'évolution (matériau de surcouche,
-     paramètres Glow 0 à 1 et Color).
+     paramètres Glow 0 à 1 et Color) ;
+  3. crée /Game/Progression/M_EvolutionLight : la lumière pleine de l'entrée par la Poké Ball (rayon, boule de
+     lumière, étincelles), plus forte au centre qu'aux bords, mêmes paramètres.
 
-Relançable : les sons sont remplacés, le matériau n'est créé que s'il n'existe pas (on peut le retoucher à la main).
+Relançable : les sons sont remplacés, les matériaux ne sont créés que s'ils n'existent pas (on peut les retoucher à la main).
 """
 
 import importlib.util
@@ -109,15 +111,63 @@ def make_glow_material():
     return True
 
 
+def make_light_material():
+    """M_EvolutionLight : non éclairé, additif, plein au centre et doux sur les bords (inverse du Fresnel)."""
+    path = CONTENT_DIR + "/M_EvolutionLight"
+    if eal.does_asset_exist(path):
+        return False
+    material = asset_tools.create_asset("M_EvolutionLight", CONTENT_DIR, unreal.Material, unreal.MaterialFactoryNew())
+    material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_ADDITIVE)
+    material.set_editor_property("used_with_instanced_static_meshes", True)
+    material.set_editor_property("used_with_static_lighting", False)
+
+    glow = mel.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -900, 0)
+    glow.set_editor_property("parameter_name", "Glow")
+    glow.set_editor_property("default_value", 1.0)
+    color = mel.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -900, -250)
+    color.set_editor_property("parameter_name", "Color")
+    color.set_editor_property("default_value", unreal.LinearColor(0.7, 0.85, 1.0, 1.0))
+    strength = mel.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -900, 400)
+    strength.set_editor_property("parameter_name", "Intensite")
+    strength.set_editor_property("default_value", 25.0)
+    fresnel = mel.create_material_expression(material, unreal.MaterialExpressionFresnel, -900, 200)
+    fresnel.set_editor_property("exponent", 1.5)
+
+    # Centre = 1, bords = 0 (adouci par une puissance) : un trait de lumière sans arête
+    center = mel.create_material_expression(material, unreal.MaterialExpressionOneMinus, -700, 200)
+    mel.connect_material_expressions(fresnel, "", center, "")
+    soft = mel.create_material_expression(material, unreal.MaterialExpressionPower, -550, 200)
+    soft.set_editor_property("const_exponent", 2.0)
+    mel.connect_material_expressions(center, "", soft, "Base")
+
+    tinted = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -450, -150)
+    mel.connect_material_expressions(color, "", tinted, "A")
+    mel.connect_material_expressions(glow, "", tinted, "B")
+    shaped = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -350, 200)
+    mel.connect_material_expressions(soft, "", shaped, "A")
+    mel.connect_material_expressions(strength, "", shaped, "B")
+    emissive = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -200, 0)
+    mel.connect_material_expressions(tinted, "", emissive, "A")
+    mel.connect_material_expressions(shaped, "", emissive, "B")
+
+    mel.connect_material_property(emissive, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    mel.recompile_material(material)
+    eal.save_asset(path)
+    return True
+
+
 def main():
-    with unreal.ScopedSlowTask(2, "Progression : sons et lueur de l'évolution") as task:
+    with unreal.ScopedSlowTask(3, "Progression : sons et lumières de l'évolution") as task:
         task.make_dialog(True)
         task.enter_progress_frame(1, "Sons")
         sounds = make_sounds()
         task.enter_progress_frame(1, "Matériau M_EvolutionGlow")
         created = make_glow_material()
-    unreal.log("Progression : {} sons dans {}, M_EvolutionGlow {}".format(
-        sounds, SOUND_DIR, "créé" if created else "déjà là (pas touché)"))
+        task.enter_progress_frame(1, "Matériau M_EvolutionLight")
+        light = make_light_material()
+    unreal.log("Progression : {} sons dans {}, M_EvolutionGlow {}, M_EvolutionLight {}".format(
+        sounds, SOUND_DIR, "créé" if created else "déjà là (pas touché)", "créé" if light else "déjà là (pas touché)"))
 
 
 main()

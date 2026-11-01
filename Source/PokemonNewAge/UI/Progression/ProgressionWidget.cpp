@@ -3,6 +3,7 @@
 #include "Progression/ProgressionComponent.h"
 #include "Blueprint/WidgetTree.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
+#include "Components/BackgroundBlur.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
 #include "Components/HorizontalBox.h"
@@ -29,6 +30,14 @@ namespace ProgressionUI
 	const FLinearColor Dim(0.6f, 0.65f, 0.7f, 1.f);
 	const FLinearColor Good(0.3f, 0.85f, 0.4f, 1.f);
 	const FLinearColor Warn(0.98f, 0.75f, 0.2f, 1.f);
+
+	// Boîte de texte en verre (maquette de L'amie, Evolution_Pokeball_Anim : 1920 × 1080) : verre blanc à 30 %,
+	// décor flouté derrière, liseré clair ; à 92 px des bords, 34 px du bas, 206 px de haut ; Futura BdCn
+	const FLinearColor GlassFill(1.f, 1.f, 1.f, 0.3f);
+	const FLinearColor GlassOutline(1.f, 1.f, 1.f, 0.75f);
+	constexpr float GlassRadius = 24.f;
+	constexpr float GlassBlur = 12.f;
+	constexpr float MessageFontSize = 34.f;
 
 	FLinearColor Darken(const FLinearColor& Color, float Factor)
 	{
@@ -69,23 +78,35 @@ TSharedRef<SWidget> UProgressionWidget::RebuildWidget()
 		FlashSlot->SetHorizontalAlignment(HAlign_Fill);
 		FlashSlot->SetVerticalAlignment(VAlign_Fill);
 
-		// Boîte de texte en bas
-		MessageFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MessageFrame"));
-		MessageFrame->SetBrush(FSlateRoundedBoxBrush(PanelColor, 14.f));
-		MessageFrame->SetPadding(FMargin(32.f, 22.f));
-		UOverlaySlot* MessageSlot = Root->AddChildToOverlay(MessageFrame);
+		// Boîte de texte en bas, en verre : le flou d'arrière-plan derrière, le verre teinté et son liseré devant
+		UBackgroundBlur* MessageBlur = WidgetTree->ConstructWidget<UBackgroundBlur>(UBackgroundBlur::StaticClass(), TEXT("MessageBlur"));
+		MessageBlur->SetBlurStrength(GlassBlur);
+		MessageBlur->SetCornerRadius(FVector4(GlassRadius, GlassRadius, GlassRadius, GlassRadius));
+		MessageBlur->SetPadding(FMargin(0.f));
+		MessageFrame = MessageBlur;
+		UOverlaySlot* MessageSlot = Root->AddChildToOverlay(MessageBlur);
 		MessageSlot->SetHorizontalAlignment(HAlign_Fill);
 		MessageSlot->SetVerticalAlignment(VAlign_Bottom);
-		MessageSlot->SetPadding(FMargin(60.f, 0.f, 60.f, 40.f));
+		MessageSlot->SetPadding(FMargin(92.f, 0.f, 92.f, 34.f));
+		UBorder* MessageGlass = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MessageGlass"));
+		MessageGlass->SetBrush(FSlateRoundedBoxBrush(GlassFill, GlassRadius, GlassOutline, 1.5f));
+		MessageGlass->SetPadding(FMargin(50.f, 32.f, 40.f, 24.f));
+		MessageBlur->SetContent(MessageGlass);
 		USizeBox* MessageSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
-		MessageSize->SetMinDesiredHeight(150.f);
-		MessageFrame->SetContent(MessageSize);
+		MessageSize->SetMinDesiredHeight(206.f - 32.f - 24.f);
+		MessageGlass->SetContent(MessageSize);
 		UHorizontalBox* MessageRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
 		MessageSize->SetContent(MessageRow);
 		MessageText = MakeText(FText::GetEmpty(), 30, Text);
+		MessageText->SetFont(PokemonFonts::GetHUD(MessageFontSize));
+		// Petite ombre : le texte blanc reste lisible sur le verre clair
+		MessageText->SetShadowOffset(FVector2D(1.5f, 2.f));
+		MessageText->SetShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.4f));
 		MessageText->SetAutoWrapText(true);
 		MessageRow->AddChildToHorizontalBox(MessageText)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-		MessageArrow = MakeText(FText::FromString(TEXT("v")), 26, Warn, true);
+		MessageArrow = MakeText(FText::FromString(TEXT("v")), 26, Text, true);
+		MessageArrow->SetShadowOffset(FVector2D(1.5f, 2.f));
+		MessageArrow->SetShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.4f));
 		MessageRow->AddChildToHorizontalBox(MessageArrow)->SetVerticalAlignment(VAlign_Bottom);
 		MessageArrow->SetVisibility(ESlateVisibility::Hidden);
 
@@ -96,7 +117,7 @@ TSharedRef<SWidget> UProgressionWidget::RebuildWidget()
 		UOverlaySlot* StatsSlot = Root->AddChildToOverlay(StatsFrame);
 		StatsSlot->SetHorizontalAlignment(HAlign_Right);
 		StatsSlot->SetVerticalAlignment(VAlign_Bottom);
-		StatsSlot->SetPadding(FMargin(0.f, 0.f, 80.f, 220.f));
+		StatsSlot->SetPadding(FMargin(0.f, 0.f, 92.f, 262.f));
 		USizeBox* StatsSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
 		StatsSize->SetWidthOverride(360.f);
 		StatsFrame->SetContent(StatsSize);
@@ -112,7 +133,7 @@ TSharedRef<SWidget> UProgressionWidget::RebuildWidget()
 		UOverlaySlot* MenuSlot = Root->AddChildToOverlay(MenuFrame);
 		MenuSlot->SetHorizontalAlignment(HAlign_Right);
 		MenuSlot->SetVerticalAlignment(VAlign_Bottom);
-		MenuSlot->SetPadding(FMargin(0.f, 0.f, 80.f, 210.f));
+		MenuSlot->SetPadding(FMargin(0.f, 0.f, 92.f, 256.f));
 		MenuBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("MenuBox"));
 		MenuFrame->SetContent(MenuBox);
 		MenuFrame->SetVisibility(ESlateVisibility::Collapsed);
