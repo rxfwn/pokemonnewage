@@ -7,6 +7,7 @@
 
 class APokemonNewAgePlayerController;
 class UMaterialInstanceDynamic;
+class UMaterialInterface;
 class UPointLightComponent;
 class UPokedexIconWidget;
 class UPokedexInfoWidget;
@@ -83,11 +84,23 @@ public:
 
 	/** Marge autour de l'appareil ouvert quand on calcule la distance à la caméra (1 = bord à bord) */
 	UPROPERTY(EditAnywhere, Category="Pokedex")
-	float ScreenFill = 0.94f;
+	float ScreenFill = 0.89f;
 
 	/** Exposition fixe pendant le menu (EV100) : l'appareil a le même rendu de jour comme de nuit */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
-	float MenuExposureEV100 = 11.f;
+	float MenuExposureEV100 = 7.f;
+
+	/** Prendre l'exposition qui va avec le soleil de la map (décor visible), au lieu de Menu Exposure EV100 */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	bool bMatchWorldExposure = true;
+
+	/** Correction de l'exposition calculée (EV) : négatif = décor et appareil plus clairs */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	float WorldExposureOffset = 0.f;
+
+	/** Luminosité des écrans et des icônes (1 = blanc pur à l'exposition du menu) */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	float ScreenBrightness = 0.75f;
 
 	/** Intensité des lumières qui éclairent l'appareil (candelas) */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
@@ -96,9 +109,45 @@ public:
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
 	float FillLightIntensity = 250.f;
 
+	/** Contre-jour chaud qui souligne les bords de l'appareil (soleil derrière, comme sur la maquette) */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	float RimLightIntensity = 450.f;
+
+	/** Plastique du boîtier : teinte multipliée à la texture (moins rouge vif) */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	FLinearColor BodyTint = FLinearColor::White;
+
+	/** Plastique du boîtier : 0 = couleurs de la texture, 1 = gris */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu", meta=(ClampMin="0", ClampMax="1"))
+	float BodyDesaturation = 0.f;
+
+	/** Plastique du boîtier : 0 = brillance de la texture, 1 = tout mat */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu", meta=(ClampMin="0", ClampMax="1"))
+	float BodyRoughnessBoost = 0.f;
+
+	/** Halo lumineux pendant le menu (0 = aucun ; le jeu en a 0,675 par défaut) : bas pour un texte net sur les écrans */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	float MenuBloom = 0.1f;
+
+	/** FXAA pendant le menu au lieu du TSR/TAA du jeu (qui floute le texte des écrans) */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	bool bUseFxaaInMenu = true;
+
+	/** Objectif : un peu de lumière propre à sa texture, pour qu'il reste lisible dans l'ombre (0 = aucune) */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	float LensTextureGlow = 0.15f;
+
+	/** Force des voyants allumés (1 = discrets, comme de vraies LED) */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
+	float LedGlow = 1.f;
+
+	/** Résolution des écrans et des icônes (2 = deux fois plus de pixels, texte net) */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu", meta=(ClampMin="1", ClampMax="4"))
+	float PanelRenderScale = 2.f;
+
 	/** Flou du décor (ouverture de l'objectif : plus petit = plus flou) */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Rendu")
-	float BackgroundBlurFstop = 2.8f;
+	float BackgroundBlurFstop = 1.8f;
 
 	/** Hauteur de la figurine du Pokémon (fiche du Pokédex, résumé), en cm */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Figurine", meta=(Units="Centimeters"))
@@ -111,6 +160,21 @@ public:
 	/** Vitesse de rotation à la souris (degrés par pixel) */
 	UPROPERTY(EditAnywhere, Category="Pokedex|Commandes")
 	float DragSensitivity = 0.35f;
+
+	/** Rotation maximale à la souris ou au stick (degrés de chaque côté) */
+	UPROPERTY(EditAnywhere, Category="Pokedex|Commandes", meta=(Units="Degrees"))
+	float MaxTurnYaw = 5.f;
+
+	UPROPERTY(EditAnywhere, Category="Pokedex|Commandes", meta=(Units="Degrees"))
+	float MaxTurnPitch = 5.f;
+
+	/** Vitesse du retour en place quand on lâche le clic droit (plus petit = plus doux) */
+	UPROPERTY(EditAnywhere, Category="Pokedex")
+	float ReturnSpeed = 3.f;
+
+	/** Douceur de la rotation (plus petit = plus lent et plus fluide) */
+	UPROPERTY(EditAnywhere, Category="Pokedex")
+	float RotationSmoothing = 8.f;
 
 protected:
 
@@ -134,13 +198,24 @@ private:
 	void MeasureModel();
 	/** Écrans et icônes posés sur les pièces (Widget Components) */
 	void CreatePanels();
-	UWidgetComponent* AddPanel(FName PartKey, UUserWidget* Widget, FVector2D PixelSize, bool bOpaque);
+	UWidgetComponent* AddPanel(FName PartKey, UUserWidget* Widget, FVector2D PixelSize, bool bOpaque, FLinearColor Background = FLinearColor::Black);
+	/** Pose le widget sur le panneau, rendu PanelRenderScale fois plus fin (même taille à l'écran) */
+	void SetPanelWidget(UWidgetComponent* Panel, UUserWidget* Widget, FVector2D PixelSize, float CmPerPixel);
 	/** Taille en cm (largeur, hauteur) et centre de la face avant d'une pièce, dans le repère de son parent */
 	bool GetPartFace(FName PartKey, FVector& OutCenter, FVector2D& OutSize) const;
 	void PlaceInFrontOfCamera();
 
+	/** Allume un voyant ou une pièce (EmissiveStrength mis à l'échelle de l'exposition du menu) */
+	void SetGlow(UMaterialInstanceDynamic* Material, float Strength) const;
+
 	/** Distance à la caméra pour que l'appareil ouvert remplisse ScreenFill de la fenêtre (refait si elle change de taille) */
 	void UpdateFraming();
+	/** FXAA pendant le menu, réglage du jeu remis ensuite */
+	void SetMenuAntiAliasing(bool bMenu);
+	int32 SavedAntiAliasing = -1;
+
+	/** EV100 qui affiche la map correctement d'après la lumière de son soleil */
+	float EstimateWorldExposure() const;
 	void UpdateAnimation(float DeltaSeconds);
 	void UpdateLights(float DeltaSeconds);
 	void UpdatePanels(float DeltaSeconds);
@@ -197,6 +272,9 @@ private:
 	TObjectPtr<UPointLightComponent> FillLight;
 
 	UPROPERTY(VisibleAnywhere, Category="Pokedex")
+	TObjectPtr<UPointLightComponent> RimLight;
+
+	UPROPERTY(VisibleAnywhere, Category="Pokedex")
 	TObjectPtr<UPostProcessComponent> PostProcess;
 
 	/** Figurine : socle (tourne), et le modèle animé ou fixe */
@@ -231,6 +309,10 @@ private:
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UPokedexIconWidget>> MenuIconWidgets;
 
+	/** Icône appareil photo sur le bouton rond noir */
+	UPROPERTY(Transient)
+	TObjectPtr<UWidgetComponent> CameraIconPanel;
+
 	/** Écran du haut du volet */
 	UPROPERTY(Transient)
 	TObjectPtr<UPokedexInfoWidget> InfoWidget;
@@ -249,6 +331,10 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> LensMaterial;
+
+	/** M_PokedexWidget (écrans et icônes) */
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInterface> WidgetMaterial;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> LedRedMaterial;
@@ -287,6 +373,9 @@ private:
 	FVector2D LastPointer = FVector2D::ZeroVector;
 	float UserYaw = 0.f;
 	float UserPitch = 0.f;
+	/** Rotation affichée (suit UserYaw / UserPitch en douceur) */
+	float ShownYaw = 0.f;
+	float ShownPitch = 0.f;
 	float StickYaw = 0.f;
 	float StickPitch = 0.f;
 	float ZoomOffset = 0.f;
@@ -296,11 +385,15 @@ private:
 	FVector CameraLocation = FVector::ZeroVector;
 	FRotator CameraRotation = FRotator::ZeroRotator;
 	float ViewDistance = 32.f;
+	float GlowScale = 1.f;
+	float ExposureEV100 = 7.f;
+	float WidgetBrightness = 1.f;
 	FIntPoint FramedViewportSize = FIntPoint::ZeroValue;
 
 	// Taille du modèle (MeasureModel)
 	float HalfWidth = 9.3f;
 	float HalfHeight = 7.6f;
+	float HalfDepth = 1.5f;
 	/** Décalage pour garder l'appareil au centre : fermé (boîtier seul) et ouvert */
 	FVector ClosedOffset = FVector(0.f, 4.3f, 0.f);
 	FVector OpenOffset = FVector::ZeroVector;

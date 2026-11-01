@@ -18,7 +18,23 @@ FBX_PATH = os.path.join(PROJECT_DIR, "Tools", "Pokedex", "Generated", "Pokedex.f
 
 def pokedex_installed():
     eal = unreal.EditorAssetLibrary
-    if not eal.does_asset_exist(MODEL_PATH):
+    # M_PokedexWidget : ajouté le 2026-10-31 (écrans noirs sans lui) ; son absence relance l'import
+    if not eal.does_asset_exist(MODEL_PATH) or not eal.does_asset_exist("/Game/UI/Pokedex/M_PokedexWidget"):
+        return False
+    # Icône appareil photo et écrans lissés (version 8 du matériau) : ajoutés le 2026-11-01
+    if not eal.does_asset_exist("/Game/UI/Pokedex/Icons/T_PokedexButton_Camera"):
+        return False
+    widget_material = eal.load_asset("/Game/UI/Pokedex/M_PokedexWidget")
+    if not widget_material or eal.get_metadata_tag(widget_material, "PokedexWidgetVersion") != "8":
+        return False
+    # Objectif d'appareil photo (ajouté le 2026-11-01)
+    if not eal.does_asset_exist("/Game/UI/Pokedex/M_PokedexLens"):
+        return False
+    lens = eal.load_asset("/Game/UI/Pokedex/M_PokedexLens")
+    if not lens or eal.get_metadata_tag(lens, "PokedexVersion") != "2":
+        return False
+    textured = eal.load_asset("/Game/UI/Pokedex/M_PokedexTextured")
+    if not textured or eal.get_metadata_tag(textured, "PokedexVersion") != "2":
         return False
     model = eal.load_asset(MODEL_PATH)
     try:

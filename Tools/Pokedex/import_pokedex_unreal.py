@@ -169,10 +169,27 @@ def _texture(material, name, sampler, default, x, y):
     return node
 
 
-def _new_material(name):
+def _mask(material, channels, x, y):
+    """ComponentMask avec exactement ces canaux (« rgb », « gb », « a »...) : les autres sont décochés,
+    sinon Unreal garde ses cases cochées par défaut (Mask (R G B) au lieu de (G B) : erreur de type)."""
+    node = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, x, y)
+    for channel in "rgba":
+        node.set_editor_property(channel, channel in channels)
+    return node
+
+
+def _new_material(name, version=None):
+    """Nouveau matériau, ou None s'il existe déjà. Avec version : un matériau d'une autre version est vidé et refait
+    (sans le supprimer, pour garder ses instances MI_Pokedex_*)."""
     path = CONTENT_DIR + "/" + name
     if eal.does_asset_exist(path):
-        return path, None
+        if version is None:
+            return path, None
+        material = eal.load_asset(path)
+        if eal.get_metadata_tag(material, "PokedexVersion") == version:
+            return path, None
+        mel.delete_all_material_expressions(material)
+        return path, material
     return path, asset_tools.create_asset(name, CONTENT_DIR, unreal.Material, unreal.MaterialFactoryNew())
 
 
@@ -200,9 +217,178 @@ def make_material():
     return material
 
 
+def make_widget_material():
+    """M_PokedexWidget : écrans et icônes du Pokédex (composants Widget). Comme le matériau d'Unreal
+    (Widget3DPassThrough), mais avec un paramètre Brightness que le C++ règle sur l'exposition du menu :
+    sans lui, les écrans paraissent noirs en plein jour."""
+    path = CONTENT_DIR + "/M_PokedexWidget"
+    if eal.does_asset_exist(path):
+        eal.delete_asset(path)
+    material = asset_tools.create_asset("M_PokedexWidget", CONTENT_DIR, unreal.Material, unreal.MaterialFactoryNew())
+    material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
+    # Net malgré l'anticrénelage temporel et le flou du décor (version 4)
+    material.set_editor_property("enable_responsive_aa", True)
+    try:
+        # Après le flou de mouvement : dessiné après l'upscale (TSR), à la pleine résolution de la fenêtre (version 7)
+        material.set_editor_property("translucency_pass", unreal.MaterialTranslucencyPass.MTP_AFTER_MOTION_BLUR)
+    except Exception as error:
+        unreal.log_warning("M_PokedexWidget : passe après le flou non réglée ({})".format(error))
+
+    # L'écran est rendu en grand (Panel Render Scale) puis réduit à l'écran : sans lissage, le texte « grésille ».
+    # 4 lectures normales de la texture (mêmes couleurs que le matériau d'Unreal) à ±1/8 de pixel affiché, moyennées
+    # (version 6 : ±1/4 rendait le texte flou une fois les écrans vraiment opaques).
+    # (Version 2 : nœud Custom à 16 points, couleurs délavées et traits trop effacés.)
+    slate_tex = mel.create_material_expression(material, unreal.MaterialExpressionTextureObjectParameter, -1700, 0)
+    slate_tex.set_editor_property("parameter_name", "SlateUI")
+    slate_tex.set_editor_property("texture", unreal.load_asset("/Engine/EngineResources/DefaultTexture"))
+    uv = mel.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate, -1700, 250)
+    ddx = mel.create_material_expression(material, unreal.MaterialExpressionDDX, -1550, 350)
+    ddy = mel.create_material_expression(material, unreal.MaterialExpressionDDY, -1550, 450)
+    mel.connect_material_expressions(uv, "", ddx, "")
+    mel.connect_material_expressions(uv, "", ddy, "")
+    samples = []
+    for index, (a, b) in enumerate(((-0.12, -0.12), (0.12, -0.12), (-0.12, 0.12), (0.12, 0.12))):
+        y = -300 + index * 220
+        off_x = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -1400, y)
+        off_x.set_editor_property("const_b", a)
+        mel.connect_material_expressions(ddx, "", off_x, "A")
+        off_y = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -1400, y + 80)
+        off_y.set_editor_property("const_b", b)
+        mel.connect_material_expressions(ddy, "", off_y, "A")
+        offset = mel.create_material_expression(material, unreal.MaterialExpressionAdd, -1300, y)
+        mel.connect_material_expressions(off_x, "", offset, "A")
+        mel.connect_material_expressions(off_y, "", offset, "B")
+        coords = mel.create_material_expression(material, unreal.MaterialExpressionAdd, -1200, y)
+        mel.connect_material_expressions(uv, "", coords, "A")
+        mel.connect_material_expressions(offset, "", coords, "B")
+        sample = mel.create_material_expression(material, unreal.MaterialExpressionTextureSample, -1050, y)
+        sample.set_editor_property("sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_COLOR)
+        mel.connect_material_expressions(slate_tex, "", sample, "Tex")
+        mel.connect_material_expressions(coords, "", sample, "UVs")
+        samples.append(sample)
+    sum_a = mel.create_material_expression(material, unreal.MaterialExpressionAdd, -900, -200)
+    mel.connect_material_expressions(samples[0], "RGBA", sum_a, "A")
+    mel.connect_material_expressions(samples[1], "RGBA", sum_a, "B")
+    sum_b = mel.create_material_expression(material, unreal.MaterialExpressionAdd, -900, 200)
+    mel.connect_material_expressions(samples[2], "RGBA", sum_b, "A")
+    mel.connect_material_expressions(samples[3], "RGBA", sum_b, "B")
+    total = mel.create_material_expression(material, unreal.MaterialExpressionAdd, -820, 0)
+    mel.connect_material_expressions(sum_a, "", total, "A")
+    mel.connect_material_expressions(sum_b, "", total, "B")
+    slate = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -760, 0)
+    slate.set_editor_property("const_b", 0.25)
+    mel.connect_material_expressions(total, "", slate, "A")
+    slate_rgb = _mask(material, "rgb", -700, 0)
+    slate_a = _mask(material, "a", -700, 150)
+    mel.connect_material_expressions(slate, "", slate_rgb, "")
+    mel.connect_material_expressions(slate, "", slate_a, "")
+    tint = _vector(material, "TintColorAndOpacity", (1.0, 1.0, 1.0, 1.0), -900, 300)
+    brightness = _scalar(material, "Brightness", 1.0, -900, 500)
+    # Réglé par UWidgetComponent : 1 pour un panneau transparent, 0 pour un panneau opaque (alors opacité 1 partout,
+    # sinon les bords du texte laissent voir la pièce derrière : texte « doublé »)
+    opacity_from_texture = _scalar(material, "OpacityFromTexture", 1.0, -900, 650)
+    texture_opacity = mel.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, -550, 300)
+    texture_opacity.set_editor_property("const_a", 1.0)
+    color = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -600, 100)
+    tint_rgb = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, -700, 300)
+    tint_rgb.set_editor_property("r", True)
+    tint_rgb.set_editor_property("g", True)
+    tint_rgb.set_editor_property("b", True)
+    lit = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -400, 150)
+    opacity = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -400, 400)
+
+    mel.connect_material_expressions(tint, "", tint_rgb, "")
+    mel.connect_material_expressions(slate_rgb, "", color, "A")
+    mel.connect_material_expressions(tint_rgb, "", color, "B")
+    mel.connect_material_expressions(color, "", lit, "A")
+    mel.connect_material_expressions(brightness, "", lit, "B")
+    mel.connect_material_expressions(slate_a, "", texture_opacity, "B")
+    mel.connect_material_expressions(opacity_from_texture, "", texture_opacity, "Alpha")
+    mel.connect_material_expressions(texture_opacity, "", opacity, "A")
+    # Sortie « A » du paramètre directement (sa sortie par défaut n'a que RGB)
+    mel.connect_material_expressions(tint, "A", opacity, "B")
+    mel.connect_material_property(lit, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
+    mel.recompile_material(material)
+    # Version lue par Content/Python/init_unreal.py : une version plus ancienne relance l'import à l'ouverture d'Unreal
+    eal.set_metadata_tag(material, "PokedexWidgetVersion", "8")
+    eal.save_asset(path)
+    return material
+
+
+def make_lens_material():
+    """M_PokedexLens : objectif d'appareil photo (texture Assets/lens/T_PokedexLens.png, faite par make_lens_texture.py).
+    La texture est projetée de face sur l'objectif d'après sa position dans la pièce (LensCenter, LensSize réglés
+    par le C++), donc indépendante des UV du modèle. Verre très lisse : les lumières y font de vrais reflets."""
+    lens_file = os.path.join(ASSETS_DIR, "lens", "T_PokedexLens.png")
+    if not os.path.exists(lens_file):
+        unreal.log_warning("Pokédex : texture de l'objectif absente (" + lens_file + ")")
+        return None
+    import_files([lens_file], TEXTURE_DIR)
+    lens_texture = eal.load_asset(TEXTURE_DIR + "/T_PokedexLens")
+
+    path, material = _new_material("M_PokedexLens", "2")
+    if material is None:
+        return eal.load_asset(path)
+
+    # UV = ((Y, Z) local - centre) / taille, V inversé (la face regarde -X, Y vers la droite, Z vers le haut)
+    local = mel.create_material_expression(material, unreal.MaterialExpressionLocalPosition, -1500, 0)
+    local_yz = _mask(material, "gb", -1350, 0)
+    mel.connect_material_expressions(local, "", local_yz, "")
+    center = _vector(material, "LensCenter", (0.0, 0.0, 0.0, 0.0), -1500, 150)
+    center_yz = _mask(material, "gb", -1350, 150)
+    mel.connect_material_expressions(center, "", center_yz, "")
+    size = _scalar(material, "LensSize", 2.0, -1350, 300)
+    diff = mel.create_material_expression(material, unreal.MaterialExpressionSubtract, -1200, 50)
+    mel.connect_material_expressions(local_yz, "", diff, "A")
+    mel.connect_material_expressions(center_yz, "", diff, "B")
+    scaled = mel.create_material_expression(material, unreal.MaterialExpressionDivide, -1080, 100)
+    mel.connect_material_expressions(diff, "", scaled, "A")
+    mel.connect_material_expressions(size, "", scaled, "B")
+    flip = mel.create_material_expression(material, unreal.MaterialExpressionConstant2Vector, -1080, 250)
+    flip.set_editor_property("r", 1.0)
+    flip.set_editor_property("g", -1.0)
+    flipped = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -960, 100)
+    mel.connect_material_expressions(scaled, "", flipped, "A")
+    mel.connect_material_expressions(flip, "", flipped, "B")
+    uv = mel.create_material_expression(material, unreal.MaterialExpressionAdd, -840, 100)
+    uv.set_editor_property("const_b", 0.5)
+    mel.connect_material_expressions(flipped, "", uv, "A")
+
+    texture = _texture(material, "LensTexture", unreal.MaterialSamplerType.SAMPLERTYPE_COLOR, lens_texture, -700, 0)
+    mel.connect_material_expressions(uv, "", texture, "UVs")
+    mel.connect_material_property(texture, "RGB", unreal.MaterialProperty.MP_BASE_COLOR)
+    roughness = _scalar(material, "Roughness", 0.06, -700, 300)
+    mel.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)
+    specular = _scalar(material, "Specular", 0.8, -700, 400)
+    mel.connect_material_property(specular, "", unreal.MaterialProperty.MP_SPECULAR)
+
+    # Émissif : un peu de la texture (le verre reste lisible dans l'ombre) + lueur de l'objectif (C++, SetGlow)
+    self_light = _scalar(material, "TextureGlow", 0.0, -700, 550)
+    tex_glow = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -500, 450)
+    mel.connect_material_expressions(texture, "RGB", tex_glow, "A")
+    mel.connect_material_expressions(self_light, "", tex_glow, "B")
+    glow_color = _vector(material, "EmissiveColor", (0.15, 0.4, 1.0, 1.0), -700, 700)
+    glow_strength = _scalar(material, "EmissiveStrength", 0.0, -700, 850)
+    glow = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -500, 750)
+    mel.connect_material_expressions(glow_color, "", glow, "A")
+    mel.connect_material_expressions(glow_strength, "", glow, "B")
+    emissive = mel.create_material_expression(material, unreal.MaterialExpressionAdd, -300, 600)
+    mel.connect_material_expressions(tex_glow, "", emissive, "A")
+    mel.connect_material_expressions(glow, "", emissive, "B")
+    mel.connect_material_property(emissive, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+
+    mel.recompile_material(material)
+    eal.set_metadata_tag(material, "PokedexVersion", "2")
+    eal.save_asset(path)
+    return material
+
+
 def make_textured_material(textures):
     """M_PokedexTextured : textures du modèle (couleur, ORM, normales, émissif) + lumière ajoutée par le C++ (voyants)."""
-    path, material = _new_material("M_PokedexTextured")
+    # Version 2 : Desaturation et RoughnessBoost (plastique moins rouge vif et moins brillant, réglés par le C++)
+    path, material = _new_material("M_PokedexTextured", "2")
     if material is None:
         return eal.load_asset(path)
 
@@ -214,15 +400,24 @@ def make_textured_material(textures):
 
     color_map = _texture(material, "BaseColorMap", unreal.MaterialSamplerType.SAMPLERTYPE_COLOR, default("BaseColor"), -900, -400)
     tint = _vector(material, "Tint", (1.0, 1.0, 1.0, 1.0), -900, -150)
+    desaturation = _scalar(material, "Desaturation", 0.0, -900, -250)
+    desaturated = mel.create_material_expression(material, unreal.MaterialExpressionDesaturation, -700, -350)
+    mel.connect_material_expressions(color_map, "RGB", desaturated, "")
+    mel.connect_material_expressions(desaturation, "", desaturated, "Fraction")
     tinted = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -600, -300)
-    mel.connect_material_expressions(color_map, "RGB", tinted, "A")
+    mel.connect_material_expressions(desaturated, "", tinted, "A")
     mel.connect_material_expressions(tint, "", tinted, "B")
     mel.connect_material_property(tinted, "", unreal.MaterialProperty.MP_BASE_COLOR)
 
-    # ORM (glTF) : R occlusion, G rugosité, B métal
+    # ORM (glTF) : R occlusion, G rugosité, B métal ; RoughnessBoost rapproche la rugosité de 1 (plus mat)
     orm = _texture(material, "ORMMap", unreal.MaterialSamplerType.SAMPLERTYPE_MASKS, default("ORM"), -900, 50)
+    roughness_boost = _scalar(material, "RoughnessBoost", 0.0, -900, 200)
+    roughness = mel.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, -600, 100)
+    roughness.set_editor_property("const_b", 1.0)
+    mel.connect_material_expressions(orm, "G", roughness, "A")
+    mel.connect_material_expressions(roughness_boost, "", roughness, "Alpha")
     mel.connect_material_property(orm, "R", unreal.MaterialProperty.MP_AMBIENT_OCCLUSION)
-    mel.connect_material_property(orm, "G", unreal.MaterialProperty.MP_ROUGHNESS)
+    mel.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)
     mel.connect_material_property(orm, "B", unreal.MaterialProperty.MP_METALLIC)
 
     normal = _texture(material, "NormalMap", unreal.MaterialSamplerType.SAMPLERTYPE_NORMAL, default("Normal"), -900, 350)
@@ -245,6 +440,7 @@ def make_textured_material(textures):
     mel.connect_material_property(total, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
 
     mel.recompile_material(material)
+    eal.set_metadata_tag(material, "PokedexVersion", "2")
     eal.save_asset(path)
     return material
 
@@ -317,6 +513,8 @@ def import_ui_textures():
     """Icônes des boutons et carte de Kanto : textures d'interface (pas de mipmaps, pas de compression)."""
     icon_files = [os.path.join(ASSETS_DIR, "icons", "T_PokedexIcon_%s.png" % name) for name in ICONS]
     map_file = os.path.join(ASSETS_DIR, "map", "T_PokedexMap.png")
+    # + icône blanche du bouton rond noir (appareil photo, image de L'amie)
+    icon_files.append(os.path.join(ASSETS_DIR, "icons", "T_PokedexButton_Camera.png"))
     import_files([f for f in icon_files if os.path.exists(f)], ICON_DIR)
     import_files([map_file], MAP_DIR)
 
@@ -330,6 +528,7 @@ def import_ui_textures():
         return texture
 
     icons = [as_ui(ICON_DIR + "/T_PokedexIcon_" + name) for name in ICONS]
+    as_ui(ICON_DIR + "/T_PokedexButton_Camera")
     map_texture = as_ui(MAP_DIR + "/T_PokedexMap")
     with open(os.path.join(ASSETS_DIR, "map", "pokedex_map.json"), encoding="utf-8") as handle:
         map_data = json.load(handle)
@@ -430,6 +629,8 @@ def main():
             task.enter_progress_frame(1, "Matériaux")
             material = make_material()
             instances = make_material_instances(make_textured_material(textures), textures)
+            make_widget_material()
+            make_lens_material()
             task.enter_progress_frame(1, "Pièces 3D")
             import_files([FBX_PATH], MESH_DIR)
             meshes = collect_meshes()
