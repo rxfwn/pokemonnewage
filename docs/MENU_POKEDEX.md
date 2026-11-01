@@ -61,15 +61,15 @@ Toutes les 5 minutes et en arrivant dans un nouveau lieu, sauf en combat ou menu
 
 ## Le HUD
 
-Fait en C++ (`UGameHUDWidget`) aux mesures de la maquette (1920 × 1080, mis à l'échelle par Unreal) :
+Fait en C++ (`UGameHUDWidget`) aux mesures, relevées au pixel, de la maquette v2 de L'amie (`hud/v2/Town_Announcement.png` dans les fichiers du projet, 1920 × 1080, mis à l'échelle par Unreal). Tailles de police UMG = taille Figma × 0,75 (Unreal compte en points). Faute de la vraie Futura BdCn BT, la Futura Bold est resserrée à 70 % (mesuré sur la maquette) ; donner `FF_Futura_BoldCondensed.ttf` dans `Tools/HUD/Assets/fonts` pour la vraie police.
 
 - **Icône du Pokédex** en haut à droite (image de L'amie), sans texte de touche (Tab l'ouvre).
-- **Nom du lieu** en Futura 95, centré en haut, avec le trait blanc dessous : il apparaît 4 s quand on entre dans une ville ou sur une route.
-- **En bas à droite** : le lieu (Futura BdCn BT 24, droite, comme la maquette), l'heure du jeu (voir « Heure du jeu »), la température (17 °C de moyenne, plus chaud à 15 h, réglable : `Base Temperature`, `Temperature Swing`) et le picto météo (pictos de L'amie : soleil par défaut, `SetWeather` pour nuage, pluie ou vent en attendant un vrai système météo).
-- **Boussole** : disque gris translucide, N en haut (le nord de Kanto), point blanc du joueur, cône de vue qui tourne avec la caméra, repère jaune du GPS sur le bord et distance au centre.
+- **Nom du lieu** (capitales de 68 px, ombre 3 px à 60 %), centré en haut, avec le trait blanc 584 × 4 dessous : il apparaît 4 s quand on entre dans une ville ou sur une route.
+- **En bas à droite** : le lieu (24 px Figma) sur un trait 206 × 2, puis à leurs positions exactes l'heure du jeu (voir « Heure du jeu »), la température (17 °C de moyenne, plus chaud à 15 h, réglable : `Base Temperature`, `Temperature Swing`) et le picto météo (pictos de L'amie : soleil par défaut, `SetWeather` pour nuage, pluie ou vent en attendant un vrai système météo).
+- **Boussole** : images de L'amie `T_HUD_Compass` (disque verre + N, à 50 %) et `T_HUD_CompassArrow` (cône + point, à 100 %, tourne autour du point avec la caméra), décor flouté dans le disque (`Compass Blur`, effet verre), repère jaune du GPS sur le bord et distance au centre.
 - Il se cache pendant les combats, les menus, la boutique, le PC et l'appareil photo, ou avec Échap > Jeu > Afficher le HUD.
 
-Images et polices : `Tools/HUD/Assets/` (icône du Pokédex, cône, 4 pictos météo de L'amie ; polices Futura en `FF_*.ttf`), importées dans `/Game/UI/HUD` par `Tools/HUD/import_hud_unreal.py`, lancé aussi à la fin du script du Pokédex.
+Images et polices : `Tools/HUD/Assets/` (icône du Pokédex, boussole et flèche, 4 pictos météo de L'amie ; polices Futura en `FF_*.ttf`), importées dans `/Game/UI/HUD` par `Tools/HUD/import_hud_unreal.py`, lancé aussi à la fin du script du Pokédex, et tout seul à l'ouverture d'Unreal quand une image ou une police est nouvelle ou modifiée.
 
 ## 1. Compiler (Unreal fermé)
 

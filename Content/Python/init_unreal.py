@@ -60,11 +60,40 @@ def missing_fonts():
     return stale
 
 
+def stale_images(folder, content_subdir, only_existing=False):
+    """Images PNG de Tools/<folder>/Assets pas encore importées (sauf only_existing), ou plus récentes que leur asset."""
+    import glob
+    content_dir = unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_content_dir())
+    stale = []
+    for path in glob.glob(os.path.join(PROJECT_DIR, "Tools", folder, "Assets", "*.png")):
+        name = os.path.splitext(os.path.basename(path))[0]
+        asset_file = os.path.join(content_dir, content_subdir, name + ".uasset")
+        if not os.path.exists(asset_file):
+            if not only_existing:
+                stale.append(name)
+        elif os.path.getmtime(path) > os.path.getmtime(asset_file):
+            stale.append(name)
+    return stale
+
+
+def install_title_images():
+    """Écran de titre : il lit les PNG de Tools/Title/Assets tant qu'ils ne sont pas importés ; une fois importés,
+    un PNG changé (ex. nouveau logo du 2026-11-01) doit être réimporté, sinon l'ancien asset reste affiché."""
+    script = os.path.join(PROJECT_DIR, "Tools", "Title", "import_title_unreal.py")
+    if not stale_images("Title", os.path.join("UI", "Title"), only_existing=True) or not os.path.exists(script):
+        return
+    unreal.log("Images de l'écran de titre modifiées : import automatique (Tools/Title/import_title_unreal.py)...")
+    spec = importlib.util.spec_from_file_location("import_title_unreal_auto", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)  # le script importe tout en se chargeant
+
+
 def install_fonts():
     script = os.path.join(PROJECT_DIR, "Tools", "HUD", "import_hud_unreal.py")
-    if not missing_fonts() or not os.path.exists(script):
+    # Polices ou images du HUD nouvelles ou modifiées (ex. boussole de la maquette v2, 2026-11-01)
+    if not (missing_fonts() or stale_images("HUD", os.path.join("UI", "HUD"))) or not os.path.exists(script):
         return
-    unreal.log("Polices nouvelles ou modifiées : import automatique (Tools/HUD/import_hud_unreal.py)...")
+    unreal.log("Polices ou images du HUD nouvelles ou modifiées : import automatique (Tools/HUD/import_hud_unreal.py)...")
     spec = importlib.util.spec_from_file_location("import_hud_unreal", script)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -97,6 +126,7 @@ def _on_tick(delta_seconds):
     try:
         install_pokedex()
         install_fonts()
+        install_title_images()
     except Exception as error:
         unreal.log_error("Installation du Pokédex 3D ratée : %s (lancer Tools/Pokedex/import_pokedex_unreal.py à la main)" % error)
 

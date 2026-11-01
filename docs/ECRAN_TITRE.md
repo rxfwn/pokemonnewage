@@ -3,7 +3,7 @@
 D'après la maquette Figma de L'amie du 2026-10-31 (1920 × 1080) :
 
 - **Fond** : son image (Pikachu et le dresseur au-dessus du village), qui remplit l'écran avec un zoom très lent.
-- **Logo** de L'amie (« Plan de travail 10 », `Tools/Title/Assets/T_Title_Logo.png`) en haut à gauche, à (34, 34), 638 × 323, ombre portée noire à 60 %.
+- **Logo** de L'amie (« Logo_Pokemon_Eclair », remplacé le 2026-11-01, `Tools/Title/Assets/T_Title_Logo.png`, 1276 × 666) en haut à gauche, à (34, 34), 638 px de large, hauteur d'après l'image, ombre portée noire à 60 %. S'il a déjà été importé dans `/Game/UI/Title`, Unreal le réimporte tout seul à l'ouverture quand le PNG change.
 - **Menu** à gauche, x = 160 : **Continuer** (y 621), **Nouvelle partie** (694), **Options** (767). Futura Medium penchée 32 px (police fournie par L'amie), blanc, ombre (3, 4) noire à 60 %. Sans sauvegarde, Continuer disparaît et les deux autres remontent.
 - **En bas à droite** : « v.1.0.0 » et « © 2026 », alignés à droite à 1832 px.
 - **Toutes les typos en Futura penchée** : Futura Medium pour le menu et les textes, Futura Bold pour les titres (`Tools/HUD/Assets/fonts/FF_Futura_Medium.ttf` et `FF_Futura_Bold.ttf`, penchées par Unreal). Les fichiers d'origine n'avaient aucune lettre accentuée (Unreal affichait des carrés « LATIN 1 ») : `Tools/HUD/add_futura_accents.py` les fabrique à partir des glyphes de la police (é è ê ë à â ç î ï ô ù û ü, capitales, © ° « »). Les originaux sont dans `fonts/original/`.

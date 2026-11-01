@@ -330,8 +330,9 @@ TSharedRef<SWidget> UTitleScreenWidget::RebuildWidget()
 				LayerSlot->SetVerticalAlignment(VAlign_Fill);
 			}
 			USizeBox* LogoBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+			// 638 px de large comme la maquette ; hauteur d'après l'image (logo Pokémon Éclair du 2026-11-01 : 1276 × 666)
 			LogoBox->SetWidthOverride(638.f);
-			LogoBox->SetHeightOverride(323.f);
+			LogoBox->SetHeightOverride(Logo->GetSizeX() > 0 ? 638.f * float(Logo->GetSizeY()) / float(Logo->GetSizeX()) : 323.f);
 			LogoBox->SetContent(LogoLayers);
 			LogoBlock = LogoBox;
 		}
