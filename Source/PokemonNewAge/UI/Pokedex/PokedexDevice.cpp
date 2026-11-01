@@ -611,7 +611,8 @@ void APokedexDevice::CreatePanels()
 			Icon = CreateWidget<UPokedexIconWidget>(PC, UPokedexIconWidget::StaticClass());
 			// Un peu plus petit que la touche : ses bords arrondis restent visibles autour de l'icône
 			Icon->SetPixelSize(Size * UPokedexPanelWidget::PixelsPerCm * IconPanelFill);
-			Icon->SetIcon(Model->MenuIcons.IsValidIndex(Index) ? Model->MenuIcons[Index].Get() : nullptr);
+			// L'appareil photo n'a pas de touche sur le volet : seulement le bouton rond noir (demandé par L'amie)
+			Icon->SetIcon(Index != int32(EPokedexMenu::Camera) && Model->MenuIcons.IsValidIndex(Index) ? Model->MenuIcons[Index].Get() : nullptr);
 			// Panneau opaque couleur de touche : les icônes de L'amie sont dessinées dessus dans l'écran lui-même,
 			// sans transparence (en transparent, leurs couleurs sombres disparaissaient : icônes pâles, globe invisible)
 			Panel = AddPanel(Key, Icon, Icon->GetPixelSize(), true, IconTileColor);
@@ -833,7 +834,8 @@ void APokedexDevice::UpdateAnimation(float DeltaSeconds)
 		{
 			MenuIndex = MenuIcons.IndexOfByKey(Cast<UWidgetComponent>(Component));
 		}
-		const bool bButtonHovered = MenuIndex != INDEX_NONE && MenuButtons.IsValidIndex(MenuIndex) && Hovered.Get() == MenuButtons[MenuIndex].Get();
+		const bool bButtonHovered = MenuIndex != INDEX_NONE && MenuIndex != int32(EPokedexMenu::Camera)
+			&& MenuButtons.IsValidIndex(MenuIndex) && Hovered.Get() == MenuButtons[MenuIndex].Get();
 		// Les autres boutons (croix, < >, appareil photo et son icône) se soulèvent aussi sous la souris
 		UStaticMeshComponent* ConfirmPart = Parts.FindRef(TEXT("ConfirmButton"));
 		const bool bOtherHovered = MenuIndex == INDEX_NONE && Hovered.IsValid()
@@ -1164,7 +1166,11 @@ void APokedexDevice::HandlePointerDown(const FKey& Button, const FVector2D& Pixe
 	}
 	else if (KeyString.StartsWith(TEXT("MenuButton")))
 	{
-		PressMenuButton(FCString::Atoi(*KeyString.RightChop(10)));
+		const int32 TileIndex = FCString::Atoi(*KeyString.RightChop(10));
+		if (TileIndex != int32(EPokedexMenu::Camera))
+		{
+			PressMenuButton(TileIndex);
+		}
 	}
 	else if (Key == TEXT("DPad"))
 	{
@@ -1278,7 +1284,8 @@ void APokedexDevice::SetHovered(UPrimitiveComponent* Component)
 
 	const FName Key = GetPartKey(Component);
 	// Main seulement sur ce qu'on peut cliquer : écran, 10 boutons, flèches du volet, croix, bouton appareil photo
-	const bool bClickable = Component && (Component == ScreenComponent.Get() || Key.ToString().StartsWith(TEXT("MenuButton")) || IsInList(Key, PushButtons));
+	const bool bMenuTile = Key.ToString().StartsWith(TEXT("MenuButton")) && FCString::Atoi(*Key.ToString().RightChop(10)) != int32(EPokedexMenu::Camera);
+	const bool bClickable = Component && (Component == ScreenComponent.Get() || bMenuTile || IsInList(Key, PushButtons));
 	if (InputWidget)
 	{
 		InputWidget->SetCursor(bClickable ? EMouseCursor::Hand : EMouseCursor::Default);
@@ -1438,13 +1445,24 @@ void APokedexDevice::MoveLidSelection(FIntPoint Direction)
 	Column = (Column + Direction.X + MenuColumns) % MenuColumns;
 	Row = (Row + Direction.Y + Rows) % Rows;
 	LidSelection = Row * MenuColumns + Column;
+	if (LidSelection == int32(EPokedexMenu::Camera))
+	{
+		// Touche vide (l'appareil photo est sur le bouton rond noir) : on la saute
+		Column = (Column + (Direction.X != 0 ? Direction.X : 1) + MenuColumns) % MenuColumns;
+		LidSelection = Row * MenuColumns + Column;
+	}
 	PanelTimer = 0.f;
 	PlayFeedback(EPokedexFeedback::Navigate);
 }
 
 void APokedexDevice::CycleMenu(int32 Step)
 {
-	PressMenuButton((LidSelection + Step + MenuCount) % MenuCount);
+	int32 Next = (LidSelection + Step + MenuCount) % MenuCount;
+	if (Next == int32(EPokedexMenu::Camera))
+	{
+		Next = (Next + Step + MenuCount) % MenuCount;
+	}
+	PressMenuButton(Next);
 }
 
 void APokedexDevice::PressMenuButton(int32 Index)
@@ -1464,8 +1482,7 @@ void APokedexDevice::PressMenuButton(int32 Index)
 		PressPart(MenuIcons[Index]);
 	}
 	MenuFlash[Index] = Time;
-	LensFlash = Time;
-	ScreenFlash = Time;
+	// Objectif et voyants ne clignotent pas quand on change de menu (demandé par L'amie)
 	PanelTimer = 0.f;
 	PlaySound(Model ? Model->ClickSound : nullptr);
 	if (Screen)
@@ -1512,18 +1529,14 @@ void APokedexDevice::PlayFeedback(EPokedexFeedback Type)
 	switch (Type)
 	{
 	case EPokedexFeedback::Navigate:
-		LedYellowFlash = Time;
 		PanelTimer = 0.f;
 		PlaySound(Model->NavSound);
 		break;
 	case EPokedexFeedback::Confirm:
-		LensFlash = Time;
-		ScreenFlash = Time;
 		PanelTimer = 0.f;
 		PlaySound(Model->BeepSound);
 		break;
 	case EPokedexFeedback::Back:
-		LedYellowFlash = Time;
 		PlaySound(Model->NavSound, 0.8f);
 		break;
 	case EPokedexFeedback::Error:
