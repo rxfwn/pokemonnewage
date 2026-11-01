@@ -113,6 +113,16 @@ def evolution_music():
     return t
 
 
+def evolution_wobble():
+    """La Ball bouge sur l'herbe : petit cliquetis sec (0,2 s)"""
+    rnd = random.Random(11)
+    n = int(RATE * 0.2)
+    t = [rnd.uniform(-1, 1) * math.exp(-60 * i / RATE) * 0.5 for i in range(n)]
+    place(t, tone(note(52), 0.12, attack=0.002, release=0.1, shape="triangle", volume=0.6), 0.0)
+    place(t, [v * 0.6 for v in t[:int(RATE * 0.03)]], 0.07)
+    return t
+
+
 def evolution_flash():
     """Souffle lumineux au moment du flash (0,9 s)"""
     rnd = random.Random(3)
@@ -141,6 +151,7 @@ def evolution_cancel():
 SOUNDS = {
     "SW_LevelUp": level_up,
     "SW_MoveLearned": move_learned,
+    "SW_Evolution_Wobble": evolution_wobble,
     "SW_Evolution_Start": evolution_start,
     "SW_Evolution_Music": evolution_music,
     "SW_Evolution_Flash": evolution_flash,

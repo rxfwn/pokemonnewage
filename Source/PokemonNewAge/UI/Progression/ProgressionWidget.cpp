@@ -1,5 +1,6 @@
 #include "UI/Progression/ProgressionWidget.h"
 #include "UI/GameFonts.h"
+#include "UI/GlassPanel.h"
 #include "Progression/ProgressionComponent.h"
 #include "Blueprint/WidgetTree.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
@@ -24,10 +25,13 @@
 namespace ProgressionUI
 {
 	// Mêmes couleurs que l'écran de combat
-	const FLinearColor PanelColor(0.02f, 0.025f, 0.035f, 0.82f);
 	const FLinearColor Text(0.95f, 0.96f, 0.97f, 1.f);
 	const FLinearColor Dim(0.6f, 0.65f, 0.7f, 1.f);
 	const FLinearColor Good(0.3f, 0.85f, 0.4f, 1.f);
+
+	// Boîte de texte en verre (maquette de L'amie, Evolution_Pokeball_Anim : 1920 × 1080) : le verre commun des menus
+	// (UI/GlassPanel.h) ; à 92 px des bords, 34 px du bas, 206 px de haut ; Futura BdCn
+	constexpr float MessageFontSize = 34.f;
 
 	FLinearColor Darken(const FLinearColor& Color, float Factor)
 	{
@@ -68,49 +72,41 @@ TSharedRef<SWidget> UProgressionWidget::RebuildWidget()
 		FlashSlot->SetHorizontalAlignment(HAlign_Fill);
 		FlashSlot->SetVerticalAlignment(VAlign_Fill);
 
-		// Boîte de texte en bas
-		MessageFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MessageFrame"));
-		MessageFrame->SetBrush(FSlateRoundedBoxBrush(PanelColor, 14.f));
-		MessageFrame->SetPadding(FMargin(32.f, 22.f));
+		// Boîte de texte en bas, en verre comme les autres fenêtres du jeu
+		USizeBox* MessageSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		MessageSize->SetMinDesiredHeight(206.f - 32.f - 24.f);
+		MessageFrame = PokemonGlass::Make(WidgetTree, MessageSize, FMargin(50.f, 32.f, 40.f, 24.f), PokemonGlass::DefaultCornerRadius, TEXT("MessageFrame"));
 		UOverlaySlot* MessageSlot = Root->AddChildToOverlay(MessageFrame);
 		MessageSlot->SetHorizontalAlignment(HAlign_Fill);
 		MessageSlot->SetVerticalAlignment(VAlign_Bottom);
-		MessageSlot->SetPadding(FMargin(60.f, 0.f, 60.f, 40.f));
-		USizeBox* MessageSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
-		MessageSize->SetMinDesiredHeight(150.f);
-		MessageFrame->SetContent(MessageSize);
+		MessageSlot->SetPadding(FMargin(92.f, 0.f, 92.f, 34.f));
 		UHorizontalBox* MessageRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
 		MessageSize->SetContent(MessageRow);
-		MessageText = MakeText(FText::GetEmpty(), 30, Text);
+		MessageText = MakeText(FText::GetEmpty(), 30, PokemonGlass::TextColor);
+		MessageText->SetFont(PokemonFonts::GetHUD(MessageFontSize));
 		MessageText->SetAutoWrapText(true);
 		MessageRow->AddChildToHorizontalBox(MessageText)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 
 		// Panneau des stats, à droite au-dessus du texte
-		StatsFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("StatsFrame"));
-		StatsFrame->SetBrush(FSlateRoundedBoxBrush(PanelColor, 14.f));
-		StatsFrame->SetPadding(FMargin(24.f, 16.f));
+		USizeBox* StatsSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		StatsFrame = PokemonGlass::Make(WidgetTree, StatsSize, FMargin(24.f, 16.f), PokemonGlass::DefaultCornerRadius, TEXT("StatsFrame"));
 		UOverlaySlot* StatsSlot = Root->AddChildToOverlay(StatsFrame);
 		StatsSlot->SetHorizontalAlignment(HAlign_Right);
 		StatsSlot->SetVerticalAlignment(VAlign_Bottom);
-		StatsSlot->SetPadding(FMargin(0.f, 0.f, 80.f, 220.f));
-		USizeBox* StatsSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		StatsSlot->SetPadding(FMargin(0.f, 0.f, 92.f, 262.f));
 		StatsSize->SetWidthOverride(360.f);
-		StatsFrame->SetContent(StatsSize);
 		StatsGrid = WidgetTree->ConstructWidget<UUniformGridPanel>(UUniformGridPanel::StaticClass());
 		StatsGrid->SetSlotPadding(FMargin(6.f, 4.f));
 		StatsSize->SetContent(StatsGrid);
 		StatsFrame->SetVisibility(ESlateVisibility::Collapsed);
 
 		// Choix de l'attaque à oublier
-		MenuFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MenuFrame"));
-		MenuFrame->SetBrush(FSlateRoundedBoxBrush(PanelColor, 14.f));
-		MenuFrame->SetPadding(FMargin(16.f));
+		MenuBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("MenuBox"));
+		MenuFrame = PokemonGlass::Make(WidgetTree, MenuBox, FMargin(16.f), PokemonGlass::DefaultCornerRadius, TEXT("MenuFrame"));
 		UOverlaySlot* MenuSlot = Root->AddChildToOverlay(MenuFrame);
 		MenuSlot->SetHorizontalAlignment(HAlign_Right);
 		MenuSlot->SetVerticalAlignment(VAlign_Bottom);
-		MenuSlot->SetPadding(FMargin(0.f, 0.f, 80.f, 210.f));
-		MenuBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("MenuBox"));
-		MenuFrame->SetContent(MenuBox);
+		MenuSlot->SetPadding(FMargin(0.f, 0.f, 92.f, 256.f));
 		MenuFrame->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	SetIsFocusable(true);
@@ -119,7 +115,7 @@ TSharedRef<SWidget> UProgressionWidget::RebuildWidget()
 
 UTextBlock* UProgressionWidget::MakeText(const FText& InText, int32 Size, const FLinearColor& Color, bool bBold)
 {
-	UTextBlock* Block = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
+	UTextBlock* Block = PokemonGlass::MakeShadowedText(WidgetTree); // ombre floue, comme les autres menus
 	Block->SetText(InText);
 	Block->SetColorAndOpacity(FSlateColor(Color));
 	Block->SetFont(PokemonFonts::Get(Size, bBold));
@@ -218,6 +214,7 @@ void UProgressionWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 	{
 		MessageText->SetText(FText::FromString(FullMessage.Left(After)));
 	}
+	// Texte complet : on attend A (pas de chevron, demandé par L'amie), ou on passe tout seul
 	if (After >= FullMessage.Len() && !bWaitForInput)
 	{
 		MessageHold += InDeltaTime;
