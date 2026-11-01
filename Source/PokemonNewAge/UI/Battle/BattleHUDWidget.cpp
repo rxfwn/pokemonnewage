@@ -835,6 +835,15 @@ void UBattleHUDWidget::SetMessageWide(bool bWide)
 void UBattleHUDWidget::OpenMenu(EMenu NewMenu, bool bBackButton)
 {
 	Menu = NewMenu;
+	// Une seule carte (Sac avec un seul objet...) : case vide à droite pour garder 2 colonnes, sinon la carte prend toute la largeur
+	if (CardCount == 1)
+	{
+		USizeBox* Spacer = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
+		Spacer->SetWidthOverride(CardSize.X);
+		Spacer->SetHeightOverride(CardSize.Y);
+		Spacer->SetVisibility(ESlateVisibility::Hidden);
+		MenuGrid->AddChildToUniformGrid(Spacer, 0, 1);
+	}
 	MenuScroll->ScrollToStart();
 	SetMessageWide(false);
 	MenuFrame->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
