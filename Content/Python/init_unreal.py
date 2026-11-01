@@ -2,7 +2,7 @@
 
 Installe le Pokédex 3D (SCRUM-64) s'il manque : quand /Game/UI/Pokedex/DA_PokedexModel n'existe pas ou n'a pas
 les pièces du modèle de L'amie, lance Tools/Pokedex/import_pokedex_unreal.py (modèle, textures, icônes, carte,
-sons, HUD). Importe aussi les polices FF_*.ttf de Tools/HUD/Assets/fonts nouvelles ou modifiées. Sinon ne fait rien. Pour réimporter de force : Outils > Exécuter un script Python > ce même script d'import.
+sons, HUD). Fait aussi le matériau de verre des menus (Tools/UI/make_glass_material.py). Importe aussi les polices FF_*.ttf de Tools/HUD/Assets/fonts nouvelles ou modifiées. Sinon ne fait rien. Pour réimporter de force : Outils > Exécuter un script Python > ce même script d'import.
 """
 
 import importlib.util
@@ -60,15 +60,70 @@ def missing_fonts():
     return stale
 
 
+def stale_images(folder, content_subdir, only_existing=False):
+    """Images PNG de Tools/<folder>/Assets pas encore importées (sauf only_existing), ou plus récentes que leur asset."""
+    import glob
+    content_dir = unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_content_dir())
+    stale = []
+    for path in glob.glob(os.path.join(PROJECT_DIR, "Tools", folder, "Assets", "*.png")):
+        name = os.path.splitext(os.path.basename(path))[0]
+        asset_file = os.path.join(content_dir, content_subdir, name + ".uasset")
+        if not os.path.exists(asset_file):
+            if not only_existing:
+                stale.append(name)
+        elif os.path.getmtime(path) > os.path.getmtime(asset_file):
+            stale.append(name)
+    return stale
+
+
+def install_title_images():
+    """Écran de titre : il lit les PNG de Tools/Title/Assets tant qu'ils ne sont pas importés ; une fois importés,
+    un PNG changé (ex. nouveau logo du 2026-11-01) doit être réimporté, sinon l'ancien asset reste affiché."""
+    script = os.path.join(PROJECT_DIR, "Tools", "Title", "import_title_unreal.py")
+    if not stale_images("Title", os.path.join("UI", "Title"), only_existing=True) or not os.path.exists(script):
+        return
+    unreal.log("Images de l'écran de titre modifiées : import automatique (Tools/Title/import_title_unreal.py)...")
+    spec = importlib.util.spec_from_file_location("import_title_unreal_auto", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)  # le script importe tout en se chargeant
+
+
 def install_fonts():
     script = os.path.join(PROJECT_DIR, "Tools", "HUD", "import_hud_unreal.py")
-    if not missing_fonts() or not os.path.exists(script):
+    # Polices ou images du HUD nouvelles ou modifiées (ex. boussole de la maquette v2, 2026-11-01)
+    if not (missing_fonts() or stale_images("HUD", os.path.join("UI", "HUD"))) or not os.path.exists(script):
         return
-    unreal.log("Polices nouvelles ou modifiées : import automatique (Tools/HUD/import_hud_unreal.py)...")
+    unreal.log("Polices ou images du HUD nouvelles ou modifiées : import automatique (Tools/HUD/import_hud_unreal.py)...")
     spec = importlib.util.spec_from_file_location("import_hud_unreal", script)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.import_hud()
+
+
+def install_glass():
+    """Matériau de verre des menus (M_UI_Glass, 2026-11-01) : fait ou refait s'il manque ou a changé de version."""
+    script = os.path.join(PROJECT_DIR, "Tools", "UI", "make_glass_material.py")
+    if not os.path.exists(script):
+        return
+    spec = importlib.util.spec_from_file_location("make_glass_material", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    if not module.glass_material_up_to_date():
+        unreal.log("Matériau de verre absent ou ancien : création automatique (Tools/UI/make_glass_material.py)...")
+        module.make_glass_material()
+
+
+def install_sound_classes():
+    """Classes de son des volumes (Musique, Bruits de pas, Météo, Vfx) et mélange SM_Options, s'il en manque une."""
+    script = os.path.join(PROJECT_DIR, "Tools", "Audio", "make_sound_classes.py")
+    if not os.path.exists(script):
+        return
+    spec = importlib.util.spec_from_file_location("make_sound_classes", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    if module.missing():
+        unreal.log("Classes de son manquantes : création automatique (Tools/Audio/make_sound_classes.py)...")
+        module.make_sound_classes()
 
 
 def install_pokedex():
@@ -97,6 +152,9 @@ def _on_tick(delta_seconds):
     try:
         install_pokedex()
         install_fonts()
+        install_title_images()
+        install_glass()
+        install_sound_classes()
     except Exception as error:
         unreal.log_error("Installation du Pokédex 3D ratée : %s (lancer Tools/Pokedex/import_pokedex_unreal.py à la main)" % error)
 

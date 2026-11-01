@@ -80,7 +80,7 @@ private:
 	TObjectPtr<UTextBlock> ContinueArrow;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UBorder> ChoicesPanel;
+	TObjectPtr<UWidget> ChoicesPanel;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UVerticalBox> ChoicesList;

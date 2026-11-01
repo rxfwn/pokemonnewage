@@ -10,8 +10,8 @@ namespace PokemonFonts
 	{
 		const TCHAR* FontFolder = TEXT("/Game/UI/HUD/Fonts");
 
-		/** Inclinaison de tout le texte (0 = droit, 0,18 comme l'écran de titre) */
-		constexpr float Skew = 0.18f;
+		/** Inclinaison du style Italic seulement (les maquettes du 2026-11-01 sont droites) */
+		constexpr float ItalicSkew = 0.18f;
 
 		/** Gardées en mémoire pour toute la partie : la police composite ne les référence pas pour le ramasse-miettes */
 		TArray<TStrongObjectPtr<UFontFace>> LoadedFaces;
@@ -33,15 +33,16 @@ namespace PokemonFonts
 			{
 				return CachedFont;
 			}
-			// Futura Medium pour le texte et l'italique, Futura Bold pour le gras, tout penché (L'amie, 2026-10-31) ;
-			// chacune remplace l'autre si elle manque (FF_Futura_Medium arrive avec l'écran de titre).
-			// Les accents (é, à, ç, ©, °) sont ajoutés au .ttf par Tools/HUD/add_futura_accents.py (écran de titre)
-			UFontFace* Bold = LoadFace(TEXT("FF_Futura_Bold"));
-			UFontFace* Medium = LoadFace(TEXT("FF_Futura_Medium"));
-			UFontFace* Italic = LoadFace(TEXT("FF_Futura_MediumItalic"));
+			// Polices des maquettes de L'amie (2026-11-01) : Futura MdCn BT pour le texte, Futura BdCn BT pour le gras,
+			// droites ; l'italique est la MdCn penchée. Avant leur import : Futura Medium / Bold (accents ajoutés par
+			// Tools/HUD/add_futura_accents.py). Chacune remplace l'autre si elle manque.
+			UFontFace* Medium = LoadFace(TEXT("FF_Futura_MediumCondensed"));
+			UFontFace* Bold = LoadFace(TEXT("FF_Futura_BoldCondensed"));
+			Medium = Medium ? Medium : LoadFace(TEXT("FF_Futura_Medium"));
+			Bold = Bold ? Bold : LoadFace(TEXT("FF_Futura_Bold"));
 			Medium = Medium ? Medium : Bold;
 			Bold = Bold ? Bold : Medium;
-			Italic = Italic ? Italic : Medium;
+			UFontFace* Italic = Medium;
 			if (!Medium)
 			{
 				return nullptr;
@@ -70,8 +71,7 @@ namespace PokemonFonts
 		{
 			Info = FSlateFontInfo(Font, Size, FName(Typeface));
 		}
-		// Penché partout, comme la maquette de L'amie
-		Info.SkewAmount = Skew;
+		Info.SkewAmount = Style == EStyle::Italic ? ItalicSkew : 0.f;
 		return Info;
 	}
 

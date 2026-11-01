@@ -9,6 +9,11 @@ class UBattleComponent;
 class UBattleHUDWidget;
 class UBorder;
 class UButton;
+class UCanvasPanel;
+class UCanvasPanelSlot;
+class UImage;
+class UScrollBox;
+class UTexture2D;
 class UProgressBar;
 class UTextBlock;
 class UVerticalBox;
@@ -51,7 +56,9 @@ public:
 
 /**
  *  Écran de combat (SCRUM-36) : cadres des deux Pokémon (nom, niveau, PV animés, XP), boîte de texte
- *  et menus Attaque / Sac / Pokémon / Fuite. Construit en C++, ouvert par le PlayerController à chaque combat.
+ *  et menus Attaquer / Sac / Pokémon / Fuite. Disposition au pixel d'après la maquette Combat_Hud de L'amie
+ *  (2026-11-01) : panneaux en verre, boutons en dégradé, cartes d'attaque (nom, type, PP), barres de PV
+ *  verte / orange / rouge (images de Tools/HUD/make_battle_assets.py). Construit en C++, ouvert par le PlayerController à chaque combat.
  *  Il rejoue les événements envoyés par le serveur (UBattleComponent::OnBattleEvents) un par un, avec les
  *  textes de UBattleText, puis propose les choix selon la phase (action, remplaçant, 5e attaque).
  *  À la montée de niveau : barre d'XP qui se remplit et panneau des stats gagnées. Les évolutions se jouent
@@ -115,37 +122,58 @@ private:
 	void ShowParty(EPartyMode Mode);
 	void ShowForgetMove(int32 PartyIndex, FName NewMove);
 	void ShowLevelUpStats(const FBattleEvent& Event);
+	/** Montre le panneau du menu et ses cartes (bBackButton : bouton retour au milieu) */
+	void OpenMenu(EMenu NewMenu, bool bBackButton);
+	/** Carte 265 x 85 du menu : ButtonImage 0 à 3 = Attaquer, Sac, Pokémon, Fuite (dégradés) ; -1 = carte en verre
+	 *  avec étiquette (type, niveau) et texte à droite (PP...) */
+	UButton* AddCard(const FText& Title, EBattleHUDAction Action, int32 Index, int32 ButtonImage, bool bEnabled = true,
+		const FText& Tag = FText::GetEmpty(), const FLinearColor& TagColor = FLinearColor::Gray, const FText& RightText = FText::GetEmpty());
+	UButton* MakeCardButton(UWidget* Content);
+	FText GetTypeName(EPokemonType Type) const;
 	/** Barre d'XP du joueur : position animée vers TargetExp (XP totale), sur l'échelle du niveau affiché */
 	void UpdateExpBar(float DeltaTime);
 	bool IsExpBarMoving() const;
-	UButton* AddMenuButton(UPanelWidget* Panel, const FText& Text, EBattleHUDAction Action, int32 Index,
-		const FLinearColor& Color, bool bEnabled = true, const FText& SubText = FText::GetEmpty());
 	void Submit(const FBattleAction& Action);
 
 	const UPokemonDatabase* GetDatabase() const;
-	UTextBlock* MakeText(const FText& Text, int32 Size, const FLinearColor& Color, bool bBold = false);
+	/** Size en unités UMG (px Figma x 0,75) */
+	UTextBlock* MakeText(const FText& Text, float Size, const FLinearColor& Color, bool bBold = false);
 
 	/** Widgets d'un cadre (ils restent en vie par l'arbre de widgets) */
 	struct FInfoBox
 	{
-		TObjectPtr<UBorder> Frame;
+		TObjectPtr<UWidget> Frame;
 		TObjectPtr<UTextBlock> Name;
 		TObjectPtr<UTextBlock> Level;
 		TObjectPtr<UTextBlock> Status;
-		TObjectPtr<UProgressBar> HPBar;
-		TObjectPtr<UTextBlock> HPText;
+		/** Barre de PV : image en dégradé dont la largeur suit les PV */
+		TObjectPtr<UImage> HPFill;
+		TObjectPtr<UCanvasPanelSlot> HPFillSlot;
+		int32 HPColor = -1;
 		TObjectPtr<UProgressBar> ExpBar;
 	};
 	void BuildInfoBox(FInfoBox& Box, bool bPlayer);
+	void SetHPBar(FInfoBox& Box, float Ratio);
 
 	UPROPERTY(Transient) TObjectPtr<UBattleComponent> Battle;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageText;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageArrow;
-	UPROPERTY(Transient) TObjectPtr<UBorder> MenuFrame;
-	UPROPERTY(Transient) TObjectPtr<UVerticalBox> MenuBox;
+	UPROPERTY(Transient) TObjectPtr<UCanvasPanel> Canvas;
+	UPROPERTY(Transient) TObjectPtr<UWidget> MenuFrame;
+	UPROPERTY(Transient) TObjectPtr<UScrollBox> MenuScroll;
+	UPROPERTY(Transient) TObjectPtr<UCanvasPanelSlot> MenuScrollSlot;
+	UPROPERTY(Transient) TObjectPtr<UUniformGridPanel> MenuGrid;
+	UPROPERTY(Transient) TObjectPtr<UButton> BackButton;
+	UPROPERTY(Transient) TObjectPtr<UBattleHUDButtonBinding> BackBindingObject;
+	UPROPERTY(Transient) TArray<TObjectPtr<UButton>> MenuButtons;
+	UPROPERTY(Transient) TObjectPtr<UTexture2D> HPFillTextures[3];
+	UPROPERTY(Transient) TObjectPtr<UTexture2D> HPTrackTexture;
+	UPROPERTY(Transient) TObjectPtr<UTexture2D> ButtonTextures[4];
+	UPROPERTY(Transient) TObjectPtr<UTexture2D> BackTexture;
+	int32 CardCount = 0;
 	UPROPERTY(Transient) TArray<TObjectPtr<UBattleHUDButtonBinding>> Bindings;
 	UPROPERTY(Transient) TObjectPtr<UButton> FirstButton;
-	UPROPERTY(Transient) TObjectPtr<UBorder> StatsFrame;
+	UPROPERTY(Transient) TObjectPtr<UWidget> StatsFrame;
 	UPROPERTY(Transient) TObjectPtr<UUniformGridPanel> StatsGrid;
 
 	FInfoBox Boxes[2];

@@ -12,12 +12,14 @@ Pendant un combat, Tab, Échap et les raccourcis ne font rien : c'est l'écran d
 
 ## Le menu Échap (Paramètres)
 
+Disposition au pixel d'après la maquette **Options_Menu** de L'amie (CSS Figma du 2026-11-01) : jeu flouté et assombri (noir 82 %), titre « Paramètres » (437, 112, 64 px), onglets en grand texte à gauche alignés à droite sur x 389 (blanc pour l'onglet ouvert, 30 % pour les autres), panneau en verre 1210 × 627 en (437, 209) avec coins de 20 px, lignes de 40 px tous les 59 px à partir de (523, 275), valeurs entre chevrons `<` `>` (x 1119 → 1482), curseurs = barre dégradée 363 × 11 + rond blanc de 26 px, ascenseur dégradé en x 1612, boutons texte Ok / Annuler / Appliquer / Retour (48 px, y 863). Le tout est mis à l'échelle de la fenêtre (ScaleBox). Code : `Source/PokemonNewAge/UI/SettingsMenuWidget.cpp` (constantes en haut du fichier).
+
 | Onglet | Réglages |
 |---|---|
-| Audio | volume général, musique, bruitages |
+| Audio | volume général, musique, bruits de pas, météo, Vfx (classes de son `SC_Music`, `SC_Footsteps`, `SC_Weather`, `SC_Effects` de `/Game/Audio`, créées par `Tools/Audio/make_sound_classes.py` à l'ouverture d'Unreal ; un son suit un réglage quand sa **Classe de son** est la bonne) |
 | Vidéo | résolution, mode d'affichage (plein écran, plein écran fenêtré, fenêtré), synchro verticale, images par seconde max., champ de vision, échelle de résolution, qualité globale, distance d'affichage, anticrénelage, ombres, textures, effets, post-traitement, végétation |
 | Commandes | sensibilité et inversion de la caméra, **toutes les touches** (clavier puis manette : clic sur la touche, puis appuyer sur la nouvelle ; si elle servait déjà, les deux commandes échangent), « Remettre les touches d'origine » |
-| Jeu | vitesse du texte, afficher le HUD, sauvegarde automatique, effacer la sauvegarde (deux clics), quitter le jeu |
+| Jeu | vitesse du texte, afficher le HUD, sauvegarde automatique, « Effacer la partie » (deux clics), « Quitter le jeu » |
 
 Les réglages attendent **Appliquer** ou **OK** ; les touches changent tout de suite. Ils sont gardés dans `Saved/SaveGames/Options.sav` et `GameUserSettings.ini`. LB / RB changent d'onglet à la manette.
 
@@ -61,15 +63,15 @@ Toutes les 5 minutes et en arrivant dans un nouveau lieu, sauf en combat ou menu
 
 ## Le HUD
 
-Fait en C++ (`UGameHUDWidget`) aux mesures de la maquette (1920 × 1080, mis à l'échelle par Unreal) :
+Fait en C++ (`UGameHUDWidget`) aux mesures, relevées au pixel, de la maquette v2 de L'amie (`hud/v2/Town_Announcement.png` dans les fichiers du projet, 1920 × 1080, mis à l'échelle par Unreal). Tailles de police UMG = taille Figma × 0,75 (Unreal compte en points). Faute de la vraie Futura BdCn BT, la Futura Bold est resserrée à 70 % (mesuré sur la maquette) ; donner `FF_Futura_BoldCondensed.ttf` dans `Tools/HUD/Assets/fonts` pour la vraie police.
 
 - **Icône du Pokédex** en haut à droite (image de L'amie), sans texte de touche (Tab l'ouvre).
-- **Nom du lieu** en Futura 95, centré en haut, avec le trait blanc dessous : il apparaît 4 s quand on entre dans une ville ou sur une route.
-- **En bas à droite** : le lieu (Futura BdCn BT 24, droite, comme la maquette), l'heure du jeu (voir « Heure du jeu »), la température (17 °C de moyenne, plus chaud à 15 h, réglable : `Base Temperature`, `Temperature Swing`) et le picto météo (pictos de L'amie : soleil par défaut, `SetWeather` pour nuage, pluie ou vent en attendant un vrai système météo).
-- **Boussole** : disque gris translucide, N en haut (le nord de Kanto), point blanc du joueur, cône de vue qui tourne avec la caméra, repère jaune du GPS sur le bord et distance au centre.
+- **Nom du lieu** (capitales de 68 px, ombre 3 px à 60 %), centré en haut, avec le trait blanc 584 × 4 dessous : il apparaît 4 s quand on entre dans une ville ou sur une route.
+- **En bas à droite** : le lieu (24 px Figma) sur un trait 206 × 2, puis à leurs positions exactes l'heure du jeu (voir « Heure du jeu »), la température (17 °C de moyenne, plus chaud à 15 h, réglable : `Base Temperature`, `Temperature Swing`) et le picto météo (pictos de L'amie : soleil par défaut, `SetWeather` pour nuage, pluie ou vent en attendant un vrai système météo).
+- **Boussole** : images de L'amie `T_HUD_Compass` (disque verre + N, à 50 %) et `T_HUD_CompassArrow` (cône + point, à 100 %, tourne autour du point avec la caméra), décor flouté dans le disque (`Compass Blur`, effet verre), repère jaune du GPS sur le bord et distance au centre.
 - Il se cache pendant les combats, les menus, la boutique, le PC et l'appareil photo, ou avec Échap > Jeu > Afficher le HUD.
 
-Images et polices : `Tools/HUD/Assets/` (icône du Pokédex, cône, 4 pictos météo de L'amie ; polices Futura en `FF_*.ttf`), importées dans `/Game/UI/HUD` par `Tools/HUD/import_hud_unreal.py`, lancé aussi à la fin du script du Pokédex.
+Images et polices : `Tools/HUD/Assets/` (icône du Pokédex, boussole et flèche, 4 pictos météo de L'amie ; polices Futura en `FF_*.ttf`), importées dans `/Game/UI/HUD` par `Tools/HUD/import_hud_unreal.py`, lancé aussi à la fin du script du Pokédex, et tout seul à l'ouverture d'Unreal quand une image ou une police est nouvelle ou modifiée.
 
 ## 1. Compiler (Unreal fermé)
 
@@ -159,11 +161,11 @@ Il s'ouvre tout seul quand un combat commence : cadres des deux Pokémon (nom, n
 - Les sons sont synthétiques : on pourra les remplacer en gardant les mêmes noms.
 - Le nom du joueur est celui donné par Unreal (pas encore d'écran pour le choisir).
 
-## Police du jeu : Futura penchée partout
+## Police du jeu : Futura MdCn BT et BdCn BT
 
-Demandé par L'amie le 2026-10-31 : toute l'interface (Pokédex 3D, Paramètres, dialogues, combat, boutique, PC, évolution) passe par `PokemonFonts::Get(Taille, bGras)` (`Source/PokemonNewAge/UI/GameFonts.h`). Texte normal : `FF_Futura_Medium` (Futura Cyrillic Medium fournie par L'amie) ; gras : `FF_Futura_Bold` ; les deux inclinées (`SkewAmount` 0,18, comme l'écran de titre). Pour redresser : `Skew` dans `GameFonts.cpp`.
+Polices fournies par L'amie le 2026-11-01 (« les bonnes typo ») : toute l'interface (Pokédex 3D, Paramètres, dialogues, combat, boutique, PC, évolution) passe par `PokemonFonts::Get(Taille, bGras)` (`Source/PokemonNewAge/UI/GameFonts.h`). Texte normal : `FF_Futura_MediumCondensed` (**Futura MdCn BT**) ; gras : `FF_Futura_BoldCondensed` (**Futura BdCn BT**) ; **droites** comme ses maquettes (le style Italic est la MdCn penchée). L'écran de titre garde la MdCn **penchée** (choix de L'amie). Taille UMG = taille Figma × 0,75. Fichiers : `Tools/HUD/Assets/fonts/`, importés tout seuls à l'ouverture d'Unreal ; tant qu'ils ne le sont pas, les anciennes Futura Medium / Bold servent.
 
-**Le HUD en jeu** suit la maquette de L'amie : Futura BdCn BT (gras condensé), **droite**, blanche, via `PokemonFonts::GetHUD`. Il prend `FF_Futura_BoldCondensed.ttf` si on l'ajoute dans `Tools/HUD/Assets/fonts/` ; en attendant il prend Futura Bold et la resserre à 82 % en largeur. Si l'une manque, l'autre la remplace ; sans aucune, Roboto.
+**Le HUD en jeu** prend la Futura BdCn BT via `PokemonFonts::GetHUD` (plus de resserrage).
 
-La Futura d'origine n'avait pas les accents : `Tools/HUD/add_futura_accents.py` (fil de l'écran de titre) les ajoute dans `FF_Futura_Bold.ttf` et `FF_Futura_Medium.ttf` (originaux gardés dans `fonts/original/`). À l'ouverture d'Unreal, `init_unreal.py` réimporte toute police dont le `.ttf` est plus récent que l'asset.
+Ces deux polices ont déjà les accents. Les anciennes Futura n'avaient pas les accents : `Tools/HUD/add_futura_accents.py` (fil de l'écran de titre) les ajoute dans `FF_Futura_Bold.ttf` et `FF_Futura_Medium.ttf` (originaux gardés dans `fonts/original/`). À l'ouverture d'Unreal, `init_unreal.py` réimporte toute police dont le `.ttf` est plus récent que l'asset.
 

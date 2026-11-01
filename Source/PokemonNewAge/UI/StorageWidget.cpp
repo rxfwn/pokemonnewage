@@ -1,5 +1,6 @@
 #include "UI/StorageWidget.h"
 #include "UI/GameFonts.h"
+#include "UI/GlassPanel.h"
 #include "Blueprint/WidgetTree.h"
 #include "Capture/CaptureComponent.h"
 #include "Components/Border.h"
@@ -22,11 +23,11 @@
 namespace
 {
 	// Mêmes couleurs que la boîte de dialogue
-	const FLinearColor BoxColor(0.97f, 0.96f, 0.93f, 0.96f);
-	const FLinearColor InkColor(0.08f, 0.08f, 0.10f);
-	const FLinearColor DimColor(0.38f, 0.38f, 0.42f);
+	// Boîtes en verre (maquettes Figma de L'amie, 2026-11-01) : texte blanc avec ombre
+	const FLinearColor InkColor = PokemonGlass::TextColor;
+	const FLinearColor DimColor(0.78f, 0.79f, 0.82f);
 	const FLinearColor TitleColor(0.13f, 0.25f, 0.45f, 0.97f);
-	const FLinearColor AccentColor(0.85f, 0.18f, 0.16f);
+	const FLinearColor AccentColor(1.f, 0.62f, 0.12f);
 
 	/** Lignes visibles de la boîte (elle défile autour de la sélection) */
 	constexpr int32 VisibleBoxRows = 10;
@@ -36,6 +37,7 @@ namespace
 		UTextBlock* Text = Tree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), Name);
 		Text->SetFont(PokemonFonts::Get(Size));
 		Text->SetColorAndOpacity(FSlateColor(Color));
+		PokemonGlass::AddTextShadow(Text);
 		return Text;
 	}
 
@@ -45,6 +47,16 @@ namespace
 		Box->SetBrushColor(Color);
 		Box->SetPadding(Padding);
 		return Box;
+	}
+
+	/** Boîte en verre : rend la bordure transparente qui reçoit le contenu ; OutFrame = le panneau à placer */
+	UBorder* MakeGlassBox(UWidgetTree* Tree, const FMargin& Padding, UWidget*& OutFrame)
+	{
+		UBorder* Inner = Tree->ConstructWidget<UBorder>(UBorder::StaticClass());
+		Inner->SetBrushColor(FLinearColor::Transparent);
+		Inner->SetPadding(Padding);
+		OutFrame = PokemonGlass::Make(Tree, Inner, FMargin(0.f));
+		return Inner;
 	}
 
 	/** « Bulbizarre  N.12  PV 30/34 » */
@@ -139,8 +151,9 @@ TSharedRef<SWidget> UStorageWidget::RebuildWidget()
 		PartySize->SetWidthOverride(520.f);
 		PartySize->SetMinDesiredHeight(480.f);
 		Middle->AddChildToHorizontalBox(PartySize)->SetPadding(FMargin(0.f, 0.f, 10.f, 0.f));
-		UBorder* PartyBox = MakeBox(WidgetTree, BoxColor, FMargin(24.f, 16.f));
-		PartySize->SetContent(PartyBox);
+		UWidget* PartyBoxFrame = nullptr;
+		UBorder* PartyBox = MakeGlassBox(WidgetTree, FMargin(24.f, 16.f), PartyBoxFrame);
+		PartySize->SetContent(PartyBoxFrame);
 		UVerticalBox* PartyColumn = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
 		PartyBox->SetContent(PartyColumn);
 		UTextBlock* PartyTitle = MakeText(WidgetTree, 22, DimColor);
@@ -156,8 +169,9 @@ TSharedRef<SWidget> UStorageWidget::RebuildWidget()
 		USizeBox* BoxSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
 		BoxSize->SetMinDesiredHeight(480.f);
 		Middle->AddChildToHorizontalBox(BoxSize)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-		UBorder* BoxPanel = MakeBox(WidgetTree, BoxColor, FMargin(24.f, 16.f));
-		BoxSize->SetContent(BoxPanel);
+		UWidget* BoxPanelFrame = nullptr;
+		UBorder* BoxPanel = MakeGlassBox(WidgetTree, FMargin(24.f, 16.f), BoxPanelFrame);
+		BoxSize->SetContent(BoxPanelFrame);
 		UVerticalBox* BoxColumn = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
 		BoxPanel->SetContent(BoxColumn);
 		BoxTitle = MakeText(WidgetTree, 22, DimColor, TEXT("BoxTitle"));
@@ -169,8 +183,9 @@ TSharedRef<SWidget> UStorageWidget::RebuildWidget()
 		USizeBox* MessageSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
 		MessageSize->SetMinDesiredHeight(110.f);
 		Inside->AddChildToVerticalBox(MessageSize);
-		UBorder* MessageBox = MakeBox(WidgetTree, BoxColor, FMargin(32.f, 20.f));
-		MessageSize->SetContent(MessageBox);
+		UWidget* MessageBoxFrame = nullptr;
+		UBorder* MessageBox = MakeGlassBox(WidgetTree, FMargin(32.f, 20.f), MessageBoxFrame);
+		MessageSize->SetContent(MessageBoxFrame);
 		MessageText = MakeText(WidgetTree, 26, InkColor, TEXT("MessageText"));
 		MessageText->SetAutoWrapText(true);
 		MessageBox->SetContent(MessageText);
