@@ -51,6 +51,10 @@ namespace BattleHUD
 	const FVector2D HPBarSize(451.72f, 26.85f);
 	/** Marge autour des images de barre pour leur ombre floue (BAR_PAD de make_battle_assets.py) */
 	constexpr float HPBarPad = 8.f;
+	/** Les images de barre sont en 2x (SCALE de make_battle_assets.py). En « boîte », Slate taille les bouts ronds
+	 *  d'après les pixels de la texture : on dessine donc la barre deux fois plus grande, réduite de moitié
+	 *  (RenderScale), sinon les bouts sont deux fois trop larges (arrondis ovales) */
+	constexpr float HPBarTextureScale = 2.f;
 	const FVector2D MessagePos(47.f, 817.f);
 	const FVector2D MessageSize(1210.f, 207.f);
 	const FVector2D MessageTextPos(82.f, 836.f);
@@ -160,7 +164,7 @@ namespace BattleHUD
 	/** Barre de PV ou son fond : image avec sa marge d'ombre, étirée en « boîte » (les bouts ronds et l'ombre ne se déforment pas) */
 	FSlateBrush MakeBarBrush(UTexture2D* Texture)
 	{
-		const FVector2D Size = HPBarSize + FVector2D(2.f * HPBarPad);
+		const FVector2D Size = (HPBarSize + FVector2D(2.f * HPBarPad)) * HPBarTextureScale;
 		FSlateBrush Brush = MakeBrush(Texture, Size);
 		Brush.DrawAs = ESlateBrushDrawType::Box;
 		Brush.Margin = FMargin((HPBarPad + HPBarSize.Y * 0.5f) / Size.X, 0.f);
@@ -363,7 +367,9 @@ void UBattleHUDWidget::BuildInfoBox(FInfoBox& Box, bool bPlayer)
 	if (HPTrackTexture)
 	{
 		Track->SetBrush(MakeBarBrush(HPTrackTexture));
-		Place(Inside, Track, HPBarPos - FVector2D(HPBarPad), HPBarSize + FVector2D(2.f * HPBarPad));
+		Place(Inside, Track, HPBarPos - FVector2D(HPBarPad), (HPBarSize + FVector2D(2.f * HPBarPad)) * HPBarTextureScale);
+		Track->SetRenderTransformPivot(FVector2D::ZeroVector);
+		Track->SetRenderScale(FVector2D(1.f / HPBarTextureScale));
 	}
 	else
 	{
@@ -373,6 +379,7 @@ void UBattleHUDWidget::BuildInfoBox(FInfoBox& Box, bool bPlayer)
 
 	Box.HPFill = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
 	Box.HPFillSlot = Place(Inside, Box.HPFill, HPBarPos, HPBarSize);
+	Box.HPFill->SetRenderTransformPivot(FVector2D::ZeroVector);
 	Box.HPColor = -1;
 
 	if (bPlayer)
@@ -413,9 +420,12 @@ void UBattleHUDWidget::SetHPBar(FInfoBox& Box, float Ratio)
 	// La barre se raccourcit par la droite ; les bouts restent ronds (image en « boîte »)
 	const float Width = HPBarSize.X * FMath::Clamp(Ratio, 0.f, 1.f);
 	Box.HPFill->SetVisibility(Width > 0.5f ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-	const float Pad = HPFillTextures[ColorIndex] ? HPBarPad : 0.f;
+	const bool bTexture = HPFillTextures[ColorIndex] != nullptr;
+	const float Pad = bTexture ? HPBarPad : 0.f;
+	const float Scale = bTexture ? HPBarTextureScale : 1.f;
+	Box.HPFill->SetRenderScale(FVector2D(1.f / Scale));
 	Box.HPFillSlot->SetPosition(HPBarPos - FVector2D(Pad));
-	Box.HPFillSlot->SetSize(FVector2D(FMath::Max(Width, HPBarSize.Y) + 2.f * Pad, HPBarSize.Y + 2.f * Pad));
+	Box.HPFillSlot->SetSize(FVector2D(FMath::Max(Width, HPBarSize.Y) + 2.f * Pad, HPBarSize.Y + 2.f * Pad) * Scale);
 }
 
 UTextBlock* UBattleHUDWidget::MakeText(const FText& InText, float Size, const FLinearColor& Color, bool bBold)
@@ -1195,6 +1205,10 @@ void UBattleHUDWidget::ShowBag()
 		for (const FItemStack& Stack : Snapshot.Sides[Local].Inventory)
 		{
 			const FItemRow* Item = Database->FindItem(Stack.Item);
+			if (!Item)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Sac de combat : objet %s absent de DT_Items (DA_PokemonDatabase > Items vide ? lancer Tools/Data/import_data_tables.py)"), *Stack.Item.ToString());
+			}
 			const EBagTab Tab = Item && Stack.Count > 0 ? GetBagTab(Stack.Item, *Item) : EBagTab::Count;
 			if (Tab != EBagTab::Count)
 			{
@@ -1220,6 +1234,8 @@ void UBattleHUDWidget::ShowBag()
 		}
 	}
 
+	UE_LOG(LogTemp, Log, TEXT("Sac de combat : %d objets dans le sac, %d utilisables (base de données %s)"),
+		Snapshot.Sides.IsValidIndex(Local) ? Snapshot.Sides[Local].Inventory.Num() : -1, Total, Database ? TEXT("OK") : TEXT("ABSENTE"));
 	MessageText->SetText(Total == 0 ? LOCTEXT("NoItems", "Aucun objet utilisable.") : LOCTEXT("WhichItem", "Quel objet utiliser ?"));
 	SetMessageWide(false);
 	// Le grand panneau du Sac passe sur le cadre du joueur : on le cache le temps du Sac
