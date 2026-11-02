@@ -95,5 +95,19 @@ Sans Unreal (dans le cloud) : `./Tools/BattleSim/run.sh` lance aussi les tests d
   puis le script d'import. Le nom devient l'identifiant (`Moonball` → `MoonBall`) : il doit être celui de la ligne
   de `DT_Items` pour que le lancer le trouve. Une Ball sans modèle prend celui de la Poké Ball. Matériau commun :
   `M_Ball` (paramètres `Couleur`, `Normale`, `Rugosite`, `Metal`, `Eclat`, `CouleurEclat`).
+- **Finition des Balls** (2026-11-02, « le jeu doit être nickel ») : `M_Ball` est un plastique laqué (modèle
+  d'ombrage *Clear Coat*). Le script d'import met à jour tout seul un ancien `M_Ball`. Réglages par Ball dans
+  `MI_<Id>` (*Détails > Paramètres*, cocher la case pour changer la valeur) :
+
+  | Paramètre | Défaut | Effet |
+  |---|---|---|
+  | `Vernis` | 1 | Couche de vernis brillante sur la coque. 0 = plastique d'origine, sans vernis. |
+  | `RugositeVernis` | 0,04 | 0 = miroir ; vers 0,2 = vernis satiné. |
+  | `Proprete` | 0,5 | Efface le grain et les rayures de la texture de rugosité. 0 = texture d'origine (Ball « usée »), 1 = Ball neuve, lisse. |
+  | `RugositePropre` | 0,15 | Rugosité visée quand `Proprete` = 1. |
+  | `IntensiteMetal` | 1 | Multiplie la texture de métal. Baisser (0,3 à 0,5) si une coque paraît sombre ou chromée. |
+
+  Les textures des Balls ne sont plus « streamées » (*Never Stream*) : elles sont nettes dès que la Ball apparaît
+  en gros plan, au lieu d'être floues les premières secondes.
 - **Pas encore fait** : Repousse (objet), herbes qui bougent au passage, cris des Pokémon, séquence « Pokédex » animée
   après la capture (le menu Pokédex 3D affiche déjà les espèces capturées).

@@ -7,7 +7,9 @@ Modèles de L'amie (SCRUM-75), une fois par Ball de Tools/Capture/Balls/<Id>/ :
   - T_<Id>_D, T_<Id>_N, T_<Id>_R, T_<Id>_M : couleur, normale (OpenGL, vert inversé à l'import), rugosité, métal,
     lues dans Tools/Capture/Generated/Sources (copier là les dossiers Pokeball_Part1 et Pokeball_Part2 livrés,
     textures 2K, sinon 1K) ;
-  - MI_<Id> : instance de Content/Capture/Balls/M_Ball (matériau commun, lueur « Eclat » pour les éclairs).
+  - MI_<Id> : instance de Content/Capture/Balls/M_Ball (matériau commun : plastique laqué avec vernis brillant,
+    réglages de finition Vernis/Proprete/IntensiteMetal, lueur « Eclat » pour les éclairs). Un M_Ball d'une
+    ancienne version est mis à jour tout seul ; les textures sont réglées pour rester nettes en gros plan.
   Sans les textures d'une Ball, ses moitiés sont importées quand même (gris).
 
 Ancien modèle provisoire, gardé en secours (utilisé seulement si Content/Capture/Balls est vide) :
@@ -181,6 +183,11 @@ def setup_texture(path, suffix):
     texture = eal.load_asset(path)
     if not texture:
         return None
+    # Toujours en pleine résolution : la Ball apparaît d'un coup en gros plan (scène d'évolution, lancer) et
+    # le streaming n'a pas le temps de charger les mips fines (texture floue les premières secondes).
+    texture.set_editor_property("never_stream", True)
+    texture.set_editor_property("lod_bias", 0)
+    texture.set_editor_property("filter", unreal.TextureFilter.TF_TRILINEAR)
     if suffix == "N":
         texture.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_NORMALMAP)
         texture.set_editor_property("srgb", False)
@@ -216,40 +223,103 @@ def import_ball_textures(identifier, sources):
     return textures
 
 
+# Version du matériau commun : s'il manque un des paramètres de la version actuelle, M_Ball est reconstruit
+# sur place (les MI_<Id> gardent leurs textures). 2 = vernis brillant (clear coat), grain de rugosité adouci,
+# réglages de finition (2026-11-02).
+MASTER_VERSION = 2
+MASTER_PARAMETERS = {"Vernis", "RugositeVernis", "Proprete", "RugositePropre", "IntensiteMetal", "Eclat"}
+
+
+def master_is_current(material):
+    names = {str(name) for name in mel.get_scalar_parameter_names(material)}
+    return MASTER_PARAMETERS <= names
+
+
 def make_ball_master(defaults):
-    """M_Ball : couleur, normale, rugosité, métal en paramètres de texture + lueur émissive (Eclat, CouleurEclat).
+    """M_Ball : plastique laqué « neuf » (clear coat) sur les textures de Substance + lueur émissive.
+
+    Paramètres réglables dans chaque MI_<Id> (Détails > Paramètres) :
+      - Couleur, Normale, Rugosite, Metal : textures de la Ball ;
+      - Vernis (1) : couche de vernis transparente et brillante par-dessus la coque (0 = plastique mat d'origine) ;
+      - RugositeVernis (0,04) : 0 = miroir, plus haut = vernis satiné ;
+      - Proprete (0,5) : efface le grain et les traces d'usure de la rugosité (0 = texture d'origine, 1 = lisse) ;
+      - RugositePropre (0,15) : rugosité visée quand Proprete = 1 ;
+      - IntensiteMetal (1) : multiplie la texture de métal (baisser si une coque paraît sombre ou « chromée ») ;
+      - Eclat, CouleurEclat : lueur des éclairs (APokeBallThrow, scène d'évolution).
     defaults : textures d'une Ball (valeurs par défaut des paramètres, il en faut pour compiler)."""
-    if eal.does_asset_exist(MASTER_PATH):
-        # Déjà fait (à effacer à la main pour le refaire)
-        return eal.load_asset(MASTER_PATH)
-    if len(defaults) < 4:
-        return None
-    material = asset_tools.create_asset("M_Ball", BALLS_CONTENT, unreal.Material, unreal.MaterialFactoryNew())
+    material = eal.load_asset(MASTER_PATH) if eal.does_asset_exist(MASTER_PATH) else None
+    if material and master_is_current(material):
+        return material
+    if not material:
+        if len(defaults) < 4:
+            return None
+        material = asset_tools.create_asset("M_Ball", BALLS_CONTENT, unreal.Material, unreal.MaterialFactoryNew())
+    else:
+        # Ancienne version : on vide le graphe et on le refait (même asset, les instances restent branchées)
+        mel.delete_all_material_expressions(material)
+        unreal.log(f"M_Ball : mise à jour vers la version {MASTER_VERSION} (vernis brillant).")
+
+    def default_texture(suffix):
+        if suffix in defaults:
+            return defaults[suffix]
+        # Pas de texture fournie cette fois : on reprend celle de la Poké Ball déjà importée
+        path = f"{BALLS_CONTENT}/PokeBall/T_PokeBall_{suffix}"
+        return eal.load_asset(path) if eal.does_asset_exist(path) else None
 
     def sampler(name, suffix, sampler_type, y):
-        node = mel.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -700, y)
+        node = mel.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -1100, y)
         node.set_editor_property("parameter_name", name)
-        node.set_editor_property("texture", defaults[suffix])
+        texture = default_texture(suffix)
+        if texture:
+            node.set_editor_property("texture", texture)
         node.set_editor_property("sampler_type", sampler_type)
         return node
 
-    color = sampler("Couleur", "D", unreal.MaterialSamplerType.SAMPLERTYPE_COLOR, -300)
-    normal = sampler("Normale", "N", unreal.MaterialSamplerType.SAMPLERTYPE_NORMAL, 0)
-    roughness = sampler("Rugosite", "R", unreal.MaterialSamplerType.SAMPLERTYPE_MASKS, 300)
-    metallic = sampler("Metal", "M", unreal.MaterialSamplerType.SAMPLERTYPE_MASKS, 600)
+    def scalar(name, value, x, y):
+        node = mel.create_material_expression(material, unreal.MaterialExpressionScalarParameter, x, y)
+        node.set_editor_property("parameter_name", name)
+        node.set_editor_property("default_value", value)
+        return node
+
+    material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_CLEAR_COAT)
+
+    color = sampler("Couleur", "D", unreal.MaterialSamplerType.SAMPLERTYPE_COLOR, -400)
+    normal = sampler("Normale", "N", unreal.MaterialSamplerType.SAMPLERTYPE_NORMAL, -100)
+    roughness = sampler("Rugosite", "R", unreal.MaterialSamplerType.SAMPLERTYPE_MASKS, 200)
+    metallic = sampler("Metal", "M", unreal.MaterialSamplerType.SAMPLERTYPE_MASKS, 500)
     mel.connect_material_property(color, "RGB", unreal.MaterialProperty.MP_BASE_COLOR)
+    # Avec le clear coat, Unreal applique cette normale au vernis ET à la coque : le vernis suit la bande,
+    # le bouton et les rainures sculptés dans le normal map (sinon il montre les facettes du maillage).
     mel.connect_material_property(normal, "RGB", unreal.MaterialProperty.MP_NORMAL)
-    mel.connect_material_property(roughness, "R", unreal.MaterialProperty.MP_ROUGHNESS)
-    mel.connect_material_property(metallic, "R", unreal.MaterialProperty.MP_METALLIC)
+
+    # Rugosité : texture adoucie vers une valeur « neuve » (le grain et les rayures de Substance disparaissent
+    # en partie, la Ball paraît sortie d'usine)
+    clean = scalar("Proprete", 0.5, -800, 300)
+    clean_value = scalar("RugositePropre", 0.15, -800, 400)
+    rough_mix = mel.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, -500, 250)
+    mel.connect_material_expressions(roughness, "R", rough_mix, "A")
+    mel.connect_material_expressions(clean_value, "", rough_mix, "B")
+    mel.connect_material_expressions(clean, "", rough_mix, "Alpha")
+    mel.connect_material_property(rough_mix, "", unreal.MaterialProperty.MP_ROUGHNESS)
+
+    metal_scale = scalar("IntensiteMetal", 1.0, -800, 600)
+    metal = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -500, 550)
+    mel.connect_material_expressions(metallic, "R", metal, "A")
+    mel.connect_material_expressions(metal_scale, "", metal, "B")
+    mel.connect_material_property(metal, "", unreal.MaterialProperty.MP_METALLIC)
+
+    # Vernis : Clear Coat (CustomData0) et sa rugosité (CustomData1)
+    coat = scalar("Vernis", 1.0, -500, 750)
+    coat_roughness = scalar("RugositeVernis", 0.04, -500, 850)
+    mel.connect_material_property(coat, "", unreal.MaterialProperty.MP_CUSTOM_DATA0)
+    mel.connect_material_property(coat_roughness, "", unreal.MaterialProperty.MP_CUSTOM_DATA1)
 
     # Lueur des éclairs (APokeBallThrow, séquence d'évolution) : CouleurEclat × Eclat, éteinte par défaut
-    glow = mel.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -700, 900)
-    glow.set_editor_property("parameter_name", "Eclat")
-    glow.set_editor_property("default_value", 0.0)
-    glow_color = mel.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -700, 1050)
+    glow = scalar("Eclat", 0.0, -800, 1000)
+    glow_color = mel.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -800, 1100)
     glow_color.set_editor_property("parameter_name", "CouleurEclat")
     glow_color.set_editor_property("default_value", unreal.LinearColor(1.0, 0.2, 0.15, 1.0))
-    emissive = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -350, 950)
+    emissive = mel.create_material_expression(material, unreal.MaterialExpressionMultiply, -500, 1050)
     mel.connect_material_expressions(glow_color, "", emissive, "A")
     mel.connect_material_expressions(glow, "", emissive, "B")
     mel.connect_material_property(emissive, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
