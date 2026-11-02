@@ -18,8 +18,9 @@ class UStaticMeshComponent;
 /**
  *  Séquence d'évolution en 3D (SCRUM-47, docs/PROGRESSION.md). Jouée côté client seulement, devant le joueur :
  *  la caméra se pose face au Pokémon, le décor s'assombrit et se floute, le Pokémon devient une silhouette
- *  de lumière, alterne de plus en plus vite avec la silhouette de sa nouvelle forme, puis un flash révèle
- *  la nouvelle espèce. B (ou Échap) avant le flash annule l'évolution.
+ *  de lumière qui se défait en points de lumière ; les points glissent en tourbillon jusqu'à la forme de
+ *  l'évolution (DT_MorphPoints, Tools/Pokemon/import_pokemon_models.py), puis un flash révèle la nouvelle espèce.
+ *  Sans ces points, les deux silhouettes alternent de plus en plus vite comme dans les jeux d'origine. B (ou Échap) avant le flash annule l'évolution.
  *
  *  Modèles : /Game/Pokemon/Models/<Espèce>/SK_<Espèce> (ou SM_), comme le Pokédex ; une sphère s'ils manquent.
  *  Lueur : /Game/Progression/M_EvolutionGlow en matériau de surcouche (Overlay Material).
@@ -192,6 +193,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category="Evolution|Ball")
 	TObjectPtr<UInstancedStaticMeshComponent> Sparks;
 
+	/** Points de lumière qui passent d'une forme à l'autre pendant la transformation (DT_MorphPoints) */
+	UPROPERTY(VisibleAnywhere, Category="Evolution")
+	TObjectPtr<UInstancedStaticMeshComponent> MorphDots;
+
 private:
 
 	enum class EPhase : uint8 { Intro, BallWobble, BallOpen, BallBeam, BallBurst, Glow, Morph, Flash, Reveal, Done, Cancelled };
@@ -226,6 +231,8 @@ private:
 	void TickSparks(float DeltaTime);
 	/** Caméra : 0 = gros plan sur la Ball, 1 = cadrage du Pokémon */
 	void UpdateCamera(float Blend);
+	bool SetupDotMorph(FName FromSpecies, FName ToSpecies);
+	void TickDotMorph(float Progress);
 	bool IsBallPhase() const { return Phase >= EPhase::BallWobble && Phase <= EPhase::BallBurst; }
 
 	UPROPERTY(Transient) TObjectPtr<UProgressionWidget> Widget;
@@ -266,4 +273,12 @@ private:
 	UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> BeamLight;
 	UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> ShockLight;
 	UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> SparkLight;
+	UPROPERTY(Transient) TObjectPtr<UMaterialInstanceDynamic> DotLight;
+
+	/** Transformation en points de lumière : départ et arrivée de chaque point, dans l'espace de la scène */
+	bool bDotMorph = false;
+	TArray<FVector> MorphFrom;
+	TArray<FVector> MorphTo;
+	TArray<float> MorphSpin;
+	float MorphDotSize = 1.f;
 };

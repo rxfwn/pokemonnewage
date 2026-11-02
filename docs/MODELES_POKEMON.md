@@ -47,9 +47,18 @@ Résultat, par espèce (nom de ligne de `DT_Species`) :
 
 Le menu Pokédex (fiche du Pokémon) lit ces chemins tels quels : ne pas renommer les assets.
 
+Le script remplit aussi `/Game/Pokemon/Models/DT_MorphPoints` : 2 500 points posés sur la surface de chaque
+Pokémon (`Generated/<Espèce>/morph_points.json`). La séquence d'évolution s'en sert pour la transformation
+en points de lumière (la silhouette se défait en points qui tourbillonnent jusqu'à la nouvelle forme).
+**Compiler le C++ avant de lancer le script** (il a besoin de la structure `PokemonMorphPointsRow`) ;
+sans cette table, l'évolution garde l'alternance des deux silhouettes.
+
+![Transformation](../Tools/Pokemon/apercu_transformation.gif)
+
 ### Mettre à jour les modèles (nouveau zip)
 
-Le zip du 2026-11-02 corrige la pose de repos (Pikachu couché, Herbizarre tourné quand aucune animation ne joue).
+Le zip du 2026-11-02 corrige la pose de repos (Pikachu couché, Herbizarre tourné quand aucune animation ne joue)
+et ajoute les points de transformation (`morph_points.json`).
 Pour remplacer les anciens : dans le Navigateur de contenu, supprimer le dossier `Contenu > Pokemon > Models`,
 vider `Tools\Pokemon\Generated\`, y dézipper le nouveau zip, puis relancer le script.
 

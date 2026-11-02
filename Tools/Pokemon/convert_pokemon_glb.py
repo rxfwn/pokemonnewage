@@ -29,6 +29,7 @@ Lancement (Blender 4.2 ou plus, ou `pip install bpy`) :
 
 import json
 import os
+import random
 import re
 import sys
 
@@ -40,6 +41,9 @@ SPECIES_JSON = os.path.join(REPO_ROOT, "Data", "Pokemon", "DT_Species.json")
 
 # Pokémon dont la taille du Pokédex est une longueur plutôt qu'une hauteur.
 MEASURE_LENGTH = {"Onix", "Caterpie", "Weedle", "Ekans", "Arbok", "Dratini", "Dragonair", "Gyarados"}
+
+# Nombre de points de surface pour la transformation pendant l'évolution (Tools/Pokemon/morph_points.json)
+MORPH_POINTS = 2500
 
 # Morceaux à retirer : les lianes de Bulbizarre chromatique, dépliées vers le ciel en pose de repos.
 DROP_MESHES = re.compile(r"Vine", re.IGNORECASE)
@@ -144,6 +148,42 @@ def action_fcurves():
             for strip in layer.strips:
                 for bag in strip.channelbags:
                     yield from bag.fcurves
+
+
+def morton_key(p, lo, size):
+    """Ordre en Z (Morton) dans la boîte du Pokémon : deux nuages triés ainsi se répondent point à point."""
+    key = 0
+    cells = [min(1023, int((p[i] - lo[i]) / max(size[i], 1e-6) * 1023)) for i in range(3)]
+    for bit in range(9, -1, -1):
+        for c in (cells[2], cells[0], cells[1]):
+            key = (key << 1) | ((c >> bit) & 1)
+    return key
+
+
+def write_morph_points(body, path):
+    """MORPH_POINTS points tirés sur la surface (au prorata de l'aire), en cm et en axes Unreal (Y inversé),
+    triés en ordre de Morton : le point i d'une espèce glisse vers le point i de son évolution."""
+    rng = random.Random(1)
+    mw = body.matrix_world
+    tris, areas = [], []
+    for poly in body.data.polygons:
+        verts = [mw @ body.data.vertices[i].co for i in poly.vertices]
+        for k in range(1, len(verts) - 1):
+            a, b, c = verts[0], verts[k], verts[k + 1]
+            tris.append((a, b, c))
+            areas.append(((b - a).cross(c - a)).length * 0.5)
+    points = []
+    for a, b, c in rng.choices(tris, weights=areas, k=MORPH_POINTS):
+        u, v = rng.random(), rng.random()
+        if u + v > 1:
+            u, v = 1 - u, 1 - v
+        p = a + (b - a) * u + (c - a) * v
+        points.append((round(p.x, 2), round(-p.y, 2), round(p.z, 2)))
+    lo = [min(p[i] for p in points) for i in range(3)]
+    size = [max(p[i] for p in points) - lo[i] for i in range(3)]
+    points.sort(key=lambda p: morton_key(p, lo, size))
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(points, f, separators=(",", ":"))
 
 
 def bake_rest_pose(arm, meshes):
@@ -350,6 +390,10 @@ def convert(glb, out_dir, species, suffix):
     if arm and anims:
         arm.animation_data_create()
         arm.animation_data.action = bpy.data.actions[anims[0]]
+
+    # Points de surface pour l'effet de transformation de l'évolution (version normale seulement)
+    if not suffix:
+        write_morph_points(body, os.path.join(out_dir, "morph_points.json"))
 
     fbx = os.path.join(out_dir, f"{asset}.fbx")
     bpy.ops.export_scene.fbx(

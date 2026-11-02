@@ -1,5 +1,6 @@
 #include "Progression/EvolutionScene.h"
 #include "Capture/PokeBallModel.h"
+#include "Progression/MorphPointsRow.h"
 #include "Progression/ProgressionComponent.h"
 #include "UI/Progression/ProgressionWidget.h"
 #include "Pokemon/PokemonDatabase.h"
@@ -12,6 +13,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SpotLightComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/DataTable.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
@@ -46,6 +48,12 @@ namespace EvolutionScene
 	constexpr float WobbleRest = 0.35f;
 	/** La Ball flotte un peu en s'ouvrant (en diamètres) */
 	constexpr float BallLift = 0.35f;
+	/** Transformation en points de lumière : table des points, nombre maximum, moments (part de la phase)
+	 *  où les points recouvrent la silhouette puis atteignent la nouvelle forme */
+	const TCHAR* MorphPointsTable = TEXT("/Game/Pokemon/Models/DT_MorphPoints.DT_MorphPoints");
+	constexpr int32 MaxMorphDots = 2500;
+	constexpr float MorphDotsAppear = 0.12f;
+	constexpr float MorphDotsArrive = 0.85f;
 	/** Étincelles : nombre maximum, cadence pendant le rayon (par seconde) */
 	constexpr int32 MaxSparks = 220;
 	constexpr float BeamSparkRate = 110.f;
@@ -159,7 +167,14 @@ AEvolutionScene::AEvolutionScene()
 	Sparks->SetVisibility(false);
 	Sparks->bAffectDynamicIndirectLighting = false;
 	Sparks->bAffectDistanceFieldLighting = false;
-	for (UStaticMeshComponent* Effect : { LightCore.Get(), Beam.Get(), Shockwave.Get(), static_cast<UStaticMeshComponent*>(Sparks.Get()) })
+	MorphDots = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("MorphDots"));
+	MorphDots->SetupAttachment(Root);
+	MorphDots->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	MorphDots->SetVisibility(false);
+	MorphDots->bAffectDynamicIndirectLighting = false;
+	MorphDots->bAffectDistanceFieldLighting = false;
+	for (UStaticMeshComponent* Effect : { LightCore.Get(), Beam.Get(), Shockwave.Get(), static_cast<UStaticMeshComponent*>(Sparks.Get()),
+		static_cast<UStaticMeshComponent*>(MorphDots.Get()) })
 	{
 		Effect->SetCastShadow(false);
 	}
@@ -212,6 +227,7 @@ void AEvolutionScene::Play(APlayerController* Controller, UProgressionWidget* In
 
 	// Le Pokémon sortira de sa Ball : caché jusqu'à l'explosion de lumière
 	PokemonHeight = FMath::Max(OldHeight, 30.f);
+	bDotMorph = SetupDotMorph(FromSpecies, ToSpecies);
 	bBallIntro = OldMesh && SetupBall(Ball);
 	if (bBallIntro)
 	{
@@ -414,12 +430,14 @@ void AEvolutionScene::EnterPhase(EPhase NewPhase)
 		MorphPhase = 0.f;
 		if (NewMesh)
 		{
-			NewMesh->SetVisibility(true);
-			SetModelScale(NewMesh, 0.f);
+			// Avec les points de lumière, la nouvelle forme n'apparaît qu'une fois les points arrivés
+			NewMesh->SetVisibility(!bDotMorph);
+			SetModelScale(NewMesh, bDotMorph ? 1.f : 0.f);
 		}
 		break;
 
 	case EPhase::Flash:
+		MorphDots->SetVisibility(false);
 		Music->FadeOut(0.3f, 0.f);
 		PlaySound(TEXT("SW_Evolution_Flash"));
 		if (OldMesh)
@@ -439,6 +457,7 @@ void AEvolutionScene::EnterPhase(EPhase NewPhase)
 		break;
 
 	case EPhase::Cancelled:
+		MorphDots->SetVisibility(false);
 		Music->FadeOut(0.3f, 0.f);
 		PlaySound(TEXT("SW_Evolution_Cancel"));
 		if (NewMesh)
@@ -519,9 +538,16 @@ void AEvolutionScene::Tick(float DeltaTime)
 		const float Progress = FMath::Clamp(PhaseTime / FMath::Max(MorphTime, 0.01f), 0.f, 1.f);
 		const float Rate = FMath::Lerp(MorphStartRate, MorphEndRate, Progress * Progress);
 		MorphPhase += Rate * DeltaTime * 2.f * UE_PI;
-		const float Old = 0.5f + 0.5f * FMath::Cos(MorphPhase);
-		SetModelScale(OldMesh, FMath::Lerp(0.08f, 1.f, Old));
-		SetModelScale(NewMesh, FMath::Lerp(0.08f, 1.f, 1.f - Old));
+		if (bDotMorph)
+		{
+			TickDotMorph(Progress);
+		}
+		else
+		{
+			const float Old = 0.5f + 0.5f * FMath::Cos(MorphPhase);
+			SetModelScale(OldMesh, FMath::Lerp(0.08f, 1.f, Old));
+			SetModelScale(NewMesh, FMath::Lerp(0.08f, 1.f, 1.f - Old));
+		}
 		GlowLight->SetIntensity(EvolutionScene::GlowLightMax * (0.8f + 0.4f * Progress + 0.2f * FMath::Sin(MorphPhase * 2.f)));
 		if (bCancelRequested)
 		{
@@ -922,6 +948,90 @@ void AEvolutionScene::HideBall()
 	{
 		Mesh->SetVisibility(false);
 	}
+}
+
+bool AEvolutionScene::SetupDotMorph(FName FromSpecies, FName ToSpecies)
+{
+	using namespace EvolutionScene;
+	const UDataTable* Table = LoadObject<UDataTable>(nullptr, MorphPointsTable, nullptr, LOAD_NoWarn | LOAD_Quiet);
+	const FPokemonMorphPointsRow* From = Table ? Table->FindRow<FPokemonMorphPointsRow>(FromSpecies, TEXT(""), false) : nullptr;
+	const FPokemonMorphPointsRow* To = Table ? Table->FindRow<FPokemonMorphPointsRow>(ToSpecies, TEXT(""), false) : nullptr;
+	UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+	UMaterialInterface* Light = Cast<UMaterialInterface>(StaticLoadObject(UMaterialInterface::StaticClass(), nullptr,
+		LightMaterial, nullptr, LOAD_NoWarn | LOAD_Quiet));
+	if (!From || !To || From->Points.IsEmpty() || To->Points.IsEmpty() || !OldMesh || !NewMesh || !Sphere || !Light)
+	{
+		// Points pas encore importés (ou sphère de remplacement) : alternance des silhouettes comme avant
+		return false;
+	}
+
+	// Points dans l'espace de la scène : même placement, rotation et échelle que les deux modèles
+	const FTransform OldTransform = OldMesh->GetRelativeTransform();
+	const FTransform NewTransform = NewMesh->GetRelativeTransform();
+	const int32 Count = FMath::Min3(From->Points.Num(), To->Points.Num(), MaxMorphDots);
+	FRandomStream Random(7);
+	MorphFrom.Reset(Count);
+	MorphTo.Reset(Count);
+	MorphSpin.Reset(Count);
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		// Les deux listes peuvent avoir des tailles différentes : on les parcourt au même rythme
+		const int32 FromIndex = Index * From->Points.Num() / Count;
+		const int32 ToIndex = Index * To->Points.Num() / Count;
+		MorphFrom.Add(OldTransform.TransformPosition(From->Points[FromIndex]));
+		MorphTo.Add(NewTransform.TransformPosition(To->Points[ToIndex]));
+		MorphSpin.Add(Random.FRandRange(0.6f, 1.4f));
+	}
+
+	MorphDotSize = FMath::Clamp(PokemonHeight * 0.018f, 0.8f, 6.f);
+	MorphDots->SetStaticMesh(Sphere);
+	DotLight = UMaterialInstanceDynamic::Create(Light, this);
+	MorphDots->SetMaterial(0, DotLight);
+	SetEffectGlow(DotLight, 1.f, GlowColor);
+	MorphDots->ClearInstances();
+	TArray<FTransform> Hidden;
+	Hidden.Init(FTransform(FQuat::Identity, FVector::ZeroVector, FVector(0.f)), Count);
+	MorphDots->AddInstances(Hidden, false);
+	MorphDots->SetVisibility(false);
+	return true;
+}
+
+void AEvolutionScene::TickDotMorph(float Progress)
+{
+	using namespace EvolutionScene;
+	// Début : la silhouette se couvre de points ; milieu : les points tourbillonnent vers la nouvelle forme ;
+	// fin : la nouvelle silhouette apparaît et les points s'éteignent
+	const float Dot = MorphDotSize / 100.f;
+	float Travel = 0.f;
+	float Size = 1.f;
+	if (Progress < MorphDotsAppear)
+	{
+		Size = Progress / MorphDotsAppear;
+	}
+	else
+	{
+		Travel = FMath::SmoothStep(0.f, 1.f, (Progress - MorphDotsAppear) / (MorphDotsArrive - MorphDotsAppear));
+		Size = Progress < MorphDotsArrive ? 1.f : 1.f - (Progress - MorphDotsArrive) / (1.f - MorphDotsArrive);
+	}
+	const bool bShowOld = Progress < MorphDotsAppear;
+	const bool bShowNew = Progress >= MorphDotsArrive;
+	OldMesh->SetVisibility(bShowOld);
+	NewMesh->SetVisibility(bShowNew);
+	MorphDots->SetVisibility(Size > 0.f);
+
+	const float Swirl = FMath::Sin(Travel * UE_PI);
+	TArray<FTransform> Transforms;
+	Transforms.SetNum(MorphFrom.Num());
+	for (int32 Index = 0; Index < MorphFrom.Num(); ++Index)
+	{
+		FVector Point = FMath::Lerp(MorphFrom[Index], MorphTo[Index], Travel);
+		// Tourbillon autour de l'axe vertical du Pokémon, un peu gonflé et soulevé à mi-chemin
+		const float Spin = MorphSpin[Index];
+		Point = FVector(FVector2D(Point) * (1.f + 0.18f * Swirl * Spin), Point.Z + PokemonHeight * 0.12f * Swirl * Spin);
+		Point = Point.RotateAngleAxisRad(2.2f * Swirl * Spin, FVector::UpVector);
+		Transforms[Index] = FTransform(FQuat::Identity, Point, FVector(Dot * Size * (0.7f + 0.3f * Spin)));
+	}
+	MorphDots->BatchUpdateInstancesTransforms(0, Transforms, false, true, true);
 }
 
 bool AEvolutionScene::RequestCancel()
