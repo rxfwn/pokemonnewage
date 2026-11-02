@@ -77,7 +77,8 @@ AEvolutionScene::AEvolutionScene()
 	Post.bOverride_AutoExposureBias = true;
 	Post.AutoExposureBias = -0.7f;
 	Post.bOverride_DepthOfFieldFstop = true;
-	Post.DepthOfFieldFstop = 1.2f;
+	// f/2,8 : tout le Pokémon reste net, le décor derrière part dans le flou
+	Post.DepthOfFieldFstop = 2.8f;
 	Post.bOverride_DepthOfFieldFocalDistance = true;
 	Post.DepthOfFieldFocalDistance = 300.f;
 	Post.bOverride_BloomIntensity = true;
@@ -216,10 +217,14 @@ void AEvolutionScene::Play(APlayerController* Controller, UProgressionWidget* In
 	}
 
 	// Cadrage : le plus grand des deux Pokémon tient dans l'image ; au début, gros plan sur la Ball
+	// Le Pokémon occupe au plus 60 % de la hauteur de l'image, dans la partie au-dessus de la boîte de texte
+	// (le quart du bas de l'écran)
 	const float Height = FMath::Max3(OldHeight, NewHeight, 30.f);
-	const float Distance = FMath::Max(220.f, Height * 2.8f);
+	const float HalfViewTan = FMath::Tan(FMath::DegreesToRadians(Camera->FieldOfView * 0.5f)) * 9.f / 16.f;
+	const float Distance = FMath::Max(260.f, Height / (0.6f * 2.f * HalfViewTan));
+	const float ViewHeight = 2.f * Distance * HalfViewTan;
 	const FVector Target(0.f, 0.f, Height * 0.5f);
-	PokemonShotTarget = Target;
+	PokemonShotTarget = Target - FVector(0.f, 0.f, ViewHeight * 0.125f);
 	PokemonShotLocation = FVector(Distance, 0.f, Height * 0.55f + 25.f);
 	// Caméra assez basse : le sol fuit vite dans le flou derrière la Ball (son grain ne se voit pas)
 	BallShotLocation = BallRest + FVector(BallDiameter * BallShotDistance, 0.f, BallDiameter * 0.8f);
@@ -894,7 +899,7 @@ void AEvolutionScene::UpdateCamera(float Blend)
 	Camera->SetRelativeLocation(Location);
 	Camera->SetRelativeRotation((Target - Location).Rotation());
 	// Mise au point sur la Ball (son centre), puis sur le Pokémon
-	const FVector Focus = FMath::Lerp(BallRest, PokemonShotTarget, Blend);
+	const FVector Focus = FMath::Lerp(BallRest, FVector(0.f, 0.f, PokemonHeight * 0.5f), Blend);
 	Camera->PostProcessSettings.DepthOfFieldFocalDistance = FMath::Max((Focus - Location).Size(), 10.f);
 	Camera->PostProcessSettings.DepthOfFieldFstop = FMath::Lerp(BallShotFstop, PokemonFstop, Blend);
 }

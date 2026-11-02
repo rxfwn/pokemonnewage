@@ -256,7 +256,7 @@ private:
 	FVector PokemonShotTarget = FVector::ZeroVector;
 	FVector BallShotLocation = FVector::ZeroVector;
 	float CameraBlend = 1.f;
-	float PokemonFstop = 1.2f;
+	float PokemonFstop = 2.8f;
 	float PokemonHeight = 0.f;
 	float SparkTimer = 0.f;
 	int32 LastWobble = -1;
