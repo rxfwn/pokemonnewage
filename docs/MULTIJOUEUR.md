@@ -37,7 +37,11 @@ Le serveur vérifie chaque joueur avec son PlayerState. Celui qui n'a pas les dr
 - **Quitter / fermer le monde** : page **En ligne**, ou `QuitterMonde`. Si l'hôte ferme, les autres repartent en solo avec leur save à jour.
 - **À distance** (pas sur la même box) : installer [Tailscale](https://tailscale.com) sur chaque PC, avec le même compte ou un partage de machine. L'hôte donne son adresse Tailscale (`100.x.x.x`, visible aussi dans **Ton adresse**). Autoriser le jeu dans le pare-feu Windows quand il le demande (port UDP 7777).
 
-## Cartes des amis
+## Serveur de saves
+
+Un Raspberry Pi à la maison garde aussi la save de chaque joueur, et les cartes des amis : voir `docs/SERVEUR_SAVES.md`. Sans lui, tout marche quand même avec la save du PC et le dossier partagé ci-dessous.
+
+## Cartes des amis (sans serveur de saves)
 
 1. Créer un dossier partagé entre vous (OneDrive, Google Drive, Dropbox...), synchronisé sur chaque PC.
 2. Dans le jeu, console : `DossierAmis "D:\OneDrive\PokemonAmis"` (`DossierAmis` sans chemin affiche le dossier choisi). Ta carte est écrite tout de suite.

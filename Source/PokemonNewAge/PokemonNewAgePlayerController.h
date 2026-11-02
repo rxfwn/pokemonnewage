@@ -414,6 +414,10 @@ public:
 	UFUNCTION(Exec)
 	void DossierAmis(const FString& Folder);
 
+	/** ServeurSaves http://100.x.x.x:8787 Marie <clé> : règle le serveur de saves ; sans rien = l'affiche ; « aucun » = l'enlève (console) */
+	UFUNCTION(Exec)
+	void ServeurSaves(const FString& Url, const FString& Player, const FString& Key);
+
 	/** Barrière d'histoire : message au joueur repoussé (AStoryGate) */
 	UFUNCTION(Client, Reliable)
 	void ClientShowGateMessage(const FText& Message);

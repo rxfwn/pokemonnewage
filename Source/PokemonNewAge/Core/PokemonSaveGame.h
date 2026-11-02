@@ -154,6 +154,10 @@ public:
 	UPROPERTY()
 	FDateTime SavedAt;
 
+	/** Heure de la sauvegarde en UTC : le serveur de saves garde la plus récente (docs/SERVEUR_SAVES.md) */
+	UPROPERTY()
+	FDateTime SavedAtUtc;
+
 	/** Nom de la map (L_Kanto) */
 	UPROPERTY()
 	FString MapName;
@@ -224,6 +228,17 @@ public:
 	/** Adresse du dernier monde rejoint (IP du réseau local ou de Tailscale), pour « Rejoindre » du menu En ligne */
 	UPROPERTY()
 	FString LastHostAddress;
+
+	/** Serveur de saves (Raspberry Pi, docs/SERVEUR_SAVES.md) : adresse (http://100.x.x.x:8787), nom du joueur et sa clé.
+	 *  Vide = pas de serveur, la save reste seulement sur le PC. Commande ServeurSaves */
+	UPROPERTY()
+	FString SaveServerUrl;
+
+	UPROPERTY()
+	FString SaveServerPlayer;
+
+	UPROPERTY()
+	FString SaveServerKey;
 };
 
 /** Sauvegarder, charger, et lire les réglages (C++ et Blueprint). */
@@ -268,9 +283,9 @@ public:
 	/** Écrit la carte dans le dossier des amis (rien si le dossier n'est pas choisi). Faux si l'écriture échoue */
 	static bool WriteTrainerCard(const FPlayerSaveData& Data);
 
-	/** Cartes du dossier des amis, sauf la sienne (même nom et même numéro), la plus récente d'abord */
-	UFUNCTION(BlueprintCallable, Category="Save")
-	static TArray<FTrainerCard> LoadFriendCards(const FString& OwnName, int32 OwnNumber);
+	/** Cartes des amis (serveur de saves, sinon dossier partagé), sauf la sienne, la plus récente d'abord */
+	UFUNCTION(BlueprintCallable, Category="Save", meta=(WorldContext="WorldContextObject"))
+	static TArray<FTrainerCard> LoadFriendCards(const UObject* WorldContextObject, const FString& OwnName, int32 OwnNumber);
 
 	/** Réglages (créés avec les valeurs par défaut s'ils n'existent pas) */
 	UFUNCTION(BlueprintCallable, Category="Save")

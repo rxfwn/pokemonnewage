@@ -29,7 +29,7 @@ public class PokemonNewAge : ModuleRules
 			"JsonUtilities"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "Landscape", "Sockets" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "Landscape", "Sockets", "HTTP" });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"PokemonNewAge",

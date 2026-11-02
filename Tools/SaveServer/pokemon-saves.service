@@ -1,0 +1,17 @@
+# Lance le serveur de saves au démarrage du Raspberry Pi et le relance s'il s'arrête.
+# Installation : voir docs/SERVEUR_SAVES.md, étape 5. Remplacer « marie » par ton nom d'utilisateur du Pi.
+[Unit]
+Description=Serveur de saves du jeu Pokémon
+After=network-online.target tailscaled.service
+Wants=network-online.target
+
+[Service]
+User=marie
+WorkingDirectory=/home/marie/serveur-saves
+ExecStart=/usr/bin/python3 /home/marie/serveur-saves/pokemon_save_server.py
+# Si Tailscale n'est pas encore prêt au démarrage, on réessaie
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

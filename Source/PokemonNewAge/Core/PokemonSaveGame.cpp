@@ -14,6 +14,7 @@
 #include "UObject/Package.h"
 #include "PokemonNewAgePlayerController.h"
 #include "PokemonNewAge.h"
+#include "Core/SaveServerSubsystem.h"
 
 const FString UPokemonSaveLibrary::SaveSlot = TEXT("Partie");
 const FString UPokemonSaveLibrary::OptionsSlot = TEXT("Options");
@@ -43,6 +44,7 @@ bool UPokemonSaveLibrary::SaveGame(APlayerController* Player)
 
 	UPokemonSaveGame* Save = Cast<UPokemonSaveGame>(UGameplayStatics::CreateSaveGameObject(UPokemonSaveGame::StaticClass()));
 	Save->SavedAt = FDateTime::Now();
+	Save->SavedAtUtc = FDateTime::UtcNow();
 	Save->MapName = UGameplayStatics::GetCurrentLevelName(Player, true);
 	Save->Player = State->MakeSaveData();
 	if (const APawn* Pawn = Player->GetPawn())
@@ -56,6 +58,11 @@ bool UPokemonSaveLibrary::SaveGame(APlayerController* Player)
 		return false;
 	}
 	WriteTrainerCard(Save->Player);
+	// Copie sur le serveur de saves, en arrière-plan (rien s'il n'est pas réglé)
+	if (USaveServerSubsystem* Server = USaveServerSubsystem::Get(Player))
+	{
+		Server->Upload(Save);
+	}
 	return true;
 }
 
@@ -138,9 +145,14 @@ bool UPokemonSaveLibrary::WriteTrainerCard(const FPlayerSaveData& Data)
 	return bWritten;
 }
 
-TArray<FTrainerCard> UPokemonSaveLibrary::LoadFriendCards(const FString& OwnName, int32 OwnNumber)
+TArray<FTrainerCard> UPokemonSaveLibrary::LoadFriendCards(const UObject* WorldContextObject, const FString& OwnName, int32 OwnNumber)
 {
 	TArray<FTrainerCard> Cards;
+	// Le serveur de saves passe avant le dossier partagé
+	if (const USaveServerSubsystem* Server = USaveServerSubsystem::Get(WorldContextObject); Server && Server->HasFriendCards())
+	{
+		return Server->GetFriendCards();
+	}
 	const FString Folder = PokemonFriendCards::GetFolder();
 	if (Folder.IsEmpty())
 	{

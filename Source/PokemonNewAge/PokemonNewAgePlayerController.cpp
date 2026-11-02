@@ -45,6 +45,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "HAL/FileManager.h"
 #include "SocketSubsystem.h"
+#include "Core/SaveServerSubsystem.h"
 #include "IPAddress.h"
 
 namespace PokemonShortcuts
@@ -121,14 +122,37 @@ void APokemonNewAgePlayerController::BeginPlay()
 		// Écran de combat : il apparaît à chaque début de combat
 		BattleComponent->OnBattleStarted.AddDynamic(this, &APokemonNewAgePlayerController::HandleBattleStarted);
 
-		// Reprendre la partie sauvegardée sur ce PC (SCRUM-52)
+		// Reprendre la partie sauvegardée sur ce PC (SCRUM-52), après avoir récupéré celle du serveur de saves
+		// si elle est plus récente (quelques secondes au plus, docs/SERVEUR_SAVES.md)
 		if (bLoadSaveOnStart)
 		{
-			if (const UPokemonSaveGame* Save = UPokemonSaveLibrary::LoadSaveGame(this))
+			bWaitingForSave = true;
+			TWeakObjectPtr<APokemonNewAgePlayerController> WeakThis(this);
+			auto LoadLocalSave = [WeakThis]()
 			{
-				bWaitingForSave = true;
-				ServerLoadSave(Save->Player);
-				UE_LOG(LogPokemonNewAge, Log, TEXT("Sauvegarde chargee (%s)"), *Save->SavedAt.ToString());
+				APokemonNewAgePlayerController* Self = WeakThis.Get();
+				if (!Self)
+				{
+					return;
+				}
+				if (const UPokemonSaveGame* Save = UPokemonSaveLibrary::LoadSaveGame(Self))
+				{
+					Self->ServerLoadSave(Save->Player);
+					UE_LOG(LogPokemonNewAge, Log, TEXT("Sauvegarde chargee (%s)"), *Save->SavedAt.ToString());
+				}
+				else
+				{
+					// Nouvelle partie : rien à attendre
+					Self->bWaitingForSave = false;
+				}
+			};
+			if (USaveServerSubsystem* SaveServer = USaveServerSubsystem::Get(this))
+			{
+				SaveServer->WhenSynced(LoadLocalSave);
+			}
+			else
+			{
+				LoadLocalSave();
 			}
 		}
 	}
@@ -1130,6 +1154,48 @@ void APokemonNewAgePlayerController::DossierAmis(const FString& Folder)
 	// La carte est écrite tout de suite pour que les amis la voient
 	UPokemonSaveLibrary::SaveGame(this);
 	PrintDebug(FString::Printf(TEXT("Dossier des amis : %s"), *Clean));
+}
+
+void APokemonNewAgePlayerController::ServeurSaves(const FString& Url, const FString& Player, const FString& Key)
+{
+	UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
+	if (!Options)
+	{
+		return;
+	}
+	if (Url.IsEmpty())
+	{
+		const USaveServerSubsystem* Server = USaveServerSubsystem::Get(this);
+		PrintDebug(Options->SaveServerUrl.IsEmpty() ? FString(TEXT("Aucun serveur de saves"))
+			: FString::Printf(TEXT("Serveur de saves : %s (joueur %s) - %s"), *Options->SaveServerUrl, *Options->SaveServerPlayer,
+				Server ? *Server->GetStatusText().ToString() : TEXT("")));
+		return;
+	}
+	if (Url == TEXT("aucun"))
+	{
+		Options->SaveServerUrl.Reset();
+		Options->SaveServerPlayer.Reset();
+		Options->SaveServerKey.Reset();
+		UPokemonSaveLibrary::SaveOptions(Options);
+		PrintDebug(TEXT("Serveur de saves retire : la save reste seulement sur ce PC"));
+		return;
+	}
+	if (Player.IsEmpty() || Key.IsEmpty())
+	{
+		PrintDebug(TEXT("ServeurSaves http://100.x.x.x:8787 <joueur> <cle>"));
+		return;
+	}
+	Options->SaveServerUrl = Url;
+	Options->SaveServerPlayer = Player;
+	Options->SaveServerKey = Key;
+	UPokemonSaveLibrary::SaveOptions(Options);
+	// Le serveur reçoit la save du PC s'il n'en a pas de plus récente ; sinon la sienne remplace celle du PC
+	// (relancer le jeu pour la charger)
+	if (USaveServerSubsystem* Server = USaveServerSubsystem::Get(this))
+	{
+		Server->Resync();
+	}
+	PrintDebug(FString::Printf(TEXT("Serveur de saves : %s (joueur %s)"), *Url, *Player));
 }
 
 void APokemonNewAgePlayerController::ClientShowGateMessage_Implementation(const FText& Message)

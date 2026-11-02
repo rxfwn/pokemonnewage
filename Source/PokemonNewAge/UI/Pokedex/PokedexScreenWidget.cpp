@@ -20,6 +20,7 @@
 #include "Components/VerticalBoxSlot.h"
 #include "Core/PokemonPlayerState.h"
 #include "Core/PokemonSaveGame.h"
+#include "Core/SaveServerSubsystem.h"
 #include "Engine/DataTable.h"
 #include "Engine/Engine.h"
 #include "Engine/Texture2D.h"
@@ -1552,15 +1553,24 @@ void UPokedexScreenWidget::BuildOnline()
 	RowCount = OnlineActions.Num();
 	AddSpacer(10.f);
 
-	// Cartes dresseur des amis (dossier partagé), à regarder seulement
+	// Serveur de saves (Raspberry Pi) : état, et nouvelles cartes demandées pour la prochaine ouverture
+	USaveServerSubsystem* SaveServer = USaveServerSubsystem::Get(this);
+	if (SaveServer)
+	{
+		AddLabelValue(LOCTEXT("SaveServer", "Serveur de saves"), SaveServer->GetStatusText());
+		SaveServer->RefreshFriendCards();
+		AddSpacer(6.f);
+	}
+
+	// Cartes dresseur des amis (serveur de saves ou dossier partagé), à regarder seulement
 	const UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
 	AddLine(LOCTEXT("FriendsTitle", "CARTES DES AMIS"), 18, Accent, true);
-	if (!Options || Options->FriendsFolder.IsEmpty())
+	if ((!Options || Options->FriendsFolder.IsEmpty()) && !(SaveServer && SaveServer->IsConfigured()))
 	{
-		AddLine(LOCTEXT("FriendsNoFolder", "Choisis un dossier partagé : console (²) DossierAmis \"chemin\"."), 16, Dim);
+		AddLine(LOCTEXT("FriendsNoFolder", "Règle le serveur de saves (console ² : ServeurSaves) ou un dossier partagé (DossierAmis)."), 16, Dim);
 		return;
 	}
-	const TArray<FTrainerCard> Cards = UPokemonSaveLibrary::LoadFriendCards(Mine ? Mine->GetPlayerName() : FString(), Mine ? Mine->TrainerNumber : 0);
+	const TArray<FTrainerCard> Cards = UPokemonSaveLibrary::LoadFriendCards(this, Mine ? Mine->GetPlayerName() : FString(), Mine ? Mine->TrainerNumber : 0);
 	if (Cards.Num() == 0)
 	{
 		AddLine(LOCTEXT("FriendsNone", "Aucune carte d'ami dans le dossier pour l'instant."), 16, Dim);
