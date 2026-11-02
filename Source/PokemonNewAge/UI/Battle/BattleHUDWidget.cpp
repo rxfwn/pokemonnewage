@@ -51,10 +51,9 @@ namespace BattleHUD
 	const FVector2D HPBarSize(451.72f, 26.85f);
 	/** Marge autour des images de barre pour leur ombre floue (BAR_PAD de make_battle_assets.py) */
 	constexpr float HPBarPad = 8.f;
-	/** Les images de barre sont en 2x (SCALE de make_battle_assets.py). En « boîte », Slate taille les bouts ronds
-	 *  d'après les pixels de la texture : on dessine donc la barre deux fois plus grande, réduite de moitié
-	 *  (RenderScale), sinon les bouts sont deux fois trop larges (arrondis ovales) */
-	constexpr float HPBarTextureScale = 2.f;
+	/** Barre avec sa marge d'ombre, et largeur d'un bout rond (marge + demi-hauteur) */
+	const FVector2D HPBarFullSize(HPBarSize.X + 2.f * HPBarPad, HPBarSize.Y + 2.f * HPBarPad);
+	constexpr float HPBarCap = HPBarPad + 26.85f * 0.5f;
 	const FVector2D MessagePos(47.f, 817.f);
 	const FVector2D MessageSize(1210.f, 207.f);
 	const FVector2D MessageTextPos(82.f, 836.f);
@@ -161,14 +160,34 @@ namespace BattleHUD
 		return Brush;
 	}
 
-	/** Barre de PV ou son fond : image avec sa marge d'ombre, étirée en « boîte » (les bouts ronds et l'ombre ne se déforment pas) */
-	FSlateBrush MakeBarBrush(UTexture2D* Texture)
+	/** Barre de PV ou son fond en 3 images : bout rond gauche et droit à taille fixe (jamais déformés), milieu étiré.
+	 *  (Le mode « boîte » de Slate déformait les bouts : ovales, puis pointus.) */
+	UHorizontalBox* MakeBarWidget(UWidgetTree* Tree, TObjectPtr<UImage> (&Parts)[3])
 	{
-		const FVector2D Size = (HPBarSize + FVector2D(2.f * HPBarPad)) * HPBarTextureScale;
-		FSlateBrush Brush = MakeBrush(Texture, Size);
-		Brush.DrawAs = ESlateBrushDrawType::Box;
-		Brush.Margin = FMargin((HPBarPad + HPBarSize.Y * 0.5f) / Size.X, 0.f);
-		return Brush;
+		UHorizontalBox* Row = Tree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+		Row->SetVisibility(ESlateVisibility::HitTestInvisible);
+		for (int32 Part = 0; Part < 3; ++Part)
+		{
+			Parts[Part] = Tree->ConstructWidget<UImage>(UImage::StaticClass());
+			UHorizontalBoxSlot* PartSlot = Row->AddChildToHorizontalBox(Parts[Part]);
+			PartSlot->SetSize(FSlateChildSize(Part == 1 ? ESlateSizeRule::Fill : ESlateSizeRule::Automatic));
+			PartSlot->SetHorizontalAlignment(HAlign_Fill);
+			PartSlot->SetVerticalAlignment(VAlign_Fill);
+		}
+		return Row;
+	}
+
+	void SetBarTexture(TObjectPtr<UImage> (&Parts)[3], UTexture2D* Texture)
+	{
+		const float Cap = HPBarCap / HPBarFullSize.X;
+		const float From[] = { 0.f, Cap, 1.f - Cap };
+		const float To[] = { Cap, 1.f - Cap, 1.f };
+		for (int32 Part = 0; Part < 3; ++Part)
+		{
+			FSlateBrush Brush = MakeBrush(Texture, FVector2D(Part == 1 ? 1.f : HPBarCap, HPBarFullSize.Y));
+			Brush.SetUVRegion(FBox2f(FVector2f(From[Part], 0.f), FVector2f(To[Part], 1.f)));
+			Parts[Part]->SetBrush(Brush);
+		}
 	}
 
 	PokemonGlass::FGlassLook PanelLook(float Radius = 20.f)
@@ -363,23 +382,22 @@ void UBattleHUDWidget::BuildInfoBox(FInfoBox& Box, bool bPlayer)
 	Place(Inside, HP, FVector2D(23.f, 98.f), FVector2D(38.74f, 51.f));
 
 	// Les images de barre ont une marge pour l'ombre : on les place HPBarPad plus haut et plus à gauche
-	UImage* Track = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
 	if (HPTrackTexture)
 	{
-		Track->SetBrush(MakeBarBrush(HPTrackTexture));
-		Place(Inside, Track, HPBarPos - FVector2D(HPBarPad), (HPBarSize + FVector2D(2.f * HPBarPad)) * HPBarTextureScale);
-		Track->SetRenderTransformPivot(FVector2D::ZeroVector);
-		Track->SetRenderScale(FVector2D(1.f / HPBarTextureScale));
+		TObjectPtr<UImage> TrackParts[3];
+		UHorizontalBox* Track = MakeBarWidget(WidgetTree, TrackParts);
+		SetBarTexture(TrackParts, HPTrackTexture);
+		Place(Inside, Track, HPBarPos - FVector2D(HPBarPad), HPBarFullSize);
 	}
 	else
 	{
+		UImage* Track = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
 		Track->SetBrush(FSlateRoundedBoxBrush(FLinearColor(1.f, 1.f, 1.f, 0.1f), 13.f));
 		Place(Inside, Track, HPBarPos, HPBarSize);
 	}
 
-	Box.HPFill = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
-	Box.HPFillSlot = Place(Inside, Box.HPFill, HPBarPos, HPBarSize);
-	Box.HPFill->SetRenderTransformPivot(FVector2D::ZeroVector);
+	Box.HPFill = MakeBarWidget(WidgetTree, Box.HPFillParts);
+	Box.HPFillSlot = Place(Inside, Box.HPFill, HPBarPos - FVector2D(HPBarPad), HPBarFullSize);
 	Box.HPColor = -1;
 
 	if (bPlayer)
@@ -409,23 +427,21 @@ void UBattleHUDWidget::SetHPBar(FInfoBox& Box, float Ratio)
 		Box.HPColor = ColorIndex;
 		if (UTexture2D* Fill = HPFillTextures[ColorIndex])
 		{
-			Box.HPFill->SetBrush(MakeBarBrush(Fill));
+			SetBarTexture(Box.HPFillParts, Fill);
 		}
 		else
 		{
+			// Images pas encore importées : pilule de couleur unie
 			const FLinearColor Colors[] = { Good, FLinearColor(0.95f, 0.55f, 0.15f), Bad };
-			Box.HPFill->SetBrush(FSlateRoundedBoxBrush(Colors[ColorIndex], 13.f));
+			Box.HPFillParts[0]->SetBrush(FSlateNoResource());
+			Box.HPFillParts[2]->SetBrush(FSlateNoResource());
+			Box.HPFillParts[1]->SetBrush(FSlateRoundedBoxBrush(Colors[ColorIndex], 13.f));
 		}
 	}
-	// La barre se raccourcit par la droite ; les bouts restent ronds (image en « boîte »)
+	// La barre se raccourcit par la droite ; les bouts ronds gardent leur taille
 	const float Width = HPBarSize.X * FMath::Clamp(Ratio, 0.f, 1.f);
 	Box.HPFill->SetVisibility(Width > 0.5f ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-	const bool bTexture = HPFillTextures[ColorIndex] != nullptr;
-	const float Pad = bTexture ? HPBarPad : 0.f;
-	const float Scale = bTexture ? HPBarTextureScale : 1.f;
-	Box.HPFill->SetRenderScale(FVector2D(1.f / Scale));
-	Box.HPFillSlot->SetPosition(HPBarPos - FVector2D(Pad));
-	Box.HPFillSlot->SetSize(FVector2D(FMath::Max(Width, HPBarSize.Y) + 2.f * Pad, HPBarSize.Y + 2.f * Pad) * Scale);
+	Box.HPFillSlot->SetSize(FVector2D(FMath::Max(Width, HPBarSize.Y) + 2.f * HPBarPad, HPBarFullSize.Y));
 }
 
 UTextBlock* UBattleHUDWidget::MakeText(const FText& InText, float Size, const FLinearColor& Color, bool bBold)

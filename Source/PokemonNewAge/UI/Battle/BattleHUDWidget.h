@@ -161,8 +161,9 @@ private:
 		TObjectPtr<UTextBlock> Name;
 		TObjectPtr<UTextBlock> Level;
 		TObjectPtr<UTextBlock> Status;
-		/** Barre de PV : image en dégradé dont la largeur suit les PV */
-		TObjectPtr<UImage> HPFill;
+		/** Barre de PV : 3 images (bout gauche, milieu étiré, bout droit) dont la largeur suit les PV */
+		TObjectPtr<UWidget> HPFill;
+		TObjectPtr<UImage> HPFillParts[3];
 		TObjectPtr<UCanvasPanelSlot> HPFillSlot;
 		int32 HPColor = -1;
 		TObjectPtr<UProgressBar> ExpBar;
