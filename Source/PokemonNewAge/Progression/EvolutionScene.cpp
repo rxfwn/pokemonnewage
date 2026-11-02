@@ -83,6 +83,9 @@ AEvolutionScene::AEvolutionScene()
 	Post.DepthOfFieldFocalDistance = 300.f;
 	Post.bOverride_BloomIntensity = true;
 	Post.BloomIntensity = 1.5f;
+	// Pas de flou de mouvement : les travellings de caméra brouillaient la Ball et le Pokémon
+	Post.bOverride_MotionBlurAmount = true;
+	Post.MotionBlurAmount = 0.f;
 
 	KeyLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("KeyLight"));
 	KeyLight->SetupAttachment(Root);
