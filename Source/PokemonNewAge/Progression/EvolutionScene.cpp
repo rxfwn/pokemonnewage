@@ -229,6 +229,9 @@ void AEvolutionScene::Play(APlayerController* Controller, UProgressionWidget* In
 	PokemonHeight = FMath::Max(OldHeight, 30.f);
 	bDotMorph = SetupDotMorph(FromSpecies, ToSpecies);
 	bBallIntro = OldMesh && SetupBall(Ball);
+	UE_LOG(LogTemp, Display, TEXT("Evolution : %s -> %s, modeles %s / %s, points de lumiere %s, Ball %s"),
+		*FromSpecies.ToString(), *ToSpecies.ToString(), OldMesh ? TEXT("ok") : TEXT("absent"), NewMesh ? TEXT("ok") : TEXT("absent"),
+		bDotMorph ? TEXT("oui") : TEXT("non (DT_MorphPoints absente ou incomplete)"), bBallIntro ? TEXT("oui") : TEXT("non"));
 	if (bBallIntro)
 	{
 		OldMesh->SetVisibility(false);
@@ -1075,6 +1078,7 @@ void AEvolutionScene::PlaySound(const TCHAR* Name)
 
 void AEvolutionScene::Finish(bool bEvolved)
 {
+	UE_LOG(LogTemp, Display, TEXT("Evolution : fin (%s)"), bEvolved ? TEXT("evolue") : TEXT("annulee"));
 	TFunction<void(bool)> Callback = MoveTemp(FinishedCallback);
 	FinishedCallback = nullptr;
 	if (Callback)
