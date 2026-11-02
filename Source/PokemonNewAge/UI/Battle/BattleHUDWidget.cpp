@@ -385,6 +385,8 @@ void UBattleHUDWidget::BuildInfoBox(FInfoBox& Box, bool bPlayer)
 		Box.ExpBar->SetWidgetStyle(ExpStyle);
 		Box.ExpBar->SetFillColorAndOpacity(Exp);
 		Place(Inside, Box.ExpBar, FVector2D(HPBarPos.X, HPBarPos.Y + HPBarSize.Y + 8.f), FVector2D(HPBarSize.X, 5.f));
+		// Cachée : pas dans la maquette Life_Bar (L'amie veut le cadre exactement comme elle) ; elle garde le rythme de l'XP
+		Box.ExpBar->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }
 
@@ -1153,6 +1155,11 @@ void UBattleHUDWidget::BuildBag()
 
 UBattleHUDWidget::EBagTab UBattleHUDWidget::GetBagTab(FName ItemId, const FItemRow& Item) const
 {
+	// Les baies vont dans leur onglet même quand on ne peut pas les donner en combat (grisées, voir ShowBagTab)
+	if (ItemId.ToString().EndsWith(TEXT("Berry")))
+	{
+		return EBagTab::Berries;
+	}
 	if (!Item.bUsableInBattle)
 	{
 		return EBagTab::Count;
@@ -1166,10 +1173,6 @@ UBattleHUDWidget::EBagTab UBattleHUDWidget::GetBagTab(FName ItemId, const FItemR
 		return EBagTab::Medicine;
 	}
 	const FString Name = ItemId.ToString();
-	if (Name.EndsWith(TEXT("Berry")))
-	{
-		return EBagTab::Berries;
-	}
 	// Objets de combat (Attaque +, Vitesse +, Défense Spé...) : X Attack, X Speed, Dire Hit, Guard Spec
 	if (Name.StartsWith(TEXT("X")) || Name == TEXT("DireHit") || Name == TEXT("GuardSpec"))
 	{
@@ -1277,6 +1280,11 @@ void UBattleHUDWidget::ShowBagTab(EBagTab Tab)
 			Size->SetHeightOverride(BagCardSize.Y);
 			Size->SetContent(Content);
 			UButton* Button = MakeCardButton(Size);
+			if (!Item->bUsableInBattle)
+			{
+				Button->SetIsEnabled(false);
+				Button->SetRenderOpacity(0.4f);
+			}
 			UBattleHUDButtonBinding* Binding = NewObject<UBattleHUDButtonBinding>(this);
 			Binding->Action = EBattleHUDAction::Item;
 			Binding->Index = Index;
@@ -1285,7 +1293,7 @@ void UBattleHUDWidget::ShowBagTab(EBagTab Tab)
 			Bindings.Add(Binding);
 			BagItems->AddChildToVerticalBox(Button)->SetPadding(FMargin(0.f, 0.f, 0.f, CardGap));
 			MenuButtons.Add(Button);
-			if (!FirstButton)
+			if (!FirstButton && Button->GetIsEnabled())
 			{
 				FirstButton = Button;
 			}
