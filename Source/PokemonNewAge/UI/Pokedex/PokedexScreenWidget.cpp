@@ -665,9 +665,27 @@ void UPokedexScreenWidget::Confirm()
 		return;
 
 	case EPokedexPage::Online:
-		Feedback(EPokedexFeedback::Error);
-		ShowStatus(LOCTEXT("OnlineSoon", "Les échanges et les combats entre joueurs arrivent avec le jeu à 4 en ligne (SCRUM-69)."));
+	{
+		const uint8 Action = OnlineActions.IsValidIndex(Selection) ? OnlineActions[Selection] : MAX_uint8;
+		bool bDone = false;
+		if (Controller)
+		{
+			switch (Action)
+			{
+			case 0: bDone = Controller->HostWorld(); break;
+			case 1: bDone = Controller->JoinWorld(FString()); break;
+			case 2: Controller->LeaveWorld(); bDone = true; break;
+			default: break;
+			}
+		}
+		if (!bDone)
+		{
+			Feedback(EPokedexFeedback::Error);
+			ShowStatus(Action == 1 ? LOCTEXT("JoinNoAddress", "Tape d'abord « Rejoindre » et l'adresse de ton ami dans la console (²).")
+				: LOCTEXT("OnlineFailed", "Impossible pour l'instant."), true);
+		}
 		return;
+	}
 
 	case EPokedexPage::Map:
 	{
@@ -1277,7 +1295,7 @@ void UPokedexScreenWidget::BuildSave()
 		AddLabelValue(LOCTEXT("Dex", "Pokédex"), FText::AsNumber(State->PokedexCaught.Num()));
 		AddLabelValue(LOCTEXT("PlayTime", "Temps de jeu"), FormatPlayTime(State->GetPlayTimeSeconds()));
 	}
-	if (const UPokemonSaveGame* Existing = UPokemonSaveLibrary::LoadSaveGame())
+	if (const UPokemonSaveGame* Existing = UPokemonSaveLibrary::LoadSaveGame(this))
 	{
 		AddLabelValue(LOCTEXT("LastSave", "Dernière"), FText::FromString(Existing->SavedAt.ToString(TEXT("%d/%m/%Y %H:%M"))));
 	}
@@ -1464,46 +1482,106 @@ void UPokedexScreenWidget::BuildOnline()
 {
 	TitleText->SetText(LOCTEXT("TitleOnline", "EN LIGNE"));
 	HintText->SetText(LOCTEXT("HintOnline", "A : choisir   B : retour"));
+	OnlineActions.Reset();
 
 	const UWorld* World = GetWorld();
 	const ENetMode NetMode = World ? World->GetNetMode() : NM_Standalone;
-	const FText Mode = NetMode == NM_Client ? LOCTEXT("ModeClient", "Connecté à la partie d'un ami")
-		: (NetMode == NM_ListenServer ? LOCTEXT("ModeHost", "Tu héberges la partie")
+	const FText Mode = NetMode == NM_Client ? LOCTEXT("ModeClient", "Dans le monde d'un ami")
+		: (NetMode == NM_ListenServer ? LOCTEXT("ModeHost", "Tu héberges le monde")
 		: (NetMode == NM_DedicatedServer ? LOCTEXT("ModeServer", "Serveur") : LOCTEXT("ModeSolo", "Partie solo")));
 	AddLabelValue(LOCTEXT("OnlineMode", "Mode"), Mode);
+	if (NetMode == NM_ListenServer)
+	{
+		// L'adresse à donner aux amis (réseau local ou Tailscale)
+		const TArray<FString> Addresses = APokemonNewAgePlayerController::GetLocalAddresses();
+		AddLabelValue(LOCTEXT("OnlineAddress", "Ton adresse"), FText::FromString(Addresses.Num() > 0 ? FString::Join(Addresses, TEXT("   ")) : TEXT("?")));
+	}
 	AddSpacer(6.f);
 
 	const AGameStateBase* GameState = World ? World->GetGameState() : nullptr;
-	const APlayerState* Mine = GetPlayerState();
-	AddLine(FText::Format(LOCTEXT("PlayersTitle", "JOUEURS ({0})"), GameState ? GameState->PlayerArray.Num() : 1), 18, Accent, true);
-	if (GameState)
+	const APokemonPlayerState* Mine = GetPlayerState();
+	if (NetMode != NM_Standalone)
 	{
-		for (const APlayerState* Player : GameState->PlayerArray)
+		AddLine(FText::Format(LOCTEXT("PlayersTitle", "JOUEURS ({0}/{1})"), GameState ? GameState->PlayerArray.Num() : 1,
+			APokemonNewAgePlayerController::MaxWorldPlayers), 18, Accent, true);
+		if (GameState)
 		{
-			if (!Player)
+			for (const APlayerState* Player : GameState->PlayerArray)
 			{
-				continue;
-			}
-			UHorizontalBox* Row = AddRow(-1, false);
-			AddRowText(Row, FText::FromString(Player->GetPlayerName()), 19, Player == Mine ? Gold : Text, true, true);
-			if (const APokemonPlayerState* Trainer = Cast<APokemonPlayerState>(Player))
-			{
-				AddRowText(Row, FText::Format(LOCTEXT("PlayerSummary", "{0} badge(s)   {1} capturés  "), Trainer->Badges.Num(), Trainer->PokedexCaught.Num()), 16, Dim);
-			}
-			if (Player == Mine)
-			{
-				AddRowText(Row, LOCTEXT("ItsYou", "(toi)"), 16, Gold);
+				if (!Player)
+				{
+					continue;
+				}
+				UHorizontalBox* Row = AddRow(-1, false);
+				AddRowText(Row, FText::FromString(Player->GetPlayerName()), 19, Player == Mine ? Gold : Text, true, true);
+				if (const APokemonPlayerState* Trainer = Cast<APokemonPlayerState>(Player))
+				{
+					AddRowText(Row, FText::Format(LOCTEXT("PlayerSummary", "{0} badge(s)  "), Trainer->Badges.Num()), 16, Dim);
+				}
+				if (Player == Mine)
+				{
+					AddRowText(Row, LOCTEXT("ItsYou", "(toi)"), 16, Gold);
+				}
 			}
 		}
+		AddSpacer(8.f);
 	}
+
+	// Actions : créer ou rejoindre un monde en solo, le quitter en ligne
+	auto AddAction = [this](uint8 Action, const FText& Label, const FText& Detail)
+	{
+		UHorizontalBox* Row = AddRow(OnlineActions.Num());
+		OnlineActions.Add(Action);
+		AddRowText(Row, Label, 20, Text, true, true);
+		if (!Detail.IsEmpty())
+		{
+			AddRowText(Row, Detail, 16, Dim);
+		}
+	};
+	if (NetMode == NM_Standalone)
+	{
+		const UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
+		AddAction(0, LOCTEXT("HostWorld", "Créer un monde"), FText::Format(LOCTEXT("HostDetail", "{0} joueurs max  "), APokemonNewAgePlayerController::MaxWorldPlayers));
+		AddAction(1, LOCTEXT("JoinWorld", "Rejoindre"), Options && !Options->LastHostAddress.IsEmpty()
+			? FText::FromString(Options->LastHostAddress + TEXT("  ")) : LOCTEXT("JoinHint", "console : Rejoindre <IP>  "));
+	}
+	else
+	{
+		AddAction(2, NetMode == NM_ListenServer ? LOCTEXT("CloseWorld", "Fermer le monde") : LOCTEXT("LeaveWorld", "Quitter le monde"), FText::GetEmpty());
+	}
+	RowCount = OnlineActions.Num();
 	AddSpacer(10.f);
 
-	const FText Actions[] = { LOCTEXT("Trade", "Échanger des Pokémon"), LOCTEXT("Duel", "Combattre un joueur") };
-	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Actions); ++Index)
+	// Cartes dresseur des amis (dossier partagé), à regarder seulement
+	const UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
+	AddLine(LOCTEXT("FriendsTitle", "CARTES DES AMIS"), 18, Accent, true);
+	if (!Options || Options->FriendsFolder.IsEmpty())
 	{
-		UHorizontalBox* Row = AddRow(Index);
-		AddRowText(Row, Actions[Index], 20, Text, true, true);
-		AddRowText(Row, LOCTEXT("Soon", "bientôt"), 16, Dim);
+		AddLine(LOCTEXT("FriendsNoFolder", "Choisis un dossier partagé : console (²) DossierAmis \"chemin\"."), 16, Dim);
+		return;
+	}
+	const TArray<FTrainerCard> Cards = UPokemonSaveLibrary::LoadFriendCards(Mine ? Mine->GetPlayerName() : FString(), Mine ? Mine->TrainerNumber : 0);
+	if (Cards.Num() == 0)
+	{
+		AddLine(LOCTEXT("FriendsNone", "Aucune carte d'ami dans le dossier pour l'instant."), 16, Dim);
+		return;
+	}
+	const UPokemonDatabase* Database = GetDatabase();
+	for (const FTrainerCard& Card : Cards)
+	{
+		UHorizontalBox* Row = AddRow(-1, false);
+		AddRowText(Row, FText::FromString(Card.TrainerName), 19, Text, true, true);
+		AddRowText(Row, FText::Format(LOCTEXT("CardSummary", "{0} badge(s)   {1} capturés   {2}   {3}  "), Card.Badges.Num(), Card.PokedexCaught,
+			FormatPlayTime(Card.PlayTimeSeconds), FText::AsDateTime(Card.SavedAt, EDateTimeStyle::Short, EDateTimeStyle::Short, FString())), 15, Dim);
+		TArray<FString> Team;
+		for (const FTrainerCardPokemon& Entry : Card.Party)
+		{
+			FPokemonInstance Pokemon;
+			Pokemon.Species = Entry.Species;
+			Pokemon.Nickname = Entry.Nickname;
+			Team.Add(FString::Printf(TEXT("%s N.%d"), *UPokemonLibrary::GetDisplayName(Database, Pokemon).ToString(), Entry.Level));
+		}
+		AddLine(FText::FromString(Team.Num() > 0 ? FString::Join(Team, TEXT("   ")) : FString(TEXT("-"))), 15, Dim);
 	}
 }
 

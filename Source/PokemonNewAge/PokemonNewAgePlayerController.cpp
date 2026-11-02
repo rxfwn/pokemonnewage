@@ -42,6 +42,10 @@
 #include "GameFramework/InputSettings.h"
 #include "PokemonNewAge.h"
 #include "Widgets/Input/SVirtualJoystick.h"
+#include "Kismet/GameplayStatics.h"
+#include "HAL/FileManager.h"
+#include "SocketSubsystem.h"
+#include "IPAddress.h"
 
 namespace PokemonShortcuts
 {
@@ -120,13 +124,34 @@ void APokemonNewAgePlayerController::BeginPlay()
 		// Reprendre la partie sauvegardée sur ce PC (SCRUM-52)
 		if (bLoadSaveOnStart)
 		{
-			if (const UPokemonSaveGame* Save = UPokemonSaveLibrary::LoadSaveGame())
+			if (const UPokemonSaveGame* Save = UPokemonSaveLibrary::LoadSaveGame(this))
 			{
+				bWaitingForSave = true;
 				ServerLoadSave(Save->Player);
 				UE_LOG(LogPokemonNewAge, Log, TEXT("Sauvegarde chargee (%s)"), *Save->SavedAt.ToString());
 			}
 		}
 	}
+}
+
+void APokemonNewAgePlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// Fermer le jeu, changer de monde ou perdre l'hôte : rien de ce qui s'est passé depuis la dernière sauvegarde n'est perdu
+	if (IsLocalPlayerController() && EndPlayReason != EEndPlayReason::Destroyed)
+	{
+		const UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
+		if (!Options || Options->bAutoSave)
+		{
+			UPokemonSaveLibrary::SaveGame(this);
+		}
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
+bool APokemonNewAgePlayerController::IsSaveSynced() const
+{
+	const APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>();
+	return !bWaitingForSave || (State && State->bSaveApplied);
 }
 
 void APokemonNewAgePlayerController::SetupInputComponent()
@@ -981,8 +1006,139 @@ void APokemonNewAgePlayerController::Sauvegarder()
 
 void APokemonNewAgePlayerController::NouvellePartie()
 {
-	UPokemonSaveLibrary::DeleteSaveGame();
+	UPokemonSaveLibrary::DeleteSaveGame(this);
+	// Sinon la sauvegarde en quittant réécrirait la partie
+	bWaitingForSave = true;
+	if (APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>())
+	{
+		State->bSaveApplied = false;
+	}
 	PrintDebug(TEXT("Sauvegarde effacee : relance le jeu pour une nouvelle partie"));
+}
+
+// ---------------------------------------------------------------- Multijoueur (docs/MULTIJOUEUR.md)
+
+bool APokemonNewAgePlayerController::HostWorld()
+{
+	if (!IsLocalPlayerController() || GetNetMode() != NM_Standalone)
+	{
+		return false;
+	}
+	UPokemonSaveLibrary::SaveGame(this);
+	// Même map, sans écran de titre ; la sauvegarde est relue au lancement comme d'habitude
+	const FString MapPath = UWorld::RemovePIEPrefix(GetWorld()->GetOutermost()->GetName());
+	UE_LOG(LogPokemonNewAge, Log, TEXT("Creation d'un monde : %s en ecoute"), *MapPath);
+	UGameplayStatics::OpenLevel(this, FName(*MapPath), true, TEXT("listen?NoTitle"));
+	return true;
+}
+
+bool APokemonNewAgePlayerController::JoinWorld(const FString& Address)
+{
+	if (!IsLocalPlayerController())
+	{
+		return false;
+	}
+	UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
+	const FString Target = Address.TrimStartAndEnd().IsEmpty() && Options ? Options->LastHostAddress : Address.TrimStartAndEnd();
+	if (Target.IsEmpty())
+	{
+		return false;
+	}
+	UPokemonSaveLibrary::SaveGame(this);
+	if (Options)
+	{
+		Options->LastHostAddress = Target;
+		UPokemonSaveLibrary::SaveOptions(Options);
+	}
+	UE_LOG(LogPokemonNewAge, Log, TEXT("Connexion au monde de %s"), *Target);
+	ClientTravel(Target, TRAVEL_Absolute);
+	return true;
+}
+
+void APokemonNewAgePlayerController::LeaveWorld()
+{
+	if (!IsLocalPlayerController() || GetNetMode() == NM_Standalone)
+	{
+		return;
+	}
+	UPokemonSaveLibrary::SaveGame(this);
+	const FString MapPath = UWorld::RemovePIEPrefix(GetWorld()->GetOutermost()->GetName());
+	UGameplayStatics::OpenLevel(this, FName(*MapPath), true, TEXT("NoTitle"));
+}
+
+TArray<FString> APokemonNewAgePlayerController::GetLocalAddresses()
+{
+	TArray<FString> Result;
+	ISocketSubsystem* Sockets = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM);
+	TArray<TSharedPtr<FInternetAddr>> Addresses;
+	if (Sockets && Sockets->GetLocalAdapterAddresses(Addresses))
+	{
+		for (const TSharedPtr<FInternetAddr>& Address : Addresses)
+		{
+			// IPv4 seulement : c'est ce qu'on tape dans Rejoindre
+			const FString Text = Address.IsValid() ? Address->ToString(false) : FString();
+			if (!Text.IsEmpty() && !Text.Contains(TEXT(":")) && !Text.StartsWith(TEXT("127.")))
+			{
+				Result.AddUnique(Text);
+			}
+		}
+	}
+	return Result;
+}
+
+void APokemonNewAgePlayerController::CreerMonde()
+{
+	if (!HostWorld())
+	{
+		PrintDebug(TEXT("Deja en ligne : QuitterMonde d'abord"));
+	}
+}
+
+void APokemonNewAgePlayerController::Rejoindre(const FString& Address)
+{
+	if (!JoinWorld(Address))
+	{
+		PrintDebug(TEXT("Adresse manquante : Rejoindre 192.168.1.20"));
+	}
+}
+
+void APokemonNewAgePlayerController::QuitterMonde()
+{
+	LeaveWorld();
+}
+
+void APokemonNewAgePlayerController::DossierAmis(const FString& Folder)
+{
+	UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
+	if (!Options)
+	{
+		return;
+	}
+	const FString Clean = Folder.TrimStartAndEnd().TrimQuotes();
+	if (Clean.IsEmpty())
+	{
+		PrintDebug(Options->FriendsFolder.IsEmpty() ? TEXT("Aucun dossier des amis") : FString::Printf(TEXT("Dossier des amis : %s"), *Options->FriendsFolder));
+		return;
+	}
+	if (!IFileManager::Get().DirectoryExists(*Clean))
+	{
+		PrintDebug(FString::Printf(TEXT("Dossier introuvable : %s"), *Clean));
+		return;
+	}
+	Options->FriendsFolder = Clean;
+	UPokemonSaveLibrary::SaveOptions(Options);
+	// La carte est écrite tout de suite pour que les amis la voient
+	UPokemonSaveLibrary::SaveGame(this);
+	PrintDebug(FString::Printf(TEXT("Dossier des amis : %s"), *Clean));
+}
+
+void APokemonNewAgePlayerController::ClientShowGateMessage_Implementation(const FText& Message)
+{
+	if (GameHUD)
+	{
+		GameHUD->ShowPlaceBanner(Message);
+	}
+	PrintDebug(Message.ToString());
 }
 
 // ---------------------------------------------------------------- Touches (Options > Commandes)

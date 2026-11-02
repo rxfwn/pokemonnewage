@@ -24,10 +24,12 @@ public class PokemonNewAge : ModuleRules
 			"UMG",
 			"Slate",
 			"SlateCore",
-			"DeveloperSettings"
+			"DeveloperSettings",
+			"Json",
+			"JsonUtilities"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "Landscape" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "Landscape", "Sockets" });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"PokemonNewAge",
