@@ -47,6 +47,12 @@ Résultat, par espèce (nom de ligne de `DT_Species`) :
 
 Le menu Pokédex (fiche du Pokémon) lit ces chemins tels quels : ne pas renommer les assets.
 
+### Mettre à jour les modèles (nouveau zip)
+
+Le zip du 2026-11-02 corrige la pose de repos (Pikachu couché, Herbizarre tourné quand aucune animation ne joue).
+Pour remplacer les anciens : dans le Navigateur de contenu, supprimer le dossier `Contenu > Pokemon > Models`,
+vider `Tools\Pokemon\Generated\`, y dézipper le nouveau zip, puis relancer le script.
+
 ### Si quelque chose cloche
 
 - **Matériau blanc ou gris** : ouvrir le matériau dans `Materials/`, brancher la texture `T_<Espèce>_1` sur Base Color.
@@ -66,5 +72,6 @@ Blender installé normalement lit la compression Draco des .glb. Avec le module 
 il faut d'abord la retirer : `node Tools/Pokemon/decompress_glb.mjs <entrée> <sortie>` (voir l'en-tête du fichier).
 
 Ce que fait `convert_pokemon_glb.py` : taille du Pokédex, centimètres, textures WebP → PNG embarquées,
-un seul mesh par Pokémon, retrait des morceaux parasites (sphère d'affichage des os, coque noire d'Onix,
+un seul mesh par Pokémon, pose visible figée comme pose de repos (les sommets de ces glTF sont rangés
+dans une autre pose, petite et tournée, qu'Unreal affiche sans animation), retrait des morceaux parasites (sphère d'affichage des os, coque noire d'Onix,
 lianes dépliées de Bulbizarre chromatique), texture branchée en direct sur Base Color, animations renommées.

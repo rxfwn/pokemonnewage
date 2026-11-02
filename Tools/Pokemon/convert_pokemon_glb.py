@@ -137,6 +137,89 @@ def rest_bounds(meshes):
     return Vector((min(xs), min(ys), min(zs))), Vector((max(xs), max(ys), max(zs)))
 
 
+def action_fcurves():
+    """Toutes les courbes de toutes les animations (API « slotted actions » de Blender 4.4+)."""
+    for act in bpy.data.actions:
+        for layer in act.layers:
+            for strip in layer.strips:
+                for bag in strip.channelbags:
+                    yield from bag.fcurves
+
+
+def bake_rest_pose(arm, meshes):
+    """Fait de la pose affichée la pose de repos du squelette.
+
+    Dans ces glTF, les sommets sont rangés dans une autre pose (souvent plus petite et tournée)
+    et ce sont les os qui remettent le Pokémon debout. Unreal affiche la pose de repos quand
+    aucune animation ne joue : sans ce correctif, Pikachu était couché et Herbizarre de dos.
+    On fige donc la forme visible dans les sommets, on la prend comme repos, puis on réécrit
+    les animations pour qu'elles donnent exactement les mêmes poses qu'avant.
+    """
+    scene = bpy.context.scene
+    bones = list(arm.pose.bones)
+    static = {pb.name: pb.matrix_basis.copy() for pb in bones}
+
+    # 1. Poses de chaque animation, image par image, dans l'espace de l'armature.
+    recorded = {}
+    if arm.animation_data is None:
+        arm.animation_data_create()
+    for act in list(bpy.data.actions):
+        arm.animation_data.action = act
+        first, last = (int(round(f)) for f in act.frame_range)
+        frames = {}
+        for f in range(first, last + 1):
+            scene.frame_set(f)
+            frames[f] = {pb.name: pb.matrix.copy() for pb in bones}
+        recorded[act.name] = frames
+    arm.animation_data.action = None
+    for pb in bones:
+        pb.matrix_basis = static[pb.name]
+    bpy.context.view_layer.update()
+
+    # 2. Sommets figés dans la pose visible, puis cette pose devient le repos.
+    skinned = []
+    for body in meshes:
+        mods = [m for m in body.modifiers if m.type == "ARMATURE"]
+        if not mods:
+            continue
+        skinned.append(body)
+        bpy.ops.object.select_all(action="DESELECT")
+        body.select_set(True)
+        bpy.context.view_layer.objects.active = body
+        for mod in mods:
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+    bpy.ops.object.select_all(action="DESELECT")
+    arm.select_set(True)
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="POSE")
+    bpy.ops.pose.armature_apply(selected=False)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    for body in skinned:
+        body.modifiers.new("Armature", "ARMATURE").object = arm
+
+    # 3. Animations réécrites par rapport au nouveau repos.
+    for name, frames in recorded.items():
+        old = bpy.data.actions[name]
+        bpy.data.actions.remove(old)
+        act = bpy.data.actions.new(name)
+        arm.animation_data.action = act
+        for f, pose in frames.items():
+            for pb in bones:
+                rest = pb.bone.matrix_local
+                if pb.parent:
+                    rel = pb.parent.bone.matrix_local.inverted() @ rest
+                    basis = rel.inverted() @ pose[pb.parent.name].inverted() @ pose[pb.name]
+                else:
+                    basis = rest.inverted() @ pose[pb.name]
+                pb.rotation_mode = "QUATERNION"
+                pb.matrix_basis = basis
+                for path in ("location", "rotation_quaternion", "scale"):
+                    pb.keyframe_insert(path, frame=f)
+    arm.animation_data.action = None
+    for pb in bones:
+        pb.matrix_basis.identity()
+
+
 def convert(glb, out_dir, species, suffix):
     name = species["Name"]
     tex_dir = os.path.join(out_dir, "Textures")
@@ -187,6 +270,8 @@ def convert(glb, out_dir, species, suffix):
                 if mod.type == "ARMATURE":
                     mod.object = arms[0]
     arm = arms[0] if arms else None
+    if arm:
+        bake_rest_pose(arm, meshes)
     # Sans squelette (quelques versions chromatiques), on exporte un Static Mesh.
     asset = f"{'SK' if arm else 'SM'}_{name}{suffix}"
 
@@ -207,11 +292,19 @@ def convert(glb, out_dir, species, suffix):
     bpy.context.scene.unit_settings.scale_length = 0.01
     for r in roots:
         r.matrix_world = Matrix.Scale(100, 4) @ r.matrix_world
+    anim_scale = arm.matrix_world.to_scale().x if arm else 1.0
     bpy.ops.object.select_all(action="DESELECT")
     for o in roots + meshes:
         o.select_set(True)
     bpy.context.view_layer.objects.active = roots[0]
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    # Les translations des animations sont en unités de l'os : même mise à l'échelle.
+    for fc in action_fcurves():
+        if fc.data_path.endswith(".location"):
+            for kp in fc.keyframe_points:
+                kp.co.y *= anim_scale
+                kp.handle_left.y *= anim_scale
+                kp.handle_right.y *= anim_scale
 
     # Un seul mesh : un seul Skeletal Mesh.
     if len(meshes) > 1:
