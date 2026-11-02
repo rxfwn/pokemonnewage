@@ -1156,7 +1156,7 @@ void APokemonNewAgePlayerController::DossierAmis(const FString& Folder)
 	PrintDebug(FString::Printf(TEXT("Dossier des amis : %s"), *Clean));
 }
 
-void APokemonNewAgePlayerController::ServeurSaves(const FString& Url, const FString& Player, const FString& Key)
+void APokemonNewAgePlayerController::ServeurSaves(const FString& Url, const FString& PlayerId, const FString& Key)
 {
 	UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions();
 	if (!Options)
@@ -1180,13 +1180,13 @@ void APokemonNewAgePlayerController::ServeurSaves(const FString& Url, const FStr
 		PrintDebug(TEXT("Serveur de saves retire : la save reste seulement sur ce PC"));
 		return;
 	}
-	if (Player.IsEmpty() || Key.IsEmpty())
+	if (PlayerId.IsEmpty() || Key.IsEmpty())
 	{
 		PrintDebug(TEXT("ServeurSaves http://100.x.x.x:8787 <joueur> <cle>"));
 		return;
 	}
 	Options->SaveServerUrl = Url;
-	Options->SaveServerPlayer = Player;
+	Options->SaveServerPlayer = PlayerId;
 	Options->SaveServerKey = Key;
 	UPokemonSaveLibrary::SaveOptions(Options);
 	// Le serveur reçoit la save du PC s'il n'en a pas de plus récente ; sinon la sienne remplace celle du PC
@@ -1195,7 +1195,7 @@ void APokemonNewAgePlayerController::ServeurSaves(const FString& Url, const FStr
 	{
 		Server->Resync();
 	}
-	PrintDebug(FString::Printf(TEXT("Serveur de saves : %s (joueur %s)"), *Url, *Player));
+	PrintDebug(FString::Printf(TEXT("Serveur de saves : %s (joueur %s)"), *Url, *PlayerId));
 }
 
 void APokemonNewAgePlayerController::ClientShowGateMessage_Implementation(const FText& Message)
