@@ -424,7 +424,7 @@ public:
 	UFUNCTION(Exec)
 	void DonnerXP(int32 PartySlot, int32 Amount);
 
-	/** Rejoue la séquence d'évolution sans rien changer : VoirEvolution Bulbasaur Ivysaur */
+	/** Rejoue la séquence d'évolution sans rien changer : VoirEvolution Bulbasaur Ivysaur (ou VoirEvolution Bulbasaur) */
 	UFUNCTION(Exec)
 	void VoirEvolution(FName FromSpecies, FName ToSpecies);
 

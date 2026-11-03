@@ -866,6 +866,23 @@ void APokemonNewAgePlayerController::DonnerXP(int32 PartySlot, int32 Amount)
 
 void APokemonNewAgePlayerController::VoirEvolution(FName FromSpecies, FName ToSpecies)
 {
+	// Noms anglais de DT_Species. Sans deuxième nom (ou avec un nom inconnu) : la première évolution de l'espèce.
+	const UPokemonDatabase* Database = UPokemonDataSubsystem::GetDatabase(this);
+	const FSpeciesRow* From = Database ? Database->FindSpecies(FromSpecies) : nullptr;
+	if (!From)
+	{
+		PrintDebug(FString::Printf(TEXT("Espece inconnue : %s (nom anglais, ex. VoirEvolution Bulbasaur)"), *FromSpecies.ToString()));
+		return;
+	}
+	if (!Database->FindSpecies(ToSpecies))
+	{
+		if (From->Evolutions.IsEmpty())
+		{
+			PrintDebug(FString::Printf(TEXT("%s n'evolue pas"), *FromSpecies.ToString()));
+			return;
+		}
+		ToSpecies = From->Evolutions[0].Species;
+	}
 	ProgressionComponent->PreviewEvolution(FromSpecies, ToSpecies);
 }
 

@@ -337,6 +337,10 @@ void UProgressionComponent::ProcessNextStep()
 	APokemonNewAgePlayerController* Controller = GetController();
 	if (Steps.Num() == 0 || !Controller || !CanShowNow())
 	{
+		if (Steps.Num() > 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Progression : etapes en attente (menu, combat ou HUD ouvert)"));
+		}
 		EndProcessing();
 		return;
 	}
@@ -430,6 +434,7 @@ void UProgressionComponent::StartEvolution(const FStep& Step)
 	Scene = GetWorld()->SpawnActor<AEvolutionScene>(Class, FTransform::Identity, Params);
 	if (!Scene)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Evolution : impossible de creer la scene (%s)"), *GetNameSafe(Class.Get()));
 		FinishEvolution(Step.PartyIndex, Step.ToSpecies, true, Step.bPreview);
 		return;
 	}
