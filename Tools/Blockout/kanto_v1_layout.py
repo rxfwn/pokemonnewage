@@ -24,12 +24,12 @@ import zlib
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # Landscape : 4033 × 4033 points, un point tous les 1,5 m, environ 6 km de côté.
-# Échelle à l'import : 150, 150, 200 (l'échelle Z de 200 permet des sommets à 500 m).
+# Échelle à l'import : 150, 150, 300 (l'échelle Z de 300 permet des sommets à 768 m ; relief v3).
 HEIGHTMAP_SIZE = 4033
 METERS_PER_PIXEL = 1.5
 WORLD_SIZE = (HEIGHTMAP_SIZE - 1) * METERS_PER_PIXEL
-LANDSCAPE_SCALE_Z = 200.0
-HEIGHT_UNITS_PER_METER = 128.0 * 100.0 / LANDSCAPE_SCALE_Z  # 64 : 32768 = altitude 0
+LANDSCAPE_SCALE_Z = 300.0
+HEIGHT_UNITS_PER_METER = 128.0 * 100.0 / LANDSCAPE_SCALE_Z  # 32768 = altitude 0
 
 SEA_LEVEL = 0.0
 
