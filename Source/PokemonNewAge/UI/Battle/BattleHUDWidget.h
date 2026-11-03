@@ -41,6 +41,20 @@ enum class EBattleHUDAction : uint8
 	Back
 };
 
+/** Badge de statut à côté du nom dans un cadre de PV (maquette statuts de L'amie, 2026-11-03). */
+enum class EStatusBadge : uint8
+{
+	None,
+	Burn,
+	Paralysis,
+	Freeze,
+	Poison,
+	Sleep,
+	/** Pas dans la maquette : pastille rouge sombre « K.O. » (provisoire) */
+	Fainted,
+	Count
+};
+
 /** Relie un bouton à son action (les délégués UMG n'ont pas de paramètre). */
 UCLASS()
 class UBattleHUDButtonBinding : public UObject
@@ -160,7 +174,11 @@ private:
 		TObjectPtr<UWidget> Frame;
 		TObjectPtr<UTextBlock> Name;
 		TObjectPtr<UTextBlock> Level;
+		/** Badge de statut (image, ou pastille + Status si l'image n'est pas importée), caché sans statut */
+		TObjectPtr<UWidget> StatusBadge;
+		TObjectPtr<UImage> StatusImage;
 		TObjectPtr<UTextBlock> Status;
+		EStatusBadge ShownBadge = EStatusBadge::Count;
 		/** Barre de PV : 3 images (bout gauche, milieu étiré, bout droit) dont la largeur suit les PV */
 		TObjectPtr<UWidget> HPFill;
 		TObjectPtr<UImage> HPFillParts[3];
@@ -170,6 +188,7 @@ private:
 	};
 	void BuildInfoBox(FInfoBox& Box, bool bPlayer);
 	void SetHPBar(FInfoBox& Box, float Ratio);
+	void SetStatusBadge(FInfoBox& Box, EStatusBadge Badge);
 
 	UPROPERTY(Transient) TObjectPtr<UBattleComponent> Battle;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> MessageText;
@@ -185,6 +204,8 @@ private:
 	UPROPERTY(Transient) TArray<TObjectPtr<UButton>> MenuButtons;
 	UPROPERTY(Transient) TObjectPtr<UTexture2D> HPFillTextures[3];
 	UPROPERTY(Transient) TObjectPtr<UTexture2D> HPTrackTexture;
+	/** Images des badges, chargées à la première utilisation (index = EStatusBadge) */
+	UPROPERTY(Transient) TObjectPtr<UTexture2D> StatusTextures[7];
 	UPROPERTY(Transient) TObjectPtr<UTexture2D> ButtonTextures[4];
 	UPROPERTY(Transient) TObjectPtr<UTexture2D> BackTexture;
 	int32 CardCount = 0;

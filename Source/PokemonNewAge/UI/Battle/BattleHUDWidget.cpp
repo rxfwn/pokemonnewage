@@ -211,6 +211,69 @@ namespace BattleHUD
 		return CanvasSlot;
 	}
 
+	/** Badge de statut (maquette statuts du 2026-11-03) : pastille 99 x 38 à 15 px après le nom, haut à 38 px du haut du
+	 *  cadre ; marge d'ombre StatusBadgePad autour de l'image (PAD de make_status_badges.py) */
+	const FVector2D StatusBadgeSize(99.f, 38.f);
+	constexpr float StatusBadgePad = 8.f;
+	constexpr float StatusBadgeGap = 15.f;
+	constexpr float StatusBadgeTop = 38.f;
+
+	EStatusBadge StatusBadgeOf(EMajorStatus Status)
+	{
+		switch (Status)
+		{
+		case EMajorStatus::Burn:          return EStatusBadge::Burn;
+		case EMajorStatus::Paralysis:     return EStatusBadge::Paralysis;
+		case EMajorStatus::Freeze:        return EStatusBadge::Freeze;
+		case EMajorStatus::Poison:
+		case EMajorStatus::BadlyPoisoned: return EStatusBadge::Poison;
+		case EMajorStatus::Sleep:         return EStatusBadge::Sleep;
+		default:                          return EStatusBadge::None;
+		}
+	}
+
+	/** Nom de l'image T_Battle_Status_<Nom>, texte et couleur de la pastille (CSS de la maquette) */
+	const TCHAR* StatusBadgeName(EStatusBadge Badge)
+	{
+		switch (Badge)
+		{
+		case EStatusBadge::Burn:      return TEXT("Burn");
+		case EStatusBadge::Paralysis: return TEXT("Paralysis");
+		case EStatusBadge::Freeze:    return TEXT("Freeze");
+		case EStatusBadge::Poison:    return TEXT("Poison");
+		case EStatusBadge::Sleep:     return TEXT("Sleep");
+		case EStatusBadge::Fainted:   return TEXT("Fainted");
+		default:                      return TEXT("");
+		}
+	}
+
+	FText StatusBadgeText(EStatusBadge Badge)
+	{
+		switch (Badge)
+		{
+		case EStatusBadge::Burn:      return LOCTEXT("BRN", "BRU");
+		case EStatusBadge::Paralysis: return LOCTEXT("PAR", "PAR");
+		case EStatusBadge::Freeze:    return LOCTEXT("FRZ", "GEL");
+		case EStatusBadge::Poison:    return LOCTEXT("PSN", "PSN");
+		case EStatusBadge::Sleep:     return LOCTEXT("SLP", "SOM");
+		case EStatusBadge::Fainted:   return LOCTEXT("KO", "K.O.");
+		default:                      return FText::GetEmpty();
+		}
+	}
+
+	FLinearColor StatusBadgeColor(EStatusBadge Badge)
+	{
+		switch (Badge)
+		{
+		case EStatusBadge::Burn:      return FLinearColor::FromSRGBColor(FColor(0xD8, 0x64, 0x26));
+		case EStatusBadge::Paralysis: return FLinearColor::FromSRGBColor(FColor(0xDB, 0xA9, 0x02));
+		case EStatusBadge::Freeze:    return FLinearColor::FromSRGBColor(FColor(0x49, 0x90, 0xE0));
+		case EStatusBadge::Poison:    return FLinearColor::FromSRGBColor(FColor(0x4F, 0x1F, 0x93));
+		case EStatusBadge::Sleep:     return FLinearColor::FromSRGBColor(FColor(0x6D, 0x6D, 0x6D));
+		default:                      return FLinearColor::FromSRGBColor(FColor(0x8E, 0x1F, 0x1F));
+		}
+	}
+
 	FText StatusText(EMajorStatus Status)
 	{
 		switch (Status)
@@ -245,6 +308,8 @@ namespace BattleHUD
 }
 
 using namespace BattleHUD;
+
+static_assert(static_cast<int32>(EStatusBadge::Count) == 7, "StatusTextures[7] dans BattleHUDWidget.h");
 
 void UBattleHUDButtonBinding::HandleClicked()
 {
@@ -365,17 +430,39 @@ void UBattleHUDWidget::BuildInfoBox(FInfoBox& Box, bool bPlayer)
 	Box.Frame = PokemonGlass::Make(WidgetTree, Inside, FMargin(0.f), PanelLook());
 	Box.Frame->SetVisibility(ESlateVisibility::Hidden);
 
+	// Nom puis badge de statut juste à sa droite (maquette barre_vie du 2026-11-03) : une rangée qui suit la longueur du nom
+	UHorizontalBox* NameRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+	NameRow->SetVisibility(ESlateVisibility::HitTestInvisible);
+	Place(Inside, NameRow, FVector2D(23.f, 2.f), FVector2D(InfoSize.X - 23.f - 26.f - 110.f, 77.f));
 	Box.Name = MakeText(FText::GetEmpty(), 64.f * FontScale, Text);
-	Place(Inside, Box.Name, FVector2D(23.f, 2.f), FVector2D(360.f, 77.f));
+	Box.Name->SetClipping(EWidgetClipping::ClipToBounds);
+	UHorizontalBoxSlot* NameSlot = NameRow->AddChildToHorizontalBox(Box.Name);
+	NameSlot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
+	NameSlot->SetVerticalAlignment(VAlign_Top);
+
+	// Badge BRU / PAR / GEL / PSN / SOM (images de Tools/HUD/make_status_badges.py, avec leur marge d'ombre) ;
+	// si les images ne sont pas importées : pastille de couleur avec le texte
+	UOverlay* Badge = WidgetTree->ConstructWidget<UOverlay>(UOverlay::StaticClass());
+	Box.StatusBadge = Badge;
+	Box.StatusImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+	UOverlaySlot* ImageSlot = Badge->AddChildToOverlay(Box.StatusImage);
+	ImageSlot->SetHorizontalAlignment(HAlign_Fill);
+	ImageSlot->SetVerticalAlignment(VAlign_Fill);
+	Box.Status = MakeText(FText::GetEmpty(), 32.f * FontScale, Text);
+	Box.Status->SetJustification(ETextJustify::Center);
+	UOverlaySlot* TextSlot = Badge->AddChildToOverlay(Box.Status);
+	TextSlot->SetHorizontalAlignment(HAlign_Center);
+	TextSlot->SetVerticalAlignment(VAlign_Center);
+	UHorizontalBoxSlot* BadgeSlot = NameRow->AddChildToHorizontalBox(Badge);
+	BadgeSlot->SetSize(FSlateChildSize(ESlateSizeRule::Automatic));
+	BadgeSlot->SetVerticalAlignment(VAlign_Top);
+	// Pastille à 15 px du nom, haut à 38 px du haut du cadre (la rangée commence à 2 px) ; l'image déborde de sa marge d'ombre
+	BadgeSlot->SetPadding(FMargin(StatusBadgeGap - StatusBadgePad, StatusBadgeTop - 2.f - StatusBadgePad, 0.f, 0.f));
+	Badge->SetVisibility(ESlateVisibility::Collapsed);
 
 	Box.Level = MakeText(FText::GetEmpty(), 48.f * FontScale, Text);
 	Box.Level->SetJustification(ETextJustify::Right);
 	Place(Inside, Box.Level, FVector2D(InfoSize.X - 26.f - 150.f, 18.f), FVector2D(150.f, 57.f));
-
-	// Statut (PAR, SOM...) à gauche du niveau
-	Box.Status = MakeText(FText::GetEmpty(), 32.f * FontScale, Bad, true);
-	Box.Status->SetJustification(ETextJustify::Right);
-	Place(Inside, Box.Status, FVector2D(InfoSize.X - 26.f - 150.f - 110.f, 30.f), FVector2D(100.f, 40.f));
 
 	UTextBlock* HP = MakeText(LOCTEXT("HP", "PV"), 40.f * FontScale, HPLabel, true);
 	HP->SetJustification(ETextJustify::Center);
@@ -413,6 +500,49 @@ void UBattleHUDWidget::BuildInfoBox(FInfoBox& Box, bool bPlayer)
 		// Cachée : pas dans la maquette Life_Bar (L'amie veut le cadre exactement comme elle) ; elle garde le rythme de l'XP
 		Box.ExpBar->SetVisibility(ESlateVisibility::Collapsed);
 	}
+}
+
+void UBattleHUDWidget::SetStatusBadge(FInfoBox& Box, EStatusBadge Badge)
+{
+	if (!Box.StatusBadge || Box.ShownBadge == Badge)
+	{
+		return;
+	}
+	Box.ShownBadge = Badge;
+	if (Badge == EStatusBadge::None)
+	{
+		Box.StatusBadge->SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+	const int32 Index = static_cast<int32>(Badge);
+	if (!StatusTextures[Index])
+	{
+		StatusTextures[Index] = LoadHUDTexture(*FString::Printf(TEXT("T_Battle_Status_%s"), StatusBadgeName(Badge)));
+	}
+	UOverlaySlot* ImageSlot = Cast<UOverlaySlot>(Box.StatusImage->Slot);
+	if (UTexture2D* Texture = StatusTextures[Index])
+	{
+		Box.StatusImage->SetBrush(MakeBrush(Texture, StatusBadgeSize + FVector2D(2.f * StatusBadgePad)));
+		if (ImageSlot)
+		{
+			ImageSlot->SetPadding(FMargin(0.f));
+		}
+		Box.Status->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	else
+	{
+		// Images pas encore importées : pastille unie avec le texte, à la même place (marge d'ombre vide autour)
+		FSlateRoundedBoxBrush Pill(StatusBadgeColor(Badge), 10.f);
+		Pill.ImageSize = StatusBadgeSize;
+		Box.StatusImage->SetBrush(Pill);
+		if (ImageSlot)
+		{
+			ImageSlot->SetPadding(FMargin(StatusBadgePad));
+		}
+		Box.Status->SetText(StatusBadgeText(Badge));
+		Box.Status->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+	Box.StatusBadge->SetVisibility(ESlateVisibility::HitTestInvisible);
 }
 
 void UBattleHUDWidget::SetHPBar(FInfoBox& Box, float Ratio)
@@ -587,6 +717,8 @@ void UBattleHUDWidget::ApplyEventVisuals(const FBattleEvent& Event)
 			}
 			ShownLevel[Side] = Before->Level;
 			Boxes[Side].Level->SetText(FText::Format(LOCTEXT("Level", "N.{0}"), Before->Level));
+			// Statut au moment où il sort (celui qu'il prendra pendant le tour s'affiche avec son message)
+			SetStatusBadge(Boxes[Side], StatusBadgeOf(Before->Status));
 		}
 		Boxes[Side].Frame->SetVisibility(ESlateVisibility::HitTestInvisible);
 		break;
@@ -597,6 +729,25 @@ void UBattleHUDWidget::ApplyEventVisuals(const FBattleEvent& Event)
 		break;
 	case EBattleEventType::Fainted:
 		TargetHP[Side] = 0.f;
+		if (Event.PartyIndex == ShownIndex[Side])
+		{
+			SetStatusBadge(Boxes[Side], EStatusBadge::Fainted);
+		}
+		break;
+	// Badge de statut en même temps que le message (« Pikachu est brûlé ! », « ... se réveille ! »)
+	case EBattleEventType::StatusApplied:
+		if (Event.PartyIndex == ShownIndex[Side])
+		{
+			SetStatusBadge(Boxes[Side], StatusBadgeOf(Event.Status));
+		}
+		break;
+	case EBattleEventType::StatusCured:
+	case EBattleEventType::WokeUp:
+	case EBattleEventType::Thawed:
+		if (Event.PartyIndex == ShownIndex[Side])
+		{
+			SetStatusBadge(Boxes[Side], EStatusBadge::None);
+		}
 		break;
 	case EBattleEventType::ExpGained:
 		if (Side == 0 && Event.PartyIndex == ShownIndex[Side])
@@ -649,7 +800,7 @@ void UBattleHUDWidget::RefreshInfoBox(int32 Side, bool bInstantHP)
 	const int32 Level = ShownLevel[Side] > 0 && bInstantHP ? ShownLevel[Side] : Pokemon->Level;
 	ShownLevel[Side] = Level;
 	Box.Level->SetText(FText::Format(LOCTEXT("Level", "N.{0}"), Level));
-	Box.Status->SetText(Pokemon->IsFainted() ? LOCTEXT("KO", "K.O.") : StatusText(Pokemon->Status));
+	SetStatusBadge(Box, Pokemon->IsFainted() ? EStatusBadge::Fainted : StatusBadgeOf(Pokemon->Status));
 	MaxHP[Side] = FMath::Max(1, Pokemon->GetMaxHP());
 	TargetHP[Side] = Pokemon->CurrentHP;
 	if (bInstantHP)

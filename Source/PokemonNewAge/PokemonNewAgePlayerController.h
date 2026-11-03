@@ -424,7 +424,7 @@ public:
 	UFUNCTION(Exec)
 	void DonnerXP(int32 PartySlot, int32 Amount);
 
-	/** Rejoue la séquence d'évolution sans rien changer : VoirEvolution Bulbasaur Ivysaur */
+	/** Rejoue la séquence d'évolution sans rien changer : VoirEvolution Bulbasaur Ivysaur (ou VoirEvolution Bulbasaur) */
 	UFUNCTION(Exec)
 	void VoirEvolution(FName FromSpecies, FName ToSpecies);
 
@@ -469,6 +469,10 @@ public:
 	/** Soigne l'équipe */
 	UFUNCTION(Exec)
 	void Soigner();
+
+	/** Donne un statut à un Pokémon de l'équipe (test des badges de combat) : Statut 1 BRU / PAR / GEL / PSN / TOX / SOM / AUCUN */
+	UFUNCTION(Exec)
+	void Statut(int32 PartySlot, const FString& Status);
 
 	/** Affiche l'équipe dans le journal et à l'écran */
 	UFUNCTION(Exec)

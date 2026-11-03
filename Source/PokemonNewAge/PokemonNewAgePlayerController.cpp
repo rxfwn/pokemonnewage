@@ -866,6 +866,23 @@ void APokemonNewAgePlayerController::DonnerXP(int32 PartySlot, int32 Amount)
 
 void APokemonNewAgePlayerController::VoirEvolution(FName FromSpecies, FName ToSpecies)
 {
+	// Noms anglais de DT_Species. Sans deuxième nom (ou avec un nom inconnu) : la première évolution de l'espèce.
+	const UPokemonDatabase* Database = UPokemonDataSubsystem::GetDatabase(this);
+	const FSpeciesRow* From = Database ? Database->FindSpecies(FromSpecies) : nullptr;
+	if (!From)
+	{
+		PrintDebug(FString::Printf(TEXT("Espece inconnue : %s (nom anglais, ex. VoirEvolution Bulbasaur)"), *FromSpecies.ToString()));
+		return;
+	}
+	if (!Database->FindSpecies(ToSpecies))
+	{
+		if (From->Evolutions.IsEmpty())
+		{
+			PrintDebug(FString::Printf(TEXT("%s n'evolue pas"), *FromSpecies.ToString()));
+			return;
+		}
+		ToSpecies = From->Evolutions[0].Species;
+	}
 	ProgressionComponent->PreviewEvolution(FromSpecies, ToSpecies);
 }
 
@@ -950,6 +967,33 @@ void APokemonNewAgePlayerController::Soigner()
 		State->HealParty();
 		Equipe();
 	}
+}
+
+void APokemonNewAgePlayerController::Statut(int32 PartySlot, const FString& Status)
+{
+	APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>();
+	if (!State || !HasAuthority() || !State->Party.IsValidIndex(PartySlot - 1))
+	{
+		PrintDebug(TEXT("Statut <place 1-6> <BRU|PAR|GEL|PSN|TOX|SOM|AUCUN>"));
+		return;
+	}
+	const FString Code = Status.ToUpper();
+	EMajorStatus NewStatus = EMajorStatus::None;
+	if (Code == TEXT("BRU")) { NewStatus = EMajorStatus::Burn; }
+	else if (Code == TEXT("PAR")) { NewStatus = EMajorStatus::Paralysis; }
+	else if (Code == TEXT("GEL")) { NewStatus = EMajorStatus::Freeze; }
+	else if (Code == TEXT("PSN")) { NewStatus = EMajorStatus::Poison; }
+	else if (Code == TEXT("TOX")) { NewStatus = EMajorStatus::BadlyPoisoned; }
+	else if (Code == TEXT("SOM")) { NewStatus = EMajorStatus::Sleep; }
+	else if (Code != TEXT("AUCUN"))
+	{
+		PrintDebug(TEXT("Statut <place 1-6> <BRU|PAR|GEL|PSN|TOX|SOM|AUCUN>"));
+		return;
+	}
+	FPokemonInstance& Pokemon = State->Party[PartySlot - 1];
+	Pokemon.Status = NewStatus;
+	Pokemon.SleepTurns = NewStatus == EMajorStatus::Sleep ? 3 : 0;
+	PrintDebug(FString::Printf(TEXT("Statut de la place %d : %s"), PartySlot, *Code));
 }
 
 void APokemonNewAgePlayerController::Equipe()
