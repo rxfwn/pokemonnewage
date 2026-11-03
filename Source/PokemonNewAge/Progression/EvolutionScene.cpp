@@ -207,6 +207,16 @@ void AEvolutionScene::Play(APlayerController* Controller, UProgressionWidget* In
 	{
 		OldMesh->SetVisibility(true);
 	}
+	// Gros plan : textures des deux Pokémon chargées en pleine résolution tout de suite (sinon le streaming
+	// garde un niveau réduit tant que la mémoire vidéo est chargée, et le Pokémon paraît flou)
+	for (UMeshComponent* Mesh : { OldMesh.Get(), NewMesh.Get() })
+	{
+		if (Mesh)
+		{
+			Mesh->SetTextureForceResidentFlag(true);
+			Mesh->PrestreamTextures(10.f, true);
+		}
+	}
 
 	// Lueur : matériau de surcouche, une instance par modèle
 	if (UMaterialInterface* GlowMaterial = UProgressionComponent::LoadGlowMaterial())
