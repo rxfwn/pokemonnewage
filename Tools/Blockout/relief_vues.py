@@ -59,9 +59,9 @@ ROLLING_SCALE = 650.0     # distance entre deux collines
 FOREST_HILLS = 70.0       # collines boisées loin des routes
 FOREST_START, FOREST_FULL = 25.0, 260.0  # elles montent depuis le bord des routes
 TOWN_FALLOFF = 90.0       # autour des villes, le terrain rejoint la ville en pente douce
-PATH_SMOOTH = 9.0         # lissage des chemins (pas de marches)
-PATH_MAX_SLOPE = 0.25     # pente maximale dans les routes (14°)
-PATH_EDGE = 25.0          # le bord des routes rejoint le relief sur cette distance
+PATH_SMOOTH = 25.0        # lissage des chemins (pas de marches)
+PATH_MAX_SLOPE = 0.15     # pente maximale dans les routes (8,5°) : le personnage est petit
+PATH_EDGE = 60.0          # le bord des routes rejoint le relief sur cette distance
 
 # Où mettre montagnes et forêts : la carte de L'amie (reference/kanto_relief_amie.png, 1009 × 1009,
 # nord en haut, même cadre que la heightmap). Brun/gris/blanc = montagne, vert foncé = forêt.
@@ -92,7 +92,7 @@ EXTRA_MOUNTAINS = [
 # Lacs : les zones bleues de la carte de L'amie à l'intérieur des terres (pas la baie, pas la
 # piste cyclable). Fond de LAKE_DEPTH m, berges en pente douce sur LAKE_BANK m.
 LAKE_DEPTH = 6.0
-LAKE_BANK = 22.0
+LAKE_BANK = 55.0
 LAKE_MIN, LAKE_MAX = 25, 5000          # taille en pixels de la carte (6 m)
 CYCLING_ROAD = (370, 395, 415, 725)    # colonnes et lignes à ignorer (bandes d'eau FRLG)
 EDGE_SOFTEN = 4.5         # lissage final des arêtes (m)
@@ -160,6 +160,7 @@ def coarse_fields(cells):
     on_route = sample(ground.astype(np.float64), column + mh.PAD, row + mh.PAD, 0.0) > 0.5
     # Dans les cartes FRLG, seules les cases ouvertes (chemins, herbe, sable, dalles) sont des
     # routes ; les rangées d'arbres deviennent des collines boisées (fini les couloirs carrés).
+    frlg = ndimage.binary_dilation(on_route, iterations=3)  # toute la carte FRLG (arbres compris)
     on_route &= open_tiles()
     # Bouts de route isolés (cases mal lues) : retirés, sinon ils font des marches.
     labels, count = ndimage.label(on_route)
@@ -174,7 +175,7 @@ def coarse_fields(cells):
             continue
         cx, cy = frlg_xy(column0, row0)
         town_d = np.minimum(town_d, round_box(x, y, cx, cy, half_north + 15, half_east + 15))
-    return x, y, route_d, town_d
+    return x, y, route_d, town_d, frlg
 
 
 def open_tiles():
@@ -235,7 +236,7 @@ def mountain(x, y, cx, cy, radius, top, seed):
     return top * body ** 1.1 * (0.4 + 0.6 * crest ** 1.4)
 
 
-def map_zones(route_d):
+def map_zones(route_d, frlg):
     """Champs 0 à 1 (montagne, neige, forêt) lus sur la carte de L'amie, adoucis : pas de bords
     carrés, et rien sur les routes (les tuiles FRLG de la carte ne comptent pas)."""
     k = np.asarray(Image.open(ZONES).convert("RGB")).astype(np.float64)
@@ -250,8 +251,10 @@ def map_zones(route_d):
     off_route = route_d > 20
     fields = []
     step = STEP * COARSE
-    for mask, reach in ((rock | snow, 380.0), (snow, 260.0), (forest | rock | snow, 160.0)):
+    for i, (mask, reach) in enumerate(((rock | snow, 380.0), (snow, 260.0), (forest | rock | snow, 160.0))):
         mask = mask & off_route
+        if i < 2:
+            mask &= ~frlg  # les rochers dessinés dans les cartes FRLG ne sont pas des montagnes
         mask = ndimage.binary_opening(mask, iterations=2)
         mask = ndimage.binary_closing(mask, iterations=3)
         # Profondeur dans la zone : les pentes montent depuis le bord (larges zones = hauts sommets).
@@ -260,10 +263,10 @@ def map_zones(route_d):
     return fields
 
 
-def big_shapes(x, y, route_d, town_d, land):
+def big_shapes(x, y, route_d, town_d, land, frlg):
     """Hauteur à ajouter : collines partout, forêts en collines, montagnes de la carte,
     volcan, montagnes lointaines."""
-    rock, snow, wood = map_zones(route_d)
+    rock, snow, wood = map_zones(route_d, frlg)
     # Contours irréguliers : on déforme un peu la lecture des champs.
     calm = smoothstep(0, TOWN_FALLOFF, town_d)            # 0 dans les villes
     shore = smoothstep(10, 220, land)                      # 0 sur les plages
@@ -375,7 +378,12 @@ def lake_mask(route_d):
     sizes = ndimage.sum(lakes, labels, range(1, count + 1))
     lakes = np.isin(labels, np.nonzero((sizes >= LAKE_MIN) & (sizes <= LAKE_MAX))[0] + 1)
     lakes = ndimage.binary_closing(lakes, iterations=2)
-    return np.transpose(lakes[::-1])  # nord en haut -> grille du Landscape
+    lakes = np.transpose(lakes[::-1])  # nord en haut -> grille du Landscape
+    # Bords ronds et irréguliers (les cases FRLG sont carrées) : flou + seuil bruité.
+    n = lakes.shape[0]
+    xs, ys = mh.grid_xy(range(n), n, STEP * COARSE)
+    soft = ndimage.gaussian_filter(lakes.astype(np.float64), 3.5)
+    return soft > 0.42 + 0.12 * fbm(xs, ys, 90, 3, SEED + 130)  # nord en haut -> grille du Landscape
 
 
 def dig_lakes(height, lakes):
@@ -390,13 +398,15 @@ def dig_lakes(height, lakes):
         inside = labels[box] == index + 1
         h = height[box]
         ring = ndimage.binary_dilation(inside, iterations=3) & ~inside
-        level = float(np.percentile(h[ring], 10)) - 0.6
+        level = float(np.percentile(h[ring], 25)) - 0.6
         d_in = ndimage.distance_transform_edt(inside) * STEP
         d_out = ndimage.distance_transform_edt(~inside) * STEP
         bed = level - 0.5 - (LAKE_DEPTH - 0.5) * smoothstep(0, 40, d_in)
-        bank = level + 0.25 * d_out
+        bank = level + 0.15 * d_out
         target = np.where(inside, bed, bank)
-        height[box] = np.minimum(h, np.where(d_out < LAKE_BANK, target, h))
+        weight = np.where(inside, 1.0, smoothstep(LAKE_BANK, 0, d_out))  # sans marche au bord
+        dug = np.maximum(np.minimum(h, target), h - LAKE_DEPTH - 2.0)  # jamais de fosse profonde
+        height[box] = h + (dug - h) * weight
         rows, cols = np.nonzero(inside)
         found.append(((box[1].start + cols.mean()) * STEP, (box[0].start + rows.mean()) * STEP, level))
     return found
@@ -461,20 +471,18 @@ def _cone(h, mask, rise, upper):
 
 
 def smooth_paths(height, inside, keep):
-    """Routes praticables partout : dans les routes, la pente est limitée à PATH_MAX_SLOPE
-    (moyenne de deux enveloppes à pente limitée : on creuse les bosses et on comble les creux
-    à parts égales), puis le terrain rejoint le relief d'origine sur PATH_EDGE m.
-    `keep` : zones à ne pas toucher (cascade, falaises du Plateau Indigo)."""
+    """Routes douces pour un petit personnage : sur les routes (et 20 m autour), le relief est
+    remplacé par sa version très lissée (PATH_SMOOTH m), dont la pente est ensuite limitée à
+    PATH_MAX_SLOPE. Le passage vers le relief d'origine suit un masque flouté sur PATH_EDGE m :
+    bords arrondis, pas de couloir carré. `keep` : zones à ne pas toucher (Plateau Indigo)."""
     soft = ndimage.gaussian_filter(height, PATH_SMOOTH / STEP)
-    mask = (inside > -PATH_EDGE) & (keep < 0.5)
+    zone = (inside > -20) & (keep < 0.5)
     rise = PATH_MAX_SLOPE * STEP
-    upper = _cone(soft, mask, rise, True)
-    lower = _cone(soft, mask, rise, False)
-    # Dans les routes, le relief devient l'enveloppe à pente limitée (rampes douces).
-    limited = (upper + lower) / 2
-    weight = smoothstep(-PATH_EDGE, 6, inside) * (1 - keep)
-    out = height + (limited - height) * weight
-    return out
+    limited = (_cone(soft, zone, rise, True) + _cone(soft, zone, rise, False)) / 2
+    limited = ndimage.gaussian_filter(limited, 3.0 / STEP)
+    weight = np.clip(ndimage.gaussian_filter(zone.astype(np.float32), PATH_EDGE / 2.5 / STEP) * 2.0, 0, 1)
+    weight = np.maximum(weight, zone * 1.0) * (1 - keep)
+    return height + (limited - height) * weight
 
 
 # --- Aperçus -----------------------------------------------------------------------------------
@@ -533,7 +541,7 @@ def main():
     print(f"Nettoyage : {time.time() - start:.0f} s")
 
     cells = mh.cell_fields()
-    x, y, route_d, town_d = coarse_fields(cells)
+    x, y, route_d, town_d, frlg = coarse_fields(cells)
     inside_d = ndimage.distance_transform_edt(route_d == 0) * STEP * COARSE
     signed = inside_d - route_d  # + dans les routes
     # Lignes droites cassées : tout ondule sauf le cœur des routes, les villes et l'eau creusée.
@@ -546,7 +554,7 @@ def main():
     sea = coarse < 0.2
     land = ndimage.distance_transform_edt(~sea) * STEP * COARSE
     shifted = coarse + town_shift(x, y, now) * smoothstep(0, 40, land)
-    add, peaks, far = big_shapes(x, y, route_d, town_d, land)
+    add, peaks, far = big_shapes(x, y, route_d, town_d, land, frlg)
     grown = shifted + add
     lifted = np.maximum(peaks * smoothstep(0, 60, land), far)
     grown = np.where(lifted > 0.5, np.maximum(grown, lifted), grown)
@@ -578,9 +586,18 @@ def main():
     height = height + (soft - height) * 0.7 * upsample(smoothstep(10, -5, signed))
     del soft
     lakes = dig_lakes(height, lake_mask(route_d))
-    # L'eau creusée par L'amie, à sa profondeur (sous le relief, jamais au-dessus).
-    soft = ndimage.gaussian_filter(water.astype(np.float32), 1.5)
-    height = height + (np.minimum(height, water_bed) - height) * soft
+    # L'eau creusée par L'amie : même tracé, mais en lit peu profond (3 à 5 m sous le terrain
+    # autour) avec des berges douces, au lieu d'une tranchée de plusieurs dizaines de mètres.
+    dry = (~ndimage.binary_dilation(water, iterations=3)).astype(np.float32)
+    sigma = 15.0 / STEP
+    ground = ndimage.gaussian_filter(height * dry, sigma) / np.maximum(ndimage.gaussian_filter(dry, sigma), 1e-3)
+    depth_in = ndimage.distance_transform_edt(water) * STEP
+    bed = ground - 3.0 - 2.0 * smoothstep(0, 15, depth_in)
+    d_out = ndimage.distance_transform_edt(~water) * STEP
+    target = np.where(water, bed, ground - 3.0 + 0.15 * d_out)
+    height = np.where(d_out < 25, np.minimum(height, target), height)
+    height = height + (ndimage.gaussian_filter(height, 2.0) - height) * (d_out < 25)
+    del dry, ground, depth_in, bed, d_out, target
     ground, lip = waterfall(height)
     print(f"{len(lakes)} lacs ; cascade : bassin à {ground:.0f} m, lèvre à {lip:.0f} m")
     print("Villes : " + ", ".join(f"{n} {now[n]:.0f} m" + (f" -> {TOWN_LEVELS[n]:.0f} m" if n in TOWN_LEVELS else "")
