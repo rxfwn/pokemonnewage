@@ -37,6 +37,7 @@ Combat au tour par tour façon Rouge Feu, avec les règles des jeux récents. To
 | `Tests/BattleTests.cpp` | 11 tests de logique. |
 | `UI/Battle/BattleHUDWidget.h` | Écran de combat (SCRUM-36), voir plus bas. |
 | `Tools/HUD/make_battle_assets.py` | Images de l'écran de combat (boutons en dégradé, barres de PV, flèche retour). |
+| `Tools/HUD/make_status_badges.py` | Badges de statut BRU / PAR / GEL / PSN / SOM / K.O. (icônes de L'amie). |
 
 ## Multijoueur (SCRUM-68)
 
@@ -65,7 +66,8 @@ Sans Unreal (dans le cloud) : `./Tools/BattleSim/run.sh` lance les mêmes tests 
 
 Construit en C++ (`UBattleHUDWidget`) au pixel près d'après les maquettes Figma de L'amie (Combat_Hud, Combat_Hud-1, Types, Life_Bar ; copies dans `/mnt/project-files/combat/maquette/`). Toute la disposition est en coordonnées 1920 x 1080 (ScaleBox > SizeBox > Canvas), tailles de police = px Figma x 0,75.
 
-- **Cadres des Pokémon** (566 x 162, verre `M_UI_Glass`) : adversaire en haut à gauche (49, 21), joueur en bas à droite (1274, 626). Nom 64 px, « N.xx » 48 px à droite, « PV » orange #FFA412, barre de PV 452 x 27 verte (> 50 %), orange (> 20 %) puis rouge, au rendu de la planche Life_Bar (relevé au pixel le 2026-11-01 : contour intérieur clair, relief, ombre portée floue ; les images ont 8 px de marge pour l'ombre). Les nombres de PV ne sont plus affichés (comme la maquette). Le joueur garde une fine barre d'XP sous ses PV, et le statut (PAR, BRU…) s'affiche devant le niveau.
+- **Cadres des Pokémon** (566 x 162, verre `M_UI_Glass`) : adversaire en haut à gauche (49, 21), joueur en bas à droite (1274, 626). Nom 64 px, « N.xx » 48 px à droite, « PV » orange #FFA412, barre de PV 452 x 27 verte (> 50 %), orange (> 20 %) puis rouge, au rendu de la planche Life_Bar (relevé au pixel le 2026-11-01 : contour intérieur clair, relief, ombre portée floue ; les images ont 8 px de marge pour l'ombre). Les nombres de PV ne sont plus affichés (comme la maquette). Le joueur garde une fine barre d'XP sous ses PV (cachée).
+- **Badges de statut** (maquette statuts et barre_vie de L'amie, 2026-11-03) : pastille 99 x 38 coins 10 juste après le nom (15 px), haut à 38 px du haut du cadre. BRU #D86426 (flamme), PAR #DBA902 (éclair), GEL #4990E0 (flocon), PSN #4F1F93 (poison, Toxik compris), SOM #6D6D6D (zZ) ; icône blanche 34 px et texte Futura MdCn BT 32 px droit avec ombre floue. Le badge apparaît en même temps que le message (« Pikachu est brûlé ! ») et disparaît au réveil, au dégel ou au soin. K.O. (pas dans la maquette) : pastille rouge sombre provisoire. Images : `Tools/HUD/make_status_badges.py` (icônes de L'amie dans `Tools/HUD/Source/Status`) → `Tools/HUD/Assets/T_Battle_Status_<Statut>.png`, importées toutes seules ; sans elles, pastille unie avec le texte.
 - **Boîte de texte** (47, 817), 1210 x 207 à côté du menu, et sur toute la largeur (jusqu'à 1840) quand le menu n'est pas affiché ; texte 64 px, sans chevron (retirés aussi des dialogues et de l'écran d'évolution, demandé le 2026-11-01).
 - **Menu principal** (1274, 817) : 4 boutons en dégradé 265 x 85 Attaquer / Sac / Pokémon / Fuite, centrés dans le panneau (12 px de marge de chaque côté).
 - **Attaques** : cartes en verre avec nom, étiquette de type (couleurs de la planche Types) et PP ; bouton retour au croisement des 4 cartes. Une attaque sans PP est grisée ; un emplacement sans attaque reste une carte en verre vide (pas cliquable).
