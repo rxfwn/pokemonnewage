@@ -1,0 +1,445 @@
+"""Relief v3 « des choses à voir au loin » : part du relief que L'amie a sculpté dans Unreal et
+casse le plat, sans tout sculpter à la main.
+
+Entrée : reference/relief_amie_2026-11-03.png, la heightmap exportée d'Unreal
+(Paysage > Gestion > Importer/Exporter > Exporter, échelle Z 200 au moment de l'export).
+
+Sortie : kanto_v1_heightmap.png (à réimporter avec l'échelle Z de kanto_v1_layout.LANDSCAPE_SCALE_Z)
+et deux aperçus (vue du dessus ombrée, heightmap en gris).
+
+Lancement : pip install numpy numba scipy pillow, puis
+    python Tools/Blockout/relief_vues.py            (pleine résolution, quelques minutes)
+    python Tools/Blockout/relief_vues.py --test DIR (aperçus seulement, dans DIR)
+
+Ce que fait le script, dans l'ordre :
+1. Nettoyage du fichier de L'amie : les bosses rondes du pinceau sont fondues dans le terrain,
+   les trous sous le fond de la mer sont rebouchés (ses lacs restent).
+2. Collines douces partout (sauf dans les villes, qui restent plates), forêts en collines qui
+   grandissent loin des routes : l'horizon bouge tout le temps.
+3. Grands repères visibles de loin : Plateau Indigo tout en haut, Route Victoire, Mont Sélénite,
+   montagnes de la côte nord, Tunnel Roche, volcan de Cramois'Île.
+4. Hors de la zone jouable : le Mont Argenté vers Johto (à l'ouest) et des îles montagneuses au
+   large (« une autre région au loin »).
+5. Érosion par la pluie sur les nouveaux reliefs (vallées et arêtes naturelles).
+6. Cascade sur la Route 23 : une falaise, un torrent qui descend du massif, un bassin.
+7. Chemins adoucis : plus de marche que le personnage ne peut pas monter.
+"""
+
+import os
+import sys
+import time
+
+import numpy as np
+from PIL import Image
+from numba import njit
+from scipy import ndimage
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import kanto_v1_layout as layout  # noqa: E402
+import make_heightmap as mh  # noqa: E402
+from make_heightmap import fbm, ridged, smoothstep, sample  # noqa: E402
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+SOURCE = os.path.join(HERE, "reference", "relief_amie_2026-11-03.png")
+SOURCE_SCALE_Z = 200.0  # échelle Z du Landscape quand L'amie a exporté son fichier
+SIZE = layout.HEIGHTMAP_SIZE
+STEP = layout.METERS_PER_PIXEL
+COARSE = 4  # les grandes formes sont calculées sur une grille 4 fois plus large (6 m)
+SEED = 251
+
+TEST = "--test" in sys.argv
+OUT = sys.argv[sys.argv.index("--test") + 1] if TEST else HERE
+
+# --- Réglages (mètres) -------------------------------------------------------------------
+BLOB_MELT = 22.0          # les bosses du pinceau sont étalées sur cette distance
+LAKE_FLOOR = -6.0         # fond le plus bas d'un lac sur la terre (le trou est rebouché)
+ROLLING = 16.0            # collines douces partout, routes comprises (pentes < 10 %)
+ROLLING_SCALE = 650.0     # distance entre deux collines
+FOREST_HILLS = 70.0       # collines boisées loin des routes
+FOREST_START, FOREST_FULL = 25.0, 260.0  # elles montent depuis le bord des routes
+TOWN_FALLOFF = 90.0       # autour des villes, le terrain rejoint la ville en pente douce
+PATH_SMOOTH = 9.0         # lissage des chemins (pas de marches)
+PATH_MAX_SLOPE = 0.25     # pente maximale dans les routes (14°)
+PATH_EDGE = 25.0          # le bord des routes rejoint le relief sur cette distance
+
+# Où mettre montagnes et forêts : la carte de L'amie (reference/kanto_relief_amie.png, 1009 × 1009,
+# nord en haut, même cadre que la heightmap). Brun/gris/blanc = montagne, vert foncé = forêt.
+ZONES = os.path.join(HERE, "reference", "kanto_relief_amie.png")
+MOUNTAIN_HEIGHT = 330.0   # montagnes de la carte (les zones enneigées montent plus haut)
+SNOW_EXTRA = 160.0
+INDIGO_TOP = 640.0        # le point le plus haut du jeu
+# Repère en plus de la carte : (nom, colonne FRLG, ligne FRLG, rayon m, hauteur m).
+VOLCANO = ("Volcan de Cramois'Île", 118, 752, 330, 230)
+# Plateau Indigo : table plate au sommet, falaises tout autour (on y monte par la Route Victoire,
+# une grotte : le relief n'a pas besoin de chemin praticable jusqu'en haut).
+INDIGO = (25, 29, 140.0)  # colonne, ligne, rayon du sommet plat (m)
+
+# Hors de la zone jouable : (nom, x nord m, y est m, rayon, hauteur).
+FAR_MOUNTAINS = [
+    ("Mont Argenté", 5150, 120, 700, 560),
+    ("Chaîne vers Johto", 4300, 60, 600, 380),
+    ("Île du sud-ouest", 250, 420, 420, 260),
+    ("Îlot du sud", 120, 1500, 330, 170),
+    ("Île de l'est", 700, 5900, 380, 210),
+]
+
+# Cascade de la Route 23 : bassin au bord de la route, lèvre de la chute, source dans le massif.
+FALL_POOL = (3, 215)        # case FRLG du bassin (bord ouest de la Route 23)
+FALL_HEIGHT = 32.0          # hauteur de la chute
+FALL_SOURCE = (-28, 170)    # le torrent descend de là (case FRLG, à l'ouest de la route)
+
+
+def frlg_xy(column, row):
+    return layout.from_frlg(column, row)
+
+
+# --- 1. Lecture et nettoyage -----------------------------------------------------------------
+
+def read_heights(path, scale_z):
+    values = np.asarray(Image.open(path)).astype(np.float64)
+    return (values - 32768.0) * scale_z / 12800.0
+
+
+def clean(amie, before):
+    """Fond les bosses rondes (dans les retouches de L'amie par rapport au relief v2) et
+    rebouche les trous ; les grandes retouches restent."""
+    diff = amie - before
+    raised = ndimage.gaussian_filter(np.maximum(diff, 0), BLOB_MELT / STEP)
+    dug = np.maximum(np.minimum(diff, 0), np.minimum(LAKE_FLOOR - before, 0))
+    dug = ndimage.gaussian_filter(dug, 2.0)
+    return before + raised + dug
+
+
+# --- 2 à 4. Grandes formes (grille de 6 m) ---------------------------------------------------
+
+def coarse_fields(cells):
+    """Distances aux routes et aux villes, en mètres, sur la grille de 6 m."""
+    _, ground, *_ = cells
+    n = (SIZE - 1) // COARSE + 1
+    step = STEP * COARSE
+    x, y = mh.grid_xy(range(n), n, step)
+    column, row = layout.to_frlg(x, y)
+    on_route = sample(ground.astype(np.float64), column + mh.PAD, row + mh.PAD, 0.0) > 0.5
+    on_route |= mh.v1_path_distance(x, y) < 8
+    route_d = ndimage.distance_transform_edt(~on_route) * step
+    town_d = np.full(x.shape, 1e9)
+    for name, column0, row0, half_east, half_north, _ in layout.AREAS:
+        if name == "Forêt de Jade":
+            continue
+        cx, cy = frlg_xy(column0, row0)
+        box = np.maximum(np.abs(x - cx) - half_north - 15, np.abs(y - cy) - half_east - 15)
+        town_d = np.minimum(town_d, np.maximum(box, 0))
+    return x, y, route_d, town_d
+
+
+def blob(x, y, cx, cy, radius, warp_seed):
+    """Distance normalisée (0 au centre, 1 au bord), au contour irrégulier."""
+    wx = x + fbm(x, y, radius * 0.8, 3, warp_seed) * radius * 0.35
+    wy = y + fbm(x, y, radius * 0.8, 3, warp_seed + 5) * radius * 0.35
+    return np.hypot(wx - cx, wy - cy) / radius
+
+
+def mountain(x, y, cx, cy, radius, top, seed):
+    """Montagne en arêtes et pics pointus (comme les Alpes), pas un dôme."""
+    d = blob(x, y, cx, cy, radius, seed)
+    body = smoothstep(1.0, 0.0, d)
+    crest = ridged(x + fbm(x, y, 300, 3, seed + 7) * 120, y, radius * 0.6, 7, seed + 3)
+    return top * body ** 1.1 * (0.4 + 0.6 * crest ** 1.4)
+
+
+def map_zones(route_d):
+    """Champs 0 à 1 (montagne, neige, forêt) lus sur la carte de L'amie, adoucis : pas de bords
+    carrés, et rien sur les routes (les tuiles FRLG de la carte ne comptent pas)."""
+    k = np.asarray(Image.open(ZONES).convert("RGB")).astype(np.float64)
+    k = np.transpose(k[::-1], (1, 0, 2))  # nord en haut -> [ligne = est, colonne = nord]
+    r, g, b = k[..., 0], k[..., 1], k[..., 2]
+    high, low = k.max(2), k.min(2)
+    sat = (high - low) / np.maximum(high, 1)
+    sea = (b > g + 10) & (b > r + 30)
+    snow = low > 200
+    rock = ~sea & (sat < 0.35) & (r >= g - 15) & (high < 200)
+    forest = ~sea & (g > r + 15) & (high < 120)
+    off_route = route_d > 20
+    fields = []
+    step = STEP * COARSE
+    for mask, reach in ((rock | snow, 380.0), (snow, 260.0), (forest | rock | snow, 160.0)):
+        mask = mask & off_route
+        mask = ndimage.binary_opening(mask, iterations=2)
+        mask = ndimage.binary_closing(mask, iterations=3)
+        # Profondeur dans la zone : les pentes montent depuis le bord (larges zones = hauts sommets).
+        depth = ndimage.distance_transform_edt(mask) * step
+        fields.append(ndimage.gaussian_filter(smoothstep(0, reach, depth), 3))
+    return fields
+
+
+def big_shapes(x, y, route_d, town_d, land):
+    """Hauteur à ajouter : collines partout, forêts en collines, montagnes de la carte,
+    volcan, montagnes lointaines."""
+    rock, snow, wood = map_zones(route_d)
+    # Contours irréguliers : on déforme un peu la lecture des champs.
+    calm = smoothstep(0, TOWN_FALLOFF, town_d)            # 0 dans les villes
+    shore = smoothstep(10, 220, land)                      # 0 sur les plages
+    rolling = ROLLING * fbm(x, y, ROLLING_SCALE, 4, SEED) * calm * shore
+    # Bords des routes irréguliers : les collines commencent plus ou moins loin (pas de couloir droit).
+    route_d = np.maximum(route_d + fbm(x, y, 260, 4, SEED + 2) * 60 - 10, 0)
+    away = smoothstep(FOREST_START, FOREST_FULL, route_d)
+    texture = np.clip(0.3 + 0.7 * (0.5 + 0.5 * fbm(x, y, 420, 4, SEED + 1)), 0, 1.3)
+    forest = FOREST_HILLS * wood * away * shore * calm * texture
+    keep_route = smoothstep(20, 160, route_d) * calm
+    crest = ridged(x, y, 520, 7, SEED + 3)
+    body = rock ** 0.9
+    mountains = ((MOUNTAIN_HEIGHT + SNOW_EXTRA * snow)
+                 * body * (0.45 + 0.55 * crest ** 1.2) * keep_route * smoothstep(0, 120, land))
+    # Hauteur absolue (pas ajoutée au relief déjà sculpté), toujours sous le Plateau Indigo.
+    cap = INDIGO_TOP - 90
+    mountains = np.where(mountains > cap - 80, cap - 80 + 80 * np.tanh((mountains - cap + 80) / 80), mountains)
+    add = rolling + forest
+    name, column, row, radius, top = VOLCANO
+    cx, cy = frlg_xy(column, row)
+    d = blob(x, y, cx, cy, radius, SEED + 20)
+    cone = top * (smoothstep(1.0, 0.12, d) ** 1.3) * (1 + 0.18 * ridged(x, y, 90, 4, SEED + 30))
+    cone -= 45.0 * smoothstep(0.16, 0.05, d)  # cratère
+    peaks = np.maximum(mountains, cone * smoothstep(15, 90, town_d))
+    far = np.zeros_like(x)
+    for i, (name, cx, cy, radius, top) in enumerate(FAR_MOUNTAINS):
+        far = np.maximum(far, mountain(x, y, cx, cy, radius, top, SEED + 60 + i))
+    return add, peaks, far
+
+
+def indigo_plateau(height, x, y):
+    """Le plus haut sommet de Kanto : un massif en arêtes (pas un dôme) dont le sommet est une
+    table plate à INDIGO_TOP, bordée de falaises (la Ligue est posée dessus)."""
+    column, row, radius = INDIGO
+    cx, cy = frlg_xy(column, row)
+    d = blob(x, y, cx, cy, radius, SEED + 80) * radius
+    massif = mountain(x, y, cx, cy, radius + 650, INDIGO_TOP - 25, SEED + 81)
+    massif = np.maximum(massif, (INDIGO_TOP - 45) * smoothstep(radius + 420, radius + 20, d) ** 0.8
+                        * (0.7 + 0.3 * ridged(x, y, 140, 5, SEED + 82)))
+    top = INDIGO_TOP + fbm(x, y, 40, 2, SEED + 83) * 0.3
+    cliff = np.where(d < radius + 35, INDIGO_TOP - 55 * smoothstep(radius, radius + 30, d), -1e9)
+    plateau = np.where(d < radius, top, np.maximum(cliff, np.where(massif > 1, massif, -1e9)))
+    return np.maximum(height, plateau)
+
+
+# --- 6. Cascade -------------------------------------------------------------------------------
+
+def waterfall(height):
+    """Cascade de la Route 23, posée à la fin (après le lissage des chemins) : un bassin au bord
+    de la route, un ruisseau jusqu'au pied d'une falaise de FALL_HEIGHT m, et au-dessus le
+    torrent qui descend du massif. On ne fait que creuser, sauf la falaise elle-même."""
+    px, py = frlg_xy(*FALL_POOL)
+    sx, sy = frlg_xy(*FALL_SOURCE)
+    length = float(np.hypot(sx - px, sy - py))
+    reach = length + 80
+    r0, r1 = max(0, int((py - reach) / STEP)), min(SIZE, int((py + reach) / STEP) + 2)
+    c0, c1 = max(0, int((px - reach) / STEP)), min(SIZE, int((px + reach) / STEP) + 2)
+    part = (slice(r0, r1), slice(c0, c1))
+    y, x = np.mgrid[r0:r1, c0:c1] * STEP
+    h = height[part]
+    ux, uy = (sx - px) / length, (sy - py) / length
+    along = (x - px) * ux + (y - py) * uy
+    side = (x - px) * -uy + (y - py) * ux
+    side = side + fbm(x, y, 140, 2, SEED + 90) * 12 * smoothstep(40, 140, along)  # torrent sinueux
+    ground = float(np.median(h[np.hypot(x - px, y - py) < 12]))
+    lip = ground + FALL_HEIGHT
+    foot, top = 26.0, 31.0  # la chute : entre 26 et 31 m du bassin
+    bed = np.where(along < foot, ground - 1.2,
+                   np.where(along < top, ground - 1.2 + (lip - ground + 1.2) * smoothstep(foot, top, along),
+                            lip + (along - top) * 0.12))
+    within = (along > -20) & (along < length)
+    # La falaise : le relief derrière la chute monte au moins jusqu'à la lèvre (+ 6 m sur les côtés).
+    wall = smoothstep(foot - 2, top + 2, along) * smoothstep(60, 25, np.abs(side)) * (along < 120)
+    h = np.maximum(h, h + (lip + 6 * smoothstep(4, 20, np.abs(side)) - h) * wall)
+    # Le lit du torrent (8 m de large) et ses berges en pente.
+    channel = smoothstep(9, 4, np.abs(side)) * within
+    banks = smoothstep(35, 8, np.abs(side)) * within * (along > top)
+    h = np.where(banks > 0, h + (np.minimum(h, np.maximum(bed + 3, h - 12)) - h) * banks, h)
+    h = h + (np.minimum(h, bed) - h) * channel
+    # Le bassin au pied (rayon 13 m, 2,5 m de fond).
+    d = np.hypot(x - px, y - py)
+    h = h + (np.minimum(h, ground - 2.5) - h) * smoothstep(15, 10, d)
+    height[part] = h
+    return ground, lip
+
+
+# --- 7. Chemins praticables ------------------------------------------------------------------
+
+@njit(cache=True)
+def _cone(h, mask, rise, upper):
+    """Enveloppe à pente limitée dans `mask` : upper -> min(h(q) + rise × distance),
+    sinon max(h(q) - rise × distance). Balayages en chanfrein répétés."""
+    out = h.copy()
+    rows, cols = h.shape
+    diag = rise * 1.41421356
+    for _ in range(12):
+        changed = False
+        for r in range(rows):
+            for c in range(cols):
+                if not mask[r, c]:
+                    continue
+                for dr, dc, w in ((-1, -1, diag), (-1, 0, rise), (-1, 1, diag), (0, -1, rise)):
+                    rr, cc = r + dr, c + dc
+                    if 0 <= rr < rows and 0 <= cc < cols and mask[rr, cc]:
+                        if upper and out[rr, cc] + w < out[r, c]:
+                            out[r, c] = out[rr, cc] + w
+                            changed = True
+                        elif not upper and out[rr, cc] - w > out[r, c]:
+                            out[r, c] = out[rr, cc] - w
+                            changed = True
+        for r in range(rows - 1, -1, -1):
+            for c in range(cols - 1, -1, -1):
+                if not mask[r, c]:
+                    continue
+                for dr, dc, w in ((1, 1, diag), (1, 0, rise), (1, -1, diag), (0, 1, rise)):
+                    rr, cc = r + dr, c + dc
+                    if 0 <= rr < rows and 0 <= cc < cols and mask[rr, cc]:
+                        if upper and out[rr, cc] + w < out[r, c]:
+                            out[r, c] = out[rr, cc] + w
+                            changed = True
+                        elif not upper and out[rr, cc] - w > out[r, c]:
+                            out[r, c] = out[rr, cc] - w
+                            changed = True
+        if not changed:
+            break
+    return out
+
+
+def smooth_paths(height, inside, keep):
+    """Routes praticables partout : dans les routes, la pente est limitée à PATH_MAX_SLOPE
+    (moyenne de deux enveloppes à pente limitée : on creuse les bosses et on comble les creux
+    à parts égales), puis le terrain rejoint le relief d'origine sur PATH_EDGE m.
+    `keep` : zones à ne pas toucher (cascade, falaises du Plateau Indigo)."""
+    soft = ndimage.gaussian_filter(height, PATH_SMOOTH / STEP)
+    mask = (inside > -PATH_EDGE) & (keep < 0.5)
+    rise = PATH_MAX_SLOPE * STEP
+    upper = _cone(soft, mask, rise, True)
+    lower = _cone(soft, mask, rise, False)
+    # Dans les routes, le relief devient l'enveloppe à pente limitée (rampes douces).
+    limited = (upper + lower) / 2
+    weight = smoothstep(-PATH_EDGE, 6, inside) * (1 - keep)
+    out = height + (limited - height) * weight
+    return out
+
+
+# --- Aperçus -----------------------------------------------------------------------------------
+
+def shaded(height, step):
+    gy, gx = np.gradient(height, step)
+    light = np.array([-1.0, -1.0, 1.6])
+    light /= np.linalg.norm(light)
+    n = np.dstack([-gx, -gy, np.ones_like(height)])
+    n /= np.linalg.norm(n, axis=2, keepdims=True)
+    shade = np.clip((n * light).sum(2), 0, 1)
+    t = np.clip(height / INDIGO_TOP, 0, 1)[..., None]
+    low, mid, high, snow = (np.array(c, float) for c in ((84, 132, 64), (110, 120, 70), (150, 140, 125), (240, 240, 240)))
+    land = np.where(t < 0.3, low + (mid - low) * (t / 0.3), np.where(t < 0.75, mid + (high - mid) * ((t - 0.3) / 0.45), high + (snow - high) * ((t - 0.75) / 0.25)))
+    depth = np.clip(-height / 15, 0, 1)[..., None]
+    sea = np.array([70, 150, 170]) * (1 - depth) + np.array([25, 60, 120]) * depth
+    color = np.where((height < 0)[..., None], sea, land)
+    image = np.clip(color * (0.35 + 0.75 * shade[..., None]), 0, 255).astype(np.uint8)
+    return mh.north_up(image)
+
+
+def save_previews(height, folder, tag=""):
+    small = height[::4, ::4]
+    Image.fromarray(shaded(small, STEP * 4)).save(os.path.join(folder, f"relief_vues_dessus{tag}.png"))
+    grey = np.clip((small + 20) / (INDIGO_TOP + 40) * 255, 0, 255).astype(np.uint8)
+    Image.fromarray(mh.north_up(grey)).save(os.path.join(folder, f"relief_vues_gris{tag}.png"))
+
+
+def protected(x, y):
+    """1 là où le lissage des chemins ne doit pas passer : cascade et Plateau Indigo."""
+    column, row, radius = INDIGO
+    cx, cy = frlg_xy(column, row)
+    keep = smoothstep(radius + 320, radius + 260, np.hypot(x - cx, y - cy))
+    return keep
+
+
+def upsample(field):
+    """Grille de 6 m -> grille de 1,5 m (interpolation bilinéaire, par bandes)."""
+    out = np.empty((SIZE, SIZE), np.float64)
+    cols = np.arange(SIZE) / COARSE
+    for row0 in range(0, SIZE, 512):
+        rows = np.arange(row0, min(SIZE, row0 + 512)) / COARSE
+        rr, cc = np.meshgrid(rows, cols, indexing="ij")
+        out[row0:row0 + len(rows)] = ndimage.map_coordinates(field, [rr, cc], order=1, mode="nearest")
+    return out
+
+
+# --- Programme ---------------------------------------------------------------------------------
+
+def main():
+    start = time.time()
+    amie = read_heights(SOURCE, SOURCE_SCALE_Z)
+    before = read_heights(os.path.join(HERE, "reference", "relief_v2.png"), 200.0)
+    base = clean(amie, before)
+    del amie, before
+    print(f"Nettoyage : {time.time() - start:.0f} s")
+
+    cells = mh.cell_fields()
+    x, y, route_d, town_d = coarse_fields(cells)
+    inside_d = ndimage.distance_transform_edt(route_d == 0) * STEP * COARSE
+    coarse = base[::COARSE, ::COARSE]
+    sea = coarse < 0.2
+    land = ndimage.distance_transform_edt(~sea) * STEP * COARSE
+    add, peaks, far = big_shapes(x, y, route_d, town_d, land)
+    grown = coarse + add
+    lifted = np.maximum(peaks * smoothstep(0, 60, land), far)
+    grown = np.where(lifted > 0.5, np.maximum(grown, lifted), grown)
+    # Les montagnes lointaines sortent de la mer : là, elles remplacent le fond.
+    grown = np.where(sea & (far > 0.5), np.maximum(coarse, far - 8), grown)
+    grown = indigo_plateau(grown, x, y)
+    print(f"Grandes formes : {time.time() - start:.0f} s")
+
+    # Érosion sur les nouveaux reliefs seulement (les routes et les villes ne bougent pas).
+    new = np.clip((grown - coarse) / 40.0, 0, 1) * smoothstep(30, 120, route_d) * smoothstep(20, 120, town_d)
+    scaled = grown / (STEP * COARSE)
+    mh.erode(scaled, 1_200_000 if not TEST else 600_000, SEED, 80, 3, 0.05, 4.0, 0.01, 0.3,
+             0.25, 0.012, 4.0, 0.6)
+    eroded = grown + (scaled * STEP * COARSE - grown) * new
+    eroded = np.maximum(eroded, np.minimum(grown, 0.3))
+    delta = eroded - coarse
+    print(f"Érosion : {time.time() - start:.0f} s")
+
+    # Retour à 1,5 m : on ajoute la différence (lisse) au relief de L'amie, détails gardés.
+    delta = upsample(delta)
+    height = base + delta
+    del delta
+    height = smooth_paths(height, upsample(inside_d - route_d), upsample(protected(x, y)))
+    if not TEST:
+        mh.carve_paths(height)  # chemins de la V1 : profil à 15 % au plus
+    ground, lip = waterfall(height)
+    print(f"Cascade : bassin à {ground:.0f} m, lèvre à {lip:.0f} m")
+    print(f"Chemins : {time.time() - start:.0f} s")
+
+    gy, gx = np.gradient(base, STEP)
+    slope = np.hypot(gx, gy)
+    core = upsample(inside_d) > 15
+    print(f"(avant : 99 % sous {np.percentile(slope[core], 99) * 100:.0f} %, au-dessus de 45° : "
+          f"{(slope[core] > 1).mean() * 100:.2f} %)")
+    del core
+    gy, gx = np.gradient(height, STEP)
+    slope = np.hypot(gx, gy)
+    # Cœur des routes (à plus de 15 m de leur bord) : là où l'on marche vraiment.
+    on_route = upsample(inside_d) > 15
+    print(f"Altitude min {height.min():.1f} m, max {height.max():.1f} m ; pente sur les routes : "
+          f"médiane {np.median(slope[on_route]) * 100:.0f} %, 99 % sous "
+          f"{np.percentile(slope[on_route], 99) * 100:.0f} %, au-dessus de 45° : "
+          f"{(slope[on_route] > 1).mean() * 100:.2f} %")
+    limit = 32767 / layout.HEIGHT_UNITS_PER_METER
+    height = np.clip(height, -40.0, limit)
+    if TEST:
+        os.makedirs(OUT, exist_ok=True)
+        np.save(os.path.join(OUT, "relief.npy"), height[::2, ::2].astype(np.float32))
+        steep = (slope > 0.6) & on_route
+        np.save(os.path.join(OUT, "raide.npy"), steep[::4, ::4] | steep[2::4, 2::4][:steep[::4, ::4].shape[0], :steep[::4, ::4].shape[1]] if False else steep[::4, ::4])
+        save_previews(height, OUT)
+        return
+    values = np.clip(np.round(32768 + height * layout.HEIGHT_UNITS_PER_METER), 0, 65535).astype(">u2")
+    mh.write_png(layout.HEIGHTMAP_PATH, SIZE, SIZE, [r.tobytes() for r in values], 16, 0)
+    save_previews(height, HERE)
+    print(f"Écrit {layout.HEIGHTMAP_PATH} ({time.time() - start:.0f} s)")
+
+
+if __name__ == "__main__":
+    main()
