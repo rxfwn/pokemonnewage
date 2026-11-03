@@ -101,11 +101,18 @@ Sans Unreal (dans le cloud) : `./Tools/BattleSim/run.sh` lance aussi les tests d
 
   | Paramètre | Défaut | Effet |
   |---|---|---|
-  | `Vernis` | 1 | Couche de vernis brillante sur la coque. 0 = plastique d'origine, sans vernis. |
+  | `Vernis` | 1 | Couche de vernis brillante sur la coque (pas sur la bande ni le bouton). 0 = plastique d'origine. |
+  | `CouleurUnie` | 1 | Coque d'une seule couleur (Poké Ball, dessous blanc…) peinte en couleur unie, nette à toute distance, au lieu de la texture 2K étirée et floue près de la bande. Sans effet sur les coques à motif (Master Ball, Hyper Ball…). |
+  | `LisseCoque` | 1 | Rugosité de la coque remplacée par `RugositeCoque` (0,2) : plus de grain étiré. |
   | `RugositeVernis` | 0,04 | 0 = miroir ; vers 0,2 = vernis satiné. |
   | `Proprete` | 0,5 | Efface le grain et les rayures de la texture de rugosité. 0 = texture d'origine (Ball « usée »), 1 = Ball neuve, lisse. |
   | `RugositePropre` | 0,15 | Rugosité visée quand `Proprete` = 1. |
   | `IntensiteMetal` | 1 | Multiplie la texture de métal. Baisser (0,3 à 0,5) si une coque paraît sombre ou chromée. |
+
+  Le masque de coque est dans les couleurs de sommets des FBX (`prepare_pokeballs.py`, attribut « Coque » :
+  alpha 0 = bande/bouton, 0,5 = coque à motif, 1 = coque unie, RGB = sa couleur). Pourquoi : les textures
+  livrées projettent chaque coque à plat vue de dessus, donc près de la bande un pixel de texture couvre une
+  longue bande de coque (flou en gros plan, quelle que soit la taille de la texture).
 
   Les textures des Balls ne sont plus « streamées » (*Never Stream*) : elles sont nettes dès que la Ball apparaît
   en gros plan, au lieu d'être floues les premières secondes.
