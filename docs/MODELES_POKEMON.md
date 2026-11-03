@@ -51,7 +51,8 @@ Le script remplit aussi `/Game/Pokemon/Models/DT_MorphPoints` : 2 500 points pos
 Pokémon (`Generated/<Espèce>/morph_points.json`). La séquence d'évolution s'en sert pour la transformation
 en points de lumière (la silhouette se défait en points qui tourbillonnent jusqu'à la nouvelle forme).
 **Compiler le C++ avant de lancer le script** (il a besoin de la structure `PokemonMorphPointsRow`) ;
-sans cette table, l'évolution garde l'alternance des deux silhouettes.
+sans cette table, l'évolution garde l'alternance des deux silhouettes. Si le script a tourné avant la
+compilation, lancer seulement `Tools/Pokemon/import_morph_points.py` (quelques secondes, les modèles restent).
 
 ![Transformation](../Tools/Pokemon/apercu_transformation.gif)
 

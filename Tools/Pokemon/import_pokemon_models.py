@@ -18,6 +18,7 @@ Résultat, pour chaque espèce (nom de ligne de DT_Species, ex. Bulbasaur) :
 
 Le menu Pokédex lit ces chemins tels quels : ne pas renommer les assets à la main.
 Relançable : une espèce déjà importée est réimportée par-dessus (même chemin).
+Seulement la table des points (modèles déjà importés) : lancer Tools/Pokemon/import_morph_points.py.
 Pour n'importer que quelques espèces, remplir ONLY ci-dessous, ex. ONLY = {"Pikachu"}.
 """
 
@@ -27,6 +28,8 @@ import os
 import unreal
 
 ONLY = set()
+# True quand le script est lancé par import_morph_points.py : seulement DT_MorphPoints, sans réimporter les modèles
+MORPH_ONLY = globals().get("MORPH_ONLY", False)
 
 CONTENT_ROOT = "/Game/Pokemon/Models"
 PROJECT_DIR = unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir())
@@ -171,6 +174,10 @@ def main():
         return
     with open(summary_path, encoding="utf-8") as f:
         summary = json.load(f)
+
+    if MORPH_ONLY:
+        import_morph_points(list(summary))
+        return
 
     ok, failed = 0, []
     with unreal.ScopedSlowTask(len(summary), "Import des modèles Pokémon") as slow:
