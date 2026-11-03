@@ -952,6 +952,33 @@ void APokemonNewAgePlayerController::Soigner()
 	}
 }
 
+void APokemonNewAgePlayerController::Statut(int32 PartySlot, const FString& Status)
+{
+	APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>();
+	if (!State || !HasAuthority() || !State->Party.IsValidIndex(PartySlot - 1))
+	{
+		PrintDebug(TEXT("Statut <place 1-6> <BRU|PAR|GEL|PSN|TOX|SOM|AUCUN>"));
+		return;
+	}
+	const FString Code = Status.ToUpper();
+	EMajorStatus NewStatus = EMajorStatus::None;
+	if (Code == TEXT("BRU")) { NewStatus = EMajorStatus::Burn; }
+	else if (Code == TEXT("PAR")) { NewStatus = EMajorStatus::Paralysis; }
+	else if (Code == TEXT("GEL")) { NewStatus = EMajorStatus::Freeze; }
+	else if (Code == TEXT("PSN")) { NewStatus = EMajorStatus::Poison; }
+	else if (Code == TEXT("TOX")) { NewStatus = EMajorStatus::BadlyPoisoned; }
+	else if (Code == TEXT("SOM")) { NewStatus = EMajorStatus::Sleep; }
+	else if (Code != TEXT("AUCUN"))
+	{
+		PrintDebug(TEXT("Statut <place 1-6> <BRU|PAR|GEL|PSN|TOX|SOM|AUCUN>"));
+		return;
+	}
+	FPokemonInstance& Pokemon = State->Party[PartySlot - 1];
+	Pokemon.Status = NewStatus;
+	Pokemon.SleepTurns = NewStatus == EMajorStatus::Sleep ? 3 : 0;
+	PrintDebug(FString::Printf(TEXT("Statut de la place %d : %s"), PartySlot, *Code));
+}
+
 void APokemonNewAgePlayerController::Equipe()
 {
 	const APokemonPlayerState* State = GetPlayerState<APokemonPlayerState>();

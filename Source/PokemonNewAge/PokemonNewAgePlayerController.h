@@ -470,6 +470,10 @@ public:
 	UFUNCTION(Exec)
 	void Soigner();
 
+	/** Donne un statut à un Pokémon de l'équipe (test des badges de combat) : Statut 1 BRU / PAR / GEL / PSN / TOX / SOM / AUCUN */
+	UFUNCTION(Exec)
+	void Statut(int32 PartySlot, const FString& Status);
+
 	/** Affiche l'équipe dans le journal et à l'écran */
 	UFUNCTION(Exec)
 	void Equipe();
