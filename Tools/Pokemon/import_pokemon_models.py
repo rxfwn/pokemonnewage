@@ -20,6 +20,7 @@ Le menu Pokédex lit ces chemins tels quels : ne pas renommer les assets à la m
 Relançable : une espèce déjà importée est réimportée par-dessus (même chemin).
 Seulement la table des points (modèles déjà importés) : lancer Tools/Pokemon/import_morph_points.py.
 Pokémon gris à damier (matériaux décrochés) : lancer Tools/Pokemon/repair_pokemon_materials.py.
+Mémoire vidéo saturée (modèles déjà importés) : lancer Tools/Pokemon/optimize_pokemon_textures.py.
 Pour n'importer que quelques espèces, remplir ONLY ci-dessous, ex. ONLY = {"Pikachu"}.
 """
 
@@ -32,6 +33,7 @@ ONLY = set()
 # Mode donné par les petits scripts voisins (sans réimporter les modèles) :
 #   "points"    -> import_morph_points.py : seulement DT_MorphPoints
 #   "materials" -> repair_pokemon_materials.py : rebranche les matériaux des modèles déjà importés
+#   "textures"  -> optimize_pokemon_textures.py : réglages mémoire des textures déjà importées
 MODE = globals().get("MODE", "all")
 
 CONTENT_ROOT = "/Game/Pokemon/Models"
@@ -177,6 +179,31 @@ def repair_all_materials(summary):
     unreal.log(f"Matériaux des Pokémon : {total} emplacement(s) rebranché(s)")
 
 
+def optimize_textures():
+    """Textures des Pokémon plus légères en mémoire vidéo, sans perte de netteté.
+
+    - Sans canal alpha (nos matériaux ne s'en servent pas) : compression BC1 au lieu de BC5/DXT5, moitié moins lourde.
+    - Groupe « Character » et streaming actif : seules les tailles utiles à l'écran sont chargées.
+    """
+    changed = 0
+    for path in eal.list_assets(CONTENT_ROOT, recursive=True, include_folder=False):
+        if registry.get_asset_by_object_path(path).asset_class_path.asset_name != "Texture2D":
+            continue
+        tex = eal.load_asset(path)
+        wanted = {
+            "compression_no_alpha": True,
+            "lod_group": unreal.TextureGroup.TEXTUREGROUP_CHARACTER,
+            "never_stream": False,
+        }
+        if all(tex.get_editor_property(k) == v for k, v in wanted.items()):
+            continue
+        for k, v in wanted.items():
+            tex.set_editor_property(k, v)
+        eal.save_loaded_asset(tex, only_if_is_dirty=False)
+        changed += 1
+    unreal.log(f"Textures des Pokémon : {changed} allégée(s)")
+
+
 def import_morph_points(species_list):
     """DT_MorphPoints : points de surface de chaque espèce pour la transformation de l'évolution.
 
@@ -227,6 +254,9 @@ def main():
     if MODE == "materials":
         repair_all_materials(summary)
         return
+    if MODE == "textures":
+        optimize_textures()
+        return
 
     ok, failed = 0, []
     with unreal.ScopedSlowTask(len(summary), "Import des modèles Pokémon") as slow:
@@ -244,6 +274,7 @@ def main():
                     else:
                         failed.append(variants[category]["asset"])
     import_morph_points(list(summary))
+    optimize_textures()
     unreal.log(f"Modèles Pokémon : {ok} importés dans {CONTENT_ROOT}")
     if failed:
         unreal.log_error("Échecs : " + ", ".join(failed))

@@ -65,6 +65,9 @@ vider `Tools\Pokemon\Generated\`, y dézipper le nouveau zip, puis relancer le s
 
 ### Si quelque chose cloche
 
+- « Video memory has been exhausted » : lancer `Tools/Pokemon/optimize_pokemon_textures.py` (textures sans alpha,
+  deux fois plus légères, groupe Character, streaming actif ; fait aussi à la fin de chaque import).
+
 - **« Ce maillage squelettique n'a pas de squelette » ou Pokémon gris à damier** (import fait avec le script
   d'avant le 2026-11-03) : les liens vers le squelette et les matériaux pointaient vers le dossier temporaire
   d'import. Supprimer `Contenu > Pokemon > Models` et relancer `import_pokemon_models.py` (corrigé).
