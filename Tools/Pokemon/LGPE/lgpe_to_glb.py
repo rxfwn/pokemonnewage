@@ -305,7 +305,8 @@ def build_mesh(model, index, mats, arm, skin):
             uv_layer.data[li].uv = coords[k]
             if "layer" in t:
                 u2, v2 = uvs2[vi][:2]
-                lay_layer.data[li].uv = ((u2 * lt["su"] + lt["tu"]) / lt["fu"], (v2 * lt["sv"] + lt["tv"]) / lt["fv"])
+                # Le jeu décale AVANT l'échelle : (uv + décalage) × échelle (sinon les iris partent vers l'extérieur)
+                lay_layer.data[li].uv = (((u2 + lt["tu"]) * lt["su"]) / lt["fu"], ((v2 + lt["tv"]) * lt["sv"]) / lt["fv"])
     me.update()
     if "normal" in s:
         me.normals_split_custom_set_from_vertices([Vector(n[:3]).normalized() for n in s["normal"]])
