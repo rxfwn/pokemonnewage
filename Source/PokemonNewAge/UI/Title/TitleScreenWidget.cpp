@@ -139,6 +139,39 @@ namespace TitleScreenUI
 		return nullptr;
 	}
 
+	/**
+	 *  Vraie taille de l'image. Dans l'éditeur (UE 5), une texture qui vient d'être importée ou réimportée est encore
+	 *  « en compilation » au démarrage : GetSizeX/Y renvoient alors la taille provisoire (32 × 32, un carré), ce qui
+	 *  étirait le logo en hauteur. On lit donc la taille de l'image source quand elle existe.
+	 */
+	FVector2D TextureSize(const UTexture2D* Texture)
+	{
+		if (!Texture)
+		{
+			return FVector2D::ZeroVector;
+		}
+#if WITH_EDITORONLY_DATA
+		if (Texture->Source.IsValid() && Texture->Source.GetSizeX() > 0 && Texture->Source.GetSizeY() > 0)
+		{
+			return FVector2D(double(Texture->Source.GetSizeX()), double(Texture->Source.GetSizeY()));
+		}
+#endif
+		return FVector2D(double(Texture->GetSizeX()), double(Texture->GetSizeY()));
+	}
+
+	/** Pose la texture dans l'image avec sa vraie taille (pas la taille provisoire d'une texture en compilation) */
+	void SetImageTexture(UImage* Image, UTexture2D* Texture)
+	{
+		Image->SetBrushFromTexture(Texture, false);
+		const FVector2D Size = TextureSize(Texture);
+		if (Size.X > 0.0 && Size.Y > 0.0)
+		{
+			FSlateBrush Brush = Image->GetBrush();
+			Brush.ImageSize = Size;
+			Image->SetBrush(Brush);
+		}
+	}
+
 	bool IsBackKey(const FKey& Key)
 	{
 		return Key == EKeys::Escape || Key == EKeys::BackSpace || Key == EKeys::Gamepad_FaceButton_Right;
@@ -289,7 +322,7 @@ TSharedRef<SWidget> UTitleScreenWidget::RebuildWidget()
 			for (int32 Layer = 0; Layer < 2; ++Layer)
 			{
 				UImage* Image = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
-				Image->SetBrushFromTexture(BackgroundTextures[Layer % BackgroundTextures.Num()], true);
+				SetImageTexture(Image, BackgroundTextures[Layer % BackgroundTextures.Num()]);
 				Image->SetRenderOpacity(Layer == 0 ? 1.f : 0.f);
 				UOverlaySlot* ImageSlot = Layers->AddChildToOverlay(Image);
 				ImageSlot->SetHorizontalAlignment(HAlign_Fill);
@@ -334,7 +367,9 @@ TSharedRef<SWidget> UTitleScreenWidget::RebuildWidget()
 			USizeBox* LogoBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
 			// 638 px de large comme la maquette ; hauteur d'après l'image (logo Pokémon Éclair du 2026-11-01 : 1276 × 666)
 			LogoBox->SetWidthOverride(638.f);
-			LogoBox->SetHeightOverride(Logo->GetSizeX() > 0 ? 638.f * float(Logo->GetSizeY()) / float(Logo->GetSizeX()) : 323.f);
+			// Taille lue par TextureSize : avec GetSizeX/Y, une texture encore en compilation donnait un carré (logo étiré)
+			const FVector2D LogoSize = TextureSize(Logo);
+			LogoBox->SetHeightOverride(LogoSize.X > 0.0 ? float(638.0 * LogoSize.Y / LogoSize.X) : 333.f);
 			LogoBox->SetContent(LogoLayers);
 			LogoBlock = LogoBox;
 		}
@@ -528,9 +563,9 @@ void UTitleScreenWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 		{
 			// L'image suivante devient l'image en cours ; on prépare celle d'après dessous
 			BackgroundIndex = (BackgroundIndex + 1) % BackgroundTextures.Num();
-			BackgroundImages[0]->SetBrushFromTexture(BackgroundTextures[BackgroundIndex], true);
+			SetImageTexture(BackgroundImages[0], BackgroundTextures[BackgroundIndex]);
 			BackgroundImages[1]->SetRenderOpacity(0.f);
-			BackgroundImages[1]->SetBrushFromTexture(BackgroundTextures[(BackgroundIndex + 1) % BackgroundTextures.Num()], true);
+			SetImageTexture(BackgroundImages[1], BackgroundTextures[(BackgroundIndex + 1) % BackgroundTextures.Num()]);
 			BackgroundAge = 0.f;
 		}
 	}
