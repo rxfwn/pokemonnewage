@@ -95,6 +95,10 @@ blender --background --python Tools/Pokemon/convert_pokemon_glb.py -- <sortie> T
 - L'iris est cuit dans la texture des yeux ; les flammes (shader spécial) deviennent une couleur orange.
 - Pose de repos = première image de l'animation d'attente (sinon pose en T). Les échelles animées sont ignorées.
 - Animations : Idle, BattleIdle, Walk, Run, Attack, Special, Hit, Faint, Happy, Sleep (selon l'espèce).
+- Textures : 2048 à 4096 px (plafond `MAX_TEXTURE` = 4096 dans `convert_pokemon_glb.py`, sinon Onix
+  monterait à 8K). Elles sont embarquées dans les FBX : le zip livré n'a pas de dossier `Textures/`.
+- Pack livré le 2026-11-03 : `pokemon-modeles/Pokemon_Models_LetsGo.zip` (les 20 Pokémon V1, normal et
+  chromatique), aperçu `apercu_letsgo.png`. Il s'installe comme l'ancien zip (voir « Réimporter » plus haut).
 
 ## Refaire la conversion (optionnel)
 

@@ -44,6 +44,8 @@ MEASURE_LENGTH = {"Onix", "Caterpie", "Weedle", "Ekans", "Arbok", "Dratini", "Dr
 
 # Nombre de points de surface pour la transformation pendant l'évolution (Tools/Pokemon/morph_points.json)
 MORPH_POINTS = 2500
+# Textures plus grandes ramenées à cette taille (une 8K d'Onix pèse trop lourd en mémoire vidéo).
+MAX_TEXTURE = 4096
 
 # Morceaux à retirer : les lianes de Bulbizarre chromatique, dépliées vers le ciel en pose de repos.
 DROP_MESHES = re.compile(r"Vine", re.IGNORECASE)
@@ -370,6 +372,9 @@ def convert(glb, out_dir, species, suffix):
             continue
         path = os.path.join(tex_dir, f"T_{name}{suffix}_{i + 1}.png")
         img.file_format = "PNG"
+        if max(img.size) > MAX_TEXTURE:
+            k = MAX_TEXTURE / max(img.size)
+            img.scale(max(1, round(img.size[0] * k)), max(1, round(img.size[1] * k)))
         img.save(filepath=path)
         # L'image reste emballée en WebP : on la relie au PNG pour que le FBX embarque le PNG.
         if img.packed_file:
