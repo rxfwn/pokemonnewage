@@ -57,9 +57,17 @@ public:
 	UPROPERTY(EditAnywhere, Category="Evolution|Fond")
 	TSoftObjectPtr<UMaterialInterface> FrontMidMaterial;
 
-	/** Hauteur de la scène au-dessus du terrain (cm) : le sol lumineux cache l'herbe et les petites bosses */
+	/** Hauteur de la scène au-dessus du terrain (cm). Haut (30 m) : aucune colline ni arbre du décor ne passe
+	 *  devant le ciel (une pente de terrain coupait l'image en biais). Le sol lumineux fait le vrai sol. */
 	UPROPERTY(EditAnywhere, Category="Evolution|Fond", meta=(ClampMin="0"))
-	float GroundClearance = 20.f;
+	float GroundClearance = 3000.f;
+
+	/** Vitesse à laquelle les effets de devant s'écartent du centre ou y reviennent (par seconde) */
+	UPROPERTY(EditAnywhere, Category="Evolution|Fond", meta=(ClampMin="0.1"))
+	float FrontClearingSpeed = 1.5f;
+
+	/** true pendant la transformation : les effets de devant laissent le centre dégagé ; false : ils passent devant */
+	void SetFrontClearing(bool bClear) { bClearFront = bClear; }
 
 	/** Panneau des gros bokeh, en part de la distance caméra-Pokémon */
 	UPROPERTY(EditAnywhere, Category="Evolution|Fond", meta=(ClampMin="0.1", ClampMax="0.9"))
@@ -90,6 +98,15 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMeshComponent> FrontMid;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> FrontNearDynamic;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> FrontMidDynamic;
+
+	bool bClearFront = false;
+	float FrontClearing = 0.f;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> SkyDynamic;

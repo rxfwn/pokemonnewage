@@ -333,7 +333,8 @@ void AEvolutionScene::PlaceInFrontOf(APlayerController* Controller)
 	{
 		Location = Hit.ImpactPoint;
 	}
-	// Avec le fond lumineux : scène soulevée au-dessus de l'herbe, pieds et Ball posés sur le sol lumineux
+	// Avec le fond lumineux : scène soulevée haut au-dessus du terrain (aucune colline devant le ciel),
+	// pieds et Ball posés sur le sol lumineux
 	if (const UEvolutionBackdropComponent* Backdrop = FindComponentByClass<UEvolutionBackdropComponent>())
 	{
 		Location.Z += Backdrop->GetGroundClearance();
@@ -389,6 +390,11 @@ void AEvolutionScene::EnterPhase(EPhase NewPhase)
 {
 	Phase = NewPhase;
 	PhaseTime = 0.f;
+	// Effets du fond devant le Pokémon : centre dégagé pendant la transformation en points, devant lui sinon
+	if (UEvolutionBackdropComponent* Backdrop = FindComponentByClass<UEvolutionBackdropComponent>())
+	{
+		Backdrop->SetFrontClearing(Phase == EPhase::Morph || Phase == EPhase::Flash);
+	}
 
 	if (!IsBallPhase() && bBallIntro)
 	{

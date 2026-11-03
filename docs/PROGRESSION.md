@@ -76,10 +76,12 @@ Pokémon et le sol lumineux sous ses pieds.
 - **Code** : `UEvolutionBackdropComponent` (`Source/PokemonNewAge/Progression/EvolutionBackdrop.h`), créé par
   `AEvolutionScene`. Le ciel est un panneau accroché à la caméra, derrière tout ce qui est montré ; le sol est un
   disque à la hauteur exacte des pieds et du bas de la Ball, qui va jusqu'au ciel. La scène entière est soulevée de
-  `GroundClearance` (20 cm) au-dessus du terrain : l'herbe reste sous le sol lumineux et rien ne s'y enfonce.
+  `GroundClearance` (30 m) au-dessus du terrain : aucune colline ni arbre ne passe devant le ciel (une pente
+  coupait l'image en biais au premier test), et rien ne s'enfonce dans le sol lumineux.
   Devant le Pokémon, deux panneaux transparents accrochés à la caméra : `M_EvolutionFrontNear` (gros bokeh tout
   près, adoucis par le flou de profondeur) et `M_EvolutionFrontMid` (éclats et poussières qui montent juste devant
-  lui). Le centre de l'image reste presque dégagé pour la transformation en points. Sans les matériaux : ancien fond.
+  lui). Pendant la transformation en points (et le flash), le centre de l'image se dégage ; avant et après, les
+  effets repassent devant le Pokémon (paramètre `Degagement`, posé par le C++). Sans les matériaux : ancien fond.
 - **Textures** fabriquées par `make_evolution_sky.py` (dans `Tools/Progression/Assets/`) :
   `T_EvolutionSky.png` (R étoiles, G bokeh, B phase du scintillement, A traînées) et `T_EvolutionFx.png`
   (R piliers, G éclats à quatre branches, B phase des éclats, A lignes de vitesse rangées en angle/distance).

@@ -37,8 +37,8 @@ eal = unreal.EditorAssetLibrary
 mel = unreal.MaterialEditingLibrary
 
 # Couleurs (linéaires), d'après l'évolution de Soleil et Lune : salle bleu vif, plus sombre en haut, cyan au centre
-HORIZON = unreal.LinearColor(0.03, 0.3, 0.95, 1.0)
-TOP = unreal.LinearColor(0.002, 0.015, 0.16, 1.0)
+HORIZON = unreal.LinearColor(0.05, 0.42, 1.15, 1.0)
+TOP = unreal.LinearColor(0.01, 0.09, 0.5, 1.0)
 CENTER = unreal.LinearColor(0.3, 0.9, 2.2, 1.0)
 DUST = unreal.LinearColor(0.7, 0.9, 1.2, 1.0)
 STARS = unreal.LinearColor(0.85, 0.92, 1.0, 1.0)
@@ -202,9 +202,9 @@ def screen_distance(graph, center_v=0.5):
 def depth_shade(graph, color):
     """Profondeur : bords de l'image plus sombres (même calcul à l'écran sur le ciel et le sol, sans cassure)."""
     distance = screen_distance(graph)
-    edge = graph.single(unreal.MaterialExpressionSaturate, graph.mul(graph.add(distance, const_b=-0.2), const_b=1.8))
-    edge = graph.power(edge, 1.3)
-    shade = graph.single(unreal.MaterialExpressionOneMinus, graph.mul(edge, graph.scalar("Contraste", 0.85)))
+    edge = graph.single(unreal.MaterialExpressionSaturate, graph.mul(graph.add(distance, const_b=-0.3), const_b=1.6))
+    edge = graph.power(edge, 1.5)
+    shade = graph.single(unreal.MaterialExpressionOneMinus, graph.mul(edge, graph.scalar("Contraste", 0.4)))
     return graph.mul(color, shade)
 
 
@@ -236,12 +236,12 @@ def screen_coords(graph):
 
 def make_sky(texture, fx):
     g = Graph("M_EvolutionSky")
-    brightness = g.scalar("Luminosite", 1.0)
+    brightness = g.scalar("Luminosite", 1.4)
     uv, dx, dy, screen_u = screen_coords(g)
 
     # Dégradé : CouleurHorizon au ras du sol -> CouleurHaut à HauteurDegrade au-dessus
     height, _position = floor_height(g)
-    gradient_height = g.scalar("HauteurDegrade", 550.0)
+    gradient_height = g.scalar("HauteurDegrade", 800.0)
     t = g.single(unreal.MaterialExpressionSaturate, g.op(unreal.MaterialExpressionDivide, height, gradient_height))
     t = g.power(t, 0.7)
     sky = g.lerp(g.color("CouleurHorizon", HORIZON), g.color("CouleurHaut", TOP), t)
@@ -302,7 +302,7 @@ def make_sky(texture, fx):
 
 def make_floor(texture):
     g = Graph("M_EvolutionFloor")
-    brightness = g.scalar("Luminosite", 1.0)
+    brightness = g.scalar("Luminosite", 1.4)
     _height, position = floor_height(g)
 
     # Lueur centrée sous le Pokémon (CentreSol, RayonSol posés par le C++), CouleurHorizon au loin
@@ -348,7 +348,9 @@ def free_zone(graph):
                  graph.mul(radius, const_b=0.8))
     t = graph.single(unreal.MaterialExpressionSaturate, t)
     keep = graph.scalar("DansZoneLibre", 0.15)
-    return graph.lerp(keep, None, t, const_b=1.0)
+    cleared = graph.lerp(keep, None, t, const_b=1.0)
+    # Degagement (posé par le C++) : 1 pendant la transformation (centre dégagé), 0 sinon (effets partout)
+    return graph.lerp(None, cleared, graph.scalar("Degagement", 0.0), const_a=1.0)
 
 
 def make_front_near(texture):
@@ -370,7 +372,7 @@ def make_front_mid(texture, fx):
 
     sparkles = g.sample(fx, g.mul(uv, const_b=1.4), 0.003, 0.03)
     pop = g.power(g.twinkle(sparkles, g.scalar("VitesseEclats", 0.45), 0.0), 3.0)
-    sparkle_light = g.mul(g.mul(sparkles, pop, a_out="G"), g.scalar("Eclats", 1.6))
+    sparkle_light = g.mul(g.mul(sparkles, pop, a_out="G"), g.scalar("Eclats", 2.2))
     light = g.mul(sparkle_light, g.color("CouleurEclats", SPARKLES))
 
     dust = g.sample(texture, g.mul(uv, const_b=1.8), 0.0, 0.05)

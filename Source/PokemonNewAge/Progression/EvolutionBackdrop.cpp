@@ -19,6 +19,8 @@ namespace EvolutionBackdrop
 	const FName FloorZParam(TEXT("SolZ"));
 	const FName FloorCenterParam(TEXT("CentreSol"));
 	const FName FloorRadiusParam(TEXT("RayonSol"));
+	/** 0 = effets de devant partout, 1 = centre dégagé (transformation) */
+	const FName ClearingParam(TEXT("Degagement"));
 }
 
 UEvolutionBackdropComponent::UEvolutionBackdropComponent()
@@ -116,9 +118,12 @@ void UEvolutionBackdropComponent::OnRegister()
 	Floor->RegisterComponent();
 
 	// Effets devant le Pokémon (facultatifs : sans leurs matériaux, seulement le fond)
-	UMaterialInstanceDynamic* Unused = nullptr;
-	FrontNear = MakeCameraPanel(TEXT("BackdropFrontNear"), FrontNearMaterial.LoadSynchronous(), Unused);
-	FrontMid = MakeCameraPanel(TEXT("BackdropFrontMid"), FrontMidMaterial.LoadSynchronous(), Unused);
+	UMaterialInstanceDynamic* NearMID = nullptr;
+	UMaterialInstanceDynamic* MidMID = nullptr;
+	FrontNear = MakeCameraPanel(TEXT("BackdropFrontNear"), FrontNearMaterial.LoadSynchronous(), NearMID);
+	FrontMid = MakeCameraPanel(TEXT("BackdropFrontMid"), FrontMidMaterial.LoadSynchronous(), MidMID);
+	FrontNearDynamic = NearMID;
+	FrontMidDynamic = MidMID;
 	UpdateLayout();
 }
 
@@ -182,4 +187,14 @@ void UEvolutionBackdropComponent::TickComponent(float DeltaTime, ELevelTick Tick
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	UpdateLayout();
+
+	// Effets de devant : s'écartent du centre pendant la transformation, repassent devant le Pokémon ensuite
+	FrontClearing = FMath::FInterpConstantTo(FrontClearing, bClearFront ? 1.f : 0.f, DeltaTime, FrontClearingSpeed);
+	for (UMaterialInstanceDynamic* Dynamic : { FrontNearDynamic.Get(), FrontMidDynamic.Get() })
+	{
+		if (Dynamic)
+		{
+			Dynamic->SetScalarParameterValue(EvolutionBackdrop::ClearingParam, FMath::SmoothStep(0.f, 1.f, FrontClearing));
+		}
+	}
 }
