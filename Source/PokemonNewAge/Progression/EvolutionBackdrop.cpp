@@ -135,8 +135,8 @@ float UEvolutionBackdropComponent::SceneRadius() const
 		{
 			continue;
 		}
-		const FBoxSphereBounds& Bounds = Primitive->Bounds;
-		Radius = FMath::Max(Radius, FVector::Dist(Bounds.Origin, Center) + Bounds.SphereRadius);
+		const FBoxSphereBounds& PrimitiveBounds = Primitive->Bounds;
+		Radius = FMath::Max(Radius, FVector::Dist(PrimitiveBounds.Origin, Center) + PrimitiveBounds.SphereRadius);
 	}
 	return Radius;
 }
