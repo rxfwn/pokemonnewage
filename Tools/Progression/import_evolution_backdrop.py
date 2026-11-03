@@ -37,8 +37,9 @@ eal = unreal.EditorAssetLibrary
 mel = unreal.MaterialEditingLibrary
 
 # Couleurs (linéaires), d'après l'évolution de Soleil et Lune : salle bleu vif, plus sombre en haut, cyan au centre
-HORIZON = unreal.LinearColor(0.05, 0.42, 1.15, 1.0)
-TOP = unreal.LinearColor(0.01, 0.09, 0.5, 1.0)
+HORIZON = unreal.LinearColor(0.07, 0.55, 1.3, 1.0)
+TOP = unreal.LinearColor(0.02, 0.22, 0.85, 1.0)
+EDGE = unreal.LinearColor(0.01, 0.12, 0.6, 1.0)
 CENTER = unreal.LinearColor(0.3, 0.9, 2.2, 1.0)
 DUST = unreal.LinearColor(0.7, 0.9, 1.2, 1.0)
 STARS = unreal.LinearColor(0.85, 0.92, 1.0, 1.0)
@@ -185,7 +186,7 @@ def center_glow(graph):
     distance = graph.op(unreal.MaterialExpressionDistance, screen, middle, a_out="ViewportUV")
     falloff = graph.single(unreal.MaterialExpressionOneMinus, graph.mul(distance, const_b=1.6))
     falloff = graph.power(graph.single(unreal.MaterialExpressionSaturate, falloff), 3.5)
-    return graph.mul(graph.mul(falloff, graph.scalar("LueurCentre", 1.0)), graph.color("CouleurCentre", CENTER))
+    return graph.mul(graph.mul(falloff, graph.scalar("LueurCentre", 1.3)), graph.color("CouleurCentre", CENTER))
 
 
 def screen_distance(graph, center_v=0.5):
@@ -200,12 +201,13 @@ def screen_distance(graph, center_v=0.5):
 
 
 def depth_shade(graph, color):
-    """Profondeur : bords de l'image plus sombres (même calcul à l'écran sur le ciel et le sol, sans cassure)."""
+    """Profondeur : bords de l'image vers un bleu plus profond, jamais vers le noir (même calcul à l'écran sur le
+    ciel et le sol, sans cassure). L'amie veut un bleu vif partout, le contraste vient du centre lumineux."""
     distance = screen_distance(graph)
     edge = graph.single(unreal.MaterialExpressionSaturate, graph.mul(graph.add(distance, const_b=-0.3), const_b=1.6))
     edge = graph.power(edge, 1.5)
-    shade = graph.single(unreal.MaterialExpressionOneMinus, graph.mul(edge, graph.scalar("Contraste", 0.4)))
-    return graph.mul(color, shade)
+    amount = graph.mul(edge, graph.scalar("Contraste", 0.5))
+    return graph.lerp(color, graph.color("CouleurBords", EDGE), amount)
 
 
 def mask(graph, source, channel, output=""):

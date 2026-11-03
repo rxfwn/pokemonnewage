@@ -62,6 +62,10 @@ public:
 	UPROPERTY(EditAnywhere, Category="Evolution|Fond", meta=(ClampMin="0"))
 	float GroundClearance = 3000.f;
 
+	/** Vignette de la caméra quand le fond est là (la scène en met 1,1 : bords noirs) */
+	UPROPERTY(EditAnywhere, Category="Evolution|Fond", meta=(ClampMin="0"))
+	float BackdropVignette = 0.15f;
+
 	/** Vitesse à laquelle les effets de devant s'écartent du centre ou y reviennent (par seconde) */
 	UPROPERTY(EditAnywhere, Category="Evolution|Fond", meta=(ClampMin="0.1"))
 	float FrontClearingSpeed = 1.5f;

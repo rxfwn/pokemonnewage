@@ -100,7 +100,7 @@ Pokémon et le sol lumineux sous ses pieds.
   | `IntensiteTrainees`, `CouleurTrainees` | ciel | Traînées de lumière en diagonale. |
   | `CouleurSol`, `IntensiteSol`, `BokehSol` | sol | Lueur sous le Pokémon. |
   | `Anneaux`, `CouleurAnneaux`, `Anneau1`, `Anneau2`, `LargeurAnneau` | sol | Les deux anneaux qui respirent autour des pieds (taille en part du rayon de la lueur). |
-  | `Contraste` | ciel, sol | Bords de l'image assombris (profondeur). 0 = pas d'assombrissement. |
+  | `Contraste`, `CouleurBords` | ciel, sol | Bords de l'image vers un bleu plus profond (jamais noir). 0 = aucun. Avec le fond, la vignette de la caméra passe à 0,15 (`BackdropVignette`). |
   | `IntensiteBokeh`, `VitesseBokeh` | devant (Near) | Gros bokeh flous au premier plan. |
   | `Eclats`, `Poussieres`, `CouleurPoussieres`, `VitesseEclats`, `VitesseScintillement` | devant (Mid) | Éclats et poussières devant le Pokémon. |
   | `ZoneLibre`, `DansZoneLibre` | devant (les deux) | Taille de la zone dégagée au centre, et ce qui reste des effets dedans (0,15). |

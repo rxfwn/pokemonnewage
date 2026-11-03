@@ -113,6 +113,10 @@ void UEvolutionBackdropComponent::OnRegister()
 	{
 		return;
 	}
+	// Fond bleu vif bord à bord (demandé) : presque plus de vignette noire de la caméra de la scène
+	Camera->PostProcessSettings.bOverride_VignetteIntensity = true;
+	Camera->PostProcessSettings.VignetteIntensity = BackdropVignette;
+
 	// Sol : accroché aux pieds (ce composant), à leur hauteur exacte
 	Floor->SetupAttachment(this);
 	Floor->RegisterComponent();
