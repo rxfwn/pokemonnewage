@@ -119,12 +119,21 @@ public:
 	UPROPERTY()
 	float MasterVolume = 1.f;
 
-	/** Musique et bruitages, 0 à 1 (classes de son SC_Music et SC_Effects de Content/Audio) */
+	/** Musique, 0 à 1 (classe de son SC_Music de Content/Audio) */
 	UPROPERTY()
 	float MusicVolume = 1.f;
 
+	/** Vfx : bruitages des effets, des attaques et de l'interface, 0 à 1 (SC_Effects) */
 	UPROPERTY()
 	float EffectsVolume = 1.f;
+
+	/** Bruits de pas, 0 à 1 (SC_Footsteps) ; séparés à la demande de L'amie le 2026-11-01 */
+	UPROPERTY()
+	float FootstepsVolume = 1.f;
+
+	/** Météo (pluie, vent...), 0 à 1 (SC_Weather) */
+	UPROPERTY()
+	float WeatherVolume = 1.f;
 
 	/** Sensibilité de la caméra à la souris, 0,5 à 2 */
 	UPROPERTY()

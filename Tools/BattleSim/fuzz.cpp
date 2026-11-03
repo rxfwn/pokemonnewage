@@ -1,6 +1,7 @@
 #include "Battle/BattleSession.h"
 #include "Battle/BattleText.h"
 #include "Pokemon/PokemonDatabase.h"
+#include "Pokemon/PokemonProgression.h"
 #include "Engine/DataTable.h"
 #include <iostream>
 UPokemonDatabase* MakeRealDatabase();
@@ -139,6 +140,62 @@ int main()
 		if (O == EBattleOutcome::Caught && !S->GetResult().CaughtPokemon.IsValid()) Fail("capture vide");
 	}
 	std::cout << "Sauvages : " << N << " combats, gagnés " << WonWild << ", capturés " << Caught << ", fuites " << Fled << ", perdus " << Lost << ", tours max " << MaxTurns << "\n";
+	// 4. Progression : chaque espèce monte du niveau 2 à 100 au Super Bonbon, apprend, évolue ; puis tous les objets
+	int Evolutions = 0, Choices = 0, ItemsUsed = 0;
+	TArray<FName> FieldItems;
+	for (auto& Id : Db->Items->GetRowNames())
+	{
+		const FItemRow* Row = Db->FindItem(Id);
+		if (Row->FieldEffect == EFieldItemEffect::None) continue;
+		FieldItems.Add(Id);
+		if (Row->FieldEffect == EFieldItemEffect::TeachMove && !Db->FindMove(Row->TeachesMove)) Fail("CT sans attaque " + Id.ToString().Narrow());
+	}
+	auto CheckMon = [](const FPokemonInstance& P, const char* Where)
+	{
+		if (P.Moves.Num() < 1 || P.Moves.Num() > 4) Fail(std::string(Where) + " nb attaques " + P.Species.ToString().Narrow());
+		for (int32 I = 0; I < P.Moves.Num(); ++I)
+			for (int32 J = I + 1; J < P.Moves.Num(); ++J)
+				if (P.Moves[I].Move == P.Moves[J].Move) Fail(std::string(Where) + " attaque en double " + P.Species.ToString().Narrow());
+		if (P.Level < 1 || P.Level > 100 || P.Stats.HP <= 0 || P.CurrentHP > P.Stats.HP) Fail(std::string(Where) + " stats " + P.Species.ToString().Narrow());
+	};
+	auto Resolve = [&](FPokemonInstance& P, FProgressionOutcome& O)
+	{
+		for (FName M : O.MovesToChoose) { ++Choices; if (R.FRand() < 0.7f) UPokemonLibrary::LearnMove(Db, P, M, R.RandRange(0, 3)); }
+		if (!O.EvolvesInto.IsNone())
+		{
+			if (!Db->FindSpecies(O.EvolvesInto)) Fail("évolution inconnue " + O.EvolvesInto.ToString().Narrow());
+			FProgressionOutcome E;
+			if (UPokemonProgression::ApplyEvolution(Db, P, O.EvolvesInto, E)) ++Evolutions; else Fail("ApplyEvolution");
+			for (FName M : E.MovesToChoose) { ++Choices; UPokemonLibrary::LearnMove(Db, P, M, R.RandRange(0, 3)); }
+		}
+	};
+	for (auto& Sid : Db->Species->GetRowNames())
+	{
+		FPokemonInstance P = Mon(Db, Sid, 2, R);
+		while (P.Level < 100)
+		{
+			const int32 Before = P.Level;
+			FProgressionOutcome O; bool bConsumed = false;
+			if (!UPokemonProgression::UseItem(Db, L"RareCandy", P, O, bConsumed) || P.Level != Before + 1 || !bConsumed) { Fail("Super Bonbon " + Sid.ToString().Narrow()); break; }
+			if (O.LevelUps.Num() != 1 || O.LevelUps[0].StatsAfter.HP < O.LevelUps[0].StatsBefore.HP) Fail("stats du niveau " + Sid.ToString().Narrow());
+			Resolve(P, O);
+			CheckMon(P, "progression");
+		}
+		for (int K = 0; K < 10; ++K)
+		{
+			FPokemonInstance Q = Mon(Db, Sid, R.RandRange(5, 60), R);
+			const FName Item = FieldItems[R.RandRange(0, FieldItems.Num() - 1)];
+			const EItemCompatibility C = UPokemonProgression::GetItemCompatibility(Db, Item, Q);
+			FProgressionOutcome O; bool bConsumed = false;
+			const bool bUsed = UPokemonProgression::UseItem(Db, Item, Q, O, bConsumed);
+			if (bUsed != (C == EItemCompatibility::Able)) Fail("compatibilité " + Item.ToString().Narrow() + " " + Sid.ToString().Narrow());
+			ItemsUsed += bUsed;
+			Resolve(Q, O);
+			CheckMon(Q, "objet");
+		}
+	}
+	std::cout << "Progression : 151 espèces au niveau 100, " << Evolutions << " évolutions, " << Choices << " choix d'attaque, " << ItemsUsed << " objets utilisés\n";
+
 	std::cout << (Errors ? "ERREURS : " + std::to_string(Errors) : std::string("Aucune erreur")) << "\n";
 	return Errors ? 1 : 0;
 }

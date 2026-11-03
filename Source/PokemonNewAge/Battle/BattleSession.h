@@ -9,6 +9,7 @@ class UPokemonDatabase;
 struct FItemRow;
 struct FMoveRow;
 struct FTrainerRow;
+struct FItemRow;
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnBattleEventsNative, class UBattleSession* /*Session*/, const TArray<FBattleEvent>& /*Events*/);
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnBattleEndedNative, class UBattleSession* /*Session*/, const FBattleResult& /*Result*/);

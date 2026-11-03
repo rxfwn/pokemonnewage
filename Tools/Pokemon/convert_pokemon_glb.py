@@ -29,6 +29,7 @@ Lancement (Blender 4.2 ou plus, ou `pip install bpy`) :
 
 import json
 import os
+import random
 import re
 import sys
 
@@ -40,6 +41,11 @@ SPECIES_JSON = os.path.join(REPO_ROOT, "Data", "Pokemon", "DT_Species.json")
 
 # Pokémon dont la taille du Pokédex est une longueur plutôt qu'une hauteur.
 MEASURE_LENGTH = {"Onix", "Caterpie", "Weedle", "Ekans", "Arbok", "Dratini", "Dragonair", "Gyarados"}
+
+# Nombre de points de surface pour la transformation pendant l'évolution (Tools/Pokemon/morph_points.json)
+MORPH_POINTS = 2500
+# Textures plus grandes ramenées à cette taille (une 8K d'Onix pèse trop lourd en mémoire vidéo).
+MAX_TEXTURE = 4096
 
 # Morceaux à retirer : les lianes de Bulbizarre chromatique, dépliées vers le ciel en pose de repos.
 DROP_MESHES = re.compile(r"Vine", re.IGNORECASE)
@@ -105,8 +111,13 @@ def load_species():
 
 
 def anim_short_name(name, used):
-    low = name.lower().split("|")[-1]
-    short = next((n for pat, n in ANIM_NAMES if re.search(pat, low)), None)
+    last = name.split("|")[-1]
+    low = last.lower()
+    # Déjà un nom propre (modèles Let's Go : Idle, BattleIdle, Walk...) : on le garde tel quel
+    if re.fullmatch(r"[A-Z][A-Za-z]+", last):
+        short = last
+    else:
+        short = next((n for pat, n in ANIM_NAMES if re.search(pat, low)), None)
     if short is None:
         short = re.sub(r"[^A-Za-z0-9]", "", low.title()) or "Anim"
     base, i = short, 2
@@ -135,6 +146,125 @@ def rest_bounds(meshes):
             xs.append(p.x), ys.append(p.y), zs.append(p.z)
         ev.to_mesh_clear()
     return Vector((min(xs), min(ys), min(zs))), Vector((max(xs), max(ys), max(zs)))
+
+
+def action_fcurves():
+    """Toutes les courbes de toutes les animations (API « slotted actions » de Blender 4.4+)."""
+    for act in bpy.data.actions:
+        for layer in act.layers:
+            for strip in layer.strips:
+                for bag in strip.channelbags:
+                    yield from bag.fcurves
+
+
+def morton_key(p, lo, size):
+    """Ordre en Z (Morton) dans la boîte du Pokémon : deux nuages triés ainsi se répondent point à point."""
+    key = 0
+    cells = [min(1023, int((p[i] - lo[i]) / max(size[i], 1e-6) * 1023)) for i in range(3)]
+    for bit in range(9, -1, -1):
+        for c in (cells[2], cells[0], cells[1]):
+            key = (key << 1) | ((c >> bit) & 1)
+    return key
+
+
+def write_morph_points(body, path):
+    """MORPH_POINTS points tirés sur la surface (au prorata de l'aire), en cm et en axes Unreal (Y inversé),
+    triés en ordre de Morton : le point i d'une espèce glisse vers le point i de son évolution."""
+    rng = random.Random(1)
+    mw = body.matrix_world
+    tris, areas = [], []
+    for poly in body.data.polygons:
+        verts = [mw @ body.data.vertices[i].co for i in poly.vertices]
+        for k in range(1, len(verts) - 1):
+            a, b, c = verts[0], verts[k], verts[k + 1]
+            tris.append((a, b, c))
+            areas.append(((b - a).cross(c - a)).length * 0.5)
+    points = []
+    for a, b, c in rng.choices(tris, weights=areas, k=MORPH_POINTS):
+        u, v = rng.random(), rng.random()
+        if u + v > 1:
+            u, v = 1 - u, 1 - v
+        p = a + (b - a) * u + (c - a) * v
+        points.append((round(p.x, 2), round(-p.y, 2), round(p.z, 2)))
+    lo = [min(p[i] for p in points) for i in range(3)]
+    size = [max(p[i] for p in points) - lo[i] for i in range(3)]
+    points.sort(key=lambda p: morton_key(p, lo, size))
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(points, f, separators=(",", ":"))
+
+
+def bake_rest_pose(arm, meshes):
+    """Fait de la pose affichée la pose de repos du squelette.
+
+    Dans ces glTF, les sommets sont rangés dans une autre pose (souvent plus petite et tournée)
+    et ce sont les os qui remettent le Pokémon debout. Unreal affiche la pose de repos quand
+    aucune animation ne joue : sans ce correctif, Pikachu était couché et Herbizarre de dos.
+    On fige donc la forme visible dans les sommets, on la prend comme repos, puis on réécrit
+    les animations pour qu'elles donnent exactement les mêmes poses qu'avant.
+    """
+    scene = bpy.context.scene
+    bones = list(arm.pose.bones)
+    static = {pb.name: pb.matrix_basis.copy() for pb in bones}
+
+    # 1. Poses de chaque animation, image par image, dans l'espace de l'armature.
+    recorded = {}
+    if arm.animation_data is None:
+        arm.animation_data_create()
+    for act in list(bpy.data.actions):
+        arm.animation_data.action = act
+        first, last = (int(round(f)) for f in act.frame_range)
+        frames = {}
+        for f in range(first, last + 1):
+            scene.frame_set(f)
+            frames[f] = {pb.name: pb.matrix.copy() for pb in bones}
+        recorded[act.name] = frames
+    arm.animation_data.action = None
+    for pb in bones:
+        pb.matrix_basis = static[pb.name]
+    bpy.context.view_layer.update()
+
+    # 2. Sommets figés dans la pose visible, puis cette pose devient le repos.
+    skinned = []
+    for body in meshes:
+        mods = [m for m in body.modifiers if m.type == "ARMATURE"]
+        if not mods:
+            continue
+        skinned.append(body)
+        bpy.ops.object.select_all(action="DESELECT")
+        body.select_set(True)
+        bpy.context.view_layer.objects.active = body
+        for mod in mods:
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+    bpy.ops.object.select_all(action="DESELECT")
+    arm.select_set(True)
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="POSE")
+    bpy.ops.pose.armature_apply(selected=False)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    for body in skinned:
+        body.modifiers.new("Armature", "ARMATURE").object = arm
+
+    # 3. Animations réécrites par rapport au nouveau repos.
+    for name, frames in recorded.items():
+        old = bpy.data.actions[name]
+        bpy.data.actions.remove(old)
+        act = bpy.data.actions.new(name)
+        arm.animation_data.action = act
+        for f, pose in frames.items():
+            for pb in bones:
+                rest = pb.bone.matrix_local
+                if pb.parent:
+                    rel = pb.parent.bone.matrix_local.inverted() @ rest
+                    basis = rel.inverted() @ pose[pb.parent.name].inverted() @ pose[pb.name]
+                else:
+                    basis = rest.inverted() @ pose[pb.name]
+                pb.rotation_mode = "QUATERNION"
+                pb.matrix_basis = basis
+                for path in ("location", "rotation_quaternion", "scale"):
+                    pb.keyframe_insert(path, frame=f)
+    arm.animation_data.action = None
+    for pb in bones:
+        pb.matrix_basis.identity()
 
 
 def convert(glb, out_dir, species, suffix):
@@ -187,6 +317,8 @@ def convert(glb, out_dir, species, suffix):
                 if mod.type == "ARMATURE":
                     mod.object = arms[0]
     arm = arms[0] if arms else None
+    if arm:
+        bake_rest_pose(arm, meshes)
     # Sans squelette (quelques versions chromatiques), on exporte un Static Mesh.
     asset = f"{'SK' if arm else 'SM'}_{name}{suffix}"
 
@@ -207,11 +339,19 @@ def convert(glb, out_dir, species, suffix):
     bpy.context.scene.unit_settings.scale_length = 0.01
     for r in roots:
         r.matrix_world = Matrix.Scale(100, 4) @ r.matrix_world
+    anim_scale = arm.matrix_world.to_scale().x if arm else 1.0
     bpy.ops.object.select_all(action="DESELECT")
     for o in roots + meshes:
         o.select_set(True)
     bpy.context.view_layer.objects.active = roots[0]
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    # Les translations des animations sont en unités de l'os : même mise à l'échelle.
+    for fc in action_fcurves():
+        if fc.data_path.endswith(".location"):
+            for kp in fc.keyframe_points:
+                kp.co.y *= anim_scale
+                kp.handle_left.y *= anim_scale
+                kp.handle_right.y *= anim_scale
 
     # Un seul mesh : un seul Skeletal Mesh.
     if len(meshes) > 1:
@@ -232,6 +372,9 @@ def convert(glb, out_dir, species, suffix):
             continue
         path = os.path.join(tex_dir, f"T_{name}{suffix}_{i + 1}.png")
         img.file_format = "PNG"
+        if max(img.size) > MAX_TEXTURE:
+            k = MAX_TEXTURE / max(img.size)
+            img.scale(max(1, round(img.size[0] * k)), max(1, round(img.size[1] * k)))
         img.save(filepath=path)
         # L'image reste emballée en WebP : on la relie au PNG pour que le FBX embarque le PNG.
         if img.packed_file:
@@ -257,6 +400,10 @@ def convert(glb, out_dir, species, suffix):
     if arm and anims:
         arm.animation_data_create()
         arm.animation_data.action = bpy.data.actions[anims[0]]
+
+    # Points de surface pour l'effet de transformation de l'évolution (version normale seulement)
+    if not suffix:
+        write_morph_points(body, os.path.join(out_dir, "morph_points.json"))
 
     fbx = os.path.join(out_dir, f"{asset}.fbx")
     bpy.ops.export_scene.fbx(
@@ -315,4 +462,5 @@ def main():
     print(f"{len(summary)} espèces converties dans {out}")
 
 
-main()
+if __name__ == "__main__":
+    main()

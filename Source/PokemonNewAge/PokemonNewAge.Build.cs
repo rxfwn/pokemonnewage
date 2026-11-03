@@ -23,7 +23,8 @@ public class PokemonNewAge : ModuleRules
 			"GameplayStateTreeModule",
 			"UMG",
 			"Slate",
-			"SlateCore"
+			"SlateCore",
+			"DeveloperSettings"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "Landscape" });

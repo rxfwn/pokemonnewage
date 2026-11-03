@@ -17,7 +17,7 @@ Combat au tour par tour façon Rouge Feu, avec les règles des jeux récents. To
 - **Capture** : formule actuelle avec PV restants, taux de l'espèce, Ball (Poké 1, Super 1,5, Hyper 2, Master sûre) et statut (sommeil/gel x2,5, autres x1,5), 0 à 3 secousses. Le Pokémon va dans l'équipe, ou au PC si elle est pleine (suite de la capture : [CAPTURE.md](CAPTURE.md)).
 - **XP** : formule de la 5G et plus (plus d'XP pour les petits niveaux), x1,5 contre un dresseur, **Multi Exp moderne** (ceux qui n'ont pas combattu gagnent la moitié). EV gagnés (252 par stat, 510 en tout).
 - **Montée de niveau** : stats recalculées, attaques apprises au niveau ; s'il en connaît déjà 4, le joueur choisit laquelle oublier (ou renonce).
-- **Évolution** par niveau proposée en fin de combat (pas après une défaite), annulable. Les attaques de la nouvelle espèce à ce niveau sont proposées ensuite.
+- **Évolution** par niveau proposée en fin de combat (pas après une défaite, ni avec une Pierre Stase) : la séquence 3D se joue une fois l'écran de combat fermé, B l'annule (docs/PROGRESSION.md).
 - **Fin** : argent du dresseur gagné, drapeau `Beaten_<Dresseur>` (utilisé par les dialogues), ou argent perdu en cas de défaite (base selon les badges x plus haut niveau).
 
 ## Fichiers
@@ -35,6 +35,9 @@ Combat au tour par tour façon Rouge Feu, avec les règles des jeux récents. To
 | `Core/PokemonPlayerState.h` | Équipe, PC, sac, argent, badges, drapeaux d'histoire, Pokédex vu/capturé. |
 | `Data/Pokemon/DT_Items.json` | Objets de la V1 (soins, Poké Balls, objets rares), généré par `Tools/Data/build_items.py`. |
 | `Tests/BattleTests.cpp` | 11 tests de logique. |
+| `UI/Battle/BattleHUDWidget.h` | Écran de combat (SCRUM-36), voir plus bas. |
+| `Tools/HUD/make_battle_assets.py` | Images de l'écran de combat (boutons en dégradé, barres de PV, flèche retour). |
+| `Tools/HUD/make_status_badges.py` | Badges de statut BRU / PAR / GEL / PSN / SOM / K.O. (icônes de L'amie). |
 
 ## Multijoueur (SCRUM-68)
 
@@ -50,7 +53,7 @@ Combat au tour par tour façon Rouge Feu, avec les règles des jeux récents. To
    - `DonnerPokemon Bulbasaur 5`, `DonnerObjet PokeBall 10`
    - `CombatSauvage Pidgey 3` ou `CombatRencontre Route1_Walk`
    - `Attaque 1`, `Changer 2`, `Objet PokeBall`, `Objet Potion 1`, `Fuite`
-   - `Oublier 2` (ou `Oublier 0`) quand il veut apprendre une 5e attaque, `Evoluer 1` après le combat
+   - `Oublier 2` (ou `Oublier 0`) quand il veut apprendre une 5e attaque, `Evoluer 1` après le combat (sans la séquence)
    - `CombatDresseur Brock`, `Equipe`, `Soigner`
 
    Le texte du combat s'affiche à l'écran et dans le **Journal de sortie** (*Output Log*, catégorie LogPokemonNewAge).
@@ -59,11 +62,27 @@ Combat au tour par tour façon Rouge Feu, avec les règles des jeux récents. To
 
 Sans Unreal (dans le cloud) : `./Tools/BattleSim/run.sh` lance les mêmes tests avec un faux moteur minimal, et `./Tools/BattleSim/run.sh fuzz` simule plus de 5 000 combats avec les vraies données (tous les dresseurs V1, toutes les tables de rencontre).
 
+## Écran de combat (maquette Combat_Hud, 2026-11-01)
+
+Construit en C++ (`UBattleHUDWidget`) au pixel près d'après les maquettes Figma de L'amie (Combat_Hud, Combat_Hud-1, Types, Life_Bar ; copies dans `/mnt/project-files/combat/maquette/`). Toute la disposition est en coordonnées 1920 x 1080 (ScaleBox > SizeBox > Canvas), tailles de police = px Figma x 0,75.
+
+- **Cadres des Pokémon** (566 x 162, verre `M_UI_Glass`) : adversaire en haut à gauche (49, 21), joueur en bas à droite (1274, 626). Nom 64 px, « N.xx » 48 px à droite, « PV » orange #FFA412, barre de PV 452 x 27 verte (> 50 %), orange (> 20 %) puis rouge, au rendu de la planche Life_Bar (relevé au pixel le 2026-11-01 : contour intérieur clair, relief, ombre portée floue ; les images ont 8 px de marge pour l'ombre). Les nombres de PV ne sont plus affichés (comme la maquette). Le joueur garde une fine barre d'XP sous ses PV (cachée).
+- **Badges de statut** (maquette statuts et barre_vie de L'amie, 2026-11-03) : pastille 99 x 38 coins 10 juste après le nom (15 px), haut à 38 px du haut du cadre. BRU #D86426 (flamme), PAR #DBA902 (éclair), GEL #4990E0 (flocon), PSN #4F1F93 (poison, Toxik compris), SOM #6D6D6D (zZ) ; icône blanche 34 px et texte Futura MdCn BT 32 px droit avec ombre floue. Le badge apparaît en même temps que le message (« Pikachu est brûlé ! ») et disparaît au réveil, au dégel ou au soin. K.O. (pas dans la maquette) : pastille rouge sombre provisoire. Images : `Tools/HUD/make_status_badges.py` (icônes de L'amie dans `Tools/HUD/Source/Status`) → `Tools/HUD/Assets/T_Battle_Status_<Statut>.png`, importées toutes seules ; sans elles, pastille unie avec le texte.
+- **Boîte de texte** (47, 817), 1210 x 207 à côté du menu, et sur toute la largeur (jusqu'à 1840) quand le menu n'est pas affiché ; texte 64 px, sans chevron (retirés aussi des dialogues et de l'écran d'évolution, demandé le 2026-11-01).
+- **Menu principal** (1274, 817) : 4 boutons en dégradé 265 x 85 Attaquer / Sac / Pokémon / Fuite, centrés dans le panneau (12 px de marge de chaque côté).
+- **Attaques** : cartes en verre avec nom, étiquette de type (couleurs de la planche Types) et PP ; bouton retour au croisement des 4 cartes. Une attaque sans PP est grisée ; un emplacement sans attaque reste une carte en verre vide (pas cliquable).
+- **Ombres du texte** : floues comme le CSS (text-shadow 3px 4px 4px noir 25 %), par `USoftShadowTextBlock` (9 copies très transparentes du texte) ; utilisé par tous les écrans en verre (combat, dialogues, boutique, PC, Paramètres).
+- **Sac** (maquette Combat_Hud_Bag, 2026-11-01) : grand panneau en verre 566 x 757 en (1281, 267), qui cache le cadre du joueur le temps du Sac. À gauche, 5 onglets de 117 px (Soins, Balls, objets de combat, autres, Baies ; ceux qui ne sont pas choisis sont assombris) et le bouton retour en bas. À droite, un second verre avec la liste des objets qui défile (cartes 404 x 85 espacées de 12 px : icône 55 px, nom, « x 10 » à droite) et un petit ascenseur. Le Sac s'ouvre sur les Balls en combat sauvage. Icônes des objets : `Tools/HUD/Assets/Items/T_Item_<Id>.png` (Id = ligne de DT_Items, 25 Balls de L'amie), importées dans `/Game/UI/HUD/Items`. Icônes des onglets de L'amie : `Tools/HUD/Assets/T_Bag_Tab_Medicine` (Potion), `_Battle` (Vitesse +), `_Other` (Poké Poupée), `_Berries` (Baie Oran) ; l'onglet Balls prend l'icône de la Poké Ball et le bouton retour la flèche de l'écran de combat (`T_Bag_Back` pour la remplacer). Ses images servent aussi d'icônes d'objets (Potion, Baie Oran, Poké Poupée, Vitesse +, Poussière Étoile).
+- **Équipe, Oublier une attaque** : cartes en verre (niveau, PV), avec défilement s'il y en a plus de 4.
+- Survol à la souris, ou focus quand on joue au clavier / à la manette : la carte grossit un peu (1,05).
+- Les images sont faites par `Tools/HUD/make_battle_assets.py` (dessinées en 2x) et importées toutes seules dans `/Game/UI/HUD` à l'ouverture de l'éditeur (`init_unreal.py`). Sans elles, l'écran retombe sur des panneaux en verre et des barres unies.
+- Types que L'amie n'a pas encore dessinés (Poison, Vol, Roche…) : couleurs foncées choisies dans le même style, à remplacer quand elle les fera. Les icônes de type de la planche ne sont pas encore utilisées (la maquette ne les montre pas).
+
 ## Brancher le reste
 
 - **Dialogues** : l'événement `StartTrainerBattle` appelle `Battle Subsystem > Start Trainer Battle` (groupe `Brock`, `RivalLab`… : le rival prend la ligne qui correspond au drapeau `Starter_<Espèce>`). `On Battle Ended` (serveur) donne le dresseur et le résultat, pour jouer `Get Trainer Outcome Conversation`.
 - **Hautes herbes** (SCRUM-39) : fait, acteur `TallGrassZone`, voir [CAPTURE.md](CAPTURE.md).
 - **UI du combat** (SCRUM-36) : écouter `On Battle Started`, `On Battle Events` (jouer les événements un par un avec `Get Event Text`, mettre à jour les barres avec `HPAfter`), `On Battle Ended`, `On Action Refused` (`Get Action Error Text`) sur le `BattleComponent` du PlayerController. Mettre `bPrintEventsToScreen` à faux quand l'UI existe.
-- **Séquence d'évolution** (SCRUM-47) : `Result.Evolutions`, puis `Confirm Evolution`.
+- **Séquence d'évolution** (SCRUM-47) : faite, voir docs/PROGRESSION.md (`UProgressionComponent`).
 - **Objets tenus** (`HeldEffect` dans `DT_Items`) : baies (Oran, Sitrus, Ceriz, Maron, Pêcha, Fraive, Willia, Prine) mangées sous la moitié des PV ou au statut, Restes (1/16 des PV à chaque tour), Grelot Coque, Vive Griffe (agit en premier 1 fois sur 5), Bandeau (tient à 1 PV 1 fois sur 10), objets de type (+20 %), Œuf Chance (XP ×1,5), Pièce Rune (argent ×2). Les baies sont consommées.
 - **Pas encore fait** : combats doubles, météo et terrains, talents (Engrais, Brasier…), objets de combat (Attaque +), PV restants transmis à l'écran du PC, surnom à la capture (SCRUM-42, côté UI).

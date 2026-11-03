@@ -1,4 +1,5 @@
 #include "Battle/BattleSession.h"
+#include "Pokemon/PokemonProgression.h"
 #include "Battle/BattleAI.h"
 #include "Battle/BattleRules.h"
 #include "Pokemon/PokemonDatabase.h"
@@ -593,7 +594,7 @@ void UBattleSession::Finish(EBattleOutcome Outcome)
 		for (int32 Index : LeveledUp)
 		{
 			const FPokemonInstance& Pokemon = Player.Party[Index];
-			const FName NewSpecies = Pokemon.CanBattle() ? UPokemonLibrary::GetLevelEvolution(Database, Pokemon) : NAME_None;
+			const FName NewSpecies = UPokemonProgression::GetLevelUpEvolution(Database, Pokemon);
 			if (!NewSpecies.IsNone())
 			{
 				FPendingEvolution Evolution;
@@ -1660,6 +1661,7 @@ void UBattleSession::GiveExperience(int32 WinnerSide, const FPokemonInstance& Fa
 			Experience = Experience * Egg->HeldValue / 100;
 		}
 
+		const FPokemonBaseStats StatsBefore = Pokemon.Stats;
 		UPokemonLibrary::AddEVs(Pokemon, Species->EVYield);
 
 		TArray<int32> NewLevels;
@@ -1672,12 +1674,16 @@ void UBattleSession::GiveExperience(int32 WinnerSide, const FPokemonInstance& Fa
 		Gained.HPAfter = Pokemon.CurrentHP;
 		Emit(Gained);
 
+		FPokemonBaseStats Previous = StatsBefore;
 		for (int32 Level : NewLevels)
 		{
 			FBattleEvent LevelUp = MakeEvent(EBattleEventType::LevelUp, WinnerSide);
 			LevelUp.PartyIndex = Index;
 			LevelUp.Species = Pokemon.Species;
 			LevelUp.Amount = Level;
+			LevelUp.StatsBefore = Previous;
+			LevelUp.StatsAfter = UPokemonProgression::GetStatsAtLevel(Database, Pokemon, Level);
+			Previous = LevelUp.StatsAfter;
 			LevelUp.HPAfter = Pokemon.CurrentHP;
 			Emit(LevelUp);
 			QueueLevelUpMoves(WinnerSide, Index, Level);

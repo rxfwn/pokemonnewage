@@ -2,7 +2,8 @@ import json, sys
 D = sys.argv[1]
 ENUMS = {"Type1":"EPokemonType","Type2":"EPokemonType","Type":"EPokemonType","Target":"EMoveTarget","MetaCategory":"EMoveMetaCategory",
          "Ailment":"EMoveAilment","GrowthRate":"EGrowthRate","Stat":"EPokemonStat","Trigger":"EEvolutionTrigger",
-         "IncreasedStat":"EPokemonStat","DecreasedStat":"EPokemonStat","Method":"EEncounterMethod"}
+         "IncreasedStat":"EPokemonStat","DecreasedStat":"EPokemonStat","Method":"EEncounterMethod",
+         "HeldEffect":"EHeldItemEffect","HeldBoostType":"EPokemonType","FieldEffect":"EFieldItemEffect"}
 TEXTS = {"DisplayName","Description","Genus","PokedexEntry","ClassDisplayName","LocationDisplayName"}
 STRUCTS = {"Evolutions":"FPokemonEvolution","StatChanges":"FMoveStatChange","LevelUpMoves":"FLevelUpMove","Party":"FTrainerPokemon","Slots":"FEncounterSlot"}
 def lit(s): return 'L"' + s.replace('\\','\\\\').replace('"','\\"').replace('\n','\\n') + '"'

@@ -76,11 +76,9 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> BodyText;
 
-	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> ContinueArrow;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UBorder> ChoicesPanel;
+	TObjectPtr<UWidget> ChoicesPanel;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UVerticalBox> ChoicesList;
@@ -91,6 +89,5 @@ private:
 	int32 VisibleLetters = 0;
 	float LetterProgress = 0.f;
 	float LettersPerSecond = 45.f;
-	float BlinkTime = 0.f;
 	bool bPlayTypingSound = true;
 };

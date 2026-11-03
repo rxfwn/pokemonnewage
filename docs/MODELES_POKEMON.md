@@ -47,11 +47,61 @@ Résultat, par espèce (nom de ligne de `DT_Species`) :
 
 Le menu Pokédex (fiche du Pokémon) lit ces chemins tels quels : ne pas renommer les assets.
 
+Le script remplit aussi `/Game/Pokemon/Models/DT_MorphPoints` : 2 500 points posés sur la surface de chaque
+Pokémon (`Generated/<Espèce>/morph_points.json`). La séquence d'évolution s'en sert pour la transformation
+en points de lumière (la silhouette se défait en points qui tourbillonnent jusqu'à la nouvelle forme).
+**Compiler le C++ avant de lancer le script** (il a besoin de la structure `PokemonMorphPointsRow`) ;
+sans cette table, l'évolution garde l'alternance des deux silhouettes. Si le script a tourné avant la
+compilation, lancer seulement `Tools/Pokemon/import_morph_points.py` (quelques secondes, les modèles restent).
+
+![Transformation](../Tools/Pokemon/apercu_transformation.gif)
+
+### Mettre à jour les modèles (nouveau zip)
+
+Le zip du 2026-11-02 corrige la pose de repos (Pikachu couché, Herbizarre tourné quand aucune animation ne joue)
+et ajoute les points de transformation (`morph_points.json`).
+Pour remplacer les anciens : dans le Navigateur de contenu, supprimer le dossier `Contenu > Pokemon > Models`,
+vider `Tools\Pokemon\Generated\`, y dézipper le nouveau zip, puis relancer le script.
+
 ### Si quelque chose cloche
 
+- « Video memory has been exhausted » : lancer `Tools/Pokemon/optimize_pokemon_textures.py` (textures sans alpha,
+  deux fois plus légères, groupe Character, streaming actif ; fait aussi à la fin de chaque import).
+
+- **« Ce maillage squelettique n'a pas de squelette » ou Pokémon gris à damier** (import fait avec le script
+  d'avant le 2026-11-03) : les liens vers le squelette et les matériaux pointaient vers le dossier temporaire
+  d'import. Supprimer `Contenu > Pokemon > Models` et relancer `import_pokemon_models.py` (corrigé).
+  Si seuls les matériaux manquent : `Tools/Pokemon/repair_pokemon_materials.py` suffit.
 - **Matériau blanc ou gris** : ouvrir le matériau dans `Materials/`, brancher la texture `T_<Espèce>_1` sur Base Color.
 - **Pokémon couché ou de dos** : dans le Skeletal Mesh, Détails > Transformation à l'import (Import Rotation), puis Réimporter.
 - **Animation vide** : réimporter le FBX à la main (clic droit > Réimporter) en cochant Importer les animations.
+
+## Modèles Let's Go (depuis le 2026-11-03)
+
+Les modèles de Pokémon Let's Go Pikachu/Évoli remplacent ceux de Pokemon-3D-api espèce par espèce
+(textures plus fines, agrandies ×4 par IA, et une dizaine d'animations chacun). Source : le pack
+`LGPE-Poke.zip` (fichiers bruts du jeu, dossiers `pmXXXX_00`) et ses animations `LGPE-PokeAnim.zip`,
+téléchargés par L'amie (jeu privé, jamais publié).
+
+Chaîne de conversion (cloud ou PC, Blender en module Python `bpy`) :
+
+```
+python Tools/Pokemon/LGPE/lgpe_to_glb.py -- <pmXXXX_00> <sortie>/regular/<n°>.glb --anims <dossier des anm> --upscale RealESRGAN_x4plus_anime_6B.pth
+python Tools/Pokemon/LGPE/lgpe_to_glb.py -- <pmXXXX_00> <sortie>/shiny/<n°>.glb --rare --anims ... --upscale ...
+blender --background --python Tools/Pokemon/convert_pokemon_glb.py -- <sortie> Tools/Pokemon/Generated
+```
+
+- `gfbmdl.py` et `gfbanm.py` lisent le modèle et les animations (FlatBuffers, Python pur) ; `bntx_to_png.py`
+  décode les textures Switch (BC7… via le paquet `texture2ddecoder`).
+- Le jeu peint souvent une moitié de texture et la répète en miroir : le reflet est recopié dans l'image.
+- La couleur est un mélange de la couleur éclairée et de la couleur d'ombre du jeu (`SHADOW_MIX`).
+- L'iris est cuit dans la texture des yeux ; les flammes (shader spécial) deviennent une couleur orange.
+- Pose de repos = première image de l'animation d'attente (sinon pose en T). Les échelles animées sont ignorées.
+- Animations : Idle, BattleIdle, Walk, Run, Attack, Special, Hit, Faint, Happy, Sleep (selon l'espèce).
+- Textures : 2048 à 4096 px (plafond `MAX_TEXTURE` = 4096 dans `convert_pokemon_glb.py`, sinon Onix
+  monterait à 8K). Elles sont embarquées dans les FBX : le zip livré n'a pas de dossier `Textures/`.
+- Pack livré le 2026-11-03 : `pokemon-modeles/Pokemon_Models_LetsGo.zip` (les 20 Pokémon V1, normal et
+  chromatique), aperçu `apercu_letsgo.png`. Il s'installe comme l'ancien zip (voir « Mettre à jour les modèles » plus haut).
 
 ## Refaire la conversion (optionnel)
 
@@ -66,5 +116,6 @@ Blender installé normalement lit la compression Draco des .glb. Avec le module 
 il faut d'abord la retirer : `node Tools/Pokemon/decompress_glb.mjs <entrée> <sortie>` (voir l'en-tête du fichier).
 
 Ce que fait `convert_pokemon_glb.py` : taille du Pokédex, centimètres, textures WebP → PNG embarquées,
-un seul mesh par Pokémon, retrait des morceaux parasites (sphère d'affichage des os, coque noire d'Onix,
+un seul mesh par Pokémon, pose visible figée comme pose de repos (les sommets de ces glTF sont rangés
+dans une autre pose, petite et tournée, qu'Unreal affiche sans animation), retrait des morceaux parasites (sphère d'affichage des os, coque noire d'Onix,
 lianes dépliées de Bulbizarre chromatique), texture branchée en direct sur Base Color, animations renommées.

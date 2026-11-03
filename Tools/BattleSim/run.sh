@@ -11,7 +11,7 @@ OUT="${TMPDIR:-/tmp}/pokemon_battlesim"
 mkdir -p "$OUT/gen"
 for f in $(grep -rhoE '[A-Za-z]+\.generated\.h' "$SRC/Pokemon" "$SRC/Battle" "$SRC/Capture" "$SRC/Town" | sort -u); do : > "$OUT/gen/$f"; done
 FLAGS=(-std=c++20 -O1 -Wall -Wshadow -Wno-comment -I "$HERE/inc" -I "$OUT/gen" -I "$SRC" -include CoreMinimal.h)
-LOGIC=("$HERE/enums.cpp" "$SRC/Pokemon/PokemonDatabase.cpp" "$SRC/Pokemon/PokemonInstance.cpp" "$SRC/Battle/BattleRules.cpp"
+LOGIC=("$HERE/enums.cpp" "$SRC/Pokemon/PokemonDatabase.cpp" "$SRC/Pokemon/PokemonInstance.cpp" "$SRC/Pokemon/PokemonProgression.cpp" "$SRC/Battle/BattleRules.cpp"
        "$SRC/Battle/BattleSession.cpp" "$SRC/Battle/BattleAI.cpp" "$SRC/Battle/BattleText.cpp"
        "$SRC/Capture/PokemonStorage.cpp" "$SRC/Town/ShopRules.cpp")
 if [[ "${1:-}" == "fuzz" ]]; then
@@ -19,6 +19,6 @@ if [[ "${1:-}" == "fuzz" ]]; then
   g++ "${FLAGS[@]}" -o "$OUT/fuzz" "$HERE/fuzz.cpp" "$OUT/realdata.cpp" "${LOGIC[@]}"
   "$OUT/fuzz"
 else
-  g++ "${FLAGS[@]}" -o "$OUT/battle_tests" "$HERE/main.cpp" "${LOGIC[@]}" "$SRC/Tests/BattleTests.cpp"
+  g++ "${FLAGS[@]}" -o "$OUT/battle_tests" "$HERE/main.cpp" "${LOGIC[@]}" "$SRC/Tests/BattleTests.cpp" "$SRC/Tests/ProgressionTests.cpp"
   "$OUT/battle_tests"
 fi

@@ -231,6 +231,13 @@ struct FBattleEvent
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Battle")
 	int32 RequestedStages = 0;
 
+	/** LevelUp : stats avant et après ce niveau (panneau « Attaque +3 ») */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Battle")
+	FPokemonBaseStats StatsBefore;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Battle")
+	FPokemonBaseStats StatsAfter;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Battle")
 	EMajorStatus Status = EMajorStatus::None;
 

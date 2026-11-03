@@ -5,6 +5,8 @@
 #include "SettingsMenuWidget.generated.h"
 
 class UButton;
+class UCanvasPanelSlot;
+class UImage;
 class UScrollBox;
 class USlider;
 class UTextBlock;
@@ -65,6 +67,7 @@ public:
 protected:
 
 	virtual TSharedRef<SWidget> RebuildWidget() override;
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 	UFUNCTION() void HandleSlider(float NewValue);
 	UFUNCTION() void HandlePrevious();
@@ -77,11 +80,17 @@ private:
 	UPROPERTY(Transient) TObjectPtr<USlider> ValueSlider;
 	UPROPERTY(Transient) TObjectPtr<UButton> MainButton;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> ButtonLabel;
+	/** Chevrons < > (grossissent au survol) */
+	UPROPERTY(Transient) TObjectPtr<UButton> PreviousButton;
+	UPROPERTY(Transient) TObjectPtr<UButton> NextButton;
+	UPROPERTY(Transient) TObjectPtr<UTextBlock> PreviousLabel;
+	UPROPERTY(Transient) TObjectPtr<UTextBlock> NextLabel;
 };
 
 /**
  *  Menu Échap (demande de L'amie du 2026-10-29) : Paramètres façon jeu PC, onglets Audio, Vidéo, Commandes et Jeu,
- *  boutons OK, Annuler, Appliquer et Retour. Les changements attendent Appliquer ou OK (sauf les touches,
+ *  boutons Ok, Annuler, Appliquer et Retour. Disposition au pixel d'après sa maquette Options_Menu (2026-11-01) :
+ *  panneau en verre, onglets en grand texte à gauche, chevrons < >, curseurs en barre dégradée. Les changements attendent Appliquer ou OK (sauf les touches,
  *  changées tout de suite). Réglages enregistrés dans UPokemonOptionsSave et GameUserSettings.ini.
  *  Voir docs/MENU_POKEDEX.md.
  */
@@ -103,6 +112,7 @@ protected:
 
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeConstruct() override;
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
 	/** Choix d'une touche (avant tout le reste), Échap et B pour revenir au jeu */
 	virtual FReply NativeOnPreviewKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
@@ -125,6 +135,8 @@ private:
 		float MasterVolume = 1.f;
 		float MusicVolume = 1.f;
 		float EffectsVolume = 1.f;
+		float FootstepsVolume = 1.f;
+		float WeatherVolume = 1.f;
 		int32 TextSpeed = 1;
 		float CameraSensitivity = 1.f;
 		bool bInvertCameraY = false;
@@ -162,6 +174,9 @@ private:
 	void AddChoice(FName Id, const FText& Label, const TArray<FText>& Choices, int32 Index);
 	void AddToggle(FName Id, const FText& Label, bool bValue);
 
+	/** Ascenseur maison (Rectangle 6 de la maquette) : suit la position de la liste */
+	void UpdateScrollThumb();
+
 	void SetStatus(const FText& Message);
 	void Close();
 
@@ -178,5 +193,10 @@ private:
 	UPROPERTY(Transient) TObjectPtr<UScrollBox> RowList;
 	UPROPERTY(Transient) TObjectPtr<UTextBlock> StatusText;
 	UPROPERTY(Transient) TArray<TObjectPtr<UButton>> TabButtons;
+	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> TabLabels;
+	UPROPERTY(Transient) TArray<TObjectPtr<UButton>> BottomButtons;
+	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> BottomLabels;
+	UPROPERTY(Transient) TObjectPtr<UImage> ScrollThumb;
+	UPROPERTY(Transient) TObjectPtr<UCanvasPanelSlot> ScrollThumbSlot;
 	UPROPERTY(Transient) TArray<TObjectPtr<USettingsRowWidget>> Rows;
 };

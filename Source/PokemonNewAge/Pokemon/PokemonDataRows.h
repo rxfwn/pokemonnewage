@@ -530,6 +530,22 @@ struct FItemRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Held")
 	EPokemonType HeldBoostType = EPokemonType::None;
 
+	/** Utilisé hors combat pour faire progresser un Pokémon (Super Bonbon, pierres, CT). Voir docs/PROGRESSION.md */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Progression")
+	EFieldItemEffect FieldEffect = EFieldItemEffect::None;
+
+	/** Niveaux gagnés (FieldEffect = LevelUp, Super Bonbon : 1) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Progression")
+	int32 LevelsGained = 0;
+
+	/** Attaque enseignée (FieldEffect = TeachMove, ligne de DT_Moves) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Progression")
+	FName TeachesMove;
+
+	/** Ne disparaît pas à l'usage (CT et CS, comme depuis la 5G) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Progression")
+	bool bReusable = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Item")
 	bool bUsableInBattle = true;
 

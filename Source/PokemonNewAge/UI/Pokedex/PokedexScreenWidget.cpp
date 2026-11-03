@@ -1,4 +1,6 @@
 #include "UI/Pokedex/PokedexScreenWidget.h"
+#include "Core/GameClock.h"
+#include "UI/GameFonts.h"
 #include "Blueprint/WidgetTree.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
 #include "Components/Border.h"
@@ -28,6 +30,7 @@
 #include "Landscape.h"
 #include "Pokemon/PokemonDatabase.h"
 #include "Pokemon/PokemonDataSubsystem.h"
+#include "Pokemon/PokemonProgression.h"
 #include "PokemonNewAgePlayerController.h"
 #include "UI/Pokedex/PokedexModel.h"
 
@@ -100,13 +103,15 @@ namespace PokedexScreen
 		{
 		case 0:  return LOCTEXT("PocketMedicine", "SOINS");
 		case 1:  return LOCTEXT("PocketBalls", "CAPTURE");
-		case 2:  return LOCTEXT("PocketOther", "BAIES ET MATÉRIAUX");
+		case 2:  return LOCTEXT("PocketOther", "OBJETS, BAIES ET CT");
 		default: return LOCTEXT("PocketKey", "OBJETS CLÉS");
 		}
 	}
 
-	/** Taille de l'image de la carte sur l'écran (pixels) */
-	constexpr float MapSize = 470.f;
+	/** Fenêtre de la carte sur l'écran (pixels) et zoom : on voit une partie de Kanto en gros, centrée sur la ville choisie */
+	constexpr float MapViewWidth = 600.f;
+	constexpr float MapViewHeight = 470.f;
+	constexpr float MapZoomedSize = 1150.f;
 }
 
 using namespace PokedexScreen;
@@ -232,7 +237,7 @@ void UPokedexScreenWidget::NativeTick(const FGeometry& MyGeometry, float InDelta
 	if (ClockTimer <= 0.f && ClockText)
 	{
 		ClockTimer = 1.f;
-		ClockText->SetText(FText::FromString(FDateTime::Now().ToString(TEXT("%H:%M"))));
+		ClockText->SetText(PokemonClock::FormatTime(GetWorld()));
 	}
 
 	if (StatusTimeLeft > 0.f)
@@ -622,7 +627,8 @@ void UPokedexScreenWidget::Confirm()
 		SelectedItem = Items[Selection];
 		const UPokemonDatabase* Database = GetDatabase();
 		const FItemRow* Item = Database ? Database->FindItem(SelectedItem) : nullptr;
-		if (Item && Item->bUsableInField && Item->Category == EItemCategory::Medicine)
+		// Soins, et objets de progression (Super Bonbon, pierres, CT : docs/PROGRESSION.md)
+		if (Item && Item->bUsableInField && (Item->Category == EItemCategory::Medicine || Item->FieldEffect != EFieldItemEffect::None))
 		{
 			Feedback(EPokedexFeedback::Confirm);
 			SetPage(EPokedexPage::BagTarget);
@@ -1190,6 +1196,17 @@ void UPokedexScreenWidget::BuildBagTarget()
 		const FPokemonInstance& Pokemon = State->Party[Index];
 		UHorizontalBox* Row = AddRow(Index);
 		AddRowText(Row, UPokemonLibrary::GetDisplayName(Database, Pokemon), 20, Pokemon.IsFainted() ? ErrorColor : Text, true, true);
+		if (Item->FieldEffect != EFieldItemEffect::None)
+		{
+			// Comme dans les jeux : APTE / PAS APTE / DÉJÀ APPRIS
+			AddRowText(Row, FText::Format(LOCTEXT("TargetLevel", "N.{0}  "), Pokemon.Level), 18, Text);
+			const EItemCompatibility Compatibility = UPokemonProgression::GetItemCompatibility(Database, SelectedItem, Pokemon);
+			const FText Label = Compatibility == EItemCompatibility::Able ? LOCTEXT("Able", "APTE")
+				: (Compatibility == EItemCompatibility::AlreadyKnown ? LOCTEXT("Known", "DÉJÀ APPRIS")
+				: (Compatibility == EItemCompatibility::NoEffect ? LOCTEXT("NoEffectShort", "SANS EFFET") : LOCTEXT("NotAble", "PAS APTE")));
+			AddRowText(Row, Label, 17, Compatibility == EItemCompatibility::Able ? Good : Dim, true, true);
+			continue;
+		}
 		AddRowHPBar(Row, Pokemon.CurrentHP, Pokemon.GetMaxHP(), 120.f);
 		AddRowText(Row, FText::FromString(FString::Printf(TEXT(" %d/%d "), Pokemon.CurrentHP, Pokemon.GetMaxHP())), 16, Text);
 		AddRowText(Row, Pokemon.IsFainted() ? LOCTEXT("KO", "K.O.") : GetStatusShort(Pokemon.Status), 15, ErrorColor, false, true);
@@ -1340,10 +1357,26 @@ void UPokedexScreenWidget::BuildMap()
 	UHorizontalBox* Layout = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
 	Content->AddChildToVerticalBox(Layout);
 
-	// Carte à gauche, avec les villes et le joueur par-dessus
+	const TArray<int32> Towns = GetMapTowns();
+	if (Towns.Num() > 0)
+	{
+		Selection = FMath::Clamp(Selection, 0, Towns.Num() - 1);
+	}
+	FVector2D PlayerUV;
+	const bool bHasPlayer = GetPlayerMapPosition(PlayerUV);
+
+	// Carte à gauche, zoomée et centrée sur la ville choisie (sinon sur le joueur), avec les villes et le joueur par-dessus
+	const FVector2D View(MapViewWidth, MapViewHeight);
+	const FVector2D Focus = Towns.IsValidIndex(Selection) ? Model->MapPlaces[Towns[Selection]].UV : (bHasPlayer ? PlayerUV : FVector2D(0.5f, 0.5f));
+	const FVector2D MapOrigin(
+		FMath::Clamp(Focus.X * MapZoomedSize - View.X * 0.5f, 0.f, MapZoomedSize - View.X),
+		FMath::Clamp(Focus.Y * MapZoomedSize - View.Y * 0.5f, 0.f, MapZoomedSize - View.Y));
+	auto ToMap = [MapOrigin](const FVector2D& UV) { return UV * MapZoomedSize - MapOrigin; };
+
 	USizeBox* MapBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
-	MapBox->SetWidthOverride(MapSize);
-	MapBox->SetHeightOverride(MapSize);
+	MapBox->SetWidthOverride(View.X);
+	MapBox->SetHeightOverride(View.Y);
+	MapBox->SetClipping(EWidgetClipping::ClipToBounds);
 	UCanvasPanel* Canvas = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass());
 	MapBox->SetContent(Canvas);
 	Layout->AddChildToHorizontalBox(MapBox)->SetVerticalAlignment(VAlign_Top);
@@ -1351,25 +1384,20 @@ void UPokedexScreenWidget::BuildMap()
 	UImage* MapImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
 	MapImage->SetBrushFromTexture(Model->MapTexture);
 	UCanvasPanelSlot* ImageSlot = Canvas->AddChildToCanvas(MapImage);
-	ImageSlot->SetPosition(FVector2D::ZeroVector);
-	ImageSlot->SetSize(FVector2D(MapSize, MapSize));
+	ImageSlot->SetPosition(-MapOrigin);
+	ImageSlot->SetSize(FVector2D(MapZoomedSize, MapZoomedSize));
 
-	const TArray<int32> Towns = GetMapTowns();
-	if (Towns.Num() > 0)
-	{
-		Selection = FMath::Clamp(Selection, 0, Towns.Num() - 1);
-	}
-	auto AddMarker = [Canvas](UWidget* Marker, const FVector2D& UV, float Size)
+	auto AddMarker = [Canvas, ToMap](UWidget* Marker, const FVector2D& UV, float Size)
 	{
 		UCanvasPanelSlot* MarkerSlot = Canvas->AddChildToCanvas(Marker);
 		MarkerSlot->SetSize(FVector2D(Size, Size));
-		MarkerSlot->SetPosition(UV * MapSize - FVector2D(Size * 0.5f, Size * 0.5f));
+		MarkerSlot->SetPosition(ToMap(UV) - FVector2D(Size * 0.5f, Size * 0.5f));
 	};
 	for (int32 Index = 0; Index < Towns.Num(); ++Index)
 	{
 		const FPokedexMapPlace& Place = Model->MapPlaces[Towns[Index]];
 		const bool bSelected = Index == Selection;
-		AddMarker(MakeDot(bSelected ? Gold : Accent, bSelected ? 16.f : 9.f, Background), Place.UV, bSelected ? 16.f : 9.f);
+		AddMarker(MakeDot(bSelected ? Gold : Accent, bSelected ? 22.f : 13.f, Background), Place.UV, bSelected ? 22.f : 13.f);
 	}
 	if (Towns.IsValidIndex(Selection))
 	{
@@ -1378,19 +1406,17 @@ void UPokedexScreenWidget::BuildMap()
 		UBorder* Label = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass());
 		Label->SetBrushColor(FLinearColor(0.f, 0.f, 0.f, 0.7f));
 		Label->SetPadding(FMargin(6.f, 1.f));
-		Label->SetContent(MakeText(Place.Name, 15, Gold, true));
+		Label->SetContent(MakeText(Place.Name, 20, Gold, true));
 		UCanvasPanelSlot* LabelSlot = Canvas->AddChildToCanvas(Label);
 		LabelSlot->SetAutoSize(true);
-		const bool bLeft = Place.UV.X > 0.7f;
+		const bool bLeft = ToMap(Place.UV).X > View.X * 0.6f;
 		LabelSlot->SetAlignment(FVector2D(bLeft ? 1.f : 0.f, 0.5f));
-		LabelSlot->SetPosition(Place.UV * MapSize + FVector2D(bLeft ? -14.f : 14.f, 0.f));
+		LabelSlot->SetPosition(ToMap(Place.UV) + FVector2D(bLeft ? -18.f : 18.f, 0.f));
 	}
 
-	FVector2D PlayerUV;
-	const bool bHasPlayer = GetPlayerMapPosition(PlayerUV);
 	if (bHasPlayer)
 	{
-		AddMarker(MakeDot(FLinearColor(0.95f, 0.12f, 0.1f), 18.f, FLinearColor::White), PlayerUV, 18.f);
+		AddMarker(MakeDot(FLinearColor(0.95f, 0.12f, 0.1f), 24.f, FLinearColor::White), PlayerUV, 24.f);
 	}
 
 	// Colonne de droite : où on est, puis la liste des villes
@@ -1405,7 +1431,7 @@ void UPokedexScreenWidget::BuildMap()
 	const int32 GpsTarget = Player ? Player->GetGpsTarget() : INDEX_NONE;
 	if (Model->MapPlaces.IsValidIndex(GpsTarget))
 	{
-		AddMarker(MakeDot(Good, 14.f, Background), Model->MapPlaces[GpsTarget].UV, 14.f);
+		AddMarker(MakeDot(Good, 18.f, Background), Model->MapPlaces[GpsTarget].UV, 18.f);
 	}
 	AddLine(LOCTEXT("YouAreHere", "TU ES ICI"), 16, Dim, true);
 	AddLine(Here >= 0 ? Model->MapPlaces[Here].Name : (bHasPlayer ? LOCTEXT("Wild", "En pleine nature") : LOCTEXT("NoLandscape", "Hors de Kanto")),
@@ -1530,6 +1556,27 @@ void UPokedexScreenWidget::UseSelectedItemOn(int32 Index)
 	}
 
 	const FPokemonInstance& Pokemon = State->Party[Index];
+	if (Item->FieldEffect != EFieldItemEffect::None)
+	{
+		// Le serveur applique ; s'il faut choisir une attaque ou voir l'évolution, le Pokédex se referme tout seul
+		if (UPokemonProgression::GetItemCompatibility(Database, SelectedItem, Pokemon) != EItemCompatibility::Able)
+		{
+			Feedback(EPokedexFeedback::Error);
+			ShowStatus(LOCTEXT("NoEffect", "Ça n'aura aucun effet."), true);
+			return;
+		}
+		const FText Name = UPokemonLibrary::GetDisplayName(Database, Pokemon);
+		const FText Message = Item->FieldEffect == EFieldItemEffect::LevelUp
+			? FText::Format(LOCTEXT("CandyUsed", "{0} monte au niveau {1} !"), Name, FMath::Min(Pokemon.Level + FMath::Max(Item->LevelsGained, 1), 100))
+			: (Item->FieldEffect == EFieldItemEffect::TeachMove
+				? FText::Format(LOCTEXT("TeachUsed", "{0} veut apprendre une nouvelle capacité !"), Name)
+				: FText::Format(LOCTEXT("StoneUsed", "{0} réagit à l'objet…"), Name));
+		Controller->ServerUseFieldItem(SelectedItem, Index);
+		Feedback(EPokedexFeedback::Confirm);
+		ShowStatus(Message);
+		RefreshTimer = 0.1f;
+		return;
+	}
 	if (!APokemonPlayerState::CanUseItemOnPokemon(*Item, Pokemon))
 	{
 		Feedback(EPokedexFeedback::Error);
@@ -1586,10 +1633,7 @@ UTextBlock* UPokedexScreenWidget::MakeText(const FText& InText, int32 Size, cons
 	UTextBlock* Block = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
 	Block->SetText(InText);
 	Block->SetColorAndOpacity(FSlateColor(Color));
-	FSlateFontInfo Font = Block->GetFont();
-	Font.Size = Size;
-	Font.TypefaceFontName = bBold ? FName(TEXT("Bold")) : FName(TEXT("Regular"));
-	Block->SetFont(Font);
+	Block->SetFont(PokemonFonts::Get(Size, bBold));
 	return Block;
 }
 

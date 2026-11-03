@@ -22,7 +22,7 @@ enum class EHUDWeather : uint8
 };
 
 /**
- *  HUD en jeu, d'après la maquette de L'amie (fichiers du projet hud/maquette_hud_route1.png, 1920 x 1080) :
+ *  HUD en jeu, d'après la maquette v2 de L'amie (fichiers du projet hud/v2/Town_Announcement.png, 1920 x 1080) :
  *  - icône du Pokédex en haut à droite (Tab ouvre le Pokédex 3D, sans texte de touche) ;
  *  - nom du lieu en grand en haut au centre quand on arrive quelque part (« BOURG PALETTE ») ;
  *  - en bas à droite : nom du lieu, heure, température et météo, boussole avec le cône de vue et le GPS.
@@ -55,6 +55,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="HUD")
 	float TemperatureSwing = 5.f;
+
+	/** Flou du décor dans le disque de la boussole (effet verre de la maquette ; 0 = pas de flou) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="HUD")
+	float CompassBlur = 6.f;
 
 	/** Durée du grand nom du lieu à l'écran, en secondes (avec les fondus) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="HUD")
