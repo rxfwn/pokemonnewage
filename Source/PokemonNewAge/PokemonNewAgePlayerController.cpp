@@ -1398,6 +1398,9 @@ void APokemonNewAgePlayerController::RetourCentre()
 
 void APokemonNewAgePlayerController::Teleports()
 {
+#if UE_BUILD_SHIPPING
+	return; // outil de test : absent du jeu final
+#else
 	const TArray<ATeleportPoint*> Points = ATeleportPoint::GetAll(this);
 	if (Points.IsEmpty())
 	{
@@ -1409,10 +1412,14 @@ void APokemonNewAgePlayerController::Teleports()
 	{
 		PrintDebug(FString::Printf(TEXT("%d. %s"), Index + 1, *Points[Index]->PointName.ToString()));
 	}
+#endif
 }
 
 void APokemonNewAgePlayerController::Teleport(const FString& Name)
 {
+#if UE_BUILD_SHIPPING
+	return; // outil de test : absent du jeu final
+#else
 	ATeleportPoint* Point = ATeleportPoint::Find(this, Name);
 	APawn* ControlledPawn = GetPawn();
 	if (!Point || !ControlledPawn)
@@ -1434,4 +1441,5 @@ void APokemonNewAgePlayerController::Teleport(const FString& Name)
 	ControlledPawn->TeleportTo(Point->GetActorLocation() + FVector(0.f, 0.f, 100.f), Facing, false, true);
 	SetControlRotation(Facing);
 	PrintDebug(FString::Printf(TEXT("Teleporte a %s"), *Point->PointName.ToString()));
+#endif
 }

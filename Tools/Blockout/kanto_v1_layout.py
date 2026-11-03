@@ -694,3 +694,50 @@ def corridor_depth(x, y):
         return -127.0
     value = values[r * count + c]
     return float(value - 256 if value > 127 else value)
+
+
+# --- Points de téléportation de test (place_teleport_points.py) --------------------------
+# Un par ville, au centre ou, si un bâtiment ou un étang y est, à l'endroit libre le plus
+# proche. Noms sans accents ni espaces : plus simples à taper dans la console (Teleport Azuria).
+TELEPORT_NAMES = {
+    "Bourg Palette": "BourgPalette",
+    "Jadielle": "Jadielle",
+    "Argenta": "Argenta",
+    "Azuria": "Azuria",
+    "Céladopole": "Celadopole",
+    "Safrania": "Safrania",
+    "Carmin sur Mer": "CarminSurMer",
+    "Lavanville": "Lavanville",
+    "Parmanie": "Parmanie",
+    "Cramois'Île": "CramoisIle",
+    "Plateau Indigo": "PlateauIndigo",
+}
+TELEPORT_MARGIN = 4.0  # mètres libres autour du point
+
+
+def _is_free(x, y):
+    m = TELEPORT_MARGIN
+    for _, _, bx, by, depth, width, *_ in BUILDINGS:
+        if abs(x - bx) < depth / 2 + m and abs(y - by) < width / 2 + m:
+            return False
+    for px, py, depth, width in PONDS:
+        if abs(x - px) < depth / 2 + m and abs(y - py) < width / 2 + m:
+            return False
+    return True
+
+
+def teleport_spot(town):
+    """Endroit libre le plus proche du centre de la ville (recherche en spirale, pas de 2 m)."""
+    cx, cy = area_center(town)
+    if _is_free(cx, cy):
+        return cx, cy
+    for radius in range(2, 80, 2):
+        for step in range(0, 360, 10):
+            angle = math.radians(step)
+            x, y = cx + radius * math.cos(angle), cy + radius * math.sin(angle)
+            if _is_free(x, y):
+                return x, y
+    return cx, cy
+
+
+TELEPORT_POINTS = [(TELEPORT_NAMES[town], town, *teleport_spot(town)) for town in TELEPORT_NAMES]

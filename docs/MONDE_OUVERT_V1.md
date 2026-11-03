@@ -160,7 +160,11 @@ Le décalque de la carte FRLG se refait avec `python Tools/Blockout/make_frlg_ma
 
 ## Points de téléportation de test
 
-Pour tester la map sans tout traverser à pied : poser des **TeleportPoint** (Placer des acteurs, chercher « Teleport Point »), donner un nom dans **Point Name** (Argenta, Route3...) et tourner la flèche bleue dans le sens où le joueur doit regarder. Ils sont toujours chargés (pas de streaming World Partition).
+Outil de **test uniquement** : les commandes ne font rien dans le jeu final (build Shipping) et les points sont invisibles en jeu.
+
+**Un point par ville, automatiquement** : map L_Kanto ouverte, projet compilé, **Outils > Exécuter un script Python...** (Tools > Execute Python Script...) > `Tools/Blockout/place_teleport_points.py`. Il pose 11 points (BourgPalette, Jadielle, Argenta, Azuria, Celadopole, Safrania, CarminSurMer, Lavanville, Parmanie, CramoisIle, PlateauIndigo) au centre de chaque ville, sur une place libre, posés sur le sol réel (retouches au sculpt comprises si le terrain est chargé). Ils sont rangés dans le dossier **Tests/Teleport** de l'Organiseur (Outliner), que le script de blockout n'efface pas. Relançable : il remet en place les points de même nom sans les dupliquer.
+
+**À la main** : poser des **TeleportPoint** (Placer des acteurs, chercher « Teleport Point »), donner un nom dans **Point Name** (Argenta, Route3...) et tourner la flèche bleue dans le sens où le joueur doit regarder. Ils sont toujours chargés (pas de streaming World Partition).
 
 En jeu, console (touche ²) :
 - `Teleports` : liste numérotée des points ;
