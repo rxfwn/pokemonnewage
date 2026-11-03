@@ -4,6 +4,7 @@
 #include "GameFramework/PlayerState.h"
 #include "Pokemon/PokemonInstance.h"
 #include "Core/PokemonSaveGame.h"
+#include "Character/TrainerAppearance.h"
 #include "PokemonPlayerState.generated.h"
 
 class UPokemonDatabase;
@@ -89,6 +90,13 @@ public:
 	/** Longueur d'un pas du compteur, en cm */
 	static constexpr float StepLength = 75.f;
 
+	/** Apparence du personnage (éditeur après le Prof. Chen, armoire, menu Apparence). Vue par tous les joueurs */
+	UPROPERTY(ReplicatedUsing=OnRep_Appearance, BlueprintReadOnly, Category="Appearance")
+	FTrainerAppearance Appearance;
+
+	/** Serveur : garde l'apparence (déjà validée) et rhabille le personnage */
+	void SetAppearance(const FTrainerAppearance& NewAppearance);
+
 	/** Heure du serveur au début de cette session */
 	UPROPERTY(Replicated, BlueprintReadOnly, Category="Story")
 	float SessionStartServerTime = 0.f;
@@ -163,4 +171,12 @@ public:
 	void ApplySaveData(const FPlayerSaveData& Data);
 
 	static constexpr int32 MaxPartySize = 6;
+
+private:
+
+	UFUNCTION()
+	void OnRep_Appearance();
+
+	/** Applique Appearance au personnage de ce joueur (s'il en a un) */
+	void ApplyAppearanceToPawn();
 };

@@ -4,6 +4,7 @@
 #include "GameFramework/SaveGame.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "Pokemon/PokemonInstance.h"
+#include "Character/TrainerAppearance.h"
 #include "PokemonSaveGame.generated.h"
 
 class APlayerController;
@@ -78,6 +79,10 @@ struct FPlayerSaveData
 	/** Compteur de pas du Pokédex */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Save")
 	int32 StepCount = 0;
+
+	/** Apparence du personnage (anciennes sauvegardes : bCreated faux = éditeur à refaire) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Save")
+	FTrainerAppearance Appearance;
 };
 
 /** Le fichier de sauvegarde (Saved/SaveGames/Partie.sav). */

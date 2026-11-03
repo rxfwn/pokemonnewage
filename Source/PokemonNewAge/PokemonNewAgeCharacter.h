@@ -11,6 +11,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
 class UInputMappingContext;
+class UTrainerAppearanceComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -31,6 +32,10 @@ class APokemonNewAgeCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
+
+	/** Apparence du joueur : base Character Creator, curseurs, couleurs (SCRUM-66/79) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	UTrainerAppearanceComponent* Appearance;
 	
 protected:
 
@@ -188,6 +193,30 @@ public:
 	const UInputAction* GetSprintAction() const { return SprintAction; }
 	const UInputAction* GetInteractAction() const { return InteractAction; }
 	UInputMappingContext* GetInteractContext() const { return DefaultInteractContext; }
+
+	FORCEINLINE UTrainerAppearanceComponent* GetAppearance() const { return Appearance; }
+
+	// ------------------------------------------------ Commandes de test de l'apparence (console ², docs/PERSONNAGE_CREATION.md)
+
+	/** Liste les bases et les curseurs du catalogue, avec leurs valeurs */
+	UFUNCTION(Exec)
+	void Apparence();
+
+	/** ApparenceBase Femme */
+	UFUNCTION(Exec)
+	void ApparenceBase(FName Base);
+
+	/** Curseur NezLargeur 0.6 (-1 à 1) */
+	UFUNCTION(Exec)
+	void Curseur(FName Slider, float Value);
+
+	/** CouleurPeau 0.8 0.6 0.5 (0 à 1, blanc = peau d'origine) */
+	UFUNCTION(Exec)
+	void CouleurPeau(float R, float G, float B);
+
+	/** CouleurYeux 0.1 0.4 0.2 */
+	UFUNCTION(Exec)
+	void CouleurYeux(float R, float G, float B);
 
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
