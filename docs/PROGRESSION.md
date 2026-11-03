@@ -75,7 +75,11 @@ Pokémon et le sol lumineux sous ses pieds.
   script Python...*), puis compiler (nouveau composant C++). Test : `VoirEvolution Bulbasaur Ivysaur`.
 - **Code** : `UEvolutionBackdropComponent` (`Source/PokemonNewAge/Progression/EvolutionBackdrop.h`), créé par
   `AEvolutionScene`. Le ciel est un panneau accroché à la caméra, derrière tout ce qui est montré ; le sol est un
-  disque juste au-dessus des pieds (`FloorLift`, 3 cm) qui va jusqu'au ciel. Sans les matériaux : ancien fond.
+  disque à la hauteur exacte des pieds et du bas de la Ball, qui va jusqu'au ciel. La scène entière est soulevée de
+  `GroundClearance` (20 cm) au-dessus du terrain : l'herbe reste sous le sol lumineux et rien ne s'y enfonce.
+  Devant le Pokémon, deux panneaux transparents accrochés à la caméra : `M_EvolutionFrontNear` (gros bokeh tout
+  près, adoucis par le flou de profondeur) et `M_EvolutionFrontMid` (éclats et poussières qui montent juste devant
+  lui). Le centre de l'image reste presque dégagé pour la transformation en points. Sans les matériaux : ancien fond.
 - **Textures** fabriquées par `make_evolution_sky.py` (dans `Tools/Progression/Assets/`) :
   `T_EvolutionSky.png` (R étoiles, G bokeh, B phase du scintillement, A traînées) et `T_EvolutionFx.png`
   (R piliers, G éclats à quatre branches, B phase des éclats, A lignes de vitesse rangées en angle/distance).
@@ -94,7 +98,11 @@ Pokémon et le sol lumineux sous ses pieds.
   | `IntensiteTrainees`, `CouleurTrainees` | ciel | Traînées de lumière en diagonale. |
   | `CouleurSol`, `IntensiteSol`, `BokehSol` | sol | Lueur sous le Pokémon. |
   | `Anneaux`, `CouleurAnneaux`, `Anneau1`, `Anneau2`, `LargeurAnneau` | sol | Les deux anneaux qui respirent autour des pieds (taille en part du rayon de la lueur). |
-  | `Luminosite` | les deux | Tout plus clair ou plus sombre. |
+  | `Contraste` | ciel, sol | Bords de l'image assombris (profondeur). 0 = pas d'assombrissement. |
+  | `IntensiteBokeh`, `VitesseBokeh` | devant (Near) | Gros bokeh flous au premier plan. |
+  | `Eclats`, `Poussieres`, `CouleurPoussieres`, `VitesseEclats`, `VitesseScintillement` | devant (Mid) | Éclats et poussières devant le Pokémon. |
+  | `ZoneLibre`, `DansZoneLibre` | devant (les deux) | Taille de la zone dégagée au centre, et ce qui reste des effets dedans (0,15). |
+  | `Luminosite` | tous | Tout plus clair ou plus sombre. |
 
 - **Vidéo After Effects** : quand L'amie enverra sa boucle (MP4 H.264, sans son), elle pourra remplacer le ciel
   (Media Player + Media Texture sur le panneau du ciel).

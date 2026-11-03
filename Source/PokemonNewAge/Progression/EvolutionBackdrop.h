@@ -15,8 +15,14 @@ class UStaticMeshComponent;
  * à la place du terrain sombre.
  *
  * - Ciel : grand panneau accroché à la caméra, toujours derrière le Pokémon et assez grand pour remplir l'image.
- * - Sol : disque sous les pieds, juste au-dessus du terrain, assez grand pour aller jusqu'au ciel.
- * Les matériaux viennent de Tools/Progression/import_evolution_backdrop.py (M_EvolutionSky, M_EvolutionFloor).
+ * - Sol : disque à la hauteur exacte des pieds et de la Ball, assez grand pour aller jusqu'au ciel. La scène
+ *   entière est soulevée de GroundClearance au-dessus du terrain (AEvolutionScene::PlaceInFrontOf) : l'herbe et
+ *   les petites bosses restent sous le sol, et rien ne s'enfonce dedans.
+ * - Devant le Pokémon : deux panneaux transparents accrochés à la caméra (additifs). Le plus proche porte de gros
+ *   bokeh flous (le flou de profondeur les adoucit encore), l'autre des éclats et des poussières de lumière juste
+ *   devant le Pokémon. Le centre de l'image reste presque dégagé pour voir la transformation en points.
+ * Les matériaux viennent de Tools/Progression/import_evolution_backdrop.py (M_EvolutionSky, M_EvolutionFloor,
+ * M_EvolutionFrontNear, M_EvolutionFrontMid). Les panneaux de devant sont facultatifs.
  * S'ils manquent, rien n'est affiché (fond d'avant, le terrain).
  */
 UCLASS(ClassGroup=(Pokemon), meta=(BlueprintSpawnableComponent))
@@ -43,9 +49,24 @@ public:
 	UPROPERTY(EditAnywhere, Category="Evolution|Fond", meta=(ClampMin="1"))
 	float SkyMargin = 1.6f;
 
-	/** Hauteur du sol au-dessus des pieds (cm) : cache l'herbe et les petites bosses du terrain */
+	/** Effets flous tout près de la caméra (gros bokeh) */
 	UPROPERTY(EditAnywhere, Category="Evolution|Fond")
-	float FloorLift = 3.f;
+	TSoftObjectPtr<UMaterialInterface> FrontNearMaterial;
+
+	/** Effets juste devant le Pokémon (éclats, poussières de lumière) */
+	UPROPERTY(EditAnywhere, Category="Evolution|Fond")
+	TSoftObjectPtr<UMaterialInterface> FrontMidMaterial;
+
+	/** Hauteur de la scène au-dessus du terrain (cm) : le sol lumineux cache l'herbe et les petites bosses */
+	UPROPERTY(EditAnywhere, Category="Evolution|Fond", meta=(ClampMin="0"))
+	float GroundClearance = 20.f;
+
+	/** Panneau des gros bokeh, en part de la distance caméra-Pokémon */
+	UPROPERTY(EditAnywhere, Category="Evolution|Fond", meta=(ClampMin="0.1", ClampMax="0.9"))
+	float FrontNearDistance = 0.35f;
+
+	/** Hauteur dont soulever la scène au-dessus du terrain (0 si le fond n'est pas là) */
+	float GetGroundClearance() const { return Sky ? GroundClearance : 0.f; }
 
 protected:
 	virtual void OnRegister() override;
@@ -53,6 +74,8 @@ protected:
 
 private:
 	UStaticMeshComponent* MakePlane(const TCHAR* Name, UMaterialInterface* Material, UMaterialInstanceDynamic*& OutDynamic);
+	UStaticMeshComponent* MakeCameraPanel(const TCHAR* Name, UMaterialInterface* Material, UMaterialInstanceDynamic*& OutDynamic);
+	void PlaceCameraPanel(UStaticMeshComponent* Panel, float Distance) const;
 	void UpdateLayout();
 	float SceneRadius() const;
 
@@ -61,6 +84,12 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMeshComponent> Floor;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> FrontNear;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> FrontMid;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> SkyDynamic;

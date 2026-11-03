@@ -333,6 +333,11 @@ void AEvolutionScene::PlaceInFrontOf(APlayerController* Controller)
 	{
 		Location = Hit.ImpactPoint;
 	}
+	// Avec le fond lumineux : scène soulevée au-dessus de l'herbe, pieds et Ball posés sur le sol lumineux
+	if (const UEvolutionBackdropComponent* Backdrop = FindComponentByClass<UEvolutionBackdropComponent>())
+	{
+		Location.Z += Backdrop->GetGroundClearance();
+	}
 	SetActorLocationAndRotation(Location, FRotator(0.f, Facing.Yaw + 180.f, 0.f));
 }
 

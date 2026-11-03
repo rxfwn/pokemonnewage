@@ -10,7 +10,12 @@ Crée dans /Game/Progression :
     centre de l'image, piliers de lumière qui vacillent, gros bokeh qui monte, éclats qui apparaissent, lignes de
     vitesse qui partent du centre, étoiles et traînées ;
   - M_EvolutionFloor : le sol lumineux sous le Pokémon (lueur cyan, deux anneaux qui respirent, même bleu que le
-    ciel à l'horizon).
+    ciel à l'horizon) ;
+  - M_EvolutionFrontNear et M_EvolutionFrontMid : les effets devant le Pokémon (transparents, additifs). Near =
+    gros bokeh flous tout près de la caméra ; Mid = éclats et poussières de lumière qui montent juste devant lui.
+    Le centre de l'image reste presque dégagé (ZoneLibre) pour bien voir la transformation en points.
+Profondeur : les bords de l'image sont assombris pareil sur le ciel et le sol (Contraste), et le bokeh est en
+deux couches (grosses taches lentes au loin, plus petites et plus rapides devant).
 Utilisés par UEvolutionBackdropComponent (Source/PokemonNewAge/Progression/EvolutionBackdrop.h), un composant
 de AEvolutionScene. Sans ces matériaux, la scène garde l'ancien fond (le terrain).
 
@@ -33,8 +38,9 @@ mel = unreal.MaterialEditingLibrary
 
 # Couleurs (linéaires), d'après l'évolution de Soleil et Lune : salle bleu vif, plus sombre en haut, cyan au centre
 HORIZON = unreal.LinearColor(0.03, 0.3, 0.95, 1.0)
-TOP = unreal.LinearColor(0.004, 0.04, 0.3, 1.0)
-CENTER = unreal.LinearColor(0.25, 0.8, 1.8, 1.0)
+TOP = unreal.LinearColor(0.002, 0.015, 0.16, 1.0)
+CENTER = unreal.LinearColor(0.3, 0.9, 2.2, 1.0)
+DUST = unreal.LinearColor(0.7, 0.9, 1.2, 1.0)
 STARS = unreal.LinearColor(0.85, 0.92, 1.0, 1.0)
 BOKEH = unreal.LinearColor(0.25, 0.7, 1.2, 1.0)
 STREAKS = unreal.LinearColor(1.0, 0.7, 0.95, 1.0)
@@ -66,7 +72,7 @@ def import_texture(name):
 class Graph:
     """Petit assistant pour écrire un graphe de matériau en Python."""
 
-    def __init__(self, name):
+    def __init__(self, name, additive=False):
         path = f"{CONTENT_DIR}/{name}"
         if eal.does_asset_exist(path):
             self.material = eal.load_asset(path)
@@ -78,6 +84,9 @@ class Graph:
         self.y = 0
         self.material.set_editor_property("shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
         self.material.set_editor_property("two_sided", True)
+        # Effets devant le Pokémon : transparents, la lumière s'ajoute à l'image (jamais de bord sombre)
+        blend = unreal.BlendMode.BLEND_ADDITIVE if additive else unreal.BlendMode.BLEND_OPAQUE
+        self.material.set_editor_property("blend_mode", blend)
 
     def node(self, kind, **properties):
         expression = mel.create_material_expression(self.material, kind, self.x, self.y)
@@ -175,8 +184,28 @@ def center_glow(graph):
     middle = graph.node(unreal.MaterialExpressionConstant2Vector, r=0.5, g=0.5)
     distance = graph.op(unreal.MaterialExpressionDistance, screen, middle, a_out="ViewportUV")
     falloff = graph.single(unreal.MaterialExpressionOneMinus, graph.mul(distance, const_b=1.6))
-    falloff = graph.power(graph.single(unreal.MaterialExpressionSaturate, falloff), 3.0)
+    falloff = graph.power(graph.single(unreal.MaterialExpressionSaturate, falloff), 3.5)
     return graph.mul(graph.mul(falloff, graph.scalar("LueurCentre", 1.0)), graph.color("CouleurCentre", CENTER))
+
+
+def screen_distance(graph, center_v=0.5):
+    """Distance au centre de l'image (0 au centre, ~0,7 dans les coins), largeur et hauteur à la même échelle."""
+    screen = graph.node(unreal.MaterialExpressionScreenPosition)
+    size = graph.node(unreal.MaterialExpressionViewSize)
+    aspect = graph.op(unreal.MaterialExpressionDivide, mask(graph, size, "r"), mask(graph, size, "g"))
+    dx = graph.mul(graph.add(mask(graph, screen, "r", "ViewportUV"), const_b=-0.5), aspect)
+    dy = graph.add(mask(graph, screen, "g", "ViewportUV"), const_b=-center_v)
+    return graph.op(unreal.MaterialExpressionDistance, append(graph, dx, dy),
+                    graph.node(unreal.MaterialExpressionConstant2Vector, r=0.0, g=0.0))
+
+
+def depth_shade(graph, color):
+    """Profondeur : bords de l'image plus sombres (même calcul à l'écran sur le ciel et le sol, sans cassure)."""
+    distance = screen_distance(graph)
+    edge = graph.single(unreal.MaterialExpressionSaturate, graph.mul(graph.add(distance, const_b=-0.2), const_b=1.8))
+    edge = graph.power(edge, 1.3)
+    shade = graph.single(unreal.MaterialExpressionOneMinus, graph.mul(edge, graph.scalar("Contraste", 0.85)))
+    return graph.mul(color, shade)
 
 
 def mask(graph, source, channel, output=""):
@@ -212,7 +241,7 @@ def make_sky(texture, fx):
 
     # Dégradé : CouleurHorizon au ras du sol -> CouleurHaut à HauteurDegrade au-dessus
     height, _position = floor_height(g)
-    gradient_height = g.scalar("HauteurDegrade", 900.0)
+    gradient_height = g.scalar("HauteurDegrade", 550.0)
     t = g.single(unreal.MaterialExpressionSaturate, g.op(unreal.MaterialExpressionDivide, height, gradient_height))
     t = g.power(t, 0.7)
     sky = g.lerp(g.color("CouleurHorizon", HORIZON), g.color("CouleurHaut", TOP), t)
@@ -235,11 +264,15 @@ def make_sky(texture, fx):
     star_light = g.mul(g.mul(stars, twinkle, a_out="R"), g.scalar("IntensiteEtoiles", 3.0))
     sky = g.add(sky, g.mul(star_light, g.color("CouleurEtoiles", STARS)))
 
-    # Bokeh (Sky G) : gros ronds flous et nombreux, montent lentement, pulsent
-    bokeh = g.sample(texture, g.mul(uv, const_b=0.7), 0.0, 0.01)
-    pulse = g.twinkle(bokeh, g.scalar("VitesseBokeh", 0.2), 0.45)
-    bokeh_light = g.mul(g.mul(bokeh, pulse, a_out="G"), g.scalar("IntensiteBokeh", 0.8))
-    sky = g.add(sky, g.mul(bokeh_light, g.color("CouleurBokeh", BOKEH)))
+    # Bokeh (Sky G) en deux couches : très gros et lents au loin, plus petits et plus rapides devant (profondeur)
+    bokeh_color = g.color("CouleurBokeh", BOKEH)
+    bokeh_speed = g.scalar("VitesseBokeh", 0.2)
+    bokeh_strength = g.scalar("IntensiteBokeh", 0.8)
+    for scale, rise, share in ((0.45, 0.004, 0.45), (1.0, 0.016, 0.8)):
+        bokeh = g.sample(texture, g.mul(uv, const_b=scale), 0.0, rise)
+        pulse = g.twinkle(bokeh, bokeh_speed, 0.45)
+        bokeh_light = g.mul(g.mul(g.mul(bokeh, pulse, a_out="G"), bokeh_strength), const_b=share)
+        sky = g.add(sky, g.mul(bokeh_light, bokeh_color))
 
     # Éclats à quatre branches (Fx G) : apparaissent et disparaissent chacun à son tour
     sparkles = g.sample(fx, g.mul(uv, const_b=0.9), 0.0, 0.004)
@@ -264,7 +297,7 @@ def make_sky(texture, fx):
                          g.color("CouleurTrainees", STREAKS))
     sky = g.add(sky, streak_light)
 
-    return g.finish(g.mul(sky, brightness))
+    return g.finish(g.mul(depth_shade(g, sky), brightness))
 
 
 def make_floor(texture):
@@ -304,7 +337,48 @@ def make_floor(texture):
     floor = g.add(floor, reflection)
     floor = g.add(floor, center_glow(g))
 
-    return g.finish(g.mul(floor, brightness))
+    return g.finish(g.mul(depth_shade(g, floor), brightness))
+
+
+def free_zone(graph):
+    """0 au centre de l'image (là où est le Pokémon), 1 vers les bords : les effets de devant ne le cachent pas."""
+    distance = screen_distance(graph, 0.45)
+    radius = graph.scalar("ZoneLibre", 0.22)
+    t = graph.op(unreal.MaterialExpressionDivide, graph.op(unreal.MaterialExpressionSubtract, distance, radius),
+                 graph.mul(radius, const_b=0.8))
+    t = graph.single(unreal.MaterialExpressionSaturate, t)
+    keep = graph.scalar("DansZoneLibre", 0.15)
+    return graph.lerp(keep, None, t, const_b=1.0)
+
+
+def make_front_near(texture):
+    """Gros bokeh tout près de la caméra (flous), surtout vers les bords."""
+    g = Graph("M_EvolutionFrontNear", additive=True)
+    uv, _dx, _dy, _u = screen_coords(g)
+    bokeh = g.sample(texture, g.mul(uv, const_b=0.3), 0.002, 0.025)
+    pulse = g.twinkle(bokeh, g.scalar("VitesseBokeh", 0.25), 0.3)
+    light = g.mul(g.mul(bokeh, pulse, a_out="G"), g.scalar("IntensiteBokeh", 0.9))
+    light = g.mul(g.mul(light, free_zone(g)), g.color("CouleurBokeh", BOKEH))
+    return g.finish(g.mul(light, g.scalar("Luminosite", 1.0)))
+
+
+def make_front_mid(texture, fx):
+    """Éclats et poussières de lumière juste devant le Pokémon, qui montent."""
+    g = Graph("M_EvolutionFrontMid", additive=True)
+    uv, _dx, _dy, _u = screen_coords(g)
+    zone = free_zone(g)
+
+    sparkles = g.sample(fx, g.mul(uv, const_b=1.4), 0.003, 0.03)
+    pop = g.power(g.twinkle(sparkles, g.scalar("VitesseEclats", 0.45), 0.0), 3.0)
+    sparkle_light = g.mul(g.mul(sparkles, pop, a_out="G"), g.scalar("Eclats", 1.6))
+    light = g.mul(sparkle_light, g.color("CouleurEclats", SPARKLES))
+
+    dust = g.sample(texture, g.mul(uv, const_b=1.8), 0.0, 0.05)
+    twinkle = g.twinkle(dust, g.scalar("VitesseScintillement", 0.8), 0.1)
+    dust_light = g.mul(g.mul(dust, twinkle, a_out="R"), g.scalar("Poussieres", 2.0))
+    light = g.add(light, g.mul(dust_light, g.color("CouleurPoussieres", DUST)))
+
+    return g.finish(g.mul(g.mul(light, zone), g.scalar("Luminosite", 1.0)))
 
 
 def main():
@@ -316,7 +390,10 @@ def main():
     fx = import_texture("T_EvolutionFx")
     make_sky(texture, fx)
     make_floor(texture)
-    unreal.log(f"Fond de l'évolution : T_EvolutionSky, T_EvolutionFx, M_EvolutionSky, M_EvolutionFloor dans {CONTENT_DIR}.")
+    make_front_near(texture)
+    make_front_mid(texture, fx)
+    unreal.log(f"Fond de l'évolution : T_EvolutionSky, T_EvolutionFx, M_EvolutionSky, M_EvolutionFloor, "
+               f"M_EvolutionFrontNear, M_EvolutionFrontMid dans {CONTENT_DIR}.")
 
 
 main()
