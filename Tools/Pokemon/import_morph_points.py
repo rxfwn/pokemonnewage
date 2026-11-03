@@ -11,4 +11,4 @@ import os
 import runpy
 
 runpy.run_path(os.path.join(os.path.dirname(os.path.abspath(__file__)), "import_pokemon_models.py"),
-               init_globals={"MORPH_ONLY": True})
+               init_globals={"MODE": "points"})

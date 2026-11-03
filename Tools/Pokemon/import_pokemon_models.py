@@ -19,6 +19,7 @@ Résultat, pour chaque espèce (nom de ligne de DT_Species, ex. Bulbasaur) :
 Le menu Pokédex lit ces chemins tels quels : ne pas renommer les assets à la main.
 Relançable : une espèce déjà importée est réimportée par-dessus (même chemin).
 Seulement la table des points (modèles déjà importés) : lancer Tools/Pokemon/import_morph_points.py.
+Pokémon gris à damier (matériaux décrochés) : lancer Tools/Pokemon/repair_pokemon_materials.py.
 Pour n'importer que quelques espèces, remplir ONLY ci-dessous, ex. ONLY = {"Pikachu"}.
 """
 
@@ -28,8 +29,10 @@ import os
 import unreal
 
 ONLY = set()
-# True quand le script est lancé par import_morph_points.py : seulement DT_MorphPoints, sans réimporter les modèles
-MORPH_ONLY = globals().get("MORPH_ONLY", False)
+# Mode donné par les petits scripts voisins (sans réimporter les modèles) :
+#   "points"    -> import_morph_points.py : seulement DT_MorphPoints
+#   "materials" -> repair_pokemon_materials.py : rebranche les matériaux des modèles déjà importés
+MODE = globals().get("MODE", "all")
 
 CONTENT_ROOT = "/Game/Pokemon/Models"
 PROJECT_DIR = unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir())
@@ -127,8 +130,47 @@ def import_species(species, info, base):
     if mesh is None:
         unreal.log_error(f"{tag} : pas de Skeletal Mesh après l'import (voir le journal)")
         return False
+    relink_materials(mesh, folder)
     unreal.log(f"{tag} : importé ({len(info['animations'])} animation(s))")
     return True
+
+
+def relink_materials(mesh, folder):
+    """Rebranche chaque emplacement de matériau sur Materials/<nom de l'emplacement>.
+
+    Les matériaux sont déplacés depuis le dossier temporaire d'import : selon l'ordre des déplacements,
+    le mesh pouvait garder un lien vers l'ancien emplacement (supprimé), d'où un Pokémon gris à damier.
+    """
+    prop = "materials" if isinstance(mesh, unreal.SkeletalMesh) else "static_materials"
+    slots = list(mesh.get_editor_property(prop))
+    fixed = 0
+    for slot in slots:
+        name = str(slot.get_editor_property("material_slot_name"))
+        current = slot.get_editor_property("material_interface")
+        wanted_path = f"{folder}/Materials/{name}"
+        if current is not None and current.get_path_name().split(".")[0] == wanted_path:
+            continue
+        if not eal.does_asset_exist(wanted_path):
+            unreal.log_warning(f"{mesh.get_name()} : matériau {wanted_path} introuvable pour l'emplacement {name}")
+            continue
+        slot.set_editor_property("material_interface", eal.load_asset(wanted_path))
+        fixed += 1
+    if fixed:
+        mesh.set_editor_property(prop, slots)
+        eal.save_loaded_asset(mesh, only_if_is_dirty=False)
+        unreal.log(f"{mesh.get_name()} : {fixed} matériau(x) rebranché(s)")
+    return fixed
+
+
+def repair_all_materials(summary):
+    total = 0
+    for species, variants in summary.items():
+        folder = f"{CONTENT_ROOT}/{species}"
+        for info in variants.values():
+            path = f"{folder}/{info['asset']}"
+            if eal.does_asset_exist(path):
+                total += relink_materials(eal.load_asset(path), folder)
+    unreal.log(f"Matériaux des Pokémon : {total} emplacement(s) rebranché(s)")
 
 
 def import_morph_points(species_list):
@@ -175,8 +217,11 @@ def main():
     with open(summary_path, encoding="utf-8") as f:
         summary = json.load(f)
 
-    if MORPH_ONLY:
+    if MODE == "points":
         import_morph_points(list(summary))
+        return
+    if MODE == "materials":
+        repair_all_materials(summary)
         return
 
     ok, failed = 0, []
