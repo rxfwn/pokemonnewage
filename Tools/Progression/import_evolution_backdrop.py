@@ -4,11 +4,13 @@ Outils > Exécuter un script Python... > choisir ce fichier (n'importe quelle ma
 les deux matériaux à chaque fois (les réglages changés à la main dans ces matériaux sont alors perdus, les noter).
 
 Crée dans /Game/Progression :
-  - T_EvolutionSky : étoiles, bokeh, phase de scintillement, traînées (Tools/Progression/Assets/T_EvolutionSky.png,
-    fabriquée par make_evolution_sky.py) ;
-  - M_EvolutionSky : le ciel derrière le Pokémon. Dégradé bleu (foncé en haut, lumineux à l'horizon), grande
-    lueur au centre de l'image, étoiles qui scintillent et glissent, bokeh qui dérive, traînées de lumière ;
-  - M_EvolutionFloor : le sol lumineux sous le Pokémon (lueur cyan au centre, même bleu que le ciel à l'horizon).
+  - T_EvolutionSky : étoiles, bokeh, phase de scintillement, traînées ; T_EvolutionFx : piliers de lumière,
+    éclats à quatre branches, lignes de vitesse (Tools/Progression/Assets, fabriquées par make_evolution_sky.py) ;
+  - M_EvolutionSky : le fond derrière le Pokémon, d'après l'évolution de Soleil et Lune. Dégradé bleu, lueur au
+    centre de l'image, piliers de lumière qui vacillent, gros bokeh qui monte, éclats qui apparaissent, lignes de
+    vitesse qui partent du centre, étoiles et traînées ;
+  - M_EvolutionFloor : le sol lumineux sous le Pokémon (lueur cyan, deux anneaux qui respirent, même bleu que le
+    ciel à l'horizon).
 Utilisés par UEvolutionBackdropComponent (Source/PokemonNewAge/Progression/EvolutionBackdrop.h), un composant
 de AEvolutionScene. Sans ces matériaux, la scène garde l'ancien fond (le terrain).
 
@@ -21,33 +23,38 @@ import os
 import unreal
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TEXTURE_FILE = os.path.join(HERE, "Assets", "T_EvolutionSky.png")
+ASSETS = os.path.join(HERE, "Assets")
+TEXTURE_FILE = os.path.join(ASSETS, "T_EvolutionSky.png")
 CONTENT_DIR = "/Game/Progression"
 
 asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
 eal = unreal.EditorAssetLibrary
 mel = unreal.MaterialEditingLibrary
 
-# Couleurs (linéaires) : bleu profond en haut, bleu vif à l'horizon, cyan au centre, comme la référence de L'amie
-HORIZON = unreal.LinearColor(0.01, 0.1, 0.55, 1.0)
-TOP = unreal.LinearColor(0.0, 0.008, 0.08, 1.0)
-CENTER = unreal.LinearColor(0.2, 0.7, 2.0, 1.0)
+# Couleurs (linéaires), d'après l'évolution de Soleil et Lune : salle bleu vif, plus sombre en haut, cyan au centre
+HORIZON = unreal.LinearColor(0.03, 0.3, 0.95, 1.0)
+TOP = unreal.LinearColor(0.004, 0.04, 0.3, 1.0)
+CENTER = unreal.LinearColor(0.25, 0.8, 1.8, 1.0)
 STARS = unreal.LinearColor(0.85, 0.92, 1.0, 1.0)
-BOKEH = unreal.LinearColor(0.2, 0.5, 1.0, 1.0)
+BOKEH = unreal.LinearColor(0.25, 0.7, 1.2, 1.0)
 STREAKS = unreal.LinearColor(1.0, 0.7, 0.95, 1.0)
-FLOOR_GLOW = unreal.LinearColor(0.1, 0.6, 1.6, 1.0)
+PILLARS = unreal.LinearColor(0.6, 0.85, 1.0, 1.0)
+SPARKLES = unreal.LinearColor(1.0, 0.98, 0.85, 1.0)
+SPEED_LINES = unreal.LinearColor(0.85, 0.92, 1.0, 1.0)
+FLOOR_GLOW = unreal.LinearColor(0.2, 0.8, 1.6, 1.0)
+RINGS = unreal.LinearColor(0.6, 0.95, 1.5, 1.0)
 
 
-def import_texture():
+def import_texture(name):
     task = unreal.AssetImportTask()
-    task.set_editor_property("filename", TEXTURE_FILE)
+    task.set_editor_property("filename", os.path.join(ASSETS, name + ".png"))
     task.set_editor_property("destination_path", CONTENT_DIR)
-    task.set_editor_property("destination_name", "T_EvolutionSky")
+    task.set_editor_property("destination_name", name)
     task.set_editor_property("automated", True)
     task.set_editor_property("replace_existing", True)
     task.set_editor_property("save", True)
     asset_tools.import_asset_tasks([task])
-    texture = eal.load_asset(CONTENT_DIR + "/T_EvolutionSky")
+    texture = eal.load_asset(f"{CONTENT_DIR}/{name}")
     # Données (pas des couleurs) : pas de sRGB ; toujours en pleine résolution (gros plan, apparaît d'un coup)
     texture.set_editor_property("srgb", False)
     texture.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_DEFAULT)
@@ -172,9 +179,36 @@ def center_glow(graph):
     return graph.mul(graph.mul(falloff, graph.scalar("LueurCentre", 1.0)), graph.color("CouleurCentre", CENTER))
 
 
-def make_sky(texture):
+def mask(graph, source, channel, output=""):
+    flags = {key: key == channel for key in ("r", "g", "b", "a")}
+    return graph.single(unreal.MaterialExpressionComponentMask, source, output, **flags)
+
+
+def append(graph, a, b):
+    expression = graph.node(unreal.MaterialExpressionAppendVector)
+    graph.link(a, "", expression, "A")
+    graph.link(b, "", expression, "B")
+    return expression
+
+
+def screen_coords(graph):
+    """Coordonnées à l'écran : (u × rapport largeur/hauteur, v) et écart au centre (dx, dy) à la même échelle.
+    Le ciel est accroché à la caméra : travailler à l'écran garde les piliers verticaux et les lignes centrées."""
+    screen = graph.node(unreal.MaterialExpressionScreenPosition)
+    size = graph.node(unreal.MaterialExpressionViewSize)
+    aspect = graph.op(unreal.MaterialExpressionDivide, mask(graph, size, "r"), mask(graph, size, "g"))
+    u = mask(graph, screen, "r", "ViewportUV")
+    v = mask(graph, screen, "g", "ViewportUV")
+    uv = append(graph, graph.mul(u, aspect), v)
+    dx = graph.mul(graph.add(u, const_b=-0.5), aspect)
+    dy = graph.add(v, const_b=-0.5)
+    return uv, dx, dy, u
+
+
+def make_sky(texture, fx):
     g = Graph("M_EvolutionSky")
     brightness = g.scalar("Luminosite", 1.0)
+    uv, dx, dy, screen_u = screen_coords(g)
 
     # Dégradé : CouleurHorizon au ras du sol -> CouleurHaut à HauteurDegrade au-dessus
     height, _position = floor_height(g)
@@ -186,25 +220,47 @@ def make_sky(texture):
     # Lueur au centre de l'image : l'éclat de l'évolution (la même sur le sol, pas de cassure à l'horizon)
     sky = g.add(sky, center_glow(g))
 
-    # Étoiles (R) : glissent doucement, scintillent chacune à son rythme
-    tiling = g.scalar("Repetition", 1.2)
-    stars = g.sample(texture, g.uv(tiling), 0.004, 0.0)
+    # Piliers de lumière verticaux (Fx R) : glissent à peine, vacillent
+    pillar_uv = g.mul(uv, g.node(unreal.MaterialExpressionConstant2Vector, r=0.8, g=0.5))
+    pillars = g.sample(fx, pillar_uv, 0.003, 0.0)
+    flicker_time = g.mul(g.node(unreal.MaterialExpressionTime), const_b=0.27)
+    flicker = g.single(unreal.MaterialExpressionSine, g.add(flicker_time, g.mul(screen_u, const_b=1.3)), period=1.0)
+    flicker = g.add(g.mul(flicker, const_b=0.3), const_b=0.7)
+    pillar_light = g.mul(g.mul(pillars, flicker, a_out="R"), g.scalar("Piliers", 1.2))
+    sky = g.add(sky, g.mul(pillar_light, g.color("CouleurPiliers", PILLARS)))
+
+    # Étoiles (Sky R) : glissent doucement, scintillent chacune à son rythme
+    stars = g.sample(texture, g.mul(uv, g.scalar("Repetition", 1.2)), 0.004, 0.0)
     twinkle = g.twinkle(stars, g.scalar("VitesseScintillement", 0.5), 0.2)
-    star_light = g.mul(g.mul(stars, twinkle, a_out="R"), g.scalar("IntensiteEtoiles", 4.0))
+    star_light = g.mul(g.mul(stars, twinkle, a_out="R"), g.scalar("IntensiteEtoiles", 3.0))
     sky = g.add(sky, g.mul(star_light, g.color("CouleurEtoiles", STARS)))
 
-    # Bokeh (G) : plus gros, dérive lente, pulse doucement
-    bokeh_uv = g.mul(g.node(unreal.MaterialExpressionTextureCoordinate), const_b=0.8)
-    bokeh = g.sample(texture, bokeh_uv, 0.0, -0.006)
-    pulse = g.twinkle(bokeh, g.scalar("VitesseBokeh", 0.2), 0.55)
-    bokeh_light = g.mul(g.mul(bokeh, pulse, a_out="G"), g.scalar("IntensiteBokeh", 1.0))
+    # Bokeh (Sky G) : gros ronds flous et nombreux, montent lentement, pulsent
+    bokeh = g.sample(texture, g.mul(uv, const_b=0.7), 0.0, 0.01)
+    pulse = g.twinkle(bokeh, g.scalar("VitesseBokeh", 0.2), 0.45)
+    bokeh_light = g.mul(g.mul(bokeh, pulse, a_out="G"), g.scalar("IntensiteBokeh", 0.8))
     sky = g.add(sky, g.mul(bokeh_light, g.color("CouleurBokeh", BOKEH)))
 
-    # Traînées (A) : filent le long de leur propre direction (même angle que dans la texture)
-    streak_uv = g.node(unreal.MaterialExpressionTextureCoordinate)
-    speed = 0.04
-    streaks = g.sample(texture, streak_uv, -0.883 * speed, 0.469 * speed)
-    streak_light = g.mul(g.mul(streaks, g.scalar("IntensiteTrainees", 1.5), a_out="A"),
+    # Éclats à quatre branches (Fx G) : apparaissent et disparaissent chacun à son tour
+    sparkles = g.sample(fx, g.mul(uv, const_b=0.9), 0.0, 0.004)
+    pop = g.power(g.twinkle(sparkles, g.scalar("VitesseEclats", 0.35), 0.0), 3.0)
+    sparkle_light = g.mul(g.mul(sparkles, pop, a_out="G"), g.scalar("Eclats", 2.5))
+    sky = g.add(sky, g.mul(sparkle_light, g.color("CouleurEclats", SPARKLES)))
+
+    # Lignes de vitesse (Fx A) : en coordonnées polaires autour du centre, elles filent vers l'extérieur
+    angle = g.node(unreal.MaterialExpressionArctangent2)
+    g.link(dy, "", angle, "Y")
+    g.link(dx, "", angle, "X")
+    radius = g.op(unreal.MaterialExpressionDistance, append(g, dx, dy), g.node(unreal.MaterialExpressionConstant2Vector, r=0.0, g=0.0))
+    polar = append(g, g.mul(angle, const_b=4.0 / 6.283185), g.mul(radius, const_b=0.8))
+    lines = g.sample(fx, polar, 0.0, -0.35)
+    fade_in = g.single(unreal.MaterialExpressionSaturate, g.mul(g.add(radius, const_b=-0.1), const_b=5.0))
+    line_light = g.mul(g.mul(lines, fade_in, a_out="A"), g.scalar("LignesVitesse", 0.5))
+    sky = g.add(sky, g.mul(line_light, g.color("CouleurLignes", SPEED_LINES)))
+
+    # Traînées en biais (Sky A), roses comme dans Soleil et Lune
+    streaks = g.sample(texture, uv, -0.883 * 0.04, 0.469 * 0.04)
+    streak_light = g.mul(g.mul(streaks, g.scalar("IntensiteTrainees", 0.6), a_out="A"),
                          g.color("CouleurTrainees", STREAKS))
     sky = g.add(sky, streak_light)
 
@@ -228,10 +284,23 @@ def make_floor(texture):
     floor = g.lerp(g.color("CouleurHorizon", HORIZON), g.color("CouleurSol", FLOOR_GLOW),
                    g.single(unreal.MaterialExpressionSaturate, glow))
 
+    # Anneaux lumineux autour des pieds (le cercle de Soleil et Lune), qui respirent doucement
+    breath = g.single(unreal.MaterialExpressionSine, g.mul(g.node(unreal.MaterialExpressionTime), const_b=0.25), period=1.0)
+    breath = g.add(g.mul(breath, const_b=0.15), const_b=0.85)
+    ring_width = g.scalar("LargeurAnneau", 0.025)
+    rings = None
+    for name, value in (("Anneau1", 0.22), ("Anneau2", 0.34)):
+        offset = g.single(unreal.MaterialExpressionAbs, g.op(unreal.MaterialExpressionSubtract, ratio, g.scalar(name, value)))
+        ring = g.single(unreal.MaterialExpressionOneMinus, g.op(unreal.MaterialExpressionDivide, offset, ring_width))
+        ring = g.power(g.single(unreal.MaterialExpressionSaturate, ring), 2.0)
+        rings = ring if rings is None else g.add(rings, ring)
+    rings = g.mul(g.mul(rings, breath), g.scalar("Anneaux", 1.2))
+    floor = g.add(floor, g.mul(rings, g.color("CouleurAnneaux", RINGS)))
+
     # Reflets de bokeh au sol, en coordonnées du monde (un motif tous les 4 m), très doux
     world_uv = g.mul(xy, const_b=1.0 / 400.0)
     bokeh = g.sample(texture, world_uv, 0.0, 0.01)
-    reflection = g.mul(g.mul(bokeh, g.scalar("BokehSol", 0.3), a_out="G"), g.color("CouleurBokeh", BOKEH))
+    reflection = g.mul(g.mul(bokeh, g.scalar("BokehSol", 0.15), a_out="G"), g.color("CouleurBokeh", BOKEH))
     floor = g.add(floor, reflection)
     floor = g.add(floor, center_glow(g))
 
@@ -239,13 +308,15 @@ def make_floor(texture):
 
 
 def main():
-    if not os.path.exists(TEXTURE_FILE):
-        unreal.log_error(f"Texture introuvable : {TEXTURE_FILE} (lancer make_evolution_sky.py)")
-        return
-    texture = import_texture()
-    make_sky(texture)
+    for name in ("T_EvolutionSky", "T_EvolutionFx"):
+        if not os.path.exists(os.path.join(ASSETS, name + ".png")):
+            unreal.log_error(f"Texture introuvable : {name}.png dans {ASSETS} (lancer make_evolution_sky.py)")
+            return
+    texture = import_texture("T_EvolutionSky")
+    fx = import_texture("T_EvolutionFx")
+    make_sky(texture, fx)
     make_floor(texture)
-    unreal.log(f"Fond de l'évolution : T_EvolutionSky, M_EvolutionSky, M_EvolutionFloor dans {CONTENT_DIR}.")
+    unreal.log(f"Fond de l'évolution : T_EvolutionSky, T_EvolutionFx, M_EvolutionSky, M_EvolutionFloor dans {CONTENT_DIR}.")
 
 
 main()

@@ -2,13 +2,24 @@
 
     python Tools/Progression/make_evolution_sky.py      (numpy + pillow)
 
-Sortie : Tools/Progression/Assets/T_EvolutionSky.png (2048 × 2048, se répète sans raccord). Une donnée par canal,
-lue par M_EvolutionSky et M_EvolutionFloor (import_evolution_backdrop.py) :
+Inspiré de l'évolution de Pokémon Soleil et Lune (captures de L'amie) : salle bleue, piliers de lumière, gros
+bokeh, éclats à quatre branches, lignes de lumière qui partent du centre.
+
+Sorties (2048 × 2048, se répètent sans raccord), une donnée par canal, lues par M_EvolutionSky et
+M_EvolutionFloor (import_evolution_backdrop.py).
+
+T_EvolutionSky.png :
   - R : petites étoiles nettes, quelques-unes avec une croix de lumière ;
   - G : bokeh (grosses taches rondes et douces, comme des lumières floues) ;
   - B : phase de scintillement de chaque étoile ou tache (0-1, le matériau la décale dans le temps) ;
   - A : traînées de lumière fines (étoiles filantes), toutes dans la même direction.
-Le tirage est fixe (graine) : relancer donne la même image.
+
+T_EvolutionFx.png :
+  - R : piliers de lumière verticaux (cœur fin et halo large), de hauteurs variées ;
+  - G : éclats à quatre branches (étoiles « scintillement » de Soleil et Lune) ;
+  - B : phase d'apparition de chaque éclat ;
+  - A : lignes de vitesse, rangées en (angle, distance au centre) : le matériau les fait partir du centre.
+Le tirage est fixe (graine) : relancer donne les mêmes images.
 """
 
 import math
@@ -21,10 +32,11 @@ SIZE = 2048
 SEED = 20261103
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "Assets", "T_EvolutionSky.png")
+OUT_FX = os.path.join(HERE, "Assets", "T_EvolutionFx.png")
 
-STARS = 700            # petites étoiles
-FLARED_STARS = 45      # étoiles avec une croix de lumière
-BOKEH = 70             # taches rondes floues
+STARS = 350            # petites étoiles
+FLARED_STARS = 30      # étoiles avec une croix de lumière
+BOKEH = 110            # taches rondes floues (nombreuses dans Soleil et Lune)
 STREAKS = 36           # traînées
 STREAK_ANGLE = math.radians(-28.0)   # vers le bas à droite
 
@@ -82,8 +94,8 @@ def make():
     # Bokeh : disques doux avec un bord un peu plus clair (lentille)
     for _ in range(BOKEH):
         cx, cy = rng.uniform(0, SIZE, 2)
-        radius = rng.uniform(14, 60)
-        peak = rng.uniform(0.25, 0.8)
+        radius = rng.uniform(18, 95)
+        peak = rng.uniform(0.25, 0.7)
 
         def disc(dx, dy, radius=radius, peak=peak):
             d = np.sqrt(dx * dx + dy * dy) / radius
@@ -114,5 +126,69 @@ def make():
     print(f"Texture du fond : {OUT}")
 
 
+PILLARS = 12
+SPARKLES = 28
+SPEED_LINES = 70
+
+
+def make_fx():
+    rng = np.random.default_rng(SEED + 1)
+    pillars = np.zeros((SIZE, SIZE), np.float32)
+    sparkles = np.zeros((SIZE, SIZE), np.float32)
+    phase = np.zeros((SIZE, SIZE), np.float32)
+    lines = np.zeros((SIZE, SIZE), np.float32)
+    ys = np.arange(SIZE, dtype=np.float32)
+    xs = np.arange(SIZE, dtype=np.float32)
+
+    def wrapped(delta):
+        return (delta + SIZE / 2) % SIZE - SIZE / 2
+
+    # Piliers : colonnes verticales, cœur net + halo, un segment de hauteur variable aux bouts adoucis
+    for _ in range(PILLARS):
+        cx = rng.uniform(0, SIZE)
+        core = rng.uniform(1.5, 4.5)
+        halo = rng.uniform(20, 70)
+        peak = rng.uniform(0.5, 1.0)
+        top = rng.uniform(0, SIZE)
+        height = rng.uniform(0.35, 0.9) * SIZE
+        dx = wrapped(xs - cx)
+        across = np.exp(-(dx * dx) / (2 * core * core)) + 0.25 * np.exp(-(dx * dx) / (2 * halo * halo))
+        along = (ys - top) % SIZE
+        ends = np.clip(np.minimum(along, height - along) / (0.25 * height), 0, 1) * (along < height)
+        pillars = np.maximum(pillars, peak * np.clip(np.outer(ends, across), 0, 1))
+
+    # Éclats à quatre branches : astroïde pleine, bords doux, cœur brillant
+    for _ in range(SPARKLES):
+        cx, cy = rng.uniform(0, SIZE, 2)
+        size = rng.uniform(25, 110)
+        peak = rng.uniform(0.7, 1.0)
+
+        def sparkle(dx, dy, size=size, peak=peak):
+            shape = (np.abs(dx) / size) ** 0.5 + (np.abs(dy) / size) ** 0.5
+            body = np.clip((1.0 - shape) / 0.25, 0, 1)
+            core = np.exp(-(dx * dx + dy * dy) / (2 * (size * 0.12) ** 2))
+            return peak * np.clip(body * 0.8 + core, 0, 1)
+
+        splat(sparkles, phase, cx, cy, size + 2, sparkle, rng.uniform())
+
+    # Lignes de vitesse : u = angle autour du centre, v = distance ; tirets fins dans le sens de v
+    for _ in range(SPEED_LINES):
+        cx = rng.uniform(0, SIZE)
+        width = rng.uniform(1.0, 3.0)
+        start = rng.uniform(0, SIZE)
+        length = rng.uniform(120, 600)
+        peak = rng.uniform(0.4, 1.0)
+        dx = wrapped(xs - cx)
+        across = np.exp(-(dx * dx) / (2 * width * width))
+        along = (ys - start) % SIZE
+        dash = np.clip(along / (0.3 * length), 0, 1) * np.clip((length - along) / (0.15 * length), 0, 1) * (along < length)
+        lines = np.maximum(lines, peak * np.outer(dash, across))
+
+    image = np.stack([pillars, sparkles, phase, lines], axis=-1)
+    Image.fromarray((np.clip(image, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA").save(OUT_FX, optimize=True)
+    print(f"Texture des effets : {OUT_FX}")
+
+
 if __name__ == "__main__":
     make()
+    make_fx()

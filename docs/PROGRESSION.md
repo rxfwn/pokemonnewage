@@ -65,16 +65,20 @@ Créer un Blueprint enfant d'**EvolutionScene** (*Content/Progression/BP_Evoluti
 
 ## Fond étoilé (2026-11-03)
 
-Demandé par L'amie d'après une référence (ciel bleu, étoiles, lumières floues, traînées). À la place du terrain
-sombre, la scène montre un ciel bleu animé derrière le Pokémon et un sol lumineux sous ses pieds.
+Demandé par L'amie d'après une référence (ciel bleu, étoiles, lumières floues, traînées), puis refait le même jour
+façon évolution de Pokémon Soleil et Lune d'après ses captures : salle bleu vif, piliers de lumière verticaux, gros
+bokeh, éclats à quatre branches qui apparaissent et disparaissent, lignes de vitesse qui partent du centre, disque
+lumineux avec deux anneaux sous les pieds. À la place du terrain sombre, la scène montre ce ciel animé derrière le
+Pokémon et le sol lumineux sous ses pieds.
 
 - **Mise en place** : lancer `Tools/Progression/import_evolution_backdrop.py` dans Unreal (*Outils > Exécuter un
   script Python...*), puis compiler (nouveau composant C++). Test : `VoirEvolution Bulbasaur Ivysaur`.
 - **Code** : `UEvolutionBackdropComponent` (`Source/PokemonNewAge/Progression/EvolutionBackdrop.h`), créé par
   `AEvolutionScene`. Le ciel est un panneau accroché à la caméra, derrière tout ce qui est montré ; le sol est un
   disque juste au-dessus des pieds (`FloorLift`, 3 cm) qui va jusqu'au ciel. Sans les matériaux : ancien fond.
-- **Texture** : `Tools/Progression/Assets/T_EvolutionSky.png`, fabriquée par `make_evolution_sky.py`
-  (R étoiles, G bokeh, B phase du scintillement, A traînées).
+- **Textures** fabriquées par `make_evolution_sky.py` (dans `Tools/Progression/Assets/`) :
+  `T_EvolutionSky.png` (R étoiles, G bokeh, B phase du scintillement, A traînées) et `T_EvolutionFx.png`
+  (R piliers, G éclats à quatre branches, B phase des éclats, A lignes de vitesse rangées en angle/distance).
 - **Réglages** (ouvrir `M_EvolutionSky` ou `M_EvolutionFloor`, cliquer sur le paramètre, *Default Value*,
   *Appliquer* ; relancer le script remet les valeurs d'origine) :
 
@@ -84,10 +88,16 @@ sombre, la scène montre un ciel bleu animé derrière le Pokémon et un sol lum
   | `CouleurCentre`, `LueurCentre` | les deux | Grande lueur au centre de l'image. |
   | `IntensiteEtoiles`, `CouleurEtoiles`, `VitesseScintillement`, `Repetition` | ciel | Étoiles (`Repetition` plus grand = plus d'étoiles, plus petites). |
   | `IntensiteBokeh`, `CouleurBokeh`, `VitesseBokeh` | ciel | Lumières floues qui dérivent. |
-  | `IntensiteTrainees`, `CouleurTrainees` | ciel | Traînées de lumière. |
+  | `Piliers`, `CouleurPiliers` | ciel | Piliers de lumière verticaux (ils vacillent doucement). |
+  | `Eclats`, `CouleurEclats`, `VitesseEclats` | ciel | Éclats à quatre branches qui s'allument et s'éteignent. |
+  | `LignesVitesse`, `CouleurLignes` | ciel | Lignes qui partent du centre de l'image. |
+  | `IntensiteTrainees`, `CouleurTrainees` | ciel | Traînées de lumière en diagonale. |
   | `CouleurSol`, `IntensiteSol`, `BokehSol` | sol | Lueur sous le Pokémon. |
+  | `Anneaux`, `CouleurAnneaux`, `Anneau1`, `Anneau2`, `LargeurAnneau` | sol | Les deux anneaux qui respirent autour des pieds (taille en part du rayon de la lueur). |
   | `Luminosite` | les deux | Tout plus clair ou plus sombre. |
 
+- **Vidéo After Effects** : quand L'amie enverra sa boucle (MP4 H.264, sans son), elle pourra remplacer le ciel
+  (Media Player + Media Texture sur le panneau du ciel).
 - **Limite** : si le terrain monte fort autour du Pokémon, une bosse peut passer au-dessus du sol lumineux.
 
 ## Pas encore fait
