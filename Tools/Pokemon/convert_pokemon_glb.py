@@ -109,8 +109,13 @@ def load_species():
 
 
 def anim_short_name(name, used):
-    low = name.lower().split("|")[-1]
-    short = next((n for pat, n in ANIM_NAMES if re.search(pat, low)), None)
+    last = name.split("|")[-1]
+    low = last.lower()
+    # Déjà un nom propre (modèles Let's Go : Idle, BattleIdle, Walk...) : on le garde tel quel
+    if re.fullmatch(r"[A-Z][A-Za-z]+", last):
+        short = last
+    else:
+        short = next((n for pat, n in ANIM_NAMES if re.search(pat, low)), None)
     if short is None:
         short = re.sub(r"[^A-Za-z0-9]", "", low.title()) or "Anim"
     base, i = short, 2
@@ -452,4 +457,5 @@ def main():
     print(f"{len(summary)} espèces converties dans {out}")
 
 
-main()
+if __name__ == "__main__":
+    main()

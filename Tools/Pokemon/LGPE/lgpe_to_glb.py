@@ -1,6 +1,7 @@
 """Pokémon Let's Go (fichiers bruts du jeu) -> .glb, pour passer ensuite dans convert_pokemon_glb.py.
 
     blender --background --python Tools/Pokemon/LGPE/lgpe_to_glb.py -- <dossier pmXXXX_00> <sortie.glb> [--rare]
+            [--anims <dossier contenant pmXXXX_00/anm/>] [--upscale <RealESRGAN_x4plus_anime_6B.pth>]
 
 Lit pmXXXX_00/mdl/pmXXXX_00(.rare).gfbmdl (gfbmdl.py) et ses textures .bntx (bntx_to_png.py) :
   - squelette (os en Y vers le haut, remis en Z vers le haut comme Blender) et poids des sommets ;
@@ -20,20 +21,98 @@ from PIL import Image
 
 # Maillages rangés sous ces os : invisibles en jeu sauf pendant certaines attaques (lianes de Bulbizarre...)
 HIDDEN_MESHES = ("Tuta",)
+# Part de la couleur d'ombre du jeu mélangée à la couleur éclairée (voir texture_png)
+SHADOW_MIX = 0.4
+# Flammes (Salamèche, Reptincel...) : shader spécial du jeu, remplacé par une couleur de flamme
+FIRE_COLOR = (1.0, 0.42, 0.08, 1.0)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import bntx_to_png  # noqa: E402
+import gfbanm  # noqa: E402
 import gfbmdl  # noqa: E402
 
+sys.path.insert(0, os.path.dirname(HERE))
+from convert_pokemon_glb import bake_rest_pose  # noqa: E402
 
-def texture_png(mdl_dir, name, rare, tex_dir, wrap_u, wrap_v):
-    """PNG de la texture, avec le miroir recopié. Renvoie (chemin, facteur U, facteur V)."""
+# Animations reprises du jeu : nom Unreal (A_<Espèce>_<Nom>) -> fichiers candidats dans anm/, par ordre de préférence.
+# Idle sert aussi de pose de repos (sa première image), à la place de la pose en T du fichier de modèle.
+ANIMATIONS = [
+    ("Idle", ("fi01_wait01", "ba10_waitA01", "kw01_wait01")),
+    ("BattleIdle", ("ba10_waitA01",)),
+    ("Walk", ("fi20_walk01",)),
+    ("Run", ("fi21_run01",)),
+    ("Attack", ("ba20_buturi01",)),
+    ("Special", ("ba21_tokusyu01",)),
+    ("Hit", ("ba30_damageS01",)),
+    ("Faint", ("ba41_down01",)),
+    ("Happy", ("kw32_happyA01",)),
+    ("Sleep", ("kw21_sleepA01",)),
+]
+
+
+def load_bntx(mdl_dir, name, rare):
     src = os.path.join(mdl_dir, name + ("_rare" if rare else "") + ".bntx")
     if not os.path.exists(src):
         src = os.path.join(mdl_dir, name + ".bntx")
     with open(src, "rb") as fh:
-        img = bntx_to_png.read_bntx(fh.read())[0][1]
+        return src, bntx_to_png.read_bntx(fh.read())[0][1]
+
+
+# Agrandissement ×4 des textures par IA (Tools/Pokemon/upscale_textures.py), activé par --upscale <poids .pth>
+UPSCALE = {"weights": None, "model": None, "cache": None}
+
+
+def upscaled(img, key, shadow, mdl_dir, rare):
+    """Texture (mélangée à son ombre) agrandie par Real-ESRGAN, gardée en cache (même clé = même résultat)."""
+    import hashlib
+    if shadow:
+        try:
+            _, sdw = load_bntx(mdl_dir, shadow, rare)
+            if sdw.size == img.size:
+                rgba = img.convert("RGBA")
+                img = Image.blend(rgba, sdw.convert("RGBA"), SHADOW_MIX)
+                img.putalpha(rgba.getchannel("A"))
+        except (OSError, KeyError, ValueError) as err:
+            print(f"  ombre {shadow} ignorée : {err}")
+    with open(key.split("+")[0], "rb") as fh:
+        digest = hashlib.sha1(fh.read() + key.encode()).hexdigest()[:16]
+    cached = os.path.join(UPSCALE["cache"], digest + ".png")
+    if os.path.exists(cached):
+        return Image.open(cached).copy()
+    if UPSCALE["model"] is None:
+        sys.path.insert(0, os.path.dirname(HERE))
+        import upscale_textures
+        UPSCALE["module"] = upscale_textures
+        UPSCALE["model"] = upscale_textures.load_model(UPSCALE["weights"])
+    out = UPSCALE["module"].upscale_image(UPSCALE["model"], img)
+    os.makedirs(UPSCALE["cache"], exist_ok=True)
+    out.save(cached)
+    print(f"  {os.path.basename(key.split('+')[0])} agrandie : {img.size} -> {out.size}", flush=True)
+    return out
+
+
+def texture_png(mdl_dir, name, rare, tex_dir, wrap_u, wrap_v, shadow=None):
+    """PNG de la texture, avec le miroir recopié. Renvoie (chemin, facteur U, facteur V).
+
+    shadow : nom de la texture d'ombre du jeu (ColSdw0Tex). Le jeu passe de la couleur claire (éclairée) à
+    cette couleur foncée selon la lumière ; Unreal fait son propre éclairage, donc on prend une couleur entre
+    les deux (SHADOW_MIX), sinon le Pokémon paraît délavé.
+    """
+    src, img = load_bntx(mdl_dir, name, rare)
+    if UPSCALE["weights"] and "Iris" not in name:
+        img = upscaled(img, src + (f"+{shadow}" if shadow else ""), shadow, mdl_dir, rare)
+        shadow = None  # déjà mélangée avant l'agrandissement
+    if shadow:
+        try:
+            _, sdw = load_bntx(mdl_dir, shadow, rare)
+            if sdw.size == img.size:
+                rgba = img.convert("RGBA")
+                mixed = Image.blend(rgba, sdw.convert("RGBA"), SHADOW_MIX)
+                mixed.putalpha(rgba.getchannel("A"))
+                img = mixed
+        except (OSError, KeyError, ValueError) as err:
+            print(f"  ombre {shadow} ignorée : {err}")
     fu = 2 if wrap_u == "mirror" else 1
     fv = 2 if wrap_v == "mirror" else 1
     if fu == 2:
@@ -62,8 +141,16 @@ def build_materials(model, mdl_dir, rare, tex_dir):
         bsdf.inputs["Roughness"].default_value = 0.7
         uv = {"su": 1.0, "sv": 1.0, "tu": 0.0, "tv": 0.0, "fu": 1, "fv": 1}
         col = next((mp for mp in m["maps"] if mp[0] == "Col0Tex"), None)
+        sdw = next((mp for mp in m["maps"] if mp[0] == "ColSdw0Tex"), None)
+        sdw_name = model["textures"][sdw[1]] if sdw is not None and 0 <= sdw[1] < len(model["textures"]) else None
+        if sdw_name and "dummy" in sdw_name:
+            sdw_name = None
+        if "Fire" in m["shader"]:
+            bsdf.inputs["Base Color"].default_value = FIRE_COLOR
+            bsdf.inputs["Emission Color"].default_value = FIRE_COLOR
+            bsdf.inputs["Emission Strength"].default_value = 2.0
         if col is not None and 0 <= col[1] < len(model["textures"]):
-            path, fu, fv = texture_png(mdl_dir, model["textures"][col[1]], rare, tex_dir, col[2], col[3])
+            path, fu, fv = texture_png(mdl_dir, model["textures"][col[1]], rare, tex_dir, col[2], col[3], sdw_name)
             node = nodes.new("ShaderNodeTexImage")
             node.image = bpy.data.images.load(path)
             links.new(node.outputs["Color"], bsdf.inputs["Base Color"])
@@ -239,6 +326,60 @@ def build_mesh(model, index, mats, arm, skin):
     return obj
 
 
+def find_anim_dir(folder, anim_root):
+    base = os.path.basename(os.path.normpath(folder))
+    for cand in ([os.path.join(anim_root, base, "anm")] if anim_root else []) + [os.path.join(folder, "anm")]:
+        if os.path.isdir(cand):
+            return cand
+    return None
+
+
+def import_animations(arm, anim_dir, base):
+    """Crée une action Blender par animation retenue. Les pistes du jeu donnent la transformation locale de
+    chaque os (position, rotation) ; on en déduit la pose « basis » de Blender. Les échelles animées sont
+    ignorées : le jeu ne les transmet pas aux os enfants, Unreal si (elles étireraient tout le squelette)."""
+    from mathutils import Quaternion
+    bones = list(arm.pose.bones)
+    order = [pb for pb in bones]  # build_armature crée les parents avant les enfants
+    rest_local = {}
+    for pb in bones:
+        m = pb.bone.matrix_local
+        rest_local[pb.name] = pb.parent.bone.matrix_local.inverted() @ m if pb.parent else m.copy()
+    made = []
+    if arm.animation_data is None:
+        arm.animation_data_create()
+    for name, candidates in ANIMATIONS:
+        path = next((os.path.join(anim_dir, f"{base}_{c}.gfbanm") for c in candidates
+                     if os.path.exists(os.path.join(anim_dir, f"{base}_{c}.gfbanm"))), None)
+        if path is None:
+            continue
+        anim = gfbanm.read_animation(path)
+        act = bpy.data.actions.new(name)
+        arm.animation_data.action = act
+        bpy.context.scene.render.fps = anim["fps"]
+        for f in range(anim["frames"]):
+            world = {}
+            for pb in order:
+                loc, rot, _ = rest_local[pb.name].decompose()
+                tr = anim["tracks"].get(pb.name)
+                if tr:
+                    if tr["t"]:
+                        loc = Vector(tr["t"][f])
+                    if tr["r"]:
+                        rot = Quaternion(tr["r"][f])
+                local = Matrix.LocRotScale(loc, rot, None)
+                world[pb.name] = world[pb.parent.name] @ local if pb.parent else local
+                rel = rest_local[pb.name]
+                parent = world[pb.parent.name] if pb.parent else Matrix.Identity(4)
+                pb.rotation_mode = "QUATERNION"
+                pb.matrix_basis = rel.inverted() @ parent.inverted() @ world[pb.name]
+                for dp in ("location", "rotation_quaternion"):
+                    pb.keyframe_insert(dp, frame=f + 1)
+        made.append(name)
+    arm.animation_data.action = None
+    return made
+
+
 def main():
     argv = sys.argv[sys.argv.index("--") + 1:]
     folder, out = argv[0], argv[1]
@@ -248,6 +389,9 @@ def main():
     path = os.path.join(mdl_dir, base + ("_rare" if rare else "") + ".gfbmdl")
     if not os.path.exists(path):
         path = os.path.join(mdl_dir, base + ".gfbmdl")
+    if "--upscale" in argv:
+        UPSCALE["weights"] = argv[argv.index("--upscale") + 1]
+        UPSCALE["cache"] = os.path.join(os.path.dirname(os.path.abspath(out)), "_agrandies")
     bpy.ops.wm.read_factory_settings(use_empty=True)
     model = gfbmdl.read_model(path)
     tex_dir = os.path.join(os.path.dirname(os.path.abspath(out)), base + ("_rare" if rare else "") + "_tex")
@@ -263,11 +407,23 @@ def main():
     bake_layers(objects, mats)
     for o in objects:
         o.data.uv_layers.remove(o.data.uv_layers["UVLayer"])
+
+    anim_root = argv[argv.index("--anims") + 1] if "--anims" in argv else None
+    anim_dir = find_anim_dir(folder, anim_root)
+    anims = import_animations(arm, anim_dir, base) if anim_dir else []
+    if anims:
+        # Pose de repos = première image de l'attente (sinon Unreal montre la pose en T du fichier)
+        arm.animation_data.action = bpy.data.actions[anims[0]]
+        bpy.context.scene.frame_set(1)
+        arm.animation_data.action = None
+        bake_rest_pose(arm, objects)
+        print(f"  animations : {', '.join(anims)}")
     # Le jeu est en Y vers le haut : on redresse (le Pokémon regarde alors -Y, comme un glTF importé)
     arm.matrix_world = Matrix.Rotation(math.radians(90), 4, "X")
     bpy.context.view_layer.update()
     bpy.ops.export_scene.gltf(filepath=out, export_format="GLB", export_yup=True, export_skins=True,
-                              export_animations=False, export_image_format="AUTO")
+                              export_animations=bool(anims), export_animation_mode="ACTIONS",
+                              export_image_format="AUTO")
     print(f"LGPE {base}{' rare' if rare else ''} -> {out}")
 
 

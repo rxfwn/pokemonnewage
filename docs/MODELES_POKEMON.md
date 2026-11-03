@@ -73,6 +73,29 @@ vider `Tools\Pokemon\Generated\`, y dézipper le nouveau zip, puis relancer le s
 - **Pokémon couché ou de dos** : dans le Skeletal Mesh, Détails > Transformation à l'import (Import Rotation), puis Réimporter.
 - **Animation vide** : réimporter le FBX à la main (clic droit > Réimporter) en cochant Importer les animations.
 
+## Modèles Let's Go (depuis le 2026-11-03)
+
+Les modèles de Pokémon Let's Go Pikachu/Évoli remplacent ceux de Pokemon-3D-api espèce par espèce
+(textures plus fines, agrandies ×4 par IA, et une dizaine d'animations chacun). Source : le pack
+`LGPE-Poke.zip` (fichiers bruts du jeu, dossiers `pmXXXX_00`) et ses animations `LGPE-PokeAnim.zip`,
+téléchargés par L'amie (jeu privé, jamais publié).
+
+Chaîne de conversion (cloud ou PC, Blender en module Python `bpy`) :
+
+```
+python Tools/Pokemon/LGPE/lgpe_to_glb.py -- <pmXXXX_00> <sortie>/regular/<n°>.glb --anims <dossier des anm> --upscale RealESRGAN_x4plus_anime_6B.pth
+python Tools/Pokemon/LGPE/lgpe_to_glb.py -- <pmXXXX_00> <sortie>/shiny/<n°>.glb --rare --anims ... --upscale ...
+blender --background --python Tools/Pokemon/convert_pokemon_glb.py -- <sortie> Tools/Pokemon/Generated
+```
+
+- `gfbmdl.py` et `gfbanm.py` lisent le modèle et les animations (FlatBuffers, Python pur) ; `bntx_to_png.py`
+  décode les textures Switch (BC7… via le paquet `texture2ddecoder`).
+- Le jeu peint souvent une moitié de texture et la répète en miroir : le reflet est recopié dans l'image.
+- La couleur est un mélange de la couleur éclairée et de la couleur d'ombre du jeu (`SHADOW_MIX`).
+- L'iris est cuit dans la texture des yeux ; les flammes (shader spécial) deviennent une couleur orange.
+- Pose de repos = première image de l'animation d'attente (sinon pose en T). Les échelles animées sont ignorées.
+- Animations : Idle, BattleIdle, Walk, Run, Attack, Special, Hit, Faint, Happy, Sleep (selon l'espèce).
+
 ## Refaire la conversion (optionnel)
 
 Seulement pour ajouter d'autres Pokémon ou changer un réglage.

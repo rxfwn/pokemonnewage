@@ -9,8 +9,7 @@ La transparence (alpha) est agrandie à part, en bicubique.
         https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth
     python Tools/Pokemon/upscale_textures.py <poids .pth> <dossier d'entrée> <dossier de sortie>
 
-Le convertisseur (convert_pokemon_glb.py --upscale <dossier de sortie>) remplace alors chaque texture par sa version
-agrandie, au même nom.
+Utilisé aussi directement par LGPE/lgpe_to_glb.py (option --upscale <poids>) pour les modèles Let's Go.
 """
 
 import os
