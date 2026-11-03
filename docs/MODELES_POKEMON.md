@@ -65,9 +65,10 @@ vider `Tools\Pokemon\Generated\`, y dézipper le nouveau zip, puis relancer le s
 
 ### Si quelque chose cloche
 
-- **Pokémon gris à damier alors que `Materials/` contient bien les M_ et T_** : le mesh a perdu le lien vers
-  ses matériaux pendant l'import. Lancer `Tools/Pokemon/repair_pokemon_materials.py` (quelques secondes ;
-  le script d'import le fait aussi lui-même depuis le 2026-11-03).
+- **« Ce maillage squelettique n'a pas de squelette » ou Pokémon gris à damier** (import fait avec le script
+  d'avant le 2026-11-03) : les liens vers le squelette et les matériaux pointaient vers le dossier temporaire
+  d'import. Supprimer `Contenu > Pokemon > Models` et relancer `import_pokemon_models.py` (corrigé).
+  Si seuls les matériaux manquent : `Tools/Pokemon/repair_pokemon_materials.py` suffit.
 - **Matériau blanc ou gris** : ouvrir le matériau dans `Materials/`, brancher la texture `T_<Espèce>_1` sur Base Color.
 - **Pokémon couché ou de dos** : dans le Skeletal Mesh, Détails > Transformation à l'import (Import Rotation), puis Réimporter.
 - **Animation vide** : réimporter le FBX à la main (clic droit > Réimporter) en cochant Importer les animations.

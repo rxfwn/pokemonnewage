@@ -123,8 +123,12 @@ def import_species(species, info, base):
             move(package, folder, f"A_{tag}_{anim_short_name(short, info['animations'])}")
         else:  # matériaux, instances, textures
             move(package, f"{folder}/Materials", short)
+    # Tout réenregistrer AVANT de supprimer le dossier temporaire : un asset déplacé tôt (le mesh) a été
+    # enregistré quand le squelette et les matériaux étaient encore dans _Import_ ; en mémoire les liens suivent
+    # les déplacements, mais sur le disque ils pointaient vers _Import_ (supprimé) -> « pas de squelette »,
+    # Pokémon gris à damier au prochain lancement de l'éditeur.
+    eal.save_directory(folder, only_if_is_dirty=False, recursive=True)
     eal.delete_directory(temp)
-    eal.save_directory(folder, only_if_is_dirty=True, recursive=True)
 
     mesh = eal.load_asset(f"{folder}/{asset}")
     if mesh is None:
