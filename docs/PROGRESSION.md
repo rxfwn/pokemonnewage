@@ -63,6 +63,33 @@ Sans Unreal (dans le cloud) : `./Tools/BattleSim/run.sh` (tests) et `./Tools/Bat
 
 Créer un Blueprint enfant d'**EvolutionScene** (*Content/Progression/BP_EvolutionScene*), puis dans le Blueprint du PlayerController : composant **ProgressionComponent** > **Evolution Scene Class** = ce Blueprint. Réglages : durées (Intro, Glow, Morph, Reveal), la Poké Ball d'où sort le Pokémon au début (catégorie **Evolution > Ball** : taille, tremblements (durée, nombre, angle), ouverture (durée, angle du couvercle), durée du rayon et de l'explosion, couleur de la lumière, distance, netteté (Ball Shot Fstop) et hauteur à l'écran (Ball Shot Raise) du gros plan ; c'est la Ball de sa capture, modèles importés par `Tools/Capture/import_pokeball_unreal.py`, voir `docs/CAPTURE.md`), vitesses de l'alternance, distance devant le joueur, couleur de la lueur, et la caméra / les lumières / le post-process (flou, vignette) dans ses composants. Le rayon, les étincelles et l'onde de choc sont faits avec des formes de base et `M_EvolutionLight` (son paramètre **Intensite** règle leur éclat) ; un Niagara peut les remplacer ou s'y ajouter sans code.
 
+## Fond étoilé (2026-11-03)
+
+Demandé par L'amie d'après une référence (ciel bleu, étoiles, lumières floues, traînées). À la place du terrain
+sombre, la scène montre un ciel bleu animé derrière le Pokémon et un sol lumineux sous ses pieds.
+
+- **Mise en place** : lancer `Tools/Progression/import_evolution_backdrop.py` dans Unreal (*Outils > Exécuter un
+  script Python...*), puis compiler (nouveau composant C++). Test : `VoirEvolution Bulbasaur Ivysaur`.
+- **Code** : `UEvolutionBackdropComponent` (`Source/PokemonNewAge/Progression/EvolutionBackdrop.h`), créé par
+  `AEvolutionScene`. Le ciel est un panneau accroché à la caméra, derrière tout ce qui est montré ; le sol est un
+  disque juste au-dessus des pieds (`FloorLift`, 3 cm) qui va jusqu'au ciel. Sans les matériaux : ancien fond.
+- **Texture** : `Tools/Progression/Assets/T_EvolutionSky.png`, fabriquée par `make_evolution_sky.py`
+  (R étoiles, G bokeh, B phase du scintillement, A traînées).
+- **Réglages** (ouvrir `M_EvolutionSky` ou `M_EvolutionFloor`, cliquer sur le paramètre, *Default Value*,
+  *Appliquer* ; relancer le script remet les valeurs d'origine) :
+
+  | Paramètre | Matériau | Effet |
+  |---|---|---|
+  | `CouleurHaut`, `CouleurHorizon`, `HauteurDegrade` | ciel | Dégradé du ciel. `CouleurHorizon` existe aussi dans le sol : garder la même valeur dans les deux. |
+  | `CouleurCentre`, `LueurCentre` | les deux | Grande lueur au centre de l'image. |
+  | `IntensiteEtoiles`, `CouleurEtoiles`, `VitesseScintillement`, `Repetition` | ciel | Étoiles (`Repetition` plus grand = plus d'étoiles, plus petites). |
+  | `IntensiteBokeh`, `CouleurBokeh`, `VitesseBokeh` | ciel | Lumières floues qui dérivent. |
+  | `IntensiteTrainees`, `CouleurTrainees` | ciel | Traînées de lumière. |
+  | `CouleurSol`, `IntensiteSol`, `BokehSol` | sol | Lueur sous le Pokémon. |
+  | `Luminosite` | les deux | Tout plus clair ou plus sombre. |
+
+- **Limite** : si le terrain monte fort autour du Pokémon, une bosse peut passer au-dessus du sol lumineux.
+
 ## Pas encore fait
 
 - Évolutions par échange entre joueurs (avec SCRUM-69, les échanges) ; le Fil de Liaison les remplace en attendant.

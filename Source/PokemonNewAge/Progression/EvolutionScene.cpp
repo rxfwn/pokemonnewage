@@ -1,5 +1,6 @@
 #include "Progression/EvolutionScene.h"
 #include "Capture/PokeBallModel.h"
+#include "Progression/EvolutionBackdrop.h"
 #include "Progression/ProgressionComponent.h"
 #include "UI/Progression/ProgressionWidget.h"
 #include "Pokemon/PokemonDatabase.h"
@@ -159,6 +160,10 @@ AEvolutionScene::AEvolutionScene()
 	{
 		Effect->SetCastShadow(false);
 	}
+
+	// Fond : ciel bleu étoilé animé et sol lumineux (Progression/EvolutionBackdrop.h), aux pieds du Pokémon
+	UEvolutionBackdropComponent* Backdrop = CreateDefaultSubobject<UEvolutionBackdropComponent>(TEXT("Backdrop"));
+	Backdrop->SetupAttachment(Root);
 }
 
 // ---------------------------------------------------------------- Mise en place
