@@ -161,6 +161,16 @@ enum class EEncounterMethod : uint8
 	RockSmash
 };
 
+/** Façon dont le Pokémon de tête suit le joueur hors combat (docs/POKEMON_QUI_SUIT.md). */
+UENUM(BlueprintType)
+enum class EFollowMode : uint8
+{
+	Walk,		// marche derrière le joueur
+	Fly,		// vole à côté du joueur, à hauteur d'épaule
+	Float,		// flotte juste au-dessus du sol (Fantominus, Smogo, Magnéti...)
+	None		// ne suit pas : Pokémon qui vit dans l'eau (Magicarpe, Tentacool...)
+};
+
 /** Statut majeur d'un Pokémon : il reste après le combat (contrairement à la confusion). */
 UENUM(BlueprintType)
 enum class EMajorStatus : uint8

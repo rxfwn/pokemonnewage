@@ -16,6 +16,7 @@
 #include "InputMappingContext.h"
 #include "Engine/OverlapResult.h"
 #include "Core/Interactable.h"
+#include "Follower/PokemonFollower.h"
 #include "PokemonNewAge.h"
 
 APokemonNewAgeCharacter::APokemonNewAgeCharacter()
@@ -266,7 +267,12 @@ void APokemonNewAgeCharacter::DoInteract()
 		AActor* Actor = Overlap.GetActor();
 		if (Actor && Actor->Implements<UInteractable>())
 		{
-			const float Distance = FVector::DistSquared(Actor->GetActorLocation(), GetActorLocation());
+			float Distance = FVector::DistSquared(Actor->GetActorLocation(), GetActorLocation());
+			if (Actor->IsA<APokemonFollower>())
+			{
+				// Le Pokémon qui suit passe après une porte ou un PNJ à portée
+				Distance += 1.0e8f;
+			}
 			if (Distance < BestDistance)
 			{
 				Best = Actor;

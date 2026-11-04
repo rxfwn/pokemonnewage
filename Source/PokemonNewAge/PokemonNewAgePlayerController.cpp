@@ -34,6 +34,7 @@
 #include "Dialogue/DialogueComponent.h"
 #include "Town/PokemonCenterComponent.h"
 #include "Town/ShopComponent.h"
+#include "Follower/PokemonFollowerComponent.h"
 #include "Pokemon/PokemonDatabase.h"
 #include "Pokemon/PokemonDataSubsystem.h"
 #include "Engine/Engine.h"
@@ -68,6 +69,7 @@ APokemonNewAgePlayerController::APokemonNewAgePlayerController()
 	DialogueComponent = CreateDefaultSubobject<UDialogueComponent>(TEXT("DialogueComponent"));
 	PokemonCenterComponent = CreateDefaultSubobject<UPokemonCenterComponent>(TEXT("PokemonCenterComponent"));
 	ShopComponent = CreateDefaultSubobject<UShopComponent>(TEXT("ShopComponent"));
+	FollowerComponent = CreateDefaultSubobject<UPokemonFollowerComponent>(TEXT("FollowerComponent"));
 }
 
 void APokemonNewAgePlayerController::BeginPlay()
@@ -1482,4 +1484,11 @@ void APokemonNewAgePlayerController::RetourCentre()
 	{
 		PrintDebug(TEXT("Aucun PokemonCenterPoint ni Player Start dans la map"));
 	}
+}
+
+void APokemonNewAgePlayerController::Suiveur(int32 bShow)
+{
+	const bool bEnabled = bShow < 0 ? !FollowerComponent->IsFollowerEnabled() : bShow != 0;
+	FollowerComponent->SetFollowerEnabled(bEnabled);
+	PrintDebug(bEnabled ? TEXT("Le premier Pokemon de l'equipe suit le joueur") : TEXT("Pokemon qui suit : range dans sa Ball"));
 }

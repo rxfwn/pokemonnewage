@@ -118,6 +118,10 @@ struct FSpeciesRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Species")
 	bool bAvailableInV1 = false;
 
+	/** Façon de suivre le joueur quand il est en tête de l'équipe (Walk par défaut) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Species")
+	EFollowMode FollowMode = EFollowMode::Walk;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Evolution")
 	TArray<FPokemonEvolution> Evolutions;
 };

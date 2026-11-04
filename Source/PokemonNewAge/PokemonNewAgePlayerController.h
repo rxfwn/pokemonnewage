@@ -36,6 +36,7 @@ struct FPokemonBindableKey
 class UDialogueComponent;
 class UPokemonCenterComponent;
 class UShopComponent;
+class UPokemonFollowerComponent;
 
 /**
  *  Basic PlayerController class for a third person game
@@ -253,6 +254,10 @@ public:
 	/** Capture, surnom, PC de Léo, lancer de Ball en 3D (docs/CAPTURE.md) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Capture")
 	TObjectPtr<UCaptureComponent> CaptureComponent;
+
+	/** Pokémon de tête qui suit le joueur : marche, vole ou flotte (docs/POKEMON_QUI_SUIT.md) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Follower")
+	TObjectPtr<UPokemonFollowerComponent> FollowerComponent;
 
 	/** Ouvre le menu en jeu s'il est fermé, sinon le ferme */
 	UFUNCTION(BlueprintCallable, Category="UI")
@@ -529,6 +534,10 @@ public:
 	/** Renvoie au dernier Centre visité, comme quand toute l'équipe est K.O. */
 	UFUNCTION(Exec)
 	void RetourCentre();
+
+	/** Montre ou range le Pokémon qui suit : Suiveur (bascule), Suiveur 0, Suiveur 1 */
+	UFUNCTION(Exec)
+	void Suiveur(int32 bShow = -1);
 
 
 private:
