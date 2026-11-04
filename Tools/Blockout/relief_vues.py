@@ -62,6 +62,7 @@ TOWN_FALLOFF = 90.0       # autour des villes, le terrain rejoint la ville en pe
 PATH_SMOOTH = 25.0        # lissage des chemins (pas de marches)
 PATH_MAX_SLOPE = 0.15     # pente maximale dans les routes (8,5°) : le personnage est petit
 PATH_EDGE = 60.0          # le bord des routes rejoint le relief sur cette distance
+EMBANK_SLOPE = 0.6        # bords de route (remblai ou déblai) : 31° en moyenne (de 17 à 42°)
 
 # Où mettre montagnes et forêts : la carte de L'amie (reference/kanto_relief_amie.png, 1009 × 1009,
 # nord en haut, même cadre que la heightmap). Brun/gris/blanc = montagne, vert foncé = forêt.
@@ -95,6 +96,9 @@ LAKE_DEPTH = 6.0
 LAKE_BANK = 55.0
 LAKE_MIN, LAKE_MAX = 25, 5000          # taille en pixels de la carte (6 m)
 CYCLING_ROAD = (370, 395, 415, 725)    # colonnes et lignes à ignorer (bandes d'eau FRLG)
+TALUS_SLOPE = 0.45        # rebords arrondis hors montagnes (24°) : plus de talus nets
+TALUS_CUT = 14.0          # ... sur 14 m de haut au plus (au-delà, c'est une falaise)
+CLIFF_SLOPE = 1.0         # falaises hors montagnes couchées à 45° au plus (plus de murs)
 EDGE_SOFTEN = 4.5         # lissage final des arêtes (m)
 WARP = 28.0               # les bords des couloirs ondulent de ± WARP m (fini les lignes droites)
 
@@ -299,7 +303,7 @@ def big_shapes(x, y, route_d, town_d, land, frlg):
     far = np.zeros_like(x)
     for i, (name, cx, cy, radius, top) in enumerate(FAR_MOUNTAINS):
         far = np.maximum(far, mountain(x, y, cx, cy, radius, top, SEED + 60 + i))
-    return add, peaks, far
+    return add, peaks, far, rock + snow
 
 
 def indigo_plateau(height, x, y):
@@ -433,19 +437,20 @@ def warp_edges(height, weight):
 @njit(cache=True)
 def _cone(h, mask, rise, upper):
     """Enveloppe à pente limitée dans `mask` : upper -> min(h(q) + rise × distance),
-    sinon max(h(q) - rise × distance). Balayages en chanfrein répétés."""
+    sinon max(h(q) - rise × distance). `rise` : montée permise par case, case par case
+    (une valeur qui varie donne des bords qui ondulent). Balayages en chanfrein répétés."""
     out = h.copy()
     rows, cols = h.shape
-    diag = rise * 1.41421356
     for _ in range(12):
         changed = False
         for r in range(rows):
             for c in range(cols):
                 if not mask[r, c]:
                     continue
-                for dr, dc, w in ((-1, -1, diag), (-1, 0, rise), (-1, 1, diag), (0, -1, rise)):
+                for dr, dc, k in ((-1, -1, 1.41421356), (-1, 0, 1.0), (-1, 1, 1.41421356), (0, -1, 1.0)):
                     rr, cc = r + dr, c + dc
                     if 0 <= rr < rows and 0 <= cc < cols and mask[rr, cc]:
+                        w = rise[r, c] * k
                         if upper and out[rr, cc] + w < out[r, c]:
                             out[r, c] = out[rr, cc] + w
                             changed = True
@@ -456,9 +461,10 @@ def _cone(h, mask, rise, upper):
             for c in range(cols - 1, -1, -1):
                 if not mask[r, c]:
                     continue
-                for dr, dc, w in ((1, 1, diag), (1, 0, rise), (1, -1, diag), (0, 1, rise)):
+                for dr, dc, k in ((1, 1, 1.41421356), (1, 0, 1.0), (1, -1, 1.41421356), (0, 1, 1.0)):
                     rr, cc = r + dr, c + dc
                     if 0 <= rr < rows and 0 <= cc < cols and mask[rr, cc]:
+                        w = rise[r, c] * k
                         if upper and out[rr, cc] + w < out[r, c]:
                             out[r, c] = out[rr, cc] + w
                             changed = True
@@ -470,19 +476,60 @@ def _cone(h, mask, rise, upper):
     return out
 
 
-def smooth_paths(height, inside, keep):
+def soften_talus(height, open_land, wobble):
+    """Efface les arêtes nettes hors des montagnes, en deux temps (le bas du talus, la route ou
+    la plage, ne bouge pas ; on rogne le haut) :
+    1. les falaises sont couchées à CLIFF_SLOPE au plus : elles barrent toujours le passage,
+       mais en pente rocheuse, plus en mur ;
+    2. le rebord est arrondi à TALUS_SLOPE sur TALUS_CUT m de haut au plus : un petit talus
+       disparaît, une grande falaise garde son pied raide mais prend une épaule douce.
+    `wobble` (0 à 1) fait varier la pente d'un endroit à l'autre : le rebord recule plus ou
+    moins et ondule, au lieu de rester une ligne droite."""
+    zone = (open_land > 0.5) & (height > 0.5)  # jamais la mer
+    vary = 0.55 + 0.9 * wobble
+    cliff = _cone(height, zone, CLIFF_SLOPE * STEP * vary, True)
+    shoulder = _cone(cliff, zone, TALUS_SLOPE * STEP * vary, True)
+    change = (cliff - height) + np.maximum(shoulder - cliff, -TALUS_CUT)
+    del cliff, shoulder
+    change = ndimage.gaussian_filter(change, 4.0 / STEP)
+    weight = np.clip(ndimage.gaussian_filter(open_land, 20.0 / STEP), 0, 1)
+    out = height + change * weight
+    # Les plis laissés par les rampes : léger lissage là où on a changé quelque chose.
+    touched = ndimage.gaussian_filter((np.abs(change) > 0.3).astype(np.float32), 6.0 / STEP)
+    return out + (ndimage.gaussian_filter(out, 5.0 / STEP) - out) * np.clip(touched * 1.5, 0, 1) * weight
+
+
+def smooth_paths(height, inside, keep, wobble):
     """Routes douces pour un petit personnage : sur les routes (et 20 m autour), le relief est
     remplacé par sa version très lissée (PATH_SMOOTH m), dont la pente est ensuite limitée à
     PATH_MAX_SLOPE. Le passage vers le relief d'origine suit un masque flouté sur PATH_EDGE m :
-    bords arrondis, pas de couloir carré. `keep` : zones à ne pas toucher (Plateau Indigo)."""
+    bords arrondis, pas de couloir carré. `keep` : zones à ne pas toucher (Plateau Indigo et
+    massifs : la Route 23 n'y monte pas, on passe par la Route Victoire).
+    Au bord des routes, le terrain voisin ne monte ni ne descend plus vite que EMBANK_SLOPE
+    (remblai ou déblai) : jamais de marche ni de mur net au bord d'une route."""
     soft = ndimage.gaussian_filter(height, PATH_SMOOTH / STEP)
-    zone = (inside > -20) & (keep < 0.5)
-    rise = PATH_MAX_SLOPE * STEP
+    zone = inside + (wobble - 0.5) * 40 > -20  # bord qui ondule (± 20 m) : pas de couloir droit
+    # Les bandes étroites entre deux chemins (moins de ~45 m) en font partie : sinon elles
+    # restent en arête fine entre deux chemins abaissés.
+    zone = ndimage.binary_closing(zone, iterations=int(22 / STEP), border_value=1) & (keep < 0.5)
+    rise = np.full(soft.shape, PATH_MAX_SLOPE * STEP)
     limited = (_cone(soft, zone, rise, True) + _cone(soft, zone, rise, False)) / 2
+    del soft
     limited = ndimage.gaussian_filter(limited, 3.0 / STEP)
     weight = np.clip(ndimage.gaussian_filter(zone.astype(np.float32), PATH_EDGE / 2.5 / STEP) * 2.0, 0, 1)
     weight = np.maximum(weight, zone * 1.0) * (1 - keep)
-    return height + (limited - height) * weight
+    out = height + (limited - height) * weight
+    del limited
+    # Remblai et déblai : depuis la route, le terrain voisin suit au plus EMBANK_SLOPE.
+    core = zone
+    land = out > 0.5
+    rise = EMBANK_SLOPE * STEP * (0.5 + wobble)  # plus ou moins raide : le pied du talus ondule
+    floor = _cone(np.where(core, out, -1e9), land | core, rise, False)
+    ceiling = _cone(np.where(core, out, 1e9), land | core, rise, True)
+    fill = np.where(core | ~land, 0.0, np.maximum(floor - out, 0.0) + np.minimum(ceiling - out, 0.0))
+    del floor, ceiling
+    fill = ndimage.gaussian_filter(fill, 3.0 / STEP)
+    return out + fill * (1 - keep)
 
 
 # --- Aperçus -----------------------------------------------------------------------------------
@@ -511,11 +558,11 @@ def save_previews(height, folder, tag=""):
     Image.fromarray(mh.north_up(grey)).save(os.path.join(folder, f"relief_vues_gris{tag}.png"))
 
 
-def protected(x, y):
-    """1 là où le lissage des chemins ne doit pas passer : cascade et Plateau Indigo."""
+def protected(x, y, margin=320.0):
+    """1 là où le lissage ne doit pas passer : le Plateau Indigo et son massif (sur `margin` m)."""
     column, row, radius = INDIGO
     cx, cy = frlg_xy(column, row)
-    keep = smoothstep(radius + 320, radius + 260, np.hypot(x - cx, y - cy))
+    keep = smoothstep(radius + margin, radius + margin - 60, np.hypot(x - cx, y - cy))
     return keep
 
 
@@ -554,7 +601,7 @@ def main():
     sea = coarse < 0.2
     land = ndimage.distance_transform_edt(~sea) * STEP * COARSE
     shifted = coarse + town_shift(x, y, now) * smoothstep(0, 40, land)
-    add, peaks, far = big_shapes(x, y, route_d, town_d, land, frlg)
+    add, peaks, far, rocky = big_shapes(x, y, route_d, town_d, land, frlg)
     grown = shifted + add
     lifted = np.maximum(peaks * smoothstep(0, 60, land), far)
     grown = np.where(lifted > 0.5, np.maximum(grown, lifted), grown)
@@ -578,7 +625,14 @@ def main():
     # Retour à 1,5 m : on ajoute la différence (lisse) au relief de L'amie, détails gardés.
     height = base + upsample(delta)
     del delta
-    height = smooth_paths(height, upsample(signed), upsample(protected(x, y)))
+    # Arêtes nettes hors des montagnes : falaises couchées, rebords arrondis, bords qui ondulent.
+    mountains = (rocky > 0.02) | (peaks > 3) | (far > 3) | (protected(x, y) > 0.01)
+    mountains = ndimage.binary_dilation(mountains, iterations=4)
+    wobble = np.clip(0.5 + 0.8 * fbm(x, y, 140, 3, SEED + 140), 0, 1)
+    height = soften_talus(height, upsample(1.0 - mountains.astype(np.float64)), upsample(wobble))
+    height = smooth_paths(height, upsample(signed), upsample(np.maximum(protected(x, y, 650), smoothstep(10, 40, peaks))),
+                          upsample(wobble))
+    del wobble
     if not TEST:
         mh.carve_paths(height)  # chemins de la V1 : profil à 15 % au plus
     # Arêtes et coins adoucis partout (sauf au cœur des routes, déjà lisse).

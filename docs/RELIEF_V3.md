@@ -15,8 +15,9 @@ Il applique ensuite, dans l'ordre :
 4. **Collines** : des collines douces partout sauf en ville, et des collines boisées qui grandissent loin des routes. Les rangées d'arbres FRLG ne comptent pas comme des routes.
 5. **Montagnes** : celles de la carte de L'amie, plus celles qu'elle a entourées en rouge (`EXTRA_MOUNTAINS`), un volcan sur Cramois'Île, le Mont Argenté et des îles au loin. Rien ne dépasse le Plateau Indigo, une table plate à 640 m, le point le plus haut.
 6. **Érosion** : par la pluie, sur les nouveaux reliefs seulement.
-7. **Chemins doux** : sur les routes, le relief est lissé puis limité à 15 % de pente (`PATH_MAX_SLOPE`). Le raccord avec le reste se fait sur 60 m, en courbe.
-8. **Eau** : une dizaine de lacs arrondis sont creusés, et l'eau creusée par L'amie devient un lit peu profond aux berges douces. La cascade de la Route 23 est creusée dans la falaise, avec un bassin au pied.
+7. **Plus d'arêtes nettes** : hors des montagnes, les falaises sont couchées à 45° au plus (`CLIFF_SLOPE`) et leur rebord est arrondi à 24° (`TALUS_SLOPE`). La pente varie d'un endroit à l'autre, pour que les rebords ondulent au lieu de rester droits.
+8. **Chemins doux** : sur les routes, le relief est lissé puis limité à 15 % de pente (`PATH_MAX_SLOPE`). Le raccord avec le reste se fait sur 60 m, en courbe, et le bord de la route ondule. Les bandes étroites entre deux chemins sont lissées avec eux (plus de murets). Au bord des routes, le terrain monte ou descend en talus doux (31° en moyenne, `EMBANK_SLOPE`), jamais en marche. La Route 23 ne grimpe plus vers le Plateau Indigo (on y monte par la Route Victoire).
+9. **Eau** : une dizaine de lacs arrondis sont creusés, et l'eau creusée par L'amie devient un lit peu profond aux berges douces. La cascade de la Route 23 est creusée dans la falaise, avec un bassin au pied.
 
 Les rebords à sauter (on saute d'un côté, on fait le tour de l'autre) ne sont **pas** dans le relief. Ce seront des objets (Blueprint) posés à la main.
 
