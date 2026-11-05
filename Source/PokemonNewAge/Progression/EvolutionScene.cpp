@@ -1,5 +1,6 @@
 #include "Progression/EvolutionScene.h"
 #include "Capture/PokeBallModel.h"
+#include "Progression/EvolutionBackdrop.h"
 #include "Progression/MorphPointsRow.h"
 #include "Progression/ProgressionComponent.h"
 #include "UI/Progression/ProgressionWidget.h"
@@ -111,7 +112,7 @@ AEvolutionScene::AEvolutionScene()
 	GlowLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("GlowLight"));
 	GlowLight->SetupAttachment(Root);
 	GlowLight->SetIntensityUnits(ELightUnits::Lumens);
-	GlowLight->SetIntensity(0.f);
+	SetGlowLight(0.f);
 	GlowLight->SetAttenuationRadius(900.f);
 	GlowLight->SetCastShadows(false);
 	GlowLight->SetIndirectLightingIntensity(0.f);
@@ -178,6 +179,20 @@ AEvolutionScene::AEvolutionScene()
 	{
 		Effect->SetCastShadow(false);
 	}
+
+	// Fond : ciel bleu étoilé animé et sol lumineux (Progression/EvolutionBackdrop.h), aux pieds du Pokémon
+	UEvolutionBackdropComponent* Backdrop = CreateDefaultSubobject<UEvolutionBackdropComponent>(TEXT("Backdrop"));
+	Backdrop->SetupAttachment(Root);
+
+	// Courbe de la transformation par défaut : départ lent, accélère au milieu, arrivée en douceur
+	FRichCurve* Curve = MorphCurve.GetRichCurve();
+	for (const FVector2f& Key : { FVector2f(0.f, 0.f), FVector2f(0.35f, 0.08f), FVector2f(0.65f, 0.92f), FVector2f(1.f, 1.f) })
+	{
+		const FKeyHandle Handle = Curve->AddKey(Key.X, Key.Y);
+		Curve->SetKeyInterpMode(Handle, RCIM_Cubic);
+		Curve->SetKeyTangentMode(Handle, (Key.X == 0.f || Key.X == 1.f) ? RCTM_User : RCTM_Auto);
+	}
+	Curve->AutoSetTangents();
 }
 
 // ---------------------------------------------------------------- Mise en place
@@ -328,6 +343,12 @@ void AEvolutionScene::PlaceInFrontOf(APlayerController* Controller)
 	{
 		Location = Hit.ImpactPoint;
 	}
+	// Avec le fond lumineux : scène soulevée haut au-dessus du terrain (aucune colline devant le ciel),
+	// pieds et Ball posés sur le sol lumineux
+	if (const UEvolutionBackdropComponent* Backdrop = FindComponentByClass<UEvolutionBackdropComponent>())
+	{
+		Location.Z += Backdrop->GetGroundClearance();
+	}
 	SetActorLocationAndRotation(Location, FRotator(0.f, Facing.Yaw + 180.f, 0.f));
 }
 
@@ -379,6 +400,11 @@ void AEvolutionScene::EnterPhase(EPhase NewPhase)
 {
 	Phase = NewPhase;
 	PhaseTime = 0.f;
+	// Effets du fond devant le Pokémon : centre dégagé pendant la transformation en points, devant lui sinon
+	if (UEvolutionBackdropComponent* Backdrop = FindComponentByClass<UEvolutionBackdropComponent>())
+	{
+		Backdrop->SetFrontClearing(Phase == EPhase::Morph || Phase == EPhase::Flash);
+	}
 
 	if (!IsBallPhase() && bBallIntro)
 	{
@@ -395,7 +421,7 @@ void AEvolutionScene::EnterPhase(EPhase NewPhase)
 		}
 		GlowLight->SetRelativeLocation(FVector(PokemonHeight * 0.4f, 0.f, PokemonHeight * 0.5f));
 		GlowLight->SetLightColor(GlowColor);
-		GlowLight->SetIntensity(0.f);
+		SetGlowLight(0.f);
 		bBallIntro = false;
 	}
 
@@ -532,8 +558,8 @@ void AEvolutionScene::Tick(float DeltaTime)
 	{
 		const float Alpha = FMath::Clamp(PhaseTime / FMath::Max(GlowTime, 0.01f), 0.f, 1.f);
 		SetGlow(OldGlow, Alpha);
-		GlowLight->SetIntensity(EvolutionScene::GlowLightMax * Alpha);
-		KeyLight->SetIntensity(BaseLightIntensity * (1.f - 0.6f * Alpha));
+		SetGlowLight(EvolutionScene::GlowLightMax * Alpha);
+		SetKeyLight(BaseLightIntensity * (1.f - 0.6f * Alpha));
 		if (bCancelRequested)
 		{
 			EnterPhase(EPhase::Cancelled);
@@ -561,7 +587,7 @@ void AEvolutionScene::Tick(float DeltaTime)
 			SetModelScale(OldMesh, FMath::Lerp(0.08f, 1.f, Old));
 			SetModelScale(NewMesh, FMath::Lerp(0.08f, 1.f, 1.f - Old));
 		}
-		GlowLight->SetIntensity(EvolutionScene::GlowLightMax * (0.8f + 0.4f * Progress + 0.2f * FMath::Sin(MorphPhase * 2.f)));
+		SetGlowLight(EvolutionScene::GlowLightMax * (0.8f + 0.4f * Progress + 0.2f * FMath::Sin(MorphPhase * 2.f)));
 		if (bCancelRequested)
 		{
 			EnterPhase(EPhase::Cancelled);
@@ -581,7 +607,7 @@ void AEvolutionScene::Tick(float DeltaTime)
 		{
 			Widget->SetFlash(Flash);
 		}
-		GlowLight->SetIntensity(FMath::Lerp(EvolutionScene::GlowLightMax, EvolutionScene::FlashLightMax, Flash));
+		SetGlowLight(FMath::Lerp(EvolutionScene::GlowLightMax, EvolutionScene::FlashLightMax, Flash));
 		if (Alpha >= 1.f)
 		{
 			EnterPhase(EPhase::Reveal);
@@ -594,8 +620,8 @@ void AEvolutionScene::Tick(float DeltaTime)
 		// La lueur s'efface : la nouvelle forme apparaît en couleurs
 		const float Alpha = FMath::Clamp(PhaseTime / FMath::Max(RevealTime, 0.01f), 0.f, 1.f);
 		SetGlow(NewGlow, 1.f - Alpha);
-		GlowLight->SetIntensity(EvolutionScene::GlowLightMax * (1.f - Alpha));
-		KeyLight->SetIntensity(BaseLightIntensity * (0.4f + 0.6f * Alpha));
+		SetGlowLight(EvolutionScene::GlowLightMax * (1.f - Alpha));
+		SetKeyLight(BaseLightIntensity * (0.4f + 0.6f * Alpha));
 		if (Alpha >= 1.f)
 		{
 			Phase = EPhase::Done;
@@ -617,8 +643,8 @@ void AEvolutionScene::Tick(float DeltaTime)
 	{
 		const float Alpha = FMath::Clamp(PhaseTime / EvolutionScene::CancelFadeTime, 0.f, 1.f);
 		SetGlow(OldGlow, 1.f - Alpha);
-		GlowLight->SetIntensity(EvolutionScene::GlowLightMax * (1.f - Alpha));
-		KeyLight->SetIntensity(BaseLightIntensity * (0.4f + 0.6f * Alpha));
+		SetGlowLight(EvolutionScene::GlowLightMax * (1.f - Alpha));
+		SetKeyLight(BaseLightIntensity * (0.4f + 0.6f * Alpha));
 		if (Alpha >= 1.f)
 		{
 			Phase = EPhase::Done;
@@ -769,7 +795,7 @@ void AEvolutionScene::TickBallPhase(float DeltaTime)
 		LightCore->SetRelativeLocation(BallCenter);
 		LightCore->SetRelativeScale3D(FVector(D * (0.3f + 0.4f * (1.f - Alpha)) / 100.f));
 		SetEffectGlow(CoreLight, 1.f - Alpha, BallLightColor);
-		GlowLight->SetIntensity(GlowLightMax * 0.35f * FMath::Sin(Alpha * UE_PI * 0.5f));
+		SetGlowLight(GlowLightMax * 0.35f * FMath::Sin(Alpha * UE_PI * 0.5f));
 		CameraBlend = FMath::SmoothStep(0.f, 1.f, Alpha);
 		UpdateCamera(CameraBlend);
 		if (Alpha >= 1.f)
@@ -792,7 +818,7 @@ void AEvolutionScene::TickBallPhase(float DeltaTime)
 		Beam->SetRelativeScale3D(FVector(Width / 100.f, Width / 100.f, FMath::Max(Height, 1.f) / 100.f));
 		SetEffectGlow(BeamLight, 0.6f * FMath::Min(Alpha * 4.f, 1.f), BallLightColor);
 		GlowLight->SetRelativeLocation(FVector(PokemonHeight * 0.4f, 0.f, PokemonHeight * 0.5f));
-		GlowLight->SetIntensity(GlowLightMax * (0.35f + 0.65f * Alpha));
+		SetGlowLight(GlowLightMax * (0.35f + 0.65f * Alpha));
 
 		SparkTimer += DeltaTime * BeamSparkRate;
 		const int32 Count = FMath::FloorToInt(SparkTimer);
@@ -830,7 +856,7 @@ void AEvolutionScene::TickBallPhase(float DeltaTime)
 		Beam->SetVisibility(BeamFade > 0.f && Beam->GetStaticMesh() != nullptr);
 
 		GlowLight->SetLightColor(FMath::Lerp(BallLightColor, GlowColor, Alpha));
-		GlowLight->SetIntensity(FMath::Lerp(FlashLightMax * 0.4f, GlowLightMax, Alpha));
+		SetGlowLight(FMath::Lerp(FlashLightMax * 0.4f, GlowLightMax, Alpha));
 
 		if (Alpha >= 1.f)
 		{
@@ -950,7 +976,7 @@ void AEvolutionScene::SetEffectGlow(UMaterialInstanceDynamic* Material, float Am
 {
 	if (Material)
 	{
-		Material->SetScalarParameterValue(EvolutionScene::GlowParam, FMath::Clamp(Amount, 0.f, 1.f));
+		Material->SetScalarParameterValue(EvolutionScene::GlowParam, FMath::Clamp(Amount, 0.f, 1.f) * GlowStrength);
 		Material->SetVectorParameterValue(EvolutionScene::ColorParam, Color);
 	}
 }
@@ -1015,7 +1041,8 @@ void AEvolutionScene::TickDotMorph(float Progress)
 	// Début : la silhouette se couvre de points ; milieu : les points tourbillonnent vers la nouvelle forme ;
 	// fin : la nouvelle silhouette apparaît et les points s'éteignent
 	const float Dot = MorphDotSize / 100.f;
-	float Travel = 0.f;
+	// Temps du trajet (0 à 1) ; la courbe MorphCurve en fait l'avancement, le même pour tous les points
+	float TravelTime = 0.f;
 	float Size = 1.f;
 	if (Progress < MorphDotsAppear)
 	{
@@ -1023,23 +1050,25 @@ void AEvolutionScene::TickDotMorph(float Progress)
 	}
 	else
 	{
-		Travel = FMath::SmoothStep(0.f, 1.f, (Progress - MorphDotsAppear) / (MorphDotsArrive - MorphDotsAppear));
+		TravelTime = FMath::Clamp((Progress - MorphDotsAppear) / (MorphDotsArrive - MorphDotsAppear), 0.f, 1.f);
 		Size = Progress < MorphDotsArrive ? 1.f : 1.f - (Progress - MorphDotsArrive) / (1.f - MorphDotsArrive);
 	}
+
 	const bool bShowOld = Progress < MorphDotsAppear;
 	const bool bShowNew = Progress >= MorphDotsArrive;
 	OldMesh->SetVisibility(bShowOld);
 	NewMesh->SetVisibility(bShowNew);
 	MorphDots->SetVisibility(Size > 0.f);
 
-	const float Swirl = FMath::Sin(Travel * UE_PI);
+	const float Travel = EvalMorphCurve(TravelTime);
+	const float Swirl = FMath::Sin(FMath::Clamp(Travel, 0.f, 1.f) * UE_PI);
 	TArray<FTransform> Transforms;
 	Transforms.SetNum(MorphFrom.Num());
 	for (int32 Index = 0; Index < MorphFrom.Num(); ++Index)
 	{
+		const float Spin = MorphSpin[Index];
 		FVector Point = FMath::Lerp(MorphFrom[Index], MorphTo[Index], Travel);
 		// Tourbillon autour de l'axe vertical du Pokémon, un peu gonflé et soulevé à mi-chemin
-		const float Spin = MorphSpin[Index];
 		Point = FVector(FVector2D(Point) * (1.f + 0.18f * Swirl * Spin), Point.Z + PokemonHeight * 0.12f * Swirl * Spin);
 		Point = Point.RotateAngleAxisRad(2.2f * Swirl * Spin, FVector::UpVector);
 		Transforms[Index] = FTransform(FQuat::Identity, Point, FVector(Dot * Size * (0.7f + 0.3f * Spin)));
@@ -1062,9 +1091,29 @@ void AEvolutionScene::SetGlow(UMaterialInstanceDynamic* Material, float Amount)
 {
 	if (Material)
 	{
-		Material->SetScalarParameterValue(EvolutionScene::GlowParam, FMath::Clamp(Amount, 0.f, 1.f));
+		Material->SetScalarParameterValue(EvolutionScene::GlowParam, FMath::Clamp(Amount, 0.f, 1.f) * GlowStrength);
 		Material->SetVectorParameterValue(EvolutionScene::ColorParam, GlowColor);
 	}
+}
+
+void AEvolutionScene::SetKeyLight(float Intensity)
+{
+	KeyLight->SetIntensity(Intensity * PokemonLightScale);
+}
+
+void AEvolutionScene::SetGlowLight(float Intensity)
+{
+	GlowLight->SetIntensity(Intensity * PokemonLightScale);
+}
+
+float AEvolutionScene::EvalMorphCurve(float Time) const
+{
+	const FRichCurve* Curve = MorphCurve.GetRichCurveConst();
+	if (!Curve || Curve->GetNumKeys() == 0)
+	{
+		return FMath::SmoothStep(0.f, 1.f, Time);
+	}
+	return FMath::Clamp(Curve->Eval(Time), -0.2f, 1.2f);
 }
 
 void AEvolutionScene::SetModelScale(UMeshComponent* Mesh, float Scale)
