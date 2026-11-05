@@ -66,7 +66,9 @@ enum class EDialogueEvent : uint8
 	/** Joue la cinématique EventParam (Level Sequence), la conversation reprend après */
 	PlayCutscene,
 	/** Ramène le joueur au dernier Centre Pokémon visité (équipe K.O.) */
-	ReturnToLastHeal
+	ReturnToLastHeal,
+	/** Ouvre l'éditeur de personnage à la fin de la conversation (discours du Prof. Chen ; EventParam Appearance = menu Apparence) */
+	OpenCharacterCreator
 };
 
 /** DT_Npcs : PNJ, panneaux et objets avec lesquels on parle. Nom de ligne = ProfOak, PalletTown_Sign... */

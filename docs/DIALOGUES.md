@@ -81,6 +81,7 @@ Les tables sont identiques sur toutes les machines. Les drapeaux d'histoire appa
 | `OpenShop` | quand on a lu la réplique | Ouvre la boutique `EventParam` (DT_Shops) une fois la boîte fermée. Voir `docs/CENTRE_ET_BOUTIQUE.md`. |
 | `OpenPC` | quand on a lu la réplique | Allume le PC de Léo (écran du PC). |
 | `ReturnToLastHeal` | quand on a lu la réplique | Écran noir, retour au dernier Centre Pokémon (ou à la maison), équipe soignée, puis Joëlle ou maman parle. |
+| `OpenCharacterCreator` | à la fin de la conversation | Ouvre l'éditeur de personnage (création ; `EventParam` = `Appearance` pour le menu Apparence). Voir PERSONNAGE_CREATION.md. |
 | `PlayCutscene`, `OfferNickname` | | Pas encore codés : la conversation continue, et l'événement **On Unhandled Event** du DialogueComponent est envoyé pour qu'un Blueprint puisse s'y brancher. |
 
 Variables remplacées : `{PlayerName}` (nom du joueur dans la partie, en solo c'est le nom du PC tant que le choix du nom n'existe pas), `{StarterName}` (surnom ou espèce du starter), `{RivalStarterName}` (d'après `RivalLab_*` de `DT_Trainers`, déjà juste dans la scène du choix), `{SeenCount}`, `{CaughtCount}`, `{MoneyLost}` (argent perdu au dernier combat).

@@ -1,0 +1,211 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "Engine/DataAsset.h"
+#include "Character/TrainerAppearance.h"
+#include "TrainerAppearanceData.generated.h"
+
+class USkeletalMesh;
+class UAnimInstance;
+class UTexture2D;
+
+/** Onglet de l'éditeur où apparaît un curseur */
+UENUM(BlueprintType)
+enum class ETrainerSliderGroup : uint8
+{
+	Face UMETA(DisplayName="Visage"),
+	Body UMETA(DisplayName="Corps")
+};
+
+/**
+ *  Un curseur de l'éditeur. Il pilote un ou deux morph targets exportés de Character Creator :
+ *  vers la droite MorphPositive monte de 0 à 1, vers la gauche MorphNegative (s'il existe).
+ *  Le même nom de morph est appliqué au corps ET aux vêtements qui l'ont (CC les exporte ensemble).
+ */
+USTRUCT(BlueprintType)
+struct FTrainerSliderDef
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FName Id;
+
+	/** Texte à l'écran (« Largeur du nez ») */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FText Label;
+
+	/** Onglet Visage ou Corps */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	ETrainerSliderGroup Group = ETrainerSliderGroup::Face;
+
+	/** Titre de la section dans la liste : Visage, Yeux, Nez, Bouche, Oreilles, Silhouette... */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FText Section;
+
+	/** Nom exact du morph dans le Skeletal Mesh (onglet Morph Target Preview de l'éditeur de mesh) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FName MorphPositive;
+
+	/** Optionnel : morph de l'autre sens. Vide = curseur de 0 à 1 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FName MorphNegative;
+
+	/** Bornes pour qu'on ne puisse pas « casser » le visage */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance", meta=(ClampMin=0, ClampMax=1))
+	float Limit = 1.f;
+};
+
+/**
+ *  Poignée à attraper directement sur le personnage en mode Détaillé (comme inZOI) : un point posé sur un os,
+ *  glisser à gauche / à droite bouge SliderX, glisser en haut / en bas bouge SliderY.
+ */
+USTRUCT(BlueprintType)
+struct FTrainerDragHandle
+{
+	GENERATED_BODY()
+
+	/** Texte au survol (« Nez ») */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FText Label;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	ETrainerSliderGroup Group = ETrainerSliderGroup::Face;
+
+	/** Os (ou socket) où se place le point, par exemple CC_Base_NoseTip */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FName Bone;
+
+	/** Décalage depuis l'os, en cm, dans le repère du personnage (X devant, Z en haut) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FVector Offset = FVector::ZeroVector;
+
+	/** Curseur bougé en glissant horizontalement (vide = aucun) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FName SliderX;
+
+	/** Curseur bougé en glissant verticalement, vers le haut = plus (vide = aucun) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FName SliderY;
+
+	/** Pixels de glissement (écran 1920 x 1080) pour passer de 0 à 1 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance", meta=(ClampMin=10))
+	float PixelsPerUnit = 150.f;
+};
+
+/** Un modèle de la galerie : un personnage complet (onglet Modèles) ou seulement un visage (Visage > Modèles de visage) */
+USTRUCT(BlueprintType)
+struct FTrainerPresetDef
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FText Label;
+
+	/** Vignette ronde (optionnelle : sinon le nom s'affiche dans le rond) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TSoftObjectPtr<UTexture2D> Thumbnail;
+
+	/**
+	 *  L'apparence du modèle. Modèle complet : remplace tout (sauf les vêtements et le prénom).
+	 *  Modèle de visage : seulement les curseurs listés ici, le reste ne bouge pas.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FTrainerAppearance Look;
+};
+
+/** Une base de personnage (Homme, Femme), exportée de Character Creator avec Auto Setup */
+USTRUCT(BlueprintType)
+struct FTrainerBaseDef
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FName Id;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FText Label;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TSoftObjectPtr<USkeletalMesh> Mesh;
+
+	/** Animation Blueprint retargeté (vide = garder celui du personnage) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TSubclassOf<UAnimInstance> AnimClass;
+
+	/** Bouton de l'éditeur (♂ ou ♀) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	bool bMale = false;
+
+	/** Curseurs propres à cette base (les curseurs communs sont dans CommonSliders) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<FTrainerSliderDef> Sliders;
+};
+
+/**
+ *  Catalogue de l'éditeur de personnage : bases, curseurs, réglages des matériaux.
+ *  Un seul asset dans le jeu : Content/Characters/Player/DA_TrainerAppearance.
+ *  Ajouter un curseur = une ligne ici, pas de code.
+ */
+UCLASS(BlueprintType)
+class UTrainerAppearanceData : public UPrimaryDataAsset
+{
+	GENERATED_BODY()
+
+public:
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<FTrainerBaseDef> Bases;
+
+	/** Curseurs valables pour toutes les bases (même noms de morphs chez l'homme et la femme) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<FTrainerSliderDef> CommonSliders;
+
+	/** Emplacements de matériau qui reçoivent la couleur de peau (Std_Skin_Head, Std_Skin_Body...) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Materials")
+	TArray<FName> SkinMaterialSlots;
+
+	/** Paramètre couleur des matériaux de peau à teinter */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Materials")
+	FName SkinColorParameter = TEXT("SkinTint");
+
+	/** Emplacements des yeux (Std_Eye_L, Std_Eye_R...) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Materials")
+	TArray<FName> EyeMaterialSlots;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Materials")
+	FName EyeColorParameter = TEXT("IrisColor");
+
+	/** Points à attraper sur le visage et le corps (mode Détaillé) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Editor")
+	TArray<FTrainerDragHandle> DragHandles;
+
+	/** Onglet Modèles : personnages complets */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Editor")
+	TArray<FTrainerPresetDef> FullPresets;
+
+	/** Visage > Modèles de visage */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Editor")
+	TArray<FTrainerPresetDef> FacePresets;
+
+	/** Teintes de peau proposées (Visage > Peau) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Editor")
+	TArray<FLinearColor> SkinPalette;
+
+	/** Couleurs d'yeux proposées (Visage > Yeux) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Editor")
+	TArray<FLinearColor> EyePalette;
+
+	/** Os que la caméra vise en gros plan sur le visage (le premier trouvé dans le mesh) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Editor")
+	TArray<FName> HeadBones = { TEXT("CC_Base_Head"), TEXT("head") };
+
+	UTrainerAppearanceData();
+
+	const FTrainerBaseDef* FindBase(FName Id) const;
+
+	/** Curseur de la base ou commun, nullptr si inconnu */
+	const FTrainerSliderDef* FindSlider(const FTrainerBaseDef& Base, FName Slider) const;
+
+	/** Tous les curseurs d'une base (communs puis propres) */
+	TArray<FTrainerSliderDef> GetSliders(const FTrainerBaseDef& Base) const;
+};

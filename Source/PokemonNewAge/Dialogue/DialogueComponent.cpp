@@ -1,4 +1,5 @@
 #include "Dialogue/DialogueComponent.h"
+#include "Character/TrainerAppearanceComponent.h"
 
 #include "Battle/BattleSubsystem.h"
 #include "Components/AudioComponent.h"
@@ -367,6 +368,17 @@ bool UDialogueComponent::ApplyEvent(const FDialogueLine& Line)
 		{
 			Center->OpenPC();
 			return true;
+		}
+		break;
+
+	case EDialogueEvent::OpenCharacterCreator:
+		if (const APawn* Pawn = GetPlayerController() ? GetPlayerController()->GetPawn() : nullptr)
+		{
+			if (UTrainerAppearanceComponent* Appearance = Pawn->FindComponentByClass<UTrainerAppearanceComponent>())
+			{
+				Appearance->ClientOpenEditor(Line.EventParam == TEXT("Appearance") ? ETrainerEditorMode::Appearance : ETrainerEditorMode::Creation);
+				return true;
+			}
 		}
 		break;
 

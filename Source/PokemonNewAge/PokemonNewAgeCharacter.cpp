@@ -17,6 +17,9 @@
 #include "Engine/OverlapResult.h"
 #include "Core/Interactable.h"
 #include "PokemonNewAge.h"
+#include "Character/TrainerAppearanceComponent.h"
+#include "Character/TrainerAppearanceData.h"
+#include "Engine/Engine.h"
 
 APokemonNewAgeCharacter::APokemonNewAgeCharacter()
 {
@@ -55,6 +58,8 @@ APokemonNewAgeCharacter::APokemonNewAgeCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+
+	Appearance = CreateDefaultSubobject<UTrainerAppearanceComponent>(TEXT("Appearance"));
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
@@ -285,4 +290,77 @@ void APokemonNewAgeCharacter::DoZoom(float Amount)
 {
 	// wheel forward brings the camera closer
 	DesiredCameraDistance = FMath::Clamp(DesiredCameraDistance - Amount * ZoomStep, MinCameraDistance, MaxCameraDistance);
+}
+
+// ------------------------------------------------ Commandes de test de l'apparence
+
+namespace
+{
+	void PrintAppearance(const FString& Text)
+	{
+		UE_LOG(LogPokemonNewAge, Display, TEXT("%s"), *Text);
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 8.f, FColor::Cyan, Text);
+		}
+	}
+}
+
+void APokemonNewAgeCharacter::Apparence()
+{
+	UTrainerAppearanceData* Data = Appearance->GetAppearanceData();
+	if (!Data || Data->Bases.IsEmpty())
+	{
+		PrintAppearance(TEXT("Pas de catalogue : créer Content/Characters/Player/DA_TrainerAppearance (docs/PERSONNAGE_CREATION.md)"));
+		return;
+	}
+	const FTrainerAppearance Current = Appearance->GetCurrentAppearance();
+	const FTrainerBaseDef* Base = Data->FindBase(Current.Base);
+	FString Text = TEXT("Bases :");
+	for (const FTrainerBaseDef& B : Data->Bases)
+	{
+		Text += FString::Printf(TEXT(" %s%s"), *B.Id.ToString(), &B == Base ? TEXT(" (actuelle)") : TEXT(""));
+	}
+	Text += TEXT("\nCurseurs :");
+	for (const FTrainerSliderDef& Def : Data->GetSliders(*Base))
+	{
+		Text += FString::Printf(TEXT(" %s=%.2f"), *Def.Id.ToString(), Current.GetSlider(Def.Id));
+	}
+	Text += FString::Printf(TEXT("\nPeau %s / Yeux %s"), *Current.SkinColor.ToString(), *Current.EyeColor.ToString());
+	PrintAppearance(Text);
+}
+
+void APokemonNewAgeCharacter::ApparenceBase(FName Base)
+{
+	FTrainerAppearance New = Appearance->GetCurrentAppearance();
+	New.Base = Base;
+	Appearance->RequestAppearance(New);
+}
+
+void APokemonNewAgeCharacter::Curseur(FName Slider, float Value)
+{
+	FTrainerAppearance New = Appearance->GetCurrentAppearance();
+	New.SetSlider(Slider, Value);
+	Appearance->RequestAppearance(New);
+}
+
+void APokemonNewAgeCharacter::CouleurPeau(float R, float G, float B)
+{
+	FTrainerAppearance New = Appearance->GetCurrentAppearance();
+	New.SkinColor = FLinearColor(R, G, B);
+	Appearance->RequestAppearance(New);
+}
+
+void APokemonNewAgeCharacter::CouleurYeux(float R, float G, float B)
+{
+	FTrainerAppearance New = Appearance->GetCurrentAppearance();
+	New.EyeColor = FLinearColor(R, G, B);
+	Appearance->RequestAppearance(New);
+}
+
+void APokemonNewAgeCharacter::EditeurPerso(const FString& Mode)
+{
+	const ETrainerEditorMode EditorMode = Mode.Equals(TEXT("creation"), ESearchCase::IgnoreCase) ? ETrainerEditorMode::Creation
+		: (Mode.Equals(TEXT("armoire"), ESearchCase::IgnoreCase) ? ETrainerEditorMode::Wardrobe : ETrainerEditorMode::Appearance);
+	Appearance->OpenEditor(EditorMode);
 }

@@ -3,6 +3,8 @@
 #include "Engine/World.h"
 #include "GameFramework/GameStateBase.h"
 #include "Pokemon/PokemonDatabase.h"
+#include "Character/TrainerAppearanceComponent.h"
+#include "GameFramework/Pawn.h"
 
 void APokemonPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -25,6 +27,8 @@ void APokemonPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME_CONDITION(APokemonPlayerState, PlayTimeBeforeSession, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(APokemonPlayerState, SessionStartServerTime, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(APokemonPlayerState, StepCount, COND_OwnerOnly);
+	DOREPLIFETIME(APokemonPlayerState, Appearance);
+	DOREPLIFETIME(APokemonPlayerState, Catchphrase);
 }
 
 void APokemonPlayerState::BeginPlay()
@@ -68,6 +72,8 @@ FPlayerSaveData APokemonPlayerState::MakeSaveData() const
 	Data.LastHealRotation = LastHealRotation;
 	Data.PlayTimeSeconds = GetPlayTimeSeconds();
 	Data.StepCount = StepCount;
+	Data.Appearance = Appearance;
+	Data.Catchphrase = Catchphrase;
 	return Data;
 }
 
@@ -100,6 +106,8 @@ void APokemonPlayerState::ApplySaveData(const FPlayerSaveData& Data)
 	LastHealRotation = Data.LastHealRotation;
 	PlayTimeBeforeSession = FMath::Max(0.f, Data.PlayTimeSeconds);
 	StepCount = FMath::Max(0, Data.StepCount);
+	SetAppearance(Data.Appearance);
+	Catchphrase = Data.Catchphrase.Left(60);
 	SessionStartServerTime = GetWorld()->GetTimeSeconds();
 }
 
@@ -273,5 +281,27 @@ void APokemonPlayerState::MarkCaught(FName Species)
 	{
 		MarkSeen(Species);
 		PokedexCaught.AddUnique(Species);
+	}
+}
+
+void APokemonPlayerState::SetAppearance(const FTrainerAppearance& NewAppearance)
+{
+	Appearance = NewAppearance;
+	ApplyAppearanceToPawn(); // le serveur ne reçoit pas OnRep : on applique ici pour son propre personnage
+}
+
+void APokemonPlayerState::OnRep_Appearance()
+{
+	ApplyAppearanceToPawn();
+}
+
+void APokemonPlayerState::ApplyAppearanceToPawn()
+{
+	if (const APawn* Pawn = GetPawn())
+	{
+		if (UTrainerAppearanceComponent* Wardrobe = Pawn->FindComponentByClass<UTrainerAppearanceComponent>())
+		{
+			Wardrobe->ApplyAppearance(Appearance);
+		}
 	}
 }
