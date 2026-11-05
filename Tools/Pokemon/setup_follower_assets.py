@@ -10,12 +10,15 @@ Crée dans /Game/Pokemon/Follower/ :
   plissé. Décaler de (0 ; 0,5) montre la 3e ligne : les yeux fermés.
 - M_FollowerBubble : bulle transparente (sommeil).
 - M_FollowerSparkle : éclat lumineux doré (apparition et disparition dans les étoiles).
-Puis, à côté de chaque matériau d'yeux des modèles (reconnu à sa texture pm0025_00_Eye_col..., car les matériaux
-s'appellent M_Pikachu_1, _2...) : <matériau>_Closed, une instance de M_PokemonEyeExpression avec la même texture et
+Puis, à côté de chaque matériau d'yeux des modèles (liste dans Tools/Pokemon/eye_materials.json, car les matériaux
+s'appellent M_Pikachu_1, _2... et les textures T_Pikachu_1...) : <matériau>_Closed, une instance de M_PokemonEyeExpression avec la même texture et
 les yeux fermés. Le jeu la met pendant le sommeil et les clignements.
 
 Relançable : les matériaux sont refaits, les instances mises à jour.
 """
+
+import json
+import os
 
 import unreal
 
@@ -129,58 +132,63 @@ def used_textures(material):
         found = [v.parameter_value for v in material.get_editor_property("texture_parameter_values") if v.parameter_value]
         parent = material.get_editor_property("parent")
         return found + (used_textures(parent) if parent else [])
-    return [t for t in mel.get_used_textures(material) if isinstance(t, unreal.Texture2D)]
+    getter = getattr(mel, "get_material_used_textures", None) or mel.get_used_textures
+    return [t for t in getter(material) if isinstance(t, unreal.Texture2D)]
 
 
-def is_eye_texture(texture):
-    name = texture.get_name()
-    return "Eye" in name and "Iris" not in name
+def load_eye_list():
+    """Matériaux d'yeux de chaque espèce et leur texture (eye_materials.json, fait par find_eye_materials.py).
 
-
-def eye_texture(material, by_name):
-    """Texture de couleur des yeux de ce matériau, ou None si ce n'est pas un matériau d'yeux.
-
-    Les matériaux des modèles s'appellent M_Pikachu_1, _2... : on les reconnaît à leur texture (pm0025_00_Eye_col).
+    Les matériaux s'appellent M_Pikachu_1, _2... et les textures T_Pikachu_1... : rien dans Unreal ne dit
+    lesquels sont des yeux. Le nom d'origine des images (pm0025_00_Eye_col) n'existe que dans les FBX.
     """
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "eye_materials.json")
+    if not os.path.exists(path):
+        unreal.log_warning(f"{path} introuvable : lancer Tools/Pokemon/find_eye_materials.py")
+        return {}
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def eye_texture(folder, material, texture_name):
+    """Texture de la planche d'expressions : celle notée dans le JSON, sinon celle du matériau."""
+    for candidate in (f"{folder}/Materials/{texture_name}", f"{folder}/{texture_name}"):
+        if texture_name and eal.does_asset_exist(candidate):
+            texture = eal.load_asset(candidate)
+            if isinstance(texture, unreal.Texture2D):
+                return texture
     textures = used_textures(material)
-    eyes = [t for t in textures if is_eye_texture(t)]
-    if not eyes and by_name:
-        eyes = textures
-    # La couleur avant les autres (normales, masques)
-    eyes.sort(key=lambda t: (0 if "col" in t.get_name().lower() else 1,
-                             1 if any(k in t.get_name().lower() for k in ("nrm", "normal", "lym", "msk", "mask")) else 0,
-                             t.get_name()))
-    return eyes[0] if eyes else None
+    return textures[0] if textures else None
 
 
 def make_closed_eyes(master):
     made = 0
-    for path in eal.list_assets(MODELS_DIR, recursive=True, include_folder=False):
-        name = path.split(".")[-1]
-        if name.endswith("_Closed") or "Iris" in name:
-            continue
-        material = eal.load_asset(path)
-        if not isinstance(material, unreal.MaterialInterface):
-            continue
-        texture = eye_texture(material, by_name="Eye" in name)
-        if texture is None:
-            continue
-        folder = path.rsplit("/", 1)[0]
-        closed_path = f"{folder}/{name}_Closed"
-        if eal.does_asset_exist(closed_path):
-            instance = eal.load_asset(closed_path)
-        else:
-            instance = asset_tools.create_asset(f"{name}_Closed", folder, unreal.MaterialInstanceConstant,
-                                                unreal.MaterialInstanceConstantFactoryNew())
-        mel.set_material_instance_parent(instance, master)
-        mel.set_material_instance_texture_parameter_value(instance, "BaseTexture", texture)
-        mel.set_material_instance_vector_parameter_value(
-            instance, "EyeUVOffset", unreal.LinearColor(CLOSED_EYE_OFFSET[0], CLOSED_EYE_OFFSET[1], 0.0, 0.0))
-        eal.save_loaded_asset(instance)
-        made += 1
-        unreal.log(f"{closed_path} : yeux fermés ({texture.get_name()})")
+    for species, materials in load_eye_list().items():
+        folder = f"{MODELS_DIR}/{species}"
+        for name, texture_name in materials.items():
+            path = f"{folder}/Materials/{name}"
+            if not eal.does_asset_exist(path):
+                continue  # modèle pas importé (ou chromatique absent)
+            material = eal.load_asset(path)
+            texture = eye_texture(folder, material, texture_name)
+            if texture is None:
+                unreal.log_warning(f"{path} : pas de texture trouvée, yeux fermés impossibles")
+                continue
+            closed_path = f"{path}_Closed"
+            if eal.does_asset_exist(closed_path):
+                instance = eal.load_asset(closed_path)
+            else:
+                instance = asset_tools.create_asset(f"{name}_Closed", f"{folder}/Materials", unreal.MaterialInstanceConstant,
+                                                    unreal.MaterialInstanceConstantFactoryNew())
+            mel.set_material_instance_parent(instance, master)
+            mel.set_material_instance_texture_parameter_value(instance, "BaseTexture", texture)
+            mel.set_material_instance_vector_parameter_value(
+                instance, "EyeUVOffset", unreal.LinearColor(CLOSED_EYE_OFFSET[0], CLOSED_EYE_OFFSET[1], 0.0, 0.0))
+            eal.save_loaded_asset(instance)
+            made += 1
+            unreal.log(f"{closed_path} : yeux fermés ({texture.get_name()})")
     if made == 0:
-        unreal.log_warning("Aucun matériau d'yeux trouvé (texture dont le nom contient « Eye ») dans " + MODELS_DIR)
+        unreal.log_warning("Aucun matériau d'yeux trouvé dans " + MODELS_DIR + " (voir eye_materials.json)")
     return made
 
 

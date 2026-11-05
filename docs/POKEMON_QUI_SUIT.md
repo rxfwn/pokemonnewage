@@ -74,9 +74,12 @@ C'est le serveur (celui qui a créé le monde) qui les déplace ; on peut caress
    Sans cette étape, tous les Pokémon marchent (même Magicarpe).
 3. **Outils > Exécuter un script Python...** → `Tools/Pokemon/setup_follower_assets.py` (quelques secondes).
    Il crée `Contenu > Pokemon > Follower` (matériaux de la bulle et des étoiles) et, à côté de chaque matériau
-   d'yeux des modèles, un `<matériau>_Closed` (yeux fermés). Les matériaux s'appellent `M_Pikachu_1`, `_2`... : le
-   script reconnaît ceux des yeux à leur texture (`pm0025_00_Eye_col`). Le relancer après chaque réimport des modèles
-   (et après la mise à jour du 2026-11-05 : la 1re version ne trouvait pas les yeux).
+   d'yeux des modèles, un `<matériau>_Closed` (yeux fermés). Les matériaux s'appellent `M_Pikachu_1`, `_2`... et les
+   textures `T_Pikachu_1`... : la liste des matériaux d'yeux est dans `Tools/Pokemon/eye_materials.json`, tirée des
+   FBX par `Tools/Pokemon/find_eye_materials.py` (le nom d'origine `pm0025_00_Eye_col` n'existe que dans le FBX).
+   Le relancer après chaque réimport des modèles. Pour de nouveaux modèles : relancer d'abord
+   `python Tools/Pokemon/find_eye_materials.py <dossier des modèles dézippés>`.
+   Les insectes (Chenipan, Papilusion, Dardargnan) ont les yeux peints sur le corps : ils ne les ferment pas.
    Sans lui : la bulle et les étoiles sont grises et les yeux ne se ferment pas.
 4. Rien à placer dans la map : le composant est déjà sur le PlayerController (`FollowerComponent`).
 5. Facultatif : un son de sifflet. Importer un `.wav` dans `Contenu > Pokemon > Follower` et le nommer `SW_Whistle`.
