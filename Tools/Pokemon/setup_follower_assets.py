@@ -53,8 +53,37 @@ def constant(material, value, x, y):
     return node
 
 
-def make_eye_material():
-    material = new_material("M_PokemonEyeExpression")
+def sampler_type_for(texture):
+    """Type d'échantillonneur qu'Unreal exige pour cette texture (sinon il la refuse et met le damier gris)."""
+    st = unreal.MaterialSamplerType
+    srgb = texture.get_editor_property("srgb")
+    if texture.get_editor_property("virtual_texture_streaming"):
+        return st.SAMPLERTYPE_VIRTUAL_COLOR if srgb else st.SAMPLERTYPE_VIRTUAL_LINEAR_COLOR
+    compression = texture.get_editor_property("compression_settings")
+    tc = unreal.TextureCompressionSettings
+    if compression == tc.TC_NORMALMAP:
+        return st.SAMPLERTYPE_NORMAL
+    if compression == tc.TC_MASKS:
+        return st.SAMPLERTYPE_MASKS
+    if compression == tc.TC_GRAYSCALE:
+        return st.SAMPLERTYPE_GRAYSCALE if srgb else st.SAMPLERTYPE_LINEAR_GRAYSCALE
+    return st.SAMPLERTYPE_COLOR if srgb else st.SAMPLERTYPE_LINEAR_COLOR
+
+
+MASTERS = {}
+
+
+def eye_master_for(texture):
+    """Matériau des yeux qui accepte cette texture (un par type : couleur, texture virtuelle...)."""
+    sampler = sampler_type_for(texture)
+    if sampler not in MASTERS:
+        suffix = "" if sampler == unreal.MaterialSamplerType.SAMPLERTYPE_COLOR else "_" + str(sampler.name).replace("SAMPLERTYPE_", "").title().replace("_", "")
+        MASTERS[sampler] = make_eye_material("M_PokemonEyeExpression" + suffix, sampler, texture)
+    return MASTERS[sampler]
+
+
+def make_eye_material(name="M_PokemonEyeExpression", sampler=None, example=None):
+    material = new_material(name)
     # Les surfaces des yeux peuvent être retournées (vues de dos) : sans « deux faces », on voit le trou derrière
     material.set_editor_property("two_sided", True)
     coords = mel.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate, -900, 0)
@@ -70,7 +99,12 @@ def make_eye_material():
     add = mel.create_material_expression(material, unreal.MaterialExpressionAdd, -450, 50)
     texture = mel.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -250, 0)
     texture.set_editor_property("parameter_name", "BaseTexture")
-    texture.set_editor_property("texture", unreal.load_asset("/Engine/EngineResources/DefaultTexture"))
+    if sampler is not None and sampler != unreal.MaterialSamplerType.SAMPLERTYPE_COLOR:
+        # Texture d'exemple du même type (les instances mettent la leur)
+        texture.set_editor_property("texture", example)
+        texture.set_editor_property("sampler_type", sampler)
+    else:
+        texture.set_editor_property("texture", unreal.load_asset("/Engine/EngineResources/DefaultTexture"))
     roughness = constant(material, 0.7, -250, 300)
     specular = constant(material, 0.3, -250, 400)
 
@@ -167,7 +201,7 @@ def eye_texture(folder, material, texture_name):
     return textures[0] if textures else None
 
 
-def make_closed_eyes(master):
+def make_closed_eyes():
     made = 0
     for species, materials in load_eye_list().items():
         folder = f"{MODELS_DIR}/{species}"
@@ -191,13 +225,15 @@ def make_closed_eyes(master):
             if not texture.get_editor_property("never_stream"):
                 texture.set_editor_property("never_stream", True)
                 eal.save_loaded_asset(texture)
-            mel.set_material_instance_parent(instance, master)
+            mel.set_material_instance_parent(instance, eye_master_for(texture))
             mel.set_material_instance_texture_parameter_value(instance, "BaseTexture", texture)
+            if mel.get_material_instance_texture_parameter_value(instance, "BaseTexture") != texture:
+                unreal.log_warning(f"{closed_path} : texture {texture.get_name()} refusée par le matériau des yeux")
             mel.set_material_instance_vector_parameter_value(
                 instance, "EyeUVOffset", unreal.LinearColor(CLOSED_EYE_OFFSET[0], CLOSED_EYE_OFFSET[1], 0.0, 0.0))
             eal.save_loaded_asset(instance)
             made += 1
-            unreal.log(f"{closed_path} : yeux fermés ({texture.get_name()})")
+            unreal.log(f"{closed_path} : yeux fermés ({texture.get_name()}, {sampler_type_for(texture).name})")
     if made == 0:
         unreal.log_warning("Aucun matériau d'yeux trouvé dans " + MODELS_DIR + " (voir eye_materials.json)")
     return made
@@ -206,10 +242,10 @@ def make_closed_eyes(master):
 def main():
     if not eal.does_directory_exist(FOLLOWER_DIR):
         eal.make_directory(FOLLOWER_DIR)
-    master = make_eye_material()
+    make_eye_material()
     make_bubble_material()
     make_sparkle_material()
-    made = make_closed_eyes(master)
+    made = make_closed_eyes()
     unreal.log(f"Pokémon qui suit : matériaux prêts ({made} matériau(x) d'yeux fermés)")
 
 
