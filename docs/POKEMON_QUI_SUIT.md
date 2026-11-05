@@ -46,6 +46,11 @@ Il ne marche pas dans les pas du joueur : il a sa petite vie.
   regarde autour de lui, se retourne vers toi, sautille de joie (animation `Happy`), parfois pique un petit sprint.
   Après 20 s sans bouger, il **s'endort** (animation `Sleep` : Bulbizarre, Salamèche, Carapuce, Pikachu).
   Il se réveille dès que tu repars ou que tu le caresses.
+- **Les oiseaux se posent** (Roucool, Piafabec, leurs évolutions, Canarticho, oiseaux légendaires, Dracaufeu,
+  Ptéra, Dracolosse) : après 10 s sans que tu bouges, l'oiseau descend en douceur et se pose au sol (animation
+  `BattleIdle`, car dans les modèles Let's Go `Idle`, `Walk` et `Run` battent des ailes). Posé, il regarde autour de
+  lui sans se balader. À 20 s il s'endort s'il a une animation `Sleep` (Roucool n'en a pas : il reste posé).
+  Dès que tu repars ou que tu siffles, il s'envole.
 - **Quand il dort** : il ferme les yeux, des **Z** montent au-dessus de sa tête et une **bulle** au bout de son nez
   gonfle et dégonfle au rythme de sa respiration (une respiration toutes les 3 s).
 - **Éveillé, il cligne des yeux** de temps en temps.
@@ -131,6 +136,8 @@ puis dans le Blueprint du PlayerController : composant **FollowerComponent > Fol
 | Wander Radius | 400 cm | distance max de ses balades |
 | Pause Duration | 2 à 6 s | pause entre deux envies |
 | Sleep After | 20 s | il s'endort après ce temps (0 = jamais) |
+| Land After | 10 s | un oiseau se pose au sol après ce temps (0 = jamais) |
+| Landing Species / Landed Anim Name | oiseaux / BattleIdle | qui se pose, et l'animation posée (`A_<Espèce>_BattleIdle`) |
 | Fly Height / Float Height | 150 / 40 cm | hauteur des volants / de ceux qui flottent |
 | Teleport Distance | 25 m | au-delà, il disparaît et réapparaît à côté du joueur |
 | Heel Distance / Heel Angle | 70 cm / 70° | place « au pied » quand on le siffle (70° = à gauche, un peu en arrière ; -70° = à droite) |

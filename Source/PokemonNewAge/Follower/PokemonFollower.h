@@ -17,7 +17,9 @@ UENUM()
 enum class EFollowerPose : uint8
 {
 	None,
-	Sleep
+	Sleep,
+	/** Oiseau posé au sol (le joueur ne bouge plus depuis LandAfter) */
+	Perched
 };
 
 /**
@@ -153,6 +155,18 @@ public:
 	/** Le joueur est immobile depuis ce temps : il s'endort (s'il a une animation Sleep). 0 = jamais */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Balade", meta=(ClampMin=0, Units="s"))
 	float SleepAfter = 20.f;
+
+	/** Oiseau : le joueur est immobile depuis ce temps, il se pose au sol (0 = jamais). Il s'endort ensuite après SleepAfter */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Balade", meta=(ClampMin=0, Units="s"))
+	float LandAfter = 10.f;
+
+	/** Espèces qui se posent au sol (oiseaux). Il faut aussi l'animation posée A_<Espèce>_<LandedAnimName> */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Balade")
+	TSet<FName> LandingSpecies;
+
+	/** Animation de l'oiseau posé : BattleIdle (dans les modèles Let's Go, Idle/Walk/Run battent des ailes) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Balade")
+	FName LandedAnimName = TEXT("BattleIdle");
 
 	// ------------------------------------------------ Vol
 
@@ -290,7 +304,7 @@ private:
 	void ApplyMovementMode();
 
 	// Serveur : comportement
-	enum class EBehavior : uint8 { Follow, Wander, Pause, LookAround };
+	enum class EBehavior : uint8 { Follow, Wander, Pause, LookAround, Land };
 	void UpdateBehavior(float DeltaSeconds);
 	void UpdateFollow(float DeltaSeconds, float DistanceToLeader);
 	void UpdateIdle(float DeltaSeconds);
@@ -346,6 +360,14 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequence> SleepAnim;
+
+	/** Oiseau posé au sol (vide = cette espèce ne se pose pas) */
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> LandedAnim;
+
+	bool CanLand() const { return FollowMode == EFollowMode::Fly && LandedAnim != nullptr; }
+	/** En l'air en ce moment (un oiseau posé ou endormi marche au sol) */
+	bool IsAirborne() const { return IsFlyer() && Pose == EFollowerPose::None; }
 
 	float HappyTimeLeft = 0.f;
 	bool bRestartHappy = false;

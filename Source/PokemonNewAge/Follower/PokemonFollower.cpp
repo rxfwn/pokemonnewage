@@ -81,6 +81,12 @@ APokemonFollower::APokemonFollower()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
+	// Oiseaux de Kanto qui se posent au sol quand le joueur s'arrête
+	for (const TCHAR* Bird : { TEXT("Pidgey"), TEXT("Pidgeotto"), TEXT("Pidgeot"), TEXT("Spearow"), TEXT("Fearow"),
+		TEXT("Farfetchd"), TEXT("Articuno"), TEXT("Zapdos"), TEXT("Moltres"), TEXT("Charizard"), TEXT("Aerodactyl"), TEXT("Dragonite") })
+	{
+		LandingSpecies.Add(FName(Bird));
+	}
 	SetReplicateMovement(true);
 
 	// Pas de contrôleur : le serveur le déplace lui-même (bRunPhysicsWithNoController)
@@ -233,7 +239,7 @@ void APokemonFollower::LoadModel()
 	bEyeMaterialsSearched = false;
 	bEyesClosed = false;
 
-	IdleAnim = WalkAnim = RunAnim = HappyAnim = SleepAnim = nullptr;
+	IdleAnim = WalkAnim = RunAnim = HappyAnim = SleepAnim = LandedAnim = nullptr;
 	MeasuredWalkSpeed = MeasuredRunSpeed = 0.f;
 	PreviousFeetLocal.Reset();
 	PreviousLowestFoot = INDEX_NONE;
@@ -253,6 +259,10 @@ void APokemonFollower::LoadModel()
 		RunAnim = Cast<UAnimSequence>(LoadModelAsset(Id, FString::Printf(TEXT("A_%s_Run"), *Id)));
 		HappyAnim = Cast<UAnimSequence>(LoadModelAsset(Id, FString::Printf(TEXT("A_%s_Happy"), *Id)));
 		SleepAnim = Cast<UAnimSequence>(LoadModelAsset(Id, FString::Printf(TEXT("A_%s_Sleep"), *Id)));
+		if (LandingSpecies.Contains(Species) && !LandedAnimName.IsNone())
+		{
+			LandedAnim = Cast<UAnimSequence>(LoadModelAsset(Id, FString::Printf(TEXT("A_%s_%s"), *Id, *LandedAnimName.ToString())));
+		}
 		// Marche, course, attente : le corps reste sur place dans l'animation (c'est le code qui le déplace).
 		// Sinon, à chaque boucle de l'animation, le modèle revient d'un coup en arrière.
 		for (UAnimSequence* Anim : { IdleAnim.Get(), WalkAnim.Get(), RunAnim.Get() })
@@ -740,7 +750,13 @@ void APokemonFollower::UpdateIdle(float DeltaSeconds)
 
 	case EBehavior::Pause:
 		StopMoving();
-		if (FollowMode == EFollowMode::Walk && SleepAnim && SleepAfter > 0.f && LeaderIdleTime > SleepAfter)
+		if (CanLand() && Pose == EFollowerPose::None && LandAfter > 0.f && LeaderIdleTime > LandAfter)
+		{
+			// Oiseau : le joueur ne bouge plus, il descend se poser
+			Behavior = EBehavior::Land;
+			return;
+		}
+		if ((FollowMode == EFollowMode::Walk || Pose == EFollowerPose::Perched) && SleepAnim && SleepAfter > 0.f && LeaderIdleTime > SleepAfter)
 		{
 			Pose = EFollowerPose::Sleep;
 		}
@@ -768,6 +784,32 @@ void APokemonFollower::UpdateIdle(float DeltaSeconds)
 		}
 		break;
 
+	case EBehavior::Land:
+	{
+		// Descente en douceur jusqu'au sol, puis il se pose (il marche au sol, plus en vol)
+		float GroundZ = 0.f;
+		const float HalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+		UCharacterMovementComponent* Move = GetCharacterMovement();
+		if (!FindGround(GetActorLocation(), GroundZ))
+		{
+			Behavior = EBehavior::Pause;
+			ActionTimeLeft = FMath::FRandRange(PauseDuration.X, PauseDuration.Y);
+			break;
+		}
+		const float Height = static_cast<float>(GetActorLocation().Z) - (GroundZ + HalfHeight);
+		if (Height < 10.f)
+		{
+			Pose = EFollowerPose::Perched;
+			Move->SetMovementMode(MOVE_Walking);
+			Behavior = EBehavior::Pause;
+			ActionTimeLeft = FMath::FRandRange(PauseDuration.X, PauseDuration.Y);
+			break;
+		}
+		Move->MaxFlySpeed = FMath::Clamp(Height * 2.f, 40.f, 150.f);
+		AddMovementInput(FVector::DownVector, 1.f);
+		break;
+	}
+
 	case EBehavior::Wander:
 	{
 		// En balade, il ne saute pas d'un muret ou d'une falaise (il n'arriverait plus à remonter)
@@ -791,8 +833,13 @@ void APokemonFollower::ChooseIdleAction()
 	const FVector Feet = GetLeaderFeet();
 	const FVector Location = GetActorLocation();
 	const float Distance = FVector::Dist2D(Location, Feet);
-	const float Roll = FMath::FRand();
+	float Roll = FMath::FRand();
 	const float Reach = BodyRadius + PokemonFollower::LeaderRadius;
+	if (Pose == EFollowerPose::Perched)
+	{
+		// Posé, il ne se balade pas (ses animations de marche battent des ailes) : il regarde autour de lui
+		Roll = FMath::FRandRange(0.45f, 0.85f);
+	}
 
 	// Une balade : vers un point au hasard autour du joueur (ou retour près de lui s'il s'est éloigné)
 	const bool bGoBack = Distance > ComfortDistance + Reach && Roll < 0.6f;
@@ -867,6 +914,7 @@ void APokemonFollower::TeleportBehindLeader()
 	bRunning = false;
 	Behavior = EBehavior::Follow;
 	Pose = EFollowerPose::None;
+	ApplyMovementMode();
 	PickFollowSpot();
 	TeleportTimeLeft = -1.f;
 
@@ -985,9 +1033,15 @@ void APokemonFollower::Pet(APawn* ByPawn)
 			SetActorRotation(FRotator(0.f, Direction.Rotation().Yaw, 0.f));
 		}
 	}
-	// Réveillé par la caresse (il fait sa joie sur place, pas besoin d'attendre)
-	WakeUp();
-	WakeTimeLeft = 0.f;
+	// Réveillé par la caresse (il fait sa joie sur place, pas besoin d'attendre) ; un oiseau posé reste posé
+	if (Pose == EFollowerPose::Sleep && IsFlyer())
+	{
+		Pose = EFollowerPose::Perched;
+	}
+	else if (!IsFlyer())
+	{
+		Pose = EFollowerPose::None;
+	}
 	LeaderIdleTime = 0.f;
 	Behavior = EBehavior::Pause;
 	ActionTimeLeft = FMath::FRandRange(PauseDuration.X, PauseDuration.Y);
@@ -1028,6 +1082,11 @@ void APokemonFollower::UpdateAnimation(float DeltaSeconds)
 	if (Pose == EFollowerPose::Sleep && SleepAnim)
 	{
 		Anim->Want(SleepAnim, 1.f, 1.f, true);
+		return;
+	}
+	if (Pose == EFollowerPose::Perched && LandedAnim)
+	{
+		Anim->Want(LandedAnim, 1.f, 1.f, true);
 		return;
 	}
 	if (HappyTimeLeft > 0.f && HappyAnim)
@@ -1128,6 +1187,11 @@ void APokemonFollower::WakeUp()
 	{
 		WakeTimeLeft = WakeUpTime;
 	}
+	if (Pose != EFollowerPose::None && IsFlyer())
+	{
+		// Oiseau posé : il s'envole
+		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+	}
 	Pose = EFollowerPose::None;
 }
 
@@ -1210,7 +1274,7 @@ void APokemonFollower::FindFootBones(const USkeletalMesh* Asset, float BottomZ, 
 void APokemonFollower::UpdateGrounding(float DeltaSeconds)
 {
 	USkeletalMeshComponent* Skeletal = GetMesh();
-	if (FootBones.Num() == 0 || !Skeletal->GetSkeletalMeshAsset() || IsFlyer())
+	if (FootBones.Num() == 0 || !Skeletal->GetSkeletalMeshAsset() || IsAirborne())
 	{
 		return;
 	}
