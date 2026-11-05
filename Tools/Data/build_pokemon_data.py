@@ -377,9 +377,33 @@ def main() -> None:
             "bIsMythical": s["is_mythical"] == "1",
             "bAvailableInV1": species_key[sid] in v1,
             "Evolutions": evolutions.get(sid, []),
+            "FollowMode": follow_mode(species_key[sid], s["shape_id"]),
         })
     write("DT_Species", species_rows)
     print(f"Pokémon jouables en V1 ({len(v1)}) : {', '.join(sorted(v1))}")
+
+
+# Pokémon de tête qui suit le joueur (docs/POKEMON_QUI_SUIT.md) : Walk, Fly, Float ou None.
+# Par défaut d'après la silhouette PokeAPI (shape_id 9 = ailes, 13 = ailes d'insecte, 3 = poisson),
+# puis corrigé à la main. None = vit dans l'eau, ne sort pas de sa Ball.
+FOLLOW_BY_SHAPE = {"9": "Fly", "13": "Fly", "3": "None"}
+FOLLOW_OVERRIDES = {
+    # Ailes mais marche au sol
+    "Farfetchd": "Walk", "Scyther": "Walk",
+    # Volent sans silhouette « ailes »
+    "Charizard": "Fly", "Dragonite": "Fly", "Mew": "Fly",
+    # Flottent près du sol
+    "Gastly": "Float", "Haunter": "Float", "Koffing": "Float", "Weezing": "Float",
+    "Magnemite": "Float", "Magneton": "Float", "Porygon": "Float", "Dragonair": "Float",
+    # Aquatiques : ne suivent pas
+    "Tentacool": "None", "Tentacruel": "None", "Shellder": "None", "Cloyster": "None",
+    "Horsea": "None", "Seadra": "None", "Staryu": "None", "Starmie": "None",
+    "Gyarados": "None", "Omanyte": "None", "Omastar": "None", "Dratini": "None",
+}
+
+
+def follow_mode(key: str, shape_id: str) -> str:
+    return FOLLOW_OVERRIDES.get(key, FOLLOW_BY_SHAPE.get(shape_id, "Walk"))
 
 
 # Lieux de la V1 : de Bourg Palette au badge de Pierre.

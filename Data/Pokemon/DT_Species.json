@@ -44,7 +44,8 @@
     "MinLevel": 16,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Ivysaur",
@@ -91,7 +92,8 @@
     "MinLevel": 32,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Venusaur",
@@ -131,7 +133,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Charmander",
@@ -178,7 +181,8 @@
     "MinLevel": 16,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Charmeleon",
@@ -225,7 +229,8 @@
     "MinLevel": 36,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Charizard",
@@ -265,7 +270,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Fly"
  },
  {
   "Name": "Squirtle",
@@ -312,7 +318,8 @@
     "MinLevel": 16,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Wartortle",
@@ -359,7 +366,8 @@
     "MinLevel": 36,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Blastoise",
@@ -399,7 +407,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Caterpie",
@@ -446,7 +455,8 @@
     "MinLevel": 7,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Metapod",
@@ -493,7 +503,8 @@
     "MinLevel": 10,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Butterfree",
@@ -533,7 +544,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": true,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Fly"
  },
  {
   "Name": "Weedle",
@@ -580,7 +592,8 @@
     "MinLevel": 7,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Kakuna",
@@ -627,7 +640,8 @@
     "MinLevel": 10,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Beedrill",
@@ -667,7 +681,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": true,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Fly"
  },
  {
   "Name": "Pidgey",
@@ -714,7 +729,8 @@
     "MinLevel": 18,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Fly"
  },
  {
   "Name": "Pidgeotto",
@@ -761,7 +777,8 @@
     "MinLevel": 36,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Fly"
  },
  {
   "Name": "Pidgeot",
@@ -801,7 +818,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Fly"
  },
  {
   "Name": "Rattata",
@@ -849,7 +867,8 @@
     "MinLevel": 20,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Raticate",
@@ -890,7 +909,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Spearow",
@@ -937,7 +957,8 @@
     "MinLevel": 20,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Fly"
  },
  {
   "Name": "Fearow",
@@ -977,7 +998,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Fly"
  },
  {
   "Name": "Ekans",
@@ -1025,7 +1047,8 @@
     "MinLevel": 22,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Arbok",
@@ -1066,7 +1089,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Pikachu",
@@ -1113,7 +1137,8 @@
     "MinLevel": 0,
     "Item": "ThunderStone"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Raichu",
@@ -1153,7 +1178,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Sandshrew",
@@ -1200,7 +1226,8 @@
     "MinLevel": 22,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Sandslash",
@@ -1240,7 +1267,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "NidoranF",
@@ -1287,7 +1315,8 @@
     "MinLevel": 16,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Nidorina",
@@ -1334,7 +1363,8 @@
     "MinLevel": 0,
     "Item": "MoonStone"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Nidoqueen",
@@ -1374,7 +1404,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "NidoranM",
@@ -1421,7 +1452,8 @@
     "MinLevel": 16,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Nidorino",
@@ -1468,7 +1500,8 @@
     "MinLevel": 0,
     "Item": "MoonStone"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Nidoking",
@@ -1508,7 +1541,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Clefairy",
@@ -1555,7 +1589,8 @@
     "MinLevel": 0,
     "Item": "MoonStone"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Clefable",
@@ -1595,7 +1630,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Vulpix",
@@ -1642,7 +1678,8 @@
     "MinLevel": 0,
     "Item": "FireStone"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Ninetales",
@@ -1682,7 +1719,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Jigglypuff",
@@ -1729,7 +1767,8 @@
     "MinLevel": 0,
     "Item": "MoonStone"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Wigglytuff",
@@ -1769,7 +1808,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Zubat",
@@ -1816,7 +1856,8 @@
     "MinLevel": 22,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Fly"
  },
  {
   "Name": "Golbat",
@@ -1856,7 +1897,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Fly"
  },
  {
   "Name": "Oddish",
@@ -1903,7 +1945,8 @@
     "MinLevel": 21,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Gloom",
@@ -1950,7 +1993,8 @@
     "MinLevel": 0,
     "Item": "LeafStone"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Vileplume",
@@ -1990,7 +2034,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Paras",
@@ -2037,7 +2082,8 @@
     "MinLevel": 24,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Parasect",
@@ -2077,7 +2123,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Venonat",
@@ -2124,7 +2171,8 @@
     "MinLevel": 31,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Venomoth",
@@ -2164,7 +2212,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Fly"
  },
  {
   "Name": "Diglett",
@@ -2212,7 +2261,8 @@
     "MinLevel": 26,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Dugtrio",
@@ -2253,7 +2303,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Meowth",
@@ -2300,7 +2351,8 @@
     "MinLevel": 28,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Persian",
@@ -2340,7 +2392,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Psyduck",
@@ -2388,7 +2441,8 @@
     "MinLevel": 33,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Golduck",
@@ -2429,7 +2483,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Mankey",
@@ -2476,7 +2531,8 @@
     "MinLevel": 28,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Primeape",
@@ -2516,7 +2572,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Growlithe",
@@ -2564,7 +2621,8 @@
     "MinLevel": 0,
     "Item": "FireStone"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Arcanine",
@@ -2605,7 +2663,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Poliwag",
@@ -2653,7 +2712,8 @@
     "MinLevel": 25,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Poliwhirl",
@@ -2701,7 +2761,8 @@
     "MinLevel": 0,
     "Item": "WaterStone"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Poliwrath",
@@ -2742,7 +2803,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Abra",
@@ -2790,7 +2852,8 @@
     "MinLevel": 16,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Kadabra",
@@ -2838,7 +2901,8 @@
     "MinLevel": 0,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Alakazam",
@@ -2879,7 +2943,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Machop",
@@ -2926,7 +2991,8 @@
     "MinLevel": 28,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Machoke",
@@ -2973,7 +3039,8 @@
     "MinLevel": 0,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Machamp",
@@ -3013,7 +3080,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Bellsprout",
@@ -3060,7 +3128,8 @@
     "MinLevel": 21,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Weepinbell",
@@ -3107,7 +3176,8 @@
     "MinLevel": 0,
     "Item": "LeafStone"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Victreebel",
@@ -3147,7 +3217,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Tentacool",
@@ -3195,7 +3266,8 @@
     "MinLevel": 30,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "None"
  },
  {
   "Name": "Tentacruel",
@@ -3236,7 +3308,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "None"
  },
  {
   "Name": "Geodude",
@@ -3284,7 +3357,8 @@
     "MinLevel": 25,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Graveler",
@@ -3332,7 +3406,8 @@
     "MinLevel": 0,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Golem",
@@ -3373,7 +3448,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Ponyta",
@@ -3421,7 +3497,8 @@
     "MinLevel": 40,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Rapidash",
@@ -3462,7 +3539,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Slowpoke",
@@ -3510,7 +3588,8 @@
     "MinLevel": 37,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Slowbro",
@@ -3551,7 +3630,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Magnemite",
@@ -3599,7 +3679,8 @@
     "MinLevel": 30,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Float"
  },
  {
   "Name": "Magneton",
@@ -3640,7 +3721,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Float"
  },
  {
   "Name": "Farfetchd",
@@ -3681,7 +3763,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Doduo",
@@ -3729,7 +3812,8 @@
     "MinLevel": 31,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Dodrio",
@@ -3770,7 +3854,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Seel",
@@ -3817,7 +3902,8 @@
     "MinLevel": 34,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "None"
  },
  {
   "Name": "Dewgong",
@@ -3857,7 +3943,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "None"
  },
  {
   "Name": "Grimer",
@@ -3905,7 +3992,8 @@
     "MinLevel": 38,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Muk",
@@ -3946,7 +4034,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Shellder",
@@ -3993,7 +4082,8 @@
     "MinLevel": 0,
     "Item": "WaterStone"
    }
-  ]
+  ],
+  "FollowMode": "None"
  },
  {
   "Name": "Cloyster",
@@ -4033,7 +4123,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "None"
  },
  {
   "Name": "Gastly",
@@ -4080,7 +4171,8 @@
     "MinLevel": 25,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Float"
  },
  {
   "Name": "Haunter",
@@ -4127,7 +4219,8 @@
     "MinLevel": 0,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Float"
  },
  {
   "Name": "Gengar",
@@ -4167,7 +4260,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Onix",
@@ -4208,7 +4302,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": true,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Drowzee",
@@ -4255,7 +4350,8 @@
     "MinLevel": 26,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Hypno",
@@ -4295,7 +4391,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Krabby",
@@ -4343,7 +4440,8 @@
     "MinLevel": 28,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Kingler",
@@ -4384,7 +4482,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Voltorb",
@@ -4432,7 +4531,8 @@
     "MinLevel": 30,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Electrode",
@@ -4473,7 +4573,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Exeggcute",
@@ -4520,7 +4621,8 @@
     "MinLevel": 0,
     "Item": "LeafStone"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Exeggutor",
@@ -4560,7 +4662,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Cubone",
@@ -4608,7 +4711,8 @@
     "MinLevel": 28,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Marowak",
@@ -4649,7 +4753,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Hitmonlee",
@@ -4689,7 +4794,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Hitmonchan",
@@ -4729,7 +4835,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Lickitung",
@@ -4770,7 +4877,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Koffing",
@@ -4817,7 +4925,8 @@
     "MinLevel": 35,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Float"
  },
  {
   "Name": "Weezing",
@@ -4857,7 +4966,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Float"
  },
  {
   "Name": "Rhyhorn",
@@ -4905,7 +5015,8 @@
     "MinLevel": 42,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Rhydon",
@@ -4946,7 +5057,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Chansey",
@@ -4987,7 +5099,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Tangela",
@@ -5027,7 +5140,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Kangaskhan",
@@ -5067,7 +5181,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Horsea",
@@ -5114,7 +5229,8 @@
     "MinLevel": 32,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "None"
  },
  {
   "Name": "Seadra",
@@ -5154,7 +5270,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "None"
  },
  {
   "Name": "Goldeen",
@@ -5202,7 +5319,8 @@
     "MinLevel": 33,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "None"
  },
  {
   "Name": "Seaking",
@@ -5243,7 +5361,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "None"
  },
  {
   "Name": "Staryu",
@@ -5291,7 +5410,8 @@
     "MinLevel": 0,
     "Item": "WaterStone"
    }
-  ]
+  ],
+  "FollowMode": "None"
  },
  {
   "Name": "Starmie",
@@ -5332,7 +5452,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "None"
  },
  {
   "Name": "MrMime",
@@ -5372,7 +5493,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Scyther",
@@ -5412,7 +5534,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Jynx",
@@ -5452,7 +5575,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Electabuzz",
@@ -5492,7 +5616,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Magmar",
@@ -5532,7 +5657,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Pinsir",
@@ -5572,7 +5698,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Tauros",
@@ -5612,7 +5739,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Magikarp",
@@ -5659,7 +5787,8 @@
     "MinLevel": 20,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "None"
  },
  {
   "Name": "Gyarados",
@@ -5699,7 +5828,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "None"
  },
  {
   "Name": "Lapras",
@@ -5740,7 +5870,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "None"
  },
  {
   "Name": "Ditto",
@@ -5780,7 +5911,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Eevee",
@@ -5839,7 +5971,8 @@
     "MinLevel": 0,
     "Item": "FireStone"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Vaporeon",
@@ -5879,7 +6012,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Jolteon",
@@ -5919,7 +6053,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Flareon",
@@ -5959,7 +6094,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Porygon",
@@ -5999,7 +6135,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Float"
  },
  {
   "Name": "Omanyte",
@@ -6047,7 +6184,8 @@
     "MinLevel": 40,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "None"
  },
  {
   "Name": "Omastar",
@@ -6088,7 +6226,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "None"
  },
  {
   "Name": "Kabuto",
@@ -6136,7 +6275,8 @@
     "MinLevel": 40,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Kabutops",
@@ -6177,7 +6317,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Aerodactyl",
@@ -6218,7 +6359,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Fly"
  },
  {
   "Name": "Snorlax",
@@ -6259,7 +6401,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Articuno",
@@ -6299,7 +6442,8 @@
   "bIsLegendary": true,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Fly"
  },
  {
   "Name": "Zapdos",
@@ -6339,7 +6483,8 @@
   "bIsLegendary": true,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Fly"
  },
  {
   "Name": "Moltres",
@@ -6379,7 +6524,8 @@
   "bIsLegendary": true,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Fly"
  },
  {
   "Name": "Dratini",
@@ -6426,7 +6572,8 @@
     "MinLevel": 30,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "None"
  },
  {
   "Name": "Dragonair",
@@ -6473,7 +6620,8 @@
     "MinLevel": 55,
     "Item": "None"
    }
-  ]
+  ],
+  "FollowMode": "Float"
  },
  {
   "Name": "Dragonite",
@@ -6513,7 +6661,8 @@
   "bIsLegendary": false,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Fly"
  },
  {
   "Name": "Mewtwo",
@@ -6553,7 +6702,8 @@
   "bIsLegendary": true,
   "bIsMythical": false,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Walk"
  },
  {
   "Name": "Mew",
@@ -6593,6 +6743,7 @@
   "bIsLegendary": false,
   "bIsMythical": true,
   "bAvailableInV1": false,
-  "Evolutions": []
+  "Evolutions": [],
+  "FollowMode": "Fly"
  }
 ]
