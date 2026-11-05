@@ -37,16 +37,24 @@ Il ne marche pas dans les pas du joueur : il a sa petite vie.
   sortes de sa zone de confort, puis te rejoint et marche à ton rythme. Au-delà de 5 m il court.
   Il tourne avant d'avancer (des courbes, pas de glissade de côté) et accélère ou freine en douceur.
   S'il y a un mur entre lui et sa place, il passe par où tu es passé.
+  S'il reste coincé 2 s, il essaie d'abord ton chemin exact pendant 4 s ; il ne réapparaît dans les étoiles
+  que s'il est encore coincé **et** loin de toi. En balade, il ne saute pas des murets ni des falaises.
 - **Sa démarche suit sa taille** : un petit Pokémon fait de petits pas. Pikachu (40 cm) marche à 1 m/s et court
   à 3,2 m/s : quand tu marches, il trottine. L'animation (marche ou course) est choisie d'après sa vitesse
   réelle et jouée au rythme du sol, pour que les pattes ne glissent pas.
 - **Quand tu t'arrêtes** (après 1,5 s) : il se balade jusqu'à 4 m de toi, s'arrête quelques secondes,
   regarde autour de lui, se retourne vers toi, sautille de joie (animation `Happy`), parfois pique un petit sprint.
-  Après 45 s sans bouger, il **s'endort** (animation `Sleep` : Bulbizarre, Salamèche, Carapuce, Pikachu).
+  Après 20 s sans bouger, il **s'endort** (animation `Sleep` : Bulbizarre, Salamèche, Carapuce, Pikachu).
   Il se réveille dès que tu repars ou que tu le caresses.
 - **Quand il dort** : il ferme les yeux, des **Z** montent au-dessus de sa tête et une **bulle** au bout de son nez
   gonfle et dégonfle au rythme de sa respiration (une respiration toutes les 3 s).
 - **Éveillé, il cligne des yeux** de temps en temps.
+- **Ses pieds touchent le sol** : à chaque image, le jeu regarde où sont les os de ses pieds dans l'animation
+  (`EffFoot01` à `04` des modèles Let's Go, sinon les os « Foot » ou « Toe ») et descend ou monte le modèle pour que
+  le pied le plus bas soit posé sur le sol juste en dessous. Les animations de marche, course et attente sont
+  « verrouillées » sur place (Force Root Lock) : c'est le jeu qui le déplace, pas l'animation.
+- **Pourquoi il a disparu ?** Chaque disparition est écrite dans le Journal de sortie (Fenêtre > Journal de sortie,
+  Window > Output Log), catégorie `LogPokemonFollower`, avec la raison (trop loin, chute, bloqué, sifflé).
 
 **Multijoueur** : chaque joueur du monde a son Pokémon qui le suit, et tout le monde voit ceux des autres.
 C'est le serveur (celui qui a créé le monde) qui les déplace ; on peut caresser le Pokémon d'un ami.
@@ -85,7 +93,7 @@ Lancer le jeu dans `L_Kanto`, console **²** :
 | `CombatSauvage Rattata 3` | il rentre pendant le combat et ressort après |
 | `Suiveur` | le range / le ressort (`Suiveur 0` : rangé, `Suiveur 1` : sorti) |
 | `Siffler` ou touche **F** | il accourt au pied ; recommencer pour le libérer |
-| rester immobile 45 s avec Pikachu | il s'endort : yeux fermés, Z, bulle qui respire |
+| rester immobile 20 s avec Pikachu | il s'endort : yeux fermés, Z, bulle qui respire |
 | `slomo 4` puis courir loin | il disparaît dans des étoiles et réapparaît à côté |
 
 À vérifier en particulier : courir (Maj) puis s'arrêter, monter une pente, passer une porte de maison,
@@ -111,7 +119,7 @@ puis dans le Blueprint du PlayerController : composant **FollowerComponent > Fol
 | Idle Delay | 1,5 s | délai avant qu'il commence à se balader quand le joueur est arrêté |
 | Wander Radius | 400 cm | distance max de ses balades |
 | Pause Duration | 2 à 6 s | pause entre deux envies |
-| Sleep After | 45 s | il s'endort après ce temps (0 = jamais) |
+| Sleep After | 20 s | il s'endort après ce temps (0 = jamais) |
 | Fly Height / Float Height | 150 / 40 cm | hauteur des volants / de ceux qui flottent |
 | Teleport Distance | 25 m | au-delà, il disparaît et réapparaît à côté du joueur |
 | Heel Distance / Heel Angle | 70 cm / 70° | place « au pied » quand on le siffle (70° = à gauche, un peu en arrière ; -70° = à droite) |

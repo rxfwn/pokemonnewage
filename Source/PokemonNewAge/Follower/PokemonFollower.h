@@ -7,6 +7,7 @@
 #include "PokemonFollower.generated.h"
 
 class UAnimSequence;
+class USkeletalMesh;
 class UStaticMeshComponent;
 class UTextRenderComponent;
 class UMaterialInterface;
@@ -151,7 +152,7 @@ public:
 
 	/** Le joueur est immobile depuis ce temps : il s'endort (s'il a une animation Sleep). 0 = jamais */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Balade", meta=(ClampMin=0, Units="s"))
-	float SleepAfter = 45.f;
+	float SleepAfter = 20.f;
 
 	// ------------------------------------------------ Vol
 
@@ -294,6 +295,11 @@ private:
 	// Tous les joueurs : animation d'après la vitesse, effets
 	void UpdateAnimation();
 	void UpdateEffects(float DeltaSeconds);
+	/** Pose les pieds sur le sol à chaque image (d'après les os des pieds de l'animation) */
+	void UpdateGrounding(float DeltaSeconds);
+	void FindFootBones(const USkeletalMesh* Asset);
+	/** Serveur : disparition, avec la raison dans le Journal de sortie (Output Log) */
+	void TeleportBecause(const TCHAR* Reason);
 	void UpdateSleepEffects(float DeltaSeconds, bool bAsleep);
 	void SetEyesClosed(bool bClosed);
 	void FindEyeMaterials();
@@ -355,6 +361,12 @@ private:
 	float AppliedScaleFactor = -1.f;
 	/** Échelle de StaticModel quand le facteur vaut 1 (sphère de remplacement comprise) */
 	float StaticBaseScale = 1.f;
+	/** Os des pieds et leur hauteur au-dessus du bas du modèle en pose de repos (échelle 1) */
+	TArray<FName> FootBones;
+	TArray<float> FootRestHeights;
+	/** Hauteur du mesh dans la capsule (pieds du modèle au bas de la capsule), et correction de l'animation */
+	float BaseMeshZ = 0.f;
+	float GroundOffset = 0.f;
 
 	/** Vitesse de marche et de course de cette espèce (animation à vitesse normale) */
 	float WalkGaitSpeed = 150.f;
@@ -383,6 +395,8 @@ private:
 	/** Positions des pieds du joueur, pour contourner un mur par son chemin */
 	TArray<FVector> Trail;
 	float StuckTimer = 0.f;
+	/** Bloqué une fois : il passe par le chemin du joueur pendant ce temps avant d'abandonner */
+	float ForceTrailTimeLeft = 0.f;
 	float BobTime = 0.f;
 	/** Rayon du modèle, pour ne pas coller le joueur */
 	float BodyRadius = 30.f;

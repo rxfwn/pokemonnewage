@@ -1,6 +1,7 @@
 #include "Follower/PokemonFollower.h"
 #include "Follower/PokemonFollowerComponent.h"
 #include "Animation/AnimSequence.h"
+#include "AnimationRuntime.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -15,6 +16,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Net/UnrealNetwork.h"
+
+DEFINE_LOG_CATEGORY_STATIC(LogPokemonFollower, Log, All);
 
 namespace PokemonFollower
 {
@@ -33,6 +36,8 @@ namespace PokemonFollower
 	constexpr int32 MaxTrailPoints = 150;
 	/** Le joueur a sauté plus loin que ça d'un coup (porte, point de téléportation) : on oublie son chemin */
 	constexpr float TrailJump = 500.f;
+	/** Bloqué : il passe par le chemin du joueur pendant ce temps avant de réapparaître (s) */
+	constexpr float TrailRetryTime = 4.f;
 	/** Capsule de collision : bornes (cm). Le modèle peut dépasser (Onix) : il ne touche rien */
 	constexpr float MinRadius = 20.f;
 	constexpr float MaxRadius = 60.f;
@@ -243,9 +248,21 @@ void APokemonFollower::LoadModel()
 		RunAnim = Cast<UAnimSequence>(LoadModelAsset(Id, FString::Printf(TEXT("A_%s_Run"), *Id)));
 		HappyAnim = Cast<UAnimSequence>(LoadModelAsset(Id, FString::Printf(TEXT("A_%s_Happy"), *Id)));
 		SleepAnim = Cast<UAnimSequence>(LoadModelAsset(Id, FString::Printf(TEXT("A_%s_Sleep"), *Id)));
+		// Marche, course, attente : le corps reste sur place dans l'animation (c'est le code qui le déplace).
+		// Sinon, à chaque boucle de l'animation, le modèle revient d'un coup en arrière.
+		for (UAnimSequence* Anim : { IdleAnim.Get(), WalkAnim.Get(), RunAnim.Get() })
+		{
+			if (Anim)
+			{
+				Anim->bForceRootLock = true;
+			}
+		}
+		FindFootBones(SkeletalAsset);
 	}
 	else
 	{
+		FootBones.Reset();
+		FootRestHeights.Reset();
 		Skeletal->SetSkeletalMesh(nullptr);
 		Skeletal->SetVisibility(false);
 		UStaticMesh* StaticAsset = Cast<UStaticMesh>(LoadModelAsset(Id, TEXT("SM_") + Id));
@@ -287,6 +304,13 @@ void APokemonFollower::LoadModel()
 	const FVector MeshOffset(0.f, 0.f, -HalfHeight - (bPlaceholder ? 0.f : FeetZ));
 	ModelScale = Scale;
 	ModelHeight = Height * Scale;
+	BaseMeshZ = MeshOffset.Z;
+	GroundOffset = 0.f;
+	for (float& RestHeight : FootRestHeights)
+	{
+		// Hauteur au-dessus du bas du modèle (et pas de son origine)
+		RestHeight -= static_cast<float>(Bounds.Origin.Z - Bounds.BoxExtent.Z);
+	}
 	StaticBaseScale = bPlaceholder ? PlaceholderDiameter / 100.f : Scale;
 	Skeletal->SetRelativeLocationAndRotation(MeshOffset, ModelRotation);
 	StaticModel->SetRelativeLocation(bPlaceholder ? MeshOffset + FVector(0.f, 0.f, PlaceholderDiameter * 0.5f) : MeshOffset);
@@ -538,7 +562,8 @@ void APokemonFollower::UpdateBehavior(float DeltaSeconds)
 	if (FVector::DistSquared(Location, LeaderLocation) > FMath::Square(TeleportDistance)
 		|| (!IsFlyer() && FMath::Abs(Location.Z - LeaderLocation.Z) > 800.f))
 	{
-		StartTeleport();
+		TeleportBecause(FVector::DistSquared(Location, LeaderLocation) > FMath::Square(TeleportDistance)
+			? TEXT("trop loin du joueur") : TEXT("trop au-dessus ou en dessous du joueur (chute ?)"));
 		return;
 	}
 
@@ -578,6 +603,7 @@ void APokemonFollower::UpdateBehavior(float DeltaSeconds)
 
 void APokemonFollower::UpdateFollow(float DeltaSeconds, float DistanceToLeader)
 {
+	GetCharacterMovement()->bCanWalkOffLedges = true;
 	if (!bHeel)
 	{
 		ReplanTimeLeft -= DeltaSeconds;
@@ -617,7 +643,8 @@ void APokemonFollower::UpdateFollow(float DeltaSeconds, float DistanceToLeader)
 	// Sa place autour du joueur
 	const FRotator SpotRotation(0.f, GetLeaderYaw() + 180.f + WantedAngle, 0.f);
 	FVector Spot = GetLeaderFeet() + SpotRotation.Vector() * (WantedDistance + Reach);
-	if (!IsReachable(IsFlyer() ? ToFlightHeight(Spot) : Spot))
+	ForceTrailTimeLeft = FMath::Max(ForceTrailTimeLeft - DeltaSeconds, 0.f);
+	if (ForceTrailTimeLeft > 0.f || !IsReachable(IsFlyer() ? ToFlightHeight(Spot) : Spot))
 	{
 		// Mur ou rocher sur la route : il passe par où le joueur est passé
 		Spot = GetTrailPoint(WantedDistance + Reach);
@@ -667,13 +694,21 @@ void APokemonFollower::UpdateFollow(float DeltaSeconds, float DistanceToLeader)
 	if (StuckTimer > StuckTime)
 	{
 		StuckTimer = 0.f;
-		if (DistanceToLeader > MaxDistance + Reach || bHeel)
+		if (ForceTrailTimeLeft <= 0.f)
 		{
-			StartTeleport();
+			// 1re fois : il essaie le chemin exact du joueur (là où lui est passé, ça passe)
+			ForceTrailTimeLeft = PokemonFollower::TrailRetryTime;
+		}
+		else if (DistanceToLeader > MaxDistance + Reach || bHeel)
+		{
+			// Même par le chemin du joueur ça ne passe pas : il réapparaît à côté de lui
+			ForceTrailTimeLeft = 0.f;
+			TeleportBecause(TEXT("bloqué loin du joueur, même par son chemin"));
 		}
 		else
 		{
 			// Assez près quand même : il renonce à cette place et en choisit une autre
+			ForceTrailTimeLeft = 0.f;
 			bCatchingUp = false;
 			PickFollowSpot();
 		}
@@ -724,6 +759,8 @@ void APokemonFollower::UpdateIdle(float DeltaSeconds)
 
 	case EBehavior::Wander:
 	{
+		// En balade, il ne saute pas d'un muret ou d'une falaise (il n'arriverait plus à remonter)
+		GetCharacterMovement()->bCanWalkOffLedges = false;
 		const FVector Target = IsFlyer() ? ToFlightHeight(WanderTarget) + FVector(0.f, 0.f, WanderHeightOffset) : WanderTarget;
 		const float Speed = bRunning ? RunGaitSpeed : WalkGaitSpeed;
 		if (MoveTowards(Target, Speed, 35.f, DeltaSeconds) || StuckTimer > StuckTime)
@@ -813,6 +850,7 @@ void APokemonFollower::TeleportBehindLeader()
 	Trail.Reset();
 	Trail.Add(Feet);
 	StuckTimer = 0.f;
+	ForceTrailTimeLeft = 0.f;
 	bCatchingUp = false;
 	bRunning = false;
 	Behavior = EBehavior::Follow;
@@ -841,6 +879,16 @@ void APokemonFollower::TeleportBehindLeader()
 		TeleportTo(FVector(Feet.X, Feet.Y, Feet.Z + HalfHeight + 2.f), Rotation, false, true);
 	}
 	GetCharacterMovement()->StopMovementImmediately();
+}
+
+void APokemonFollower::TeleportBecause(const TCHAR* Reason)
+{
+	if (TeleportTimeLeft < 0.f)
+	{
+		UE_LOG(LogPokemonFollower, Log, TEXT("%s disparaît et revient près du joueur : %s (à %.0f cm du joueur)"),
+			*Species.ToString(), Reason, Leader ? FVector::Dist(GetActorLocation(), Leader->GetActorLocation()) : 0.f);
+	}
+	StartTeleport();
 }
 
 void APokemonFollower::StartTeleport()
@@ -886,7 +934,7 @@ void APokemonFollower::Whistle()
 	const float Distance = FVector::Dist2D(GetActorLocation(), Leader->GetActorLocation());
 	if (Distance > MaxDistance * 2.f || !IsReachable(IsFlyer() ? ToFlightHeight(Heel) : Heel))
 	{
-		StartTeleport();
+		TeleportBecause(TEXT("sifflé de loin ou derrière un obstacle"));
 	}
 }
 
@@ -1054,6 +1102,80 @@ void APokemonFollower::ApplyModelScale(float Factor)
 	StaticModel->SetVisibility(bVisible && StaticModel->GetStaticMesh() != nullptr);
 }
 
+void APokemonFollower::FindFootBones(const USkeletalMesh* Asset)
+{
+	FootBones.Reset();
+	FootRestHeights.Reset();
+	const FReferenceSkeleton& Skeleton = Asset->GetRefSkeleton();
+	// Points d'effet des pieds des modèles Let's Go (EffFoot01 à 04), sinon les os des pieds et des orteils
+	for (const TCHAR* Pattern : { TEXT("EffFoot"), TEXT("Foot"), TEXT("Toe") })
+	{
+		for (int32 Index = 0; Index < Skeleton.GetNum(); ++Index)
+		{
+			const FName Bone = Skeleton.GetBoneName(Index);
+			if (Bone.ToString().Contains(Pattern) && !FootBones.Contains(Bone))
+			{
+				FootBones.Add(Bone);
+				FootRestHeights.Add(static_cast<float>(FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, Index).GetLocation().Z));
+			}
+		}
+		if (FootBones.Num() > 0)
+		{
+			return;
+		}
+	}
+}
+
+void APokemonFollower::UpdateGrounding(float DeltaSeconds)
+{
+	USkeletalMeshComponent* Skeletal = GetMesh();
+	if (FootBones.Num() == 0 || !Skeletal->GetSkeletalMeshAsset() || IsFlyer())
+	{
+		return;
+	}
+	// En sautant (joie), en tombant, en disparaissant : on ne touche à rien
+	const bool bHold = HappyTimeLeft > 0.f || GetCharacterMovement()->IsFalling() || VanishClock >= 0.f || AppearClock >= 0.f;
+	float Target = GroundOffset;
+	if (Pose == EFollowerPose::Sleep)
+	{
+		// Couché, les pieds ne touchent pas forcément le sol : on garde le placement du modèle
+		Target = 0.f;
+	}
+	else if (!bHold)
+	{
+		// Le pied le plus bas doit toucher le sol juste en dessous de lui
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(PokemonFollowerFeet), false, this);
+		Params.AddIgnoredActor(Leader.Get());
+		const float HalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+		const float TopZ = static_cast<float>(GetActorLocation().Z) + HalfHeight;
+		const float BottomZ = static_cast<float>(GetActorLocation().Z) - HalfHeight - 150.f;
+		const float MeshScaleZ = static_cast<float>(Skeletal->GetComponentScale().Z);
+		float Gap = TNumericLimits<float>::Max();
+		for (int32 Index = 0; Index < FootBones.Num(); ++Index)
+		{
+			const FVector Foot = Skeletal->GetSocketLocation(FootBones[Index]);
+			const float SoleZ = static_cast<float>(Foot.Z) - FootRestHeights[Index] * MeshScaleZ;
+			FHitResult Hit;
+			if (GetWorld()->LineTraceSingleByChannel(Hit, FVector(Foot.X, Foot.Y, TopZ), FVector(Foot.X, Foot.Y, BottomZ), ECC_Visibility, Params))
+			{
+				Gap = FMath::Min(Gap, SoleZ - static_cast<float>(Hit.ImpactPoint.Z));
+			}
+		}
+		if (Gap < TNumericLimits<float>::Max())
+		{
+			Target = GroundOffset - Gap;
+		}
+	}
+	const float Limit = FMath::Max(ModelHeight * 0.5f, 10.f);
+	Target = FMath::Clamp(Target, -Limit, Limit);
+	GroundOffset = FMath::FInterpTo(GroundOffset, Target, DeltaSeconds, 10.f);
+
+	const FVector MeshLocation(0.f, 0.f, BaseMeshZ + GroundOffset);
+	Skeletal->SetRelativeLocation(MeshLocation);
+	// Le lissage réseau (chez les autres joueurs) repart de cette hauteur
+	CacheInitialMeshOffset(MeshLocation, PokemonFollower::ModelRotation);
+}
+
 FVector APokemonFollower::GetBodyPoint(FName Socket, float HeightRatio) const
 {
 	const USkeletalMeshComponent* Skeletal = GetMesh();
@@ -1091,6 +1213,7 @@ void APokemonFollower::UpdateEffects(float DeltaSeconds)
 		}
 	}
 	ApplyModelScale(Factor);
+	UpdateGrounding(DeltaSeconds);
 	UpdateSparkles(DeltaSeconds);
 
 	const bool bAsleep = Pose == EFollowerPose::Sleep && VanishClock < 0.f;
