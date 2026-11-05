@@ -186,7 +186,7 @@ AEvolutionScene::AEvolutionScene()
 
 	// Courbe de la transformation par défaut : départ lent, accélère au milieu, arrivée en douceur
 	FRichCurve* Curve = MorphCurve.GetRichCurve();
-	for (const FVector2f& Key : { FVector2f(0.f, 0.f), FVector2f(0.3f, 0.1f), FVector2f(0.7f, 0.9f), FVector2f(1.f, 1.f) })
+	for (const FVector2f& Key : { FVector2f(0.f, 0.f), FVector2f(0.35f, 0.08f), FVector2f(0.65f, 0.92f), FVector2f(1.f, 1.f) })
 	{
 		const FKeyHandle Handle = Curve->AddKey(Key.X, Key.Y);
 		Curve->SetKeyInterpMode(Handle, RCIM_Cubic);
@@ -1041,7 +1041,7 @@ void AEvolutionScene::TickDotMorph(float Progress)
 	// Début : la silhouette se couvre de points ; milieu : les points tourbillonnent vers la nouvelle forme ;
 	// fin : la nouvelle silhouette apparaît et les points s'éteignent
 	const float Dot = MorphDotSize / 100.f;
-	// Temps du trajet (0 à 1), lu dans la courbe MorphCurve pour chaque point
+	// Temps du trajet (0 à 1) ; la courbe MorphCurve en fait l'avancement, le même pour tous les points
 	float TravelTime = 0.f;
 	float Size = 1.f;
 	if (Progress < MorphDotsAppear)
@@ -1053,23 +1053,20 @@ void AEvolutionScene::TickDotMorph(float Progress)
 		TravelTime = FMath::Clamp((Progress - MorphDotsAppear) / (MorphDotsArrive - MorphDotsAppear), 0.f, 1.f);
 		Size = Progress < MorphDotsArrive ? 1.f : 1.f - (Progress - MorphDotsArrive) / (1.f - MorphDotsArrive);
 	}
-	const float Stagger = FMath::Clamp(MorphStagger, 0.f, 0.6f);
+
 	const bool bShowOld = Progress < MorphDotsAppear;
 	const bool bShowNew = Progress >= MorphDotsArrive;
 	OldMesh->SetVisibility(bShowOld);
 	NewMesh->SetVisibility(bShowNew);
 	MorphDots->SetVisibility(Size > 0.f);
 
+	const float Travel = EvalMorphCurve(TravelTime);
+	const float Swirl = FMath::Sin(FMath::Clamp(Travel, 0.f, 1.f) * UE_PI);
 	TArray<FTransform> Transforms;
 	Transforms.SetNum(MorphFrom.Num());
 	for (int32 Index = 0; Index < MorphFrom.Num(); ++Index)
 	{
-		// Chaque point part un peu plus tôt ou plus tard (Spin va de 0,6 à 1,4), tous arrivent à la fin
 		const float Spin = MorphSpin[Index];
-		const float Delay = Stagger * (Spin - 0.6f) / 0.8f;
-		const float PointTime = FMath::Clamp((TravelTime - Delay) / FMath::Max(1.f - Stagger, 0.01f), 0.f, 1.f);
-		const float Travel = EvalMorphCurve(PointTime);
-		const float Swirl = FMath::Sin(FMath::Clamp(Travel, 0.f, 1.f) * UE_PI);
 		FVector Point = FMath::Lerp(MorphFrom[Index], MorphTo[Index], Travel);
 		// Tourbillon autour de l'axe vertical du Pokémon, un peu gonflé et soulevé à mi-chemin
 		Point = FVector(FVector2D(Point) * (1.f + 0.18f * Swirl * Spin), Point.Z + PokemonHeight * 0.12f * Swirl * Spin);

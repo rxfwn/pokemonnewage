@@ -115,7 +115,7 @@ Pokémon et le sol lumineux sous ses pieds.
   lent, accélération au milieu, arrivée en douceur (clés cubiques). Modifiable à la souris (clic droit = ajouter
   une clé, tangentes à la souris), ou avec une *Float Curve* faite dans l'éditeur de courbes (Graph Editor), mise
   dans le champ *External Curve*. Une valeur au-dessus de 1 juste avant la fin fait un léger rebond.
-  `MorphStagger` (0,25) : les points ne partent pas tous en même temps.
+  Tous les points partent et arrivent en même temps : la courbe règle seulement la vitesse.
 - **Vidéo After Effects** : quand L'amie enverra sa boucle (MP4 H.264, sans son), elle pourra remplacer le ciel
   (Media Player + Media Texture sur le panneau du ciel).
 - **Limite** : si le terrain monte fort autour du Pokémon, une bosse peut passer au-dessus du sol lumineux.
