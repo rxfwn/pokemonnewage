@@ -17,6 +17,7 @@
 #include "Engine/OverlapResult.h"
 #include "Core/Interactable.h"
 #include "Follower/PokemonFollower.h"
+#include "Follower/PokemonFollowerComponent.h"
 #include "PokemonNewAge.h"
 
 APokemonNewAgeCharacter::APokemonNewAgeCharacter()
@@ -118,6 +119,10 @@ void APokemonNewAgeCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 		SetupDefaultInteractInput();
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &APokemonNewAgeCharacter::DoInteract);
 
+		// Sifflet : le Pokémon qui suit vient au pied
+		SetupDefaultWhistleInput();
+		EnhancedInputComponent->BindAction(WhistleAction, ETriggerEvent::Started, this, &APokemonNewAgeCharacter::DoWhistle);
+
 		// Touches choisies par le joueur (Options > Commandes) : les actions du personnage sont connues maintenant
 		if (APokemonNewAgePlayerController* PokemonController = Cast<APokemonNewAgePlayerController>(GetController()))
 		{
@@ -150,6 +155,41 @@ void APokemonNewAgeCharacter::SetupDefaultInteractInput()
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			Subsystem->AddMappingContext(DefaultInteractContext, 1);
+		}
+	}
+}
+
+void APokemonNewAgeCharacter::SetupDefaultWhistleInput()
+{
+	if (WhistleAction)
+	{
+		return;
+	}
+	WhistleAction = NewObject<UInputAction>(this, TEXT("IA_Whistle_Default"));
+	DefaultWhistleContext = NewObject<UInputMappingContext>(this, TEXT("IMC_Whistle_Default"));
+	DefaultWhistleContext->MapKey(WhistleAction, EKeys::F);
+	DefaultWhistleContext->MapKey(WhistleAction, EKeys::Gamepad_DPad_Down);
+
+	if (const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			Subsystem->AddMappingContext(DefaultWhistleContext, 1);
+		}
+	}
+}
+
+void APokemonNewAgeCharacter::DoWhistle()
+{
+	if (GetController() && GetController()->IsMoveInputIgnored())
+	{
+		return;
+	}
+	if (const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	{
+		if (UPokemonFollowerComponent* Follower = PlayerController->FindComponentByClass<UPokemonFollowerComponent>())
+		{
+			Follower->Whistle();
 		}
 	}
 }

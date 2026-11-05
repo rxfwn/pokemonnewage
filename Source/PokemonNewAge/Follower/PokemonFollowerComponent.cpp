@@ -5,7 +5,9 @@
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
+#include "Sound/SoundBase.h"
 #include "Pokemon/PokemonDataRows.h"
 #include "Pokemon/PokemonDataSubsystem.h"
 #include "Pokemon/PokemonDatabase.h"
@@ -16,6 +18,16 @@ UPokemonFollowerComponent::UPokemonFollowerComponent()
 	// Pas besoin de regarder l'équipe à chaque image
 	PrimaryComponentTick.TickInterval = 0.25f;
 	SetIsReplicatedByDefault(true);
+}
+
+void UPokemonFollowerComponent::BeginPlay()
+{
+	Super::BeginPlay();
+	if (!WhistleSound)
+	{
+		// Son facultatif : Contenu > Pokemon > Follower > SW_Whistle (importer un .wav sous ce nom)
+		WhistleSound = LoadObject<USoundBase>(nullptr, TEXT("/Game/Pokemon/Follower/SW_Whistle.SW_Whistle"), nullptr, LOAD_NoWarn | LOAD_Quiet);
+	}
 }
 
 void UPokemonFollowerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -154,4 +166,34 @@ void UPokemonFollowerComponent::ServerPetFollower_Implementation(APokemonFollowe
 	{
 		PetFollower(Target);
 	}
+}
+
+void UPokemonFollowerComponent::Whistle()
+{
+	const APlayerController* Player = Cast<APlayerController>(GetOwner());
+	if (WhistleSound && Player && Player->IsLocalController() && Player->GetPawn())
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, WhistleSound, Player->GetPawn()->GetActorLocation());
+	}
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		if (!bFollowerEnabled)
+		{
+			// Rangé dans sa Ball : le sifflet le fait sortir
+			SetFollowerEnabled(true);
+		}
+		if (Follower)
+		{
+			Follower->Whistle();
+		}
+	}
+	else
+	{
+		ServerWhistle();
+	}
+}
+
+void UPokemonFollowerComponent::ServerWhistle_Implementation()
+{
+	Whistle();
 }

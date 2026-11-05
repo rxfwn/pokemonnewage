@@ -539,6 +539,10 @@ public:
 	UFUNCTION(Exec)
 	void Suiveur(int32 bShow = -1);
 
+	/** Siffle le Pokémon qui suit, comme la touche F : il vient au pied (2e fois : il reprend sa liberté) */
+	UFUNCTION(Exec)
+	void Siffler();
+
 
 private:
 

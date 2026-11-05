@@ -5,6 +5,7 @@
 #include "PokemonFollowerComponent.generated.h"
 
 class APokemonFollower;
+class USoundBase;
 
 /**
  *  Fait suivre le Pokémon de tête de l'équipe (SCRUM-78), sur le PlayerController de chaque joueur.
@@ -39,6 +40,14 @@ public:
 	/** Caresse un Pokémon qui suit (le sien ou celui d'un ami) : envoyée au serveur */
 	void PetFollower(APokemonFollower* Target);
 
+	/** Siffle son Pokémon (touche F) : il vient au pied ; un 2e coup de sifflet le laisse libre */
+	UFUNCTION(BlueprintCallable, Category="Follower")
+	void Whistle();
+
+	/** Son du sifflet, joué chez le joueur qui siffle (vide = pas de son) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower")
+	TObjectPtr<USoundBase> WhistleSound;
+
 	/** Classe du Pokémon qui suit (un Blueprint enfant pour changer les réglages). Vide = APokemonFollower */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower")
 	TSubclassOf<APokemonFollower> FollowerClass;
@@ -52,6 +61,11 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void ServerPetFollower(APokemonFollower* Target);
+
+	UFUNCTION(Server, Reliable)
+	void ServerWhistle();
+
+	virtual void BeginPlay() override;
 
 private:
 

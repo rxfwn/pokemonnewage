@@ -104,6 +104,14 @@ protected:
 	UPROPERTY(Transient)
 	UInputMappingContext* DefaultInteractContext;
 
+	/** Siffler le Pokémon qui suit (F) : il vient au pied. Créée par le code si elle n'est pas réglée dans le Blueprint */
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* WhistleAction;
+
+	/** Contexte créé par le code pour le sifflet (F / croix bas de la manette) */
+	UPROPERTY(Transient)
+	UInputMappingContext* DefaultWhistleContext;
+
 public:
 
 	/** Constructor */
@@ -133,6 +141,12 @@ protected:
 
 	/** Crée l'action et la touche E si InteractAction n'est pas réglée dans le Blueprint */
 	void SetupDefaultInteractInput();
+
+	/** Crée l'action et la touche F si WhistleAction n'est pas réglée dans le Blueprint */
+	void SetupDefaultWhistleInput();
+
+	/** Siffle le Pokémon qui suit */
+	void DoWhistle();
 
 public:
 
@@ -188,6 +202,8 @@ public:
 	const UInputAction* GetSprintAction() const { return SprintAction; }
 	const UInputAction* GetInteractAction() const { return InteractAction; }
 	UInputMappingContext* GetInteractContext() const { return DefaultInteractContext; }
+	const UInputAction* GetWhistleAction() const { return WhistleAction; }
+	UInputMappingContext* GetWhistleContext() const { return DefaultWhistleContext; }
 
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }

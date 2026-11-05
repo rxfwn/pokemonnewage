@@ -4,6 +4,10 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/TextRenderComponent.h"
+#include "Camera/PlayerCameraManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "Materials/MaterialInterface.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
@@ -34,6 +38,31 @@ namespace PokemonFollower
 	constexpr float MaxRadius = 60.f;
 	constexpr float MinHalfHeight = 30.f;
 	constexpr float MaxHalfHeight = 110.f;
+	/** Matériaux créés par Tools/Pokemon/setup_follower_assets.py (sinon matériaux de base d'Unreal) */
+	const TCHAR* BubbleMaterial = TEXT("/Game/Pokemon/Follower/M_FollowerBubble.M_FollowerBubble");
+	const TCHAR* SparkleMaterial = TEXT("/Game/Pokemon/Follower/M_FollowerSparkle.M_FollowerSparkle");
+	constexpr int32 NumSparkles = 20;
+	constexpr int32 NumSleepLetters = 3;
+	/** Un « Z » met ce temps pour monter */
+	constexpr float SleepLetterCycle = 2.4f;
+	/** Durée d'un clignement d'yeux */
+	constexpr float BlinkDuration = 0.13f;
+
+	/** Composant d'effet : ne touche rien, placé en coordonnées du monde */
+	void SetupEffectComponent(USceneComponent* Component, USceneComponent* Parent)
+	{
+		Component->SetupAttachment(Parent);
+		Component->SetUsingAbsoluteLocation(true);
+		Component->SetUsingAbsoluteRotation(true);
+		Component->SetUsingAbsoluteScale(true);
+		Component->SetHiddenInGame(false);
+		Component->SetVisibility(false);
+		if (UPrimitiveComponent* Primitive = Cast<UPrimitiveComponent>(Component))
+		{
+			Primitive->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Primitive->SetCastShadow(false);
+		}
+	}
 
 	UObject* LoadModelAsset(const FString& Species, const FString& Name)
 	{
@@ -75,6 +104,26 @@ APokemonFollower::APokemonFollower()
 	StaticModel->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	StaticModel->SetRelativeRotation(PokemonFollower::ModelRotation);
 
+	// Effets (seulement affichés chez les joueurs) : bulle et « Z » du sommeil, étoiles
+	SleepBubble = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SleepBubble"));
+	PokemonFollower::SetupEffectComponent(SleepBubble, Capsule);
+	for (int32 Index = 0; Index < PokemonFollower::NumSleepLetters; ++Index)
+	{
+		UTextRenderComponent* Letter = CreateDefaultSubobject<UTextRenderComponent>(*FString::Printf(TEXT("SleepLetter%d"), Index));
+		PokemonFollower::SetupEffectComponent(Letter, Capsule);
+		Letter->SetText(FText::FromString(TEXT("Z")));
+		Letter->SetHorizontalAlignment(EHTA_Center);
+		Letter->SetVerticalAlignment(EVRTA_TextCenter);
+		Letter->SetTextRenderColor(FColor(225, 238, 255));
+		SleepLetters.Add(Letter);
+	}
+	for (int32 Index = 0; Index < PokemonFollower::NumSparkles; ++Index)
+	{
+		UStaticMeshComponent* Sparkle = CreateDefaultSubobject<UStaticMeshComponent>(*FString::Printf(TEXT("Sparkle%d"), Index));
+		PokemonFollower::SetupEffectComponent(Sparkle, Capsule);
+		Sparkles.Add(Sparkle);
+	}
+
 	UCharacterMovementComponent* Move = GetCharacterMovement();
 	Move->bRunPhysicsWithNoController = true;
 	Move->bOrientRotationToMovement = false;
@@ -100,6 +149,29 @@ void APokemonFollower::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 void APokemonFollower::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Formes et matériaux des effets
+	if (GetNetMode() != NM_DedicatedServer)
+	{
+		UStaticMesh* Sphere = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+		UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+		SleepBubble->SetStaticMesh(Sphere);
+		if (UMaterialInterface* Bubble = LoadObject<UMaterialInterface>(nullptr, PokemonFollower::BubbleMaterial, nullptr, LOAD_NoWarn | LOAD_Quiet))
+		{
+			SleepBubble->SetMaterial(0, Bubble);
+		}
+		UMaterialInterface* Star = LoadObject<UMaterialInterface>(nullptr, PokemonFollower::SparkleMaterial, nullptr, LOAD_NoWarn | LOAD_Quiet);
+		for (UStaticMeshComponent* Sparkle : Sparkles)
+		{
+			Sparkle->SetStaticMesh(Cube);
+			if (Star)
+			{
+				Sparkle->SetMaterial(0, Star);
+			}
+		}
+		SparkleStates.SetNum(Sparkles.Num());
+		BlinkTimeLeft = FMath::FRandRange(BlinkInterval.X, BlinkInterval.Y);
+	}
 	LoadModel();
 }
 
@@ -126,6 +198,7 @@ void APokemonFollower::SetLeader(APawn* InLeader)
 	{
 		Leader = InLeader;
 		TeleportBehindLeader();
+		MulticastAppear(GetActorLocation());
 	}
 }
 
@@ -144,8 +217,13 @@ void APokemonFollower::LoadModel()
 	{
 		return;
 	}
+	const bool bFirstModel = LoadedSpecies.IsNone();
 	LoadedSpecies = Species;
 	const FString Id = Species.ToString();
+	ClosedEyeSlots.Reset();
+	ClosedEyeMaterials.Reset();
+	bEyeMaterialsSearched = false;
+	bEyesClosed = false;
 
 	IdleAnim = WalkAnim = RunAnim = HappyAnim = SleepAnim = PlayingAnim = nullptr;
 	CurrentAnim = EAnimState::None;
@@ -204,19 +282,21 @@ void APokemonFollower::LoadModel()
 	}
 	RunGaitSpeed = FMath::Max(RunGaitSpeed, WalkGaitSpeed * 1.5f);
 
-	// Pieds du modèle (Z = 0 dans le mesh) en bas de la capsule
-	const FVector MeshOffset(0.f, 0.f, -HalfHeight);
-	Skeletal->SetRelativeScale3D(FVector(Scale));
+	// Pieds du modèle (le bas de sa boîte, normalement Z = 0) posés en bas de la capsule
+	const float FeetZ = (Bounds.Origin.Z - Bounds.BoxExtent.Z) * Scale;
+	const FVector MeshOffset(0.f, 0.f, -HalfHeight - (bPlaceholder ? 0.f : FeetZ));
+	ModelScale = Scale;
+	ModelHeight = Height * Scale;
+	StaticBaseScale = bPlaceholder ? PlaceholderDiameter / 100.f : Scale;
 	Skeletal->SetRelativeLocationAndRotation(MeshOffset, ModelRotation);
-	if (bPlaceholder)
+	StaticModel->SetRelativeLocation(bPlaceholder ? MeshOffset + FVector(0.f, 0.f, PlaceholderDiameter * 0.5f) : MeshOffset);
+	AppliedScaleFactor = -1.f;
+	ApplyModelScale(1.f);
+	if (bFirstModel && GetNetMode() != NM_DedicatedServer)
 	{
-		StaticModel->SetRelativeScale3D(FVector(PlaceholderDiameter / 100.f));
-		StaticModel->SetRelativeLocation(MeshOffset + FVector(0.f, 0.f, PlaceholderDiameter * 0.5f));
-	}
-	else
-	{
-		StaticModel->SetRelativeScale3D(FVector(Scale));
-		StaticModel->SetRelativeLocation(MeshOffset);
+		// Il sort de sa Ball : il apparaît dans des étoiles
+		AppearClock = 0.f;
+		BurstSparkles(GetActorLocation(), 10);
 	}
 	// Le lissage réseau des autres joueurs part de cette position du mesh
 	CacheInitialMeshOffset(MeshOffset, ModelRotation);
@@ -235,6 +315,7 @@ void APokemonFollower::Tick(float DeltaSeconds)
 	if (GetNetMode() != NM_DedicatedServer)
 	{
 		UpdateAnimation();
+		UpdateEffects(DeltaSeconds);
 	}
 	HappyTimeLeft = FMath::Max(HappyTimeLeft - DeltaSeconds, 0.f);
 }
@@ -296,13 +377,11 @@ FVector APokemonFollower::GetTrailPoint(float DistanceBack) const
 
 bool APokemonFollower::FindGround(const FVector& Around, float& OutGroundZ) const
 {
-	FCollisionObjectQueryParams Objects;
-	Objects.AddObjectTypesToQuery(ECC_WorldStatic);
-	Objects.AddObjectTypesToQuery(ECC_WorldDynamic);
+	// Canal Visibilité : le sol et les murs, pas les volumes invisibles (hautes herbes, intérieurs, dialogues)
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(PokemonFollowerGround), false, this);
 	Params.AddIgnoredActor(Leader.Get());
 	FHitResult Hit;
-	if (GetWorld()->LineTraceSingleByObjectType(Hit, Around + FVector(0.f, 0.f, 400.f), Around - FVector(0.f, 0.f, 2000.f), Objects, Params))
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Around + FVector(0.f, 0.f, 400.f), Around - FVector(0.f, 0.f, 2000.f), ECC_Visibility, Params))
 	{
 		OutGroundZ = Hit.ImpactPoint.Z;
 		return true;
@@ -313,9 +392,6 @@ bool APokemonFollower::FindGround(const FVector& Around, float& OutGroundZ) cons
 bool APokemonFollower::IsReachable(const FVector& Target) const
 {
 	// Ligne droite libre (pas de mur ni de rocher entre lui et le point), à mi-hauteur de son corps
-	FCollisionObjectQueryParams Objects;
-	Objects.AddObjectTypesToQuery(ECC_WorldStatic);
-	Objects.AddObjectTypesToQuery(ECC_WorldDynamic);
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(PokemonFollowerPath), false, this);
 	Params.AddIgnoredActor(Leader.Get());
 	FVector To = Target;
@@ -325,7 +401,7 @@ bool APokemonFollower::IsReachable(const FVector& Target) const
 		FindGround(Target, GroundZ);
 		To.Z = GroundZ + GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 	}
-	return !GetWorld()->LineTraceTestByObjectType(GetActorLocation(), To, Objects, Params);
+	return !GetWorld()->LineTraceTestByChannel(GetActorLocation(), To, ECC_Visibility, Params);
 }
 
 FVector APokemonFollower::ToFlightHeight(const FVector& Spot) const
@@ -445,12 +521,24 @@ void APokemonFollower::UpdateBehavior(float DeltaSeconds)
 	RecordTrail();
 	BobTime += DeltaSeconds;
 
+	// Disparition en cours : il réapparaît à côté du joueur à la fin
+	if (TeleportTimeLeft >= 0.f)
+	{
+		TeleportTimeLeft -= DeltaSeconds;
+		if (TeleportTimeLeft < 0.f)
+		{
+			TeleportBehindLeader();
+			MulticastAppear(GetActorLocation());
+		}
+		return;
+	}
+
 	const FVector Location = GetActorLocation();
 	const FVector LeaderLocation = Leader->GetActorLocation();
 	if (FVector::DistSquared(Location, LeaderLocation) > FMath::Square(TeleportDistance)
 		|| (!IsFlyer() && FMath::Abs(Location.Z - LeaderLocation.Z) > 800.f))
 	{
-		TeleportBehindLeader();
+		StartTeleport();
 		return;
 	}
 
@@ -466,9 +554,9 @@ void APokemonFollower::UpdateBehavior(float DeltaSeconds)
 	LeaderIdleTime = LeaderSpeed > PokemonFollower::LeaderStillSpeed ? 0.f : LeaderIdleTime + DeltaSeconds;
 	const float Distance = FVector::Dist2D(Location, LeaderLocation);
 
-	if (LeaderIdleTime <= 0.f || Distance > MaxDistance + BodyRadius)
+	if (bHeel || LeaderIdleTime <= 0.f || Distance > MaxDistance + BodyRadius)
 	{
-		// Le joueur repart (ou il est trop loin) : il se réveille et le suit
+		// Au pied, ou le joueur repart (ou il est trop loin) : il se réveille et le suit
 		Pose = EFollowerPose::None;
 		if (Behavior != EBehavior::Follow)
 		{
@@ -490,47 +578,56 @@ void APokemonFollower::UpdateBehavior(float DeltaSeconds)
 
 void APokemonFollower::UpdateFollow(float DeltaSeconds, float DistanceToLeader)
 {
-	ReplanTimeLeft -= DeltaSeconds;
-	if (ReplanTimeLeft <= 0.f)
+	if (!bHeel)
 	{
-		PickFollowSpot();
+		ReplanTimeLeft -= DeltaSeconds;
+		if (ReplanTimeLeft <= 0.f)
+		{
+			PickFollowSpot();
+		}
 	}
 
 	const float LeaderSpeed = Leader->GetVelocity().Size2D();
 	const bool bLeaderMoving = LeaderSpeed > PokemonFollower::LeaderStillSpeed;
 	const float Reach = BodyRadius + PokemonFollower::LeaderRadius;
+	// Au pied : place fixe et serrée à côté du joueur
+	const float Comfort = bHeel ? HeelDistance + 50.f : ComfortDistance;
+	const float TooClose = bHeel ? 0.f : MinDistance * 0.6f;
+	const float WantedDistance = bHeel ? HeelDistance : SpotDistance;
+	const float WantedAngle = bHeel ? HeelAngle : SpotAngle;
 
 	// Il ne repart que quand le joueur sort de sa zone de confort (ou s'il est trop collé à lui)
-	if (!bCatchingUp && (DistanceToLeader > ComfortDistance + Reach || DistanceToLeader < MinDistance * 0.6f + Reach))
+	if (!bCatchingUp && (DistanceToLeader > Comfort + Reach || DistanceToLeader < TooClose + Reach))
 	{
 		bCatchingUp = true;
 	}
 	if (!bCatchingUp)
 	{
 		StopMoving();
-		// Il regarde le joueur, sans tourner la tête au moindre pas
+		// Au pied il regarde dans le même sens que le joueur ; sinon il regarde le joueur, sans tourner la tête au moindre pas
 		const float ToLeaderYaw = (Leader->GetActorLocation() - GetActorLocation()).GetSafeNormal2D().Rotation().Yaw;
-		if (FMath::Abs(FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw, ToLeaderYaw)) > 45.f)
+		const float WantedYaw = bHeel ? GetLeaderYaw() : ToLeaderYaw;
+		if (bHeel || FMath::Abs(FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw, WantedYaw)) > 45.f)
 		{
-			TurnTowardsYaw(ToLeaderYaw, DeltaSeconds);
+			TurnTowardsYaw(WantedYaw, DeltaSeconds);
 		}
 		return;
 	}
 
 	// Sa place autour du joueur
-	const FRotator SpotRotation(0.f, GetLeaderYaw() + 180.f + SpotAngle, 0.f);
-	FVector Spot = GetLeaderFeet() + SpotRotation.Vector() * (SpotDistance + Reach);
+	const FRotator SpotRotation(0.f, GetLeaderYaw() + 180.f + WantedAngle, 0.f);
+	FVector Spot = GetLeaderFeet() + SpotRotation.Vector() * (WantedDistance + Reach);
 	if (!IsReachable(IsFlyer() ? ToFlightHeight(Spot) : Spot))
 	{
 		// Mur ou rocher sur la route : il passe par où le joueur est passé
-		Spot = GetTrailPoint(SpotDistance + Reach);
+		Spot = GetTrailPoint(WantedDistance + Reach);
 	}
 	if (IsFlyer())
 	{
 		Spot = ToFlightHeight(Spot);
 	}
 
-	// Vitesse : celle du joueur, plus son retard ; il court au-delà de MaxDistance
+	// Vitesse : celle du joueur, plus son retard ; il court au-delà de MaxDistance (ou quand on le siffle)
 	FVector ToSpot = Spot - GetActorLocation();
 	if (!IsFlyer())
 	{
@@ -541,7 +638,7 @@ void APokemonFollower::UpdateFollow(float DeltaSeconds, float DistanceToLeader)
 	{
 		bRunning = true;
 	}
-	else if (DistanceToLeader < ComfortDistance + Reach)
+	else if (DistanceToLeader < Comfort + Reach)
 	{
 		bRunning = false;
 	}
@@ -553,24 +650,30 @@ void APokemonFollower::UpdateFollow(float DeltaSeconds, float DistanceToLeader)
 		Speed = FMath::Clamp(FMath::Max(Speed, RunGaitSpeed), RunGaitSpeed, MaxSpeed);
 	}
 
-	const bool bArrived = MoveTowards(Spot, Speed, 35.f, DeltaSeconds);
+	const bool bArrived = MoveTowards(Spot, Speed, bHeel ? 25.f : 35.f, DeltaSeconds);
 	if (bArrived && !bLeaderMoving)
 	{
 		// Arrivé et le joueur est arrêté : il se pose
 		bCatchingUp = false;
 		bRunning = false;
+		if (bHeelGreeting)
+		{
+			// Sifflé : content d'arriver au pied
+			bHeelGreeting = false;
+			MulticastPlayHappy();
+		}
 	}
 
 	if (StuckTimer > StuckTime)
 	{
 		StuckTimer = 0.f;
-		if (DistanceToLeader > ComfortDistance + Reach)
+		if (DistanceToLeader > MaxDistance + Reach || bHeel)
 		{
-			TeleportBehindLeader();
+			StartTeleport();
 		}
 		else
 		{
-			// Assez près quand même : il renonce à cette place
+			// Assez près quand même : il renonce à cette place et en choisit une autre
 			bCatchingUp = false;
 			PickFollowSpot();
 		}
@@ -715,8 +818,12 @@ void APokemonFollower::TeleportBehindLeader()
 	Behavior = EBehavior::Follow;
 	Pose = EFollowerPose::None;
 	PickFollowSpot();
+	TeleportTimeLeft = -1.f;
 
-	FVector Spot = Feet - Rotation.Vector() * (SpotDistance + BodyRadius + PokemonFollower::LeaderRadius);
+	// À côté du joueur : au pied s'il a été sifflé, sinon d'un côté ou de l'autre, tout près
+	const float Angle = bHeel ? HeelAngle : (FMath::RandBool() ? 1.f : -1.f) * FMath::FRandRange(70.f, 120.f);
+	const float Distance = (bHeel ? HeelDistance : MinDistance) + BodyRadius + PokemonFollower::LeaderRadius;
+	FVector Spot = Feet + FRotator(0.f, Rotation.Yaw + 180.f + Angle, 0.f).Vector() * Distance;
 	if (IsFlyer())
 	{
 		Spot = ToFlightHeight(Spot);
@@ -730,10 +837,57 @@ void APokemonFollower::TeleportBehindLeader()
 
 	if (!TeleportTo(Spot, Rotation, false, false))
 	{
-		// Pas de place derrière (mur) : aux pieds du joueur, qu'il traverse sans le gêner
+		// Pas de place à côté (mur) : aux pieds du joueur, qu'il traverse sans le gêner
 		TeleportTo(FVector(Feet.X, Feet.Y, Feet.Z + HalfHeight + 2.f), Rotation, false, true);
 	}
 	GetCharacterMovement()->StopMovementImmediately();
+}
+
+void APokemonFollower::StartTeleport()
+{
+	if (!Leader || !HasAuthority() || TeleportTimeLeft >= 0.f)
+	{
+		return;
+	}
+	TeleportTimeLeft = VanishTime;
+	Pose = EFollowerPose::None;
+	GetCharacterMovement()->StopMovementImmediately();
+	MulticastVanish(GetActorLocation());
+}
+
+// ---------------------------------------------------------------- Sifflet
+
+void APokemonFollower::Whistle()
+{
+	if (!Leader || !HasAuthority())
+	{
+		return;
+	}
+	if (bHeel)
+	{
+		// 2e coup de sifflet : il reprend sa liberté
+		bHeel = false;
+		bHeelGreeting = false;
+		PickFollowSpot();
+		return;
+	}
+
+	bHeel = true;
+	bHeelGreeting = true;
+	Pose = EFollowerPose::None;
+	Behavior = EBehavior::Follow;
+	bCatchingUp = true;
+	bRunning = true;
+	StuckTimer = 0.f;
+
+	// Trop loin, ou un obstacle entre lui et le joueur : il disparaît et réapparaît au pied
+	const float Reach = BodyRadius + PokemonFollower::LeaderRadius;
+	const FVector Heel = GetLeaderFeet() + FRotator(0.f, GetLeaderYaw() + 180.f + HeelAngle, 0.f).Vector() * (HeelDistance + Reach);
+	const float Distance = FVector::Dist2D(GetActorLocation(), Leader->GetActorLocation());
+	if (Distance > MaxDistance * 2.f || !IsReachable(IsFlyer() ? ToFlightHeight(Heel) : Heel))
+	{
+		StartTeleport();
+	}
 }
 
 // ---------------------------------------------------------------- Caresse
@@ -858,4 +1012,252 @@ void APokemonFollower::PlayState(EAnimState State, float PlayRate)
 		}
 	}
 	Skeletal->SetPlayRate(PlayingAnim == IdleAnim || PlayingAnim == SleepAnim ? 1.f : PlayRate);
+}
+
+// ---------------------------------------------------------------- Effets (tous les joueurs)
+
+void APokemonFollower::MulticastVanish_Implementation(FVector_NetQuantize At)
+{
+	if (GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+	VanishClock = 0.f;
+	AppearClock = -1.f;
+	BurstSparkles(At, 10);
+}
+
+void APokemonFollower::MulticastAppear_Implementation(FVector_NetQuantize At)
+{
+	if (GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+	VanishClock = -1.f;
+	AppearClock = 0.f;
+	BurstSparkles(At, 10);
+}
+
+void APokemonFollower::ApplyModelScale(float Factor)
+{
+	if (FMath::IsNearlyEqual(Factor, AppliedScaleFactor, 0.001f))
+	{
+		return;
+	}
+	AppliedScaleFactor = Factor;
+	// Le modèle grandit et rapetisse depuis ses pieds ; à 0 on le cache
+	const float Safe = FMath::Max(Factor, 0.001f);
+	GetMesh()->SetRelativeScale3D(FVector(ModelScale * Safe));
+	StaticModel->SetRelativeScale3D(FVector(StaticBaseScale * Safe));
+	const bool bVisible = Factor > 0.01f;
+	GetMesh()->SetVisibility(bVisible && GetMesh()->GetSkeletalMeshAsset() != nullptr);
+	StaticModel->SetVisibility(bVisible && StaticModel->GetStaticMesh() != nullptr);
+}
+
+FVector APokemonFollower::GetBodyPoint(FName Socket, float HeightRatio) const
+{
+	const USkeletalMeshComponent* Skeletal = GetMesh();
+	if (Skeletal->GetSkeletalMeshAsset() && Skeletal->DoesSocketExist(Socket))
+	{
+		return Skeletal->GetSocketLocation(Socket);
+	}
+	// Pas de point d'effet dans le squelette : estimé d'après sa taille
+	const FVector Feet = GetActorLocation() - FVector(0.f, 0.f, GetCapsuleComponent()->GetScaledCapsuleHalfHeight());
+	return Feet + FVector(0.f, 0.f, ModelHeight * HeightRatio) + GetActorForwardVector() * BodyRadius * 0.5f * (1.f - HeightRatio);
+}
+
+void APokemonFollower::UpdateEffects(float DeltaSeconds)
+{
+	// Disparition : il rapetisse en s'accélérant ; apparition : il grandit avec un petit rebond
+	float Factor = 1.f;
+	if (VanishClock >= 0.f)
+	{
+		VanishClock += DeltaSeconds;
+		const float Alpha = FMath::Clamp(VanishClock / VanishTime, 0.f, 1.f);
+		Factor = 1.f - Alpha * Alpha;
+	}
+	else if (AppearClock >= 0.f)
+	{
+		AppearClock += DeltaSeconds;
+		const float Alpha = FMath::Clamp(AppearClock / AppearTime, 0.f, 1.f);
+		// Easing « back » : dépasse un peu sa taille puis revient
+		constexpr float C1 = 1.70158f;
+		constexpr float C3 = C1 + 1.f;
+		Factor = 1.f + C3 * FMath::Pow(Alpha - 1.f, 3.f) + C1 * FMath::Pow(Alpha - 1.f, 2.f);
+		if (Alpha >= 1.f)
+		{
+			AppearClock = -1.f;
+			Factor = 1.f;
+		}
+	}
+	ApplyModelScale(Factor);
+	UpdateSparkles(DeltaSeconds);
+
+	const bool bAsleep = Pose == EFollowerPose::Sleep && VanishClock < 0.f;
+	UpdateSleepEffects(DeltaSeconds, bAsleep);
+
+	// Yeux : fermés pendant le sommeil, clignements de temps en temps sinon
+	bool bClose = bAsleep;
+	if (!bAsleep && BlinkInterval.Y > 0.f)
+	{
+		BlinkTimeLeft -= DeltaSeconds;
+		if (BlinkTimeLeft <= 0.f)
+		{
+			BlinkCloseLeft = PokemonFollower::BlinkDuration;
+			BlinkTimeLeft = FMath::FRandRange(BlinkInterval.X, BlinkInterval.Y);
+		}
+		if (BlinkCloseLeft > 0.f)
+		{
+			BlinkCloseLeft -= DeltaSeconds;
+			bClose = true;
+		}
+	}
+	SetEyesClosed(bClose);
+}
+
+void APokemonFollower::UpdateSleepEffects(float DeltaSeconds, bool bAsleep)
+{
+	SleepBubble->SetVisibility(bAsleep);
+	if (!bAsleep)
+	{
+		for (UTextRenderComponent* Letter : SleepLetters)
+		{
+			Letter->SetVisibility(false);
+		}
+		SleepClock = 0.f;
+		return;
+	}
+	SleepClock += DeltaSeconds;
+
+	// Bulle au bout du nez : elle gonfle à l'inspiration et dégonfle à l'expiration
+	const float Breath = 0.5f - 0.5f * FMath::Cos(UE_TWO_PI * SleepClock / BreathPeriod);
+	const float MaxBubbleRadius = FMath::Clamp(ModelHeight * BubbleSizeRatio, 3.f, 18.f);
+	const float BubbleRadius = MaxBubbleRadius * (0.2f + 0.8f * Breath);
+	const FVector Forward = GetActorForwardVector();
+	const FVector Right = GetActorRightVector();
+	const FVector Mouth = GetBodyPoint(TEXT("EffMouth01"), 0.35f);
+	SleepBubble->SetWorldLocation(Mouth + Forward * BubbleRadius * 0.8f + Right * BubbleRadius * 0.35f);
+	SleepBubble->SetWorldScale3D(FVector(BubbleRadius * 2.f / 100.f));
+
+	// « Z » qui montent au-dessus de la tête en grandissant, tournés vers la caméra
+	const FVector Head = GetBodyPoint(TEXT("EffOverHead01"), 1.f) + FVector(0.f, 0.f, 8.f);
+	const APlayerCameraManager* CameraManager = UGameplayStatics::GetPlayerCameraManager(this, 0);
+	const FVector Camera = CameraManager ? CameraManager->GetCameraLocation() : Head - Forward * 300.f;
+	const float SizeScale = FMath::Clamp(ModelHeight / 60.f, 0.7f, 2.5f);
+	for (int32 Index = 0; Index < SleepLetters.Num(); ++Index)
+	{
+		UTextRenderComponent* Letter = SleepLetters[Index];
+		const float Phase = FMath::Fmod(SleepClock / PokemonFollower::SleepLetterCycle + static_cast<float>(Index) / SleepLetters.Num(), 1.f);
+		const FVector Location = Head
+			+ FVector(0.f, 0.f, Phase * 45.f * SizeScale)
+			+ Right * (Phase * 14.f + FMath::Sin(Phase * UE_TWO_PI) * 4.f) * SizeScale;
+		Letter->SetWorldLocation(Location);
+		Letter->SetWorldRotation((Camera - Location).Rotation());
+		Letter->SetWorldSize(FMath::Lerp(7.f, 16.f, Phase) * SizeScale);
+		// Chaque « Z » apparaît en bas et s'efface en haut
+		Letter->SetVisibility(Phase > 0.04f && Phase < 0.9f);
+	}
+}
+
+void APokemonFollower::FindEyeMaterials()
+{
+	bEyeMaterialsSearched = true;
+	ClosedEyeSlots.Reset();
+	ClosedEyeMaterials.Reset();
+	const USkeletalMesh* Asset = GetMesh()->GetSkeletalMeshAsset();
+	if (!Asset)
+	{
+		return;
+	}
+	// Emplacements EyeL, EyeR, Eye... : leur matériau « yeux fermés » s'appelle <matériau>_Closed, à côté de lui
+	const TArray<FSkeletalMaterial>& Materials = Asset->GetMaterials();
+	for (int32 Index = 0; Index < Materials.Num(); ++Index)
+	{
+		const FString Slot = Materials[Index].MaterialSlotName.ToString();
+		const UMaterialInterface* Material = Materials[Index].MaterialInterface;
+		if (!Material || !Slot.Contains(TEXT("Eye")) || Slot.Contains(TEXT("Iris")))
+		{
+			continue;
+		}
+		const FString Name = Material->GetName() + TEXT("_Closed");
+		const FString Path = FString::Printf(TEXT("%s_Closed.%s"), *Material->GetPackage()->GetName(), *Name);
+		if (UMaterialInterface* Closed = LoadObject<UMaterialInterface>(nullptr, *Path, nullptr, LOAD_NoWarn | LOAD_Quiet))
+		{
+			ClosedEyeSlots.Add(Index);
+			ClosedEyeMaterials.Add(Closed);
+		}
+	}
+}
+
+void APokemonFollower::SetEyesClosed(bool bClosed)
+{
+	if (bClosed == bEyesClosed)
+	{
+		return;
+	}
+	bEyesClosed = bClosed;
+	if (!bEyeMaterialsSearched)
+	{
+		FindEyeMaterials();
+	}
+	USkeletalMeshComponent* Skeletal = GetMesh();
+	for (int32 Index = 0; Index < ClosedEyeSlots.Num(); ++Index)
+	{
+		// nullptr : retour au matériau du modèle (yeux ouverts)
+		Skeletal->SetMaterial(ClosedEyeSlots[Index], bClosed ? ClosedEyeMaterials[Index].Get() : nullptr);
+	}
+}
+
+void APokemonFollower::BurstSparkles(const FVector& Center, int32 Count)
+{
+	if (Sparkles.Num() == 0 || SparkleStates.Num() != Sparkles.Num())
+	{
+		return;
+	}
+	const float SizeScale = FMath::Clamp(ModelHeight / 50.f, 0.8f, 2.5f);
+	for (int32 Made = 0; Made < Count; ++Made)
+	{
+		const int32 Index = NextSparkle;
+		NextSparkle = (NextSparkle + 1) % Sparkles.Num();
+		FSparkle& State = SparkleStates[Index];
+		FVector Direction = FMath::VRand();
+		Direction.Z = FMath::Abs(Direction.Z) * 0.8f + 0.2f;
+		State.Origin = Center + Direction * 10.f * SizeScale;
+		State.Velocity = Direction.GetSafeNormal() * FMath::FRandRange(90.f, 190.f) * SizeScale;
+		State.Age = 0.f;
+		State.Life = FMath::FRandRange(0.5f, 0.9f);
+		State.Size = FMath::FRandRange(0.05f, 0.1f) * SizeScale;
+		State.Spin = FMath::FRandRange(-540.f, 540.f);
+		Sparkles[Index]->SetVisibility(true);
+	}
+}
+
+void APokemonFollower::UpdateSparkles(float DeltaSeconds)
+{
+	for (int32 Index = 0; Index < SparkleStates.Num(); ++Index)
+	{
+		FSparkle& State = SparkleStates[Index];
+		if (State.Life <= 0.f)
+		{
+			continue;
+		}
+		State.Age += DeltaSeconds;
+		UStaticMeshComponent* Sparkle = Sparkles[Index];
+		if (State.Age >= State.Life)
+		{
+			State.Life = 0.f;
+			Sparkle->SetVisibility(false);
+			continue;
+		}
+		// Éclat qui s'envole en ralentissant, tourne sur lui-même et scintille avant de s'éteindre
+		const float Time = State.Age;
+		const float Alpha = Time / State.Life;
+		const FVector Location = State.Origin + State.Velocity * (Time - 0.5f * Time * Time) + FVector(0.f, 0.f, -60.f * Time * Time);
+		const float Grow = Alpha < 0.15f ? Alpha / 0.15f : 1.f - (Alpha - 0.15f) / 0.85f;
+		const float Twinkle = 0.75f + 0.25f * FMath::Sin(Time * 40.f + Index);
+		Sparkle->SetWorldLocation(Location);
+		// Cube tourné de 45° sur deux axes : un losange, comme une petite étoile
+		Sparkle->SetWorldRotation(FRotator(45.f, State.Spin * Time, 45.f));
+		Sparkle->SetWorldScale3D(FVector(FMath::Max(State.Size * Grow * Twinkle, 0.001f)));
+	}
 }

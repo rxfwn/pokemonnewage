@@ -8,6 +8,8 @@
 
 class UAnimSequence;
 class UStaticMeshComponent;
+class UTextRenderComponent;
+class UMaterialInterface;
 
 /** Pose longue jouée chez tous les joueurs (le reste se déduit de la vitesse) */
 UENUM()
@@ -61,6 +63,19 @@ public:
 
 	/** Serveur : se tourne vers ce pion et montre sa joie, chez tous les joueurs */
 	void Pet(APawn* ByPawn);
+
+	/**
+	 *  Serveur : coup de sifflet. Il accourt au pied du joueur (à sa gauche) et y reste ;
+	 *  trop loin ou bloqué, il disparaît et réapparaît à côté du joueur. Un 2e coup de sifflet le laisse libre.
+	 */
+	void Whistle();
+
+	/** Serveur : il est au pied (sifflé) */
+	bool IsAtHeel() const { return bHeel; }
+
+	/** Serveur : disparaît dans des étoiles et réapparaît à côté du joueur */
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category="Follower")
+	void StartTeleport();
 
 	// ------------------------------------------------ Distances
 
@@ -155,6 +170,42 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Vol")
 	float BobFrequency = 0.7f;
 
+	// ------------------------------------------------ Sifflet
+
+	/** Au pied : distance du joueur (à sa gauche, un peu en arrière) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Sifflet", meta=(ClampMin=30, Units="cm"))
+	float HeelDistance = 70.f;
+
+	/** Au pied : angle depuis « juste derrière le joueur » (90 = à sa gauche, -90 = à sa droite) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Sifflet", meta=(Units="deg"))
+	float HeelAngle = 70.f;
+
+	// ------------------------------------------------ Effets
+
+	/** Durée de la disparition dans les étoiles avant de réapparaître */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Effets", meta=(ClampMin=0.05, Units="s"))
+	float VanishTime = 0.35f;
+
+	/** Durée de l'apparition (il grandit d'un coup, avec un petit rebond) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Effets", meta=(ClampMin=0.05, Units="s"))
+	float AppearTime = 0.45f;
+
+	/** Sommeil : une respiration (la bulle gonfle puis dégonfle) toutes les... */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Effets", meta=(ClampMin=0.5, Units="s"))
+	float BreathPeriod = 3.f;
+
+	/** Sommeil : rayon maximal de la bulle, en part de la taille du Pokémon */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Effets")
+	float BubbleSizeRatio = 0.09f;
+
+	/** Décalage de la planche d'expressions des yeux pour « yeux fermés » (modèles Let's Go : 3e ligne) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Effets")
+	FVector2D ClosedEyeOffset = FVector2D(0.f, 0.5f);
+
+	/** Clignement des yeux éveillé : toutes les... (au hasard entre les deux, 0 = jamais) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Effets", meta=(Units="s"))
+	FVector2D BlinkInterval = FVector2D(2.5f, 6.f);
+
 	// ------------------------------------------------ Divers
 
 	/** Bloqué (il veut avancer mais ne bouge presque pas) pendant ce temps : il abandonne, ou réapparaît */
@@ -175,6 +226,14 @@ protected:
 	UFUNCTION(NetMulticast, Unreliable)
 	void MulticastPlayHappy();
 
+	/** Tous les joueurs : il rapetisse dans des étoiles */
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastVanish(FVector_NetQuantize At);
+
+	/** Tous les joueurs : il réapparaît dans des étoiles */
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastAppear(FVector_NetQuantize At);
+
 	/** Espèce (ligne de DT_Species) : le modèle se charge chez chaque joueur */
 	UPROPERTY(ReplicatedUsing=OnRep_Species)
 	FName Species;
@@ -193,6 +252,18 @@ protected:
 	/** Modèle sans squelette (SM_<Espèce>), ou sphère tant qu'il n'y a pas de modèle */
 	UPROPERTY(VisibleAnywhere, Category="Follower")
 	TObjectPtr<UStaticMeshComponent> StaticModel;
+
+	/** Sommeil : bulle au bout du nez qui gonfle et dégonfle */
+	UPROPERTY(VisibleAnywhere, Category="Follower")
+	TObjectPtr<UStaticMeshComponent> SleepBubble;
+
+	/** Sommeil : les « Z » qui montent au-dessus de sa tête */
+	UPROPERTY(VisibleAnywhere, Category="Follower")
+	TArray<TObjectPtr<UTextRenderComponent>> SleepLetters;
+
+	/** Étoiles de l'apparition et de la disparition */
+	UPROPERTY(VisibleAnywhere, Category="Follower")
+	TArray<TObjectPtr<UStaticMeshComponent>> Sparkles;
 
 private:
 
@@ -220,8 +291,16 @@ private:
 	float GetLeaderYaw() const;
 	bool IsFlyer() const { return FollowMode == EFollowMode::Fly || FollowMode == EFollowMode::Float; }
 
-	// Tous les joueurs : animation d'après la vitesse
+	// Tous les joueurs : animation d'après la vitesse, effets
 	void UpdateAnimation();
+	void UpdateEffects(float DeltaSeconds);
+	void UpdateSleepEffects(float DeltaSeconds, bool bAsleep);
+	void SetEyesClosed(bool bClosed);
+	void FindEyeMaterials();
+	void BurstSparkles(const FVector& Center, int32 Count);
+	void UpdateSparkles(float DeltaSeconds);
+	void ApplyModelScale(float Factor);
+	FVector GetBodyPoint(FName Socket, float HeightRatio) const;
 	enum class EAnimState : uint8 { None, Idle, Walk, Run, Happy, Sleep };
 	void PlayState(EAnimState State, float PlayRate);
 
@@ -246,12 +325,49 @@ private:
 	EAnimState CurrentAnim = EAnimState::None;
 	float HappyTimeLeft = 0.f;
 
+	// Tous les joueurs : effets
+	/** Échelle du modèle (taille réelle ou réduite) et sa hauteur affichée */
+	float ModelScale = 1.f;
+	float ModelHeight = 50.f;
+	/** Temps écoulé depuis le début de la disparition / de l'apparition (-1 = rien en cours) */
+	float VanishClock = -1.f;
+	float AppearClock = -1.f;
+	float SleepClock = 0.f;
+	float BlinkTimeLeft = 3.f;
+	float BlinkCloseLeft = 0.f;
+	bool bEyesClosed = false;
+	bool bEyeMaterialsSearched = false;
+	/** Emplacements des yeux et leur matériau « yeux fermés » (<matériau>_Closed, Tools/Pokemon/setup_follower_assets.py) */
+	TArray<int32> ClosedEyeSlots;
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UMaterialInterface>> ClosedEyeMaterials;
+	struct FSparkle
+	{
+		FVector Origin = FVector::ZeroVector;
+		FVector Velocity = FVector::ZeroVector;
+		float Age = 0.f;
+		float Life = 0.f;
+		float Size = 1.f;
+		float Spin = 0.f;
+	};
+	TArray<FSparkle> SparkleStates;
+	int32 NextSparkle = 0;
+	float AppliedScaleFactor = -1.f;
+	/** Échelle de StaticModel quand le facteur vaut 1 (sphère de remplacement comprise) */
+	float StaticBaseScale = 1.f;
+
 	/** Vitesse de marche et de course de cette espèce (animation à vitesse normale) */
 	float WalkGaitSpeed = 150.f;
 	float RunGaitSpeed = 400.f;
 
 	// Serveur
 	EBehavior Behavior = EBehavior::Follow;
+	/** Sifflé : reste au pied */
+	bool bHeel = false;
+	/** Sifflé : il saute de joie en arrivant */
+	bool bHeelGreeting = false;
+	/** Disparition en cours (secondes restantes avant de réapparaître) */
+	float TeleportTimeLeft = -1.f;
 	/** Place choisie autour du joueur : angle depuis « juste derrière » et distance */
 	float SpotAngle = 0.f;
 	float SpotDistance = 180.f;

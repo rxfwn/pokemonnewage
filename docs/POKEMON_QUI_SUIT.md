@@ -15,7 +15,12 @@ de l'équipe** sort de sa Ball et accompagne le joueur hors combat.
 - Il **rentre dans sa Ball** pendant les combats, s'il est K.O., ou si l'équipe est vide.
 - Il **change tout seul** quand on change l'ordre de l'équipe (Tab > Équipe > Déplacer), qu'on dépose le premier au PC
   ou qu'il évolue.
-- S'il est à **plus de 25 m** du joueur ou **coincé** loin de lui (mur, falaise, eau), il réapparaît derrière le joueur.
+- S'il est à **plus de 25 m** du joueur ou **coincé** loin de lui (mur, falaise, eau), il **disparaît dans des étoiles**
+  et **réapparaît à côté du joueur** (il rapetisse, puis regrandit avec un petit rebond). Pareil quand il sort de sa Ball.
+- **Sifflet (touche F, croix bas à la manette)** : il accourt **au pied**, à ta gauche, saute de joie en arrivant et
+  reste collé à toi (il regarde dans le même sens que toi). S'il est trop loin ou bloqué, il réapparaît au pied dans
+  des étoiles. **Un 2e coup de sifflet** lui rend sa liberté. La touche se change dans Paramètres > Commandes.
+  Rangé avec `Suiveur 0`, le sifflet le fait ressortir.
 - Il ne bloque **ni le joueur, ni la caméra, ni les autres joueurs**.
 - **Touche d'action (E)** quand on est tourné vers lui : il se tourne vers nous et montre sa joie
   (animation `Happy` si son modèle en a une, sinon un petit saut). Une porte ou un PNJ à portée passe avant lui.
@@ -39,6 +44,9 @@ Il ne marche pas dans les pas du joueur : il a sa petite vie.
   regarde autour de lui, se retourne vers toi, sautille de joie (animation `Happy`), parfois pique un petit sprint.
   Après 45 s sans bouger, il **s'endort** (animation `Sleep` : Bulbizarre, Salamèche, Carapuce, Pikachu).
   Il se réveille dès que tu repars ou que tu le caresses.
+- **Quand il dort** : il ferme les yeux, des **Z** montent au-dessus de sa tête et une **bulle** au bout de son nez
+  gonfle et dégonfle au rythme de sa respiration (une respiration toutes les 3 s).
+- **Éveillé, il cligne des yeux** de temps en temps.
 
 **Multijoueur** : chaque joueur du monde a son Pokémon qui le suit, et tout le monde voit ceux des autres.
 C'est le serveur (celui qui a créé le monde) qui les déplace ; on peut caresser le Pokémon d'un ami.
@@ -50,7 +58,19 @@ C'est le serveur (celui qui a créé le monde) qui les déplace ; on peut caress
 2. Ouvrir Unreal, puis **Outils > Exécuter un script Python...** (Tools > Execute Python Script) →
    `Tools/Data/import_data_tables.py`. Il remet à jour `DT_Species` avec la nouvelle colonne **FollowMode**.
    Sans cette étape, tous les Pokémon marchent (même Magicarpe).
-3. Rien à placer dans la map : le composant est déjà sur le PlayerController (`FollowerComponent`).
+3. **Outils > Exécuter un script Python...** → `Tools/Pokemon/setup_follower_assets.py` (quelques secondes).
+   Il crée `Contenu > Pokemon > Follower` (matériaux de la bulle et des étoiles) et, à côté de chaque matériau
+   d'yeux des modèles, un `<matériau>_Closed` (yeux fermés). Le relancer après chaque réimport des modèles.
+   Sans lui : la bulle et les étoiles sont grises et les yeux ne se ferment pas.
+4. Rien à placer dans la map : le composant est déjà sur le PlayerController (`FollowerComponent`).
+5. Facultatif : un son de sifflet. Importer un `.wav` dans `Contenu > Pokemon > Follower` et le nommer `SW_Whistle`.
+
+### Comment les yeux se ferment
+
+Les modèles Let's Go ont, pour chaque œil, une **planche d'expressions** de 2 × 4 cases (ouvert, fâché / mi-clos,
+plissé / **fermé**, surpris / plissé). Le jeu change de case en décalant la texture. Le matériau `<œil>_Closed`
+montre la 3e ligne (décalage 0 ; 0,5, réglage **Closed Eye Offset**). Si un Pokémon a l'air surpris ou fâché au
+lieu de dormir, sa planche est rangée autrement : essayer 0,25 ou 0,75.
 
 ## Tester
 
@@ -64,6 +84,9 @@ Lancer le jeu dans `L_Kanto`, console **²** :
 | `DonnerPokemon Magikarp 5` en premier | rien ne sort |
 | `CombatSauvage Rattata 3` | il rentre pendant le combat et ressort après |
 | `Suiveur` | le range / le ressort (`Suiveur 0` : rangé, `Suiveur 1` : sorti) |
+| `Siffler` ou touche **F** | il accourt au pied ; recommencer pour le libérer |
+| rester immobile 45 s avec Pikachu | il s'endort : yeux fermés, Z, bulle qui respire |
+| `slomo 4` puis courir loin | il disparaît dans des étoiles et réapparaît à côté |
 
 À vérifier en particulier : courir (Maj) puis s'arrêter, monter une pente, passer une porte de maison,
 sauter d'une falaise (il doit réapparaître derrière), et l'animation de vol de Roucool
@@ -90,7 +113,12 @@ puis dans le Blueprint du PlayerController : composant **FollowerComponent > Fol
 | Pause Duration | 2 à 6 s | pause entre deux envies |
 | Sleep After | 45 s | il s'endort après ce temps (0 = jamais) |
 | Fly Height / Float Height | 150 / 40 cm | hauteur des volants / de ceux qui flottent |
-| Teleport Distance | 25 m | au-delà, il réapparaît derrière le joueur |
+| Teleport Distance | 25 m | au-delà, il disparaît et réapparaît à côté du joueur |
+| Heel Distance / Heel Angle | 70 cm / 70° | place « au pied » quand on le siffle (70° = à gauche, un peu en arrière ; -70° = à droite) |
+| Vanish Time / Appear Time | 0,35 / 0,45 s | durée de la disparition / de l'apparition dans les étoiles |
+| Breath Period | 3 s | une respiration (bulle) pendant le sommeil |
+| Bubble Size Ratio | 0,09 | taille de la bulle par rapport au Pokémon |
+| Blink Interval | 2,5 à 6 s | clignements des yeux (0 = jamais) |
 | Max Display Height | 0 (taille réelle) | ex. 250 cm : Onix est réduit à 2,5 m quand il suit |
 
 **Si les pattes glissent encore** (il avance plus vite que ses pas) : baisser `Walk Speed Per Meter` et
@@ -106,7 +134,10 @@ les monter.
 - `Source/PokemonNewAge/Follower/PokemonFollower.h/.cpp` : l'acteur (Character sans contrôleur, déplacé par le serveur).
   Petite machine à états côté serveur : suivre (place autour du joueur, marche/course, contournement par le
   chemin du joueur), pause, balade, regarder autour, dormir. Les animations sont choisies chez chaque joueur
-  d'après la vitesse réelle ; la pose Sommeil est répliquée.
+  d'après la vitesse réelle ; la pose Sommeil est répliquée. Effets chez chaque joueur : yeux fermés (matériau
+  `_Closed` à la place de celui des yeux), bulle (sphère au point `EffMouth01` du squelette), Z (textes au-dessus de
+  `EffOverHead01`), étoiles (petits cubes lumineux). Sol et obstacles cherchés sur le canal Visibilité
+  (les volumes invisibles comme les hautes herbes sont ignorés).
 - `Source/PokemonNewAge/Follower/PokemonFollowerComponent.h/.cpp` : sur le PlayerController ; 4 fois par seconde,
   le serveur regarde le premier de l'équipe et sort, change ou range le Pokémon.
 - `EFollowMode` (`Pokemon/PokemonTypes.h`) et `FSpeciesRow::FollowMode` (`Pokemon/PokemonDataRows.h`).
