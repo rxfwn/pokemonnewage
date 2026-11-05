@@ -106,6 +106,16 @@ Pokémon et le sol lumineux sous ses pieds.
   | `ZoneLibre`, `DansZoneLibre` | devant (les deux) | Taille de la zone dégagée au centre, et ce qui reste des effets dedans (0,15). |
   | `Luminosite` | tous | Tout plus clair ou plus sombre. |
 
+- **Sol fondu** : `M_EvolutionFloor` est transparent au loin (`FonduDebut` 0,9 → `FonduFin` 2, en rayons de la
+  lueur) : on voit le bas du ciel derrière, il n'y a plus d'horizon net.
+- **Lumière sur le Pokémon** (2026-11-05, jugée trop forte) : dans `BP_EvolutionScene`, `PokemonLightScale` (0,45)
+  multiplie les deux lumières de la scène, `GlowStrength` (0,65) la lueur blanche posée sur le Pokémon.
+- **Courbe de la transformation** : `MorphCurve` dans `BP_EvolutionScene` (catégorie *Evolution > Transformation*).
+  X = temps du trajet des points (0 à 1), Y = avancement (0 = ancienne forme, 1 = nouvelle). Par défaut, départ
+  lent, accélération au milieu, arrivée en douceur (clés cubiques). Modifiable à la souris (clic droit = ajouter
+  une clé, tangentes à la souris), ou avec une *Float Curve* faite dans l'éditeur de courbes (Graph Editor), mise
+  dans le champ *External Curve*. Une valeur au-dessus de 1 juste avant la fin fait un léger rebond.
+  `MorphStagger` (0,25) : les points ne partent pas tous en même temps.
 - **Vidéo After Effects** : quand L'amie enverra sa boucle (MP4 H.264, sans son), elle pourra remplacer le ciel
   (Media Player + Media Texture sur le panneau du ciel).
 - **Limite** : si le terrain monte fort autour du Pokémon, une bosse peut passer au-dessus du sol lumineux.

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Curves/CurveFloat.h"
 #include "EvolutionScene.generated.h"
 
 class UAudioComponent;
@@ -70,6 +71,25 @@ public:
 
 	UPROPERTY(EditAnywhere, Category="Evolution")
 	float MorphEndRate = 6.f;
+
+	/** Courbe du trajet des points de lumière pendant la transformation (demandée par L'amie le 2026-11-05).
+	 *  X = temps du trajet (0 à 1), Y = avancement (0 = ancienne forme, 1 = nouvelle). Se modifie à la souris
+	 *  dans BP_EvolutionScene (clic droit sur la courbe pour ajouter une clé), ou avec une Float Curve faite
+	 *  dans l'éditeur de courbes (champ « External Curve »). Par défaut : départ et arrivée en douceur. */
+	UPROPERTY(EditAnywhere, Category="Evolution|Transformation")
+	FRuntimeFloatCurve MorphCurve;
+
+	/** Décalage du départ entre les points (part du trajet) : ils ne partent pas tous en même temps, plus fluide */
+	UPROPERTY(EditAnywhere, Category="Evolution|Transformation", meta=(ClampMin="0", ClampMax="0.6"))
+	float MorphStagger = 0.25f;
+
+	/** Force des lumières de la scène sur le Pokémon (1 = celle d'avant, jugée trop forte le 2026-11-05) */
+	UPROPERTY(EditAnywhere, Category="Evolution|Lumière", meta=(ClampMin="0"))
+	float PokemonLightScale = 0.45f;
+
+	/** Force de la lueur blanche posée sur le Pokémon (1 = celle d'avant) */
+	UPROPERTY(EditAnywhere, Category="Evolution|Lumière", meta=(ClampMin="0", ClampMax="1"))
+	float GlowStrength = 0.65f;
 
 	/** Disparition de la lueur après le flash (s) */
 	UPROPERTY(EditAnywhere, Category="Evolution")
@@ -213,6 +233,9 @@ private:
 	/** Charge le modèle d'une espèce dans l'un des deux composants, pieds au sol et face à la caméra. Hauteur (cm) */
 	float LoadModel(FName Species, USkeletalMeshComponent* Skeletal, UStaticMeshComponent* Static, UMeshComponent*& OutMesh);
 	void SetGlow(UMaterialInstanceDynamic* Material, float Amount);
+	void SetKeyLight(float Intensity);
+	void SetGlowLight(float Intensity);
+	float EvalMorphCurve(float Time) const;
 	void SetModelScale(UMeshComponent* Mesh, float Scale);
 	void PlaceInFrontOf(APlayerController* Controller);
 	void EnterPhase(EPhase NewPhase);

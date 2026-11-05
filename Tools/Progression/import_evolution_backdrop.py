@@ -9,8 +9,8 @@ Crée dans /Game/Progression :
   - M_EvolutionSky : le fond derrière le Pokémon, d'après l'évolution de Soleil et Lune. Dégradé bleu, lueur au
     centre de l'image, piliers de lumière qui vacillent, gros bokeh qui monte, éclats qui apparaissent, lignes de
     vitesse qui partent du centre, étoiles et traînées ;
-  - M_EvolutionFloor : le sol lumineux sous le Pokémon (lueur cyan, deux anneaux qui respirent, même bleu que le
-    ciel à l'horizon) ;
+  - M_EvolutionFloor : le sol lumineux sous le Pokémon (lueur cyan, deux anneaux qui respirent), transparent au
+    loin pour se fondre dans le ciel ;
   - M_EvolutionFrontNear et M_EvolutionFrontMid : les effets devant le Pokémon (transparents, additifs). Near =
     gros bokeh flous tout près de la caméra ; Mid = éclats et poussières de lumière qui montent juste devant lui.
     Le centre de l'image reste presque dégagé (ZoneLibre) pour bien voir la transformation en points.
@@ -73,7 +73,7 @@ def import_texture(name):
 class Graph:
     """Petit assistant pour écrire un graphe de matériau en Python."""
 
-    def __init__(self, name, additive=False):
+    def __init__(self, name, additive=False, translucent=False):
         path = f"{CONTENT_DIR}/{name}"
         if eal.does_asset_exist(path):
             self.material = eal.load_asset(path)
@@ -87,6 +87,9 @@ class Graph:
         self.material.set_editor_property("two_sided", True)
         # Effets devant le Pokémon : transparents, la lumière s'ajoute à l'image (jamais de bord sombre)
         blend = unreal.BlendMode.BLEND_ADDITIVE if additive else unreal.BlendMode.BLEND_OPAQUE
+        if translucent:
+            # Sol fondu dans le ciel : opaque sous le Pokémon, transparent au loin
+            blend = unreal.BlendMode.BLEND_TRANSLUCENT
         self.material.set_editor_property("blend_mode", blend)
 
     def node(self, kind, **properties):
@@ -303,7 +306,7 @@ def make_sky(texture, fx):
 
 
 def make_floor(texture):
-    g = Graph("M_EvolutionFloor")
+    g = Graph("M_EvolutionFloor", translucent=True)
     brightness = g.scalar("Luminosite", 1.4)
     _height, position = floor_height(g)
 
@@ -338,6 +341,17 @@ def make_floor(texture):
     reflection = g.mul(g.mul(bokeh, g.scalar("BokehSol", 0.15), a_out="G"), g.color("CouleurBokeh", BOKEH))
     floor = g.add(floor, reflection)
     floor = g.add(floor, center_glow(g))
+
+    # Fondu dans le ciel (demandé le 2026-11-05) : plein sous le Pokémon, s'efface entre FonduDebut et FonduFin
+    # (en rayons de la lueur) ; derrière, on voit le bas du ciel (même bleu, piliers, bokeh) : plus d'horizon net
+    fade_start = g.scalar("FonduDebut", 0.9)
+    fade_end = g.scalar("FonduFin", 2.0)
+    fade = g.op(unreal.MaterialExpressionDivide, g.op(unreal.MaterialExpressionSubtract, ratio, fade_start),
+                g.op(unreal.MaterialExpressionSubtract, fade_end, fade_start))
+    fade = g.single(unreal.MaterialExpressionSaturate, fade)
+    fade = g.lerp(None, None, fade, const_a=1.0, const_b=0.0)
+    opacity = g.mul(fade, fade)
+    mel.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
 
     return g.finish(g.mul(depth_shade(g, floor), brightness))
 

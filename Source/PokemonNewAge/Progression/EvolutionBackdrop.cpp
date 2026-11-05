@@ -119,6 +119,8 @@ void UEvolutionBackdropComponent::OnRegister()
 
 	// Sol : accroché aux pieds (ce composant), à leur hauteur exacte
 	Floor->SetupAttachment(this);
+	// Sol transparent au loin : dessiné avant les points de lumière et les effets de devant
+	Floor->SetTranslucentSortPriority(-10);
 	Floor->RegisterComponent();
 
 	// Effets devant le Pokémon (facultatifs : sans leurs matériaux, seulement le fond)
