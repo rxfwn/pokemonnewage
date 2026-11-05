@@ -218,6 +218,10 @@ public:
 	UFUNCTION(Exec)
 	void CouleurYeux(float R, float G, float B);
 
+	/** Ouvre l'éditeur de personnage : EditeurPerso (Apparence), EditeurPerso creation, EditeurPerso armoire */
+	UFUNCTION(Exec)
+	void EditeurPerso(const FString& Mode);
+
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 

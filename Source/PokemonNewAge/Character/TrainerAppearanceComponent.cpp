@@ -1,17 +1,17 @@
 #include "Character/TrainerAppearanceComponent.h"
 #include "Character/TrainerAppearanceData.h"
+#include "Character/TrainerAppearanceRender.h"
+#include "Character/CharacterStudio.h"
+#include "UI/CharacterCreatorWidget.h"
 #include "Core/PokemonPlayerState.h"
+#include "Dialogue/DialogueComponent.h"
 #include "GameFramework/Character.h"
+#include "GameFramework/PlayerController.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Engine/SkeletalMesh.h"
-#include "Materials/MaterialInstanceDynamic.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
-
-namespace
-{
-	const TCHAR* DefaultAppearanceDataPath = TEXT("/Game/Characters/Player/DA_TrainerAppearance.DA_TrainerAppearance");
-}
+#include "Engine/Engine.h"
+#include "PokemonNewAge.h"
 
 UTrainerAppearanceComponent::UTrainerAppearanceComponent()
 {
@@ -23,15 +23,38 @@ UTrainerAppearanceData* UTrainerAppearanceComponent::GetAppearanceData()
 {
 	if (!AppearanceData)
 	{
-		AppearanceData = LoadObject<UTrainerAppearanceData>(nullptr, DefaultAppearanceDataPath, nullptr, LOAD_NoWarn);
+		AppearanceData = TrainerAppearanceRender::LoadDefaultData();
 	}
 	return AppearanceData;
+}
+
+USkeletalMeshComponent* UTrainerAppearanceComponent::GetTargetMesh() const
+{
+	if (const ACharacter* Character = Cast<ACharacter>(GetOwner()))
+	{
+		return Character->GetMesh();
+	}
+	return GetOwner() ? GetOwner()->FindComponentByClass<USkeletalMeshComponent>() : nullptr;
 }
 
 void UTrainerAppearanceComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	TryApplyFromPlayerState();
+	if (bAutoOpenEditor && GetWorld())
+	{
+		// Laisse le temps à la sauvegarde de revenir du serveur avant de décider si c'est une nouvelle partie
+		GetWorld()->GetTimerManager().SetTimer(FirstCreationTimer, this, &UTrainerAppearanceComponent::CheckFirstCreation, 3.f, false);
+	}
+}
+
+void UTrainerAppearanceComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (Editor || Studio)
+	{
+		CloseEditor(false, FTrainerAppearance(), FString(), FString());
+	}
+	Super::EndPlay(EndPlayReason);
 }
 
 void UTrainerAppearanceComponent::TryApplyFromPlayerState()
@@ -49,6 +72,16 @@ void UTrainerAppearanceComponent::TryApplyFromPlayerState()
 	}
 }
 
+void UTrainerAppearanceComponent::CheckFirstCreation()
+{
+	const APawn* Pawn = Cast<APawn>(GetOwner());
+	const APokemonPlayerState* State = Pawn ? Pawn->GetPlayerState<APokemonPlayerState>() : nullptr;
+	if (Pawn && Pawn->IsLocallyControlled() && State && !State->Appearance.bCreated && GetAppearanceData())
+	{
+		OpenEditor(ETrainerEditorMode::Creation);
+	}
+}
+
 FTrainerAppearance UTrainerAppearanceComponent::GetCurrentAppearance() const
 {
 	const APawn* Pawn = Cast<APawn>(GetOwner());
@@ -56,30 +89,10 @@ FTrainerAppearance UTrainerAppearanceComponent::GetCurrentAppearance() const
 	return State ? State->Appearance : FTrainerAppearance();
 }
 
-FTrainerAppearance UTrainerAppearanceComponent::Sanitize(const FTrainerAppearance& Appearance)
+void UTrainerAppearanceComponent::ApplyAppearance(const FTrainerAppearance& Appearance)
 {
-	FTrainerAppearance Clean = Appearance;
-	const UTrainerAppearanceData* Data = GetAppearanceData();
-	const FTrainerBaseDef* Base = Data ? Data->FindBase(Appearance.Base) : nullptr;
-	if (!Base)
-	{
-		return Clean; // pas de catalogue : on garde tel quel (rien ne s'affichera de toute façon)
-	}
-	Clean.Base = Base->Id;
-	Clean.Sliders.Reset();
-	for (const FTrainerSliderValue& Value : Appearance.Sliders)
-	{
-		if (const FTrainerSliderDef* Def = Data->FindSlider(*Base, Value.Slider))
-		{
-			const float Min = Def->MorphNegative.IsNone() ? 0.f : -Def->Limit;
-			Clean.SetSlider(Value.Slider, FMath::Clamp(Value.Value, Min, Def->Limit));
-		}
-	}
-	auto ClampColor = [](const FLinearColor& C) { return FLinearColor(FMath::Clamp(C.R, 0.f, 1.f), FMath::Clamp(C.G, 0.f, 1.f), FMath::Clamp(C.B, 0.f, 1.f), 1.f); };
-	Clean.SkinColor = ClampColor(Appearance.SkinColor);
-	Clean.EyeColor = ClampColor(Appearance.EyeColor);
-	// Vêtements : il faudra vérifier que le joueur les possède (boutiques), pas encore de catalogue
-	return Clean;
+	// Pas encore de catalogue : on laisse le Dresseur provisoire
+	TrainerAppearanceRender::Apply(GetAppearanceData(), GetOwner(), GetTargetMesh(), Appearance, AppliedBase);
 }
 
 void UTrainerAppearanceComponent::RequestAppearance(const FTrainerAppearance& Appearance)
@@ -93,94 +106,152 @@ void UTrainerAppearanceComponent::ServerSetAppearance_Implementation(const FTrai
 	const APawn* Pawn = Cast<APawn>(GetOwner());
 	if (APokemonPlayerState* State = Pawn ? Pawn->GetPlayerState<APokemonPlayerState>() : nullptr)
 	{
-		State->SetAppearance(Sanitize(Appearance));
+		State->SetAppearance(TrainerAppearanceRender::Sanitize(GetAppearanceData(), Appearance));
 	}
 }
 
-void UTrainerAppearanceComponent::ApplyAppearance(const FTrainerAppearance& InAppearance)
+FString UTrainerAppearanceComponent::CleanText(const FString& Text, int32 MaxLength)
 {
-	const FTrainerAppearance Appearance = Sanitize(InAppearance);
-	ACharacter* Character = Cast<ACharacter>(GetOwner());
-	USkeletalMeshComponent* Mesh = Character ? Character->GetMesh() : nullptr;
-	const UTrainerAppearanceData* Data = GetAppearanceData();
-	const FTrainerBaseDef* Base = Data ? Data->FindBase(Appearance.Base) : nullptr;
-	if (!Mesh || !Base)
-	{
-		return; // pas encore de catalogue : on laisse le Dresseur provisoire
-	}
+	FString Clean = Text.Replace(TEXT("\n"), TEXT(" ")).Replace(TEXT("\r"), TEXT(" ")).TrimStartAndEnd();
+	return Clean.Left(MaxLength);
+}
 
-	if (AppliedBase != Base->Id)
-	{
-		if (USkeletalMesh* NewMesh = Base->Mesh.LoadSynchronous())
-		{
-			Mesh->SetSkeletalMesh(NewMesh);
-			if (Base->AnimClass)
-			{
-				Mesh->SetAnimInstanceClass(Base->AnimClass);
-			}
-			Mesh->EmptyOverrideMaterials(); // les MID de l'ancienne base ne vont pas sur la nouvelle
-			AppliedBase = Base->Id;
-		}
-	}
+void UTrainerAppearanceComponent::RequestProfile(const FString& TrainerName, const FString& Catchphrase)
+{
+	ServerSetProfile(TrainerName, Catchphrase);
+}
 
-	// Le corps et tout ce qui le suit (vêtements, cheveux en Leader Pose) reçoivent les mêmes morphs et couleurs
-	TArray<USkeletalMeshComponent*> Targets = { Mesh };
-	TArray<USkeletalMeshComponent*> Children;
-	Character->GetComponents<USkeletalMeshComponent>(Children);
-	for (USkeletalMeshComponent* Child : Children)
+void UTrainerAppearanceComponent::ServerSetProfile_Implementation(const FString& TrainerName, const FString& Catchphrase)
+{
+	const APawn* Pawn = Cast<APawn>(GetOwner());
+	if (APokemonPlayerState* State = Pawn ? Pawn->GetPlayerState<APokemonPlayerState>() : nullptr)
 	{
-		if (Child != Mesh && Child->LeaderPoseComponent.Get() == Mesh)
+		const FString Name = CleanText(TrainerName, MaxNameLength);
+		if (!Name.IsEmpty())
 		{
-			Targets.Add(Child);
+			State->SetPlayerName(Name);
 		}
-	}
-	for (USkeletalMeshComponent* Target : Targets)
-	{
-		ApplyMorphs(*Base, Appearance, Target);
-		ApplyColor(Target, Data->SkinMaterialSlots, Data->SkinColorParameter, Appearance.SkinColor);
-		ApplyColor(Target, Data->EyeMaterialSlots, Data->EyeColorParameter, Appearance.EyeColor);
+		State->Catchphrase = CleanText(Catchphrase, MaxCatchphraseLength);
 	}
 }
 
-void UTrainerAppearanceComponent::ApplyMorphs(const FTrainerBaseDef& Base, const FTrainerAppearance& Appearance, USkeletalMeshComponent* Mesh)
-{
-	const UTrainerAppearanceData* Data = GetAppearanceData();
-	for (const FTrainerSliderDef& Def : Data->GetSliders(Base))
-	{
-		const float Value = Appearance.GetSlider(Def.Id);
-		// Un morph absent du mesh est ignoré par Unreal : pas d'erreur si un vêtement n'a pas ce morph
-		if (!Def.MorphPositive.IsNone())
-		{
-			Mesh->SetMorphTarget(Def.MorphPositive, FMath::Max(0.f, Value));
-		}
-		if (!Def.MorphNegative.IsNone())
-		{
-			Mesh->SetMorphTarget(Def.MorphNegative, FMath::Max(0.f, -Value));
-		}
-	}
-}
+// ---------------------------------------------------------------- Éditeur
 
-void UTrainerAppearanceComponent::ApplyColor(USkeletalMeshComponent* Mesh, const TArray<FName>& Slots, FName Parameter, const FLinearColor& Color)
+void UTrainerAppearanceComponent::ClientOpenEditor_Implementation(ETrainerEditorMode Mode)
 {
-	if (Parameter.IsNone())
+	// Ouvert par un dialogue : on attend que la boîte se ferme (elle rend la main au jeu en partant)
+	const APawn* Pawn = Cast<APawn>(GetOwner());
+	AController* Controller = Pawn ? Pawn->GetController() : nullptr;
+	UDialogueComponent* Dialogue = Controller ? Controller->FindComponentByClass<UDialogueComponent>() : nullptr;
+	if (Dialogue && Dialogue->IsInConversation())
 	{
+		PendingMode = Mode;
+		Dialogue->OnConversationEnded.AddUniqueDynamic(this, &UTrainerAppearanceComponent::HandleConversationEnded);
 		return;
 	}
-	for (const FName Slot : Slots)
+	OpenEditor(Mode);
+}
+
+void UTrainerAppearanceComponent::HandleConversationEnded()
+{
+	const APawn* Pawn = Cast<APawn>(GetOwner());
+	AController* Controller = Pawn ? Pawn->GetController() : nullptr;
+	if (UDialogueComponent* Dialogue = Controller ? Controller->FindComponentByClass<UDialogueComponent>() : nullptr)
 	{
-		const int32 Index = Mesh->GetMaterialIndex(Slot);
-		if (Index == INDEX_NONE)
+		Dialogue->OnConversationEnded.RemoveDynamic(this, &UTrainerAppearanceComponent::HandleConversationEnded);
+	}
+	if (PendingMode.IsSet())
+	{
+		const ETrainerEditorMode Mode = PendingMode.GetValue();
+		PendingMode.Reset();
+		OpenEditor(Mode);
+	}
+}
+
+bool UTrainerAppearanceComponent::OpenEditor(ETrainerEditorMode Mode)
+{
+	APawn* Pawn = Cast<APawn>(GetOwner());
+	APlayerController* PlayerController = Pawn ? Cast<APlayerController>(Pawn->GetController()) : nullptr;
+	UTrainerAppearanceData* Data = GetAppearanceData();
+	if (Editor || !PlayerController || !PlayerController->IsLocalController())
+	{
+		return false;
+	}
+	if (!Data || Data->Bases.IsEmpty())
+	{
+		const FString Message = TEXT("Éditeur de personnage : créer d'abord Content/Characters/Player/DA_TrainerAppearance (docs/PERSONNAGE_CREATION.md)");
+		UE_LOG(LogPokemonNewAge, Warning, TEXT("%s"), *Message);
+		if (GEngine)
 		{
-			continue;
+			GEngine->AddOnScreenDebugMessage(-1, 8.f, FColor::Orange, Message);
 		}
-		UMaterialInstanceDynamic* MID = Cast<UMaterialInstanceDynamic>(Mesh->GetMaterial(Index));
-		if (!MID)
-		{
-			MID = Mesh->CreateDynamicMaterialInstance(Index);
-		}
-		if (MID)
-		{
-			MID->SetVectorParameterValue(Parameter, Color);
-		}
+		return false;
+	}
+
+	// Studio local (jamais répliqué) : chaque joueur a le sien, au-dessus de lui
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	Params.Owner = PlayerController;
+	const FVector StudioLocation = Pawn->GetActorLocation() + FVector(0.f, 0.f, StudioHeight);
+	Studio = GetWorld()->SpawnActor<ACharacterStudio>(ACharacterStudio::StaticClass(), StudioLocation, FRotator::ZeroRotator, Params);
+	if (!Studio)
+	{
+		return false;
+	}
+
+	const APokemonPlayerState* State = Pawn->GetPlayerState<APokemonPlayerState>();
+	const FTrainerAppearance Current = GetCurrentAppearance();
+	Studio->Init(Data, Current);
+
+	Editor = CreateWidget<UCharacterCreatorWidget>(PlayerController, UCharacterCreatorWidget::StaticClass());
+	if (!Editor)
+	{
+		Studio->Destroy();
+		Studio = nullptr;
+		return false;
+	}
+	Editor->Init(this, Studio, Data, Mode, Current, State ? State->GetPlayerName() : FString(), State ? State->Catchphrase : FString());
+
+	PlayerController->SetViewTargetWithBlend(Studio, 0.f);
+	Editor->SetIsFocusable(true);
+	Editor->AddToPlayerScreen(8);
+	PlayerController->SetIgnoreMoveInput(true);
+	PlayerController->SetIgnoreLookInput(true);
+	PlayerController->SetShowMouseCursor(true);
+	FInputModeUIOnly InputMode;
+	InputMode.SetWidgetToFocus(Editor->TakeWidget());
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	PlayerController->SetInputMode(InputMode);
+	return true;
+}
+
+void UTrainerAppearanceComponent::CloseEditor(bool bKeep, const FTrainerAppearance& Appearance, const FString& TrainerName, const FString& Catchphrase)
+{
+	APawn* Pawn = Cast<APawn>(GetOwner());
+	APlayerController* PlayerController = Pawn ? Cast<APlayerController>(Pawn->GetController()) : nullptr;
+	if (bKeep)
+	{
+		FTrainerAppearance Final = Appearance;
+		Final.bCreated = true;
+		RequestAppearance(Final);
+		RequestProfile(TrainerName, Catchphrase);
+	}
+	if (Editor)
+	{
+		Editor->RemoveFromParent();
+		Editor = nullptr;
+	}
+	if (PlayerController)
+	{
+		PlayerController->SetViewTargetWithBlend(Pawn, 0.f);
+		PlayerController->SetIgnoreMoveInput(false);
+		PlayerController->SetIgnoreLookInput(false);
+		PlayerController->SetShowMouseCursor(false);
+		PlayerController->SetInputMode(FInputModeGameOnly());
+	}
+	if (Studio)
+	{
+		Studio->Destroy();
+		Studio = nullptr;
 	}
 }

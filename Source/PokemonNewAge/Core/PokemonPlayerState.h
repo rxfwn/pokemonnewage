@@ -94,6 +94,10 @@ public:
 	UPROPERTY(ReplicatedUsing=OnRep_Appearance, BlueprintReadOnly, Category="Appearance")
 	FTrainerAppearance Appearance;
 
+	/** Phrase d'accroche de la carte dresseur (choisie dans l'éditeur de personnage). Vue par tous */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category="Appearance")
+	FString Catchphrase;
+
 	/** Serveur : garde l'apparence (déjà validée) et rhabille le personnage */
 	void SetAppearance(const FTrainerAppearance& NewAppearance);
 

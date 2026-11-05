@@ -357,3 +357,10 @@ void APokemonNewAgeCharacter::CouleurYeux(float R, float G, float B)
 	New.EyeColor = FLinearColor(R, G, B);
 	Appearance->RequestAppearance(New);
 }
+
+void APokemonNewAgeCharacter::EditeurPerso(const FString& Mode)
+{
+	const ETrainerEditorMode EditorMode = Mode.Equals(TEXT("creation"), ESearchCase::IgnoreCase) ? ETrainerEditorMode::Creation
+		: (Mode.Equals(TEXT("armoire"), ESearchCase::IgnoreCase) ? ETrainerEditorMode::Wardrobe : ETrainerEditorMode::Appearance);
+	Appearance->OpenEditor(EditorMode);
+}

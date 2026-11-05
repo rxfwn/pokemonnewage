@@ -6,7 +6,10 @@ Le joueur crée son propre dresseur, réaliste, façon Cyberpunk. On le fait ave
 
 | Sujet | Choix |
 |---|---|
-| Quand | Juste après le discours du Prof. Chen, à la place de « es-tu un garçon ou une fille ? » |
+| Quand | Juste après le discours du Prof. Chen, à la place de « es-tu un garçon ou une fille ? » (en attendant ce discours : tout seul au début de la partie) |
+| Âge | Pas de curseur d'âge : le dresseur est un ado (il vit chez sa maman) |
+| Profil | Prénom + **phrase d'accroche** affichée sur la carte dresseur (à la place des Traits d'inZOI) |
+| Écran | Mise en page reprise d'**inZOI** (« Create a Zoi ») comme base, à redessiner ensuite au style verre |
 | Liberté | Le plus loin possible, pour que chacun fasse un personnage qui lui ressemble : des **modèles par zone** comme point de départ, puis **beaucoup de curseurs libres**, chacun avec des limites pour qu'on ne puisse pas casser le visage |
 | Corps | **2 bases séparées** (homme, femme), chacune avec des curseurs de taille, de muscles, de gras… |
 | Changer plus tard | **Tout** est modifiable, visage compris |
@@ -48,7 +51,11 @@ Code : `Source/PokemonNewAge/Character/`
 
 - `TrainerAppearance.h` : ce que le joueur a choisi (base, curseurs, couleurs, vêtements). Sauvegardé et envoyé aux autres joueurs.
 - `TrainerAppearanceData.h` : le catalogue `DA_TrainerAppearance` (bases, curseurs, noms des matériaux).
-- `TrainerAppearanceComponent.h` : sur le personnage, il l'habille et vérifie les valeurs côté serveur.
+- `TrainerAppearanceComponent.h` : sur le personnage, il l'habille, vérifie les valeurs côté serveur et ouvre l'éditeur.
+- `TrainerAppearanceRender.h` : la fonction qui habille un mesh (personnage en jeu et aperçu du studio).
+- `CharacterStudio.h` : le studio de l'éditeur.
+- `Wardrobe.h` : l'armoire.
+- `UI/CharacterCreatorWidget.h` : l'écran de l'éditeur.
 
 ## Premier essai, pas à pas
 
@@ -75,7 +82,7 @@ But : une base CC qui marche dans `L_Kanto` à la place du Dresseur, avec 3 curs
 Clic droit dans `Content/Characters/Player/` > **Divers > Data Asset** > `TrainerAppearanceData`, à nommer **`DA_TrainerAppearance`** (le jeu le cherche à ce nom-là).
 
 - **Bases** : 1 ligne. Id `Femme` ou `Homme`, Mesh = le Skeletal Mesh importé, Anim Class = `ABP_Player`.
-- **Common Sliders** : 3 lignes. Par exemple Id `NezLargeur`, Category `Nez`, Morph Positive = le nom du morph, Limit 1.
+- **Common Sliders** : 3 lignes. Par exemple Id `NezLargeur`, Label « Largeur », Group **Visage** (ou Corps), Section « Nez », Morph Positive = le nom du morph, Limit 1. La Section sert de titre dans la liste de l'éditeur.
 - **Skin Material Slots** : les emplacements de matériau de la peau (souvent `Std_Skin_Head`, `Std_Skin_Body`, `Std_Skin_Arm`, `Std_Skin_Leg` : regarder dans le Skeletal Mesh).
 - **Skin Color Parameter** : le nom d'un paramètre de couleur du matériau de peau d'Auto Setup qui teinte la peau. Ouvrir l'instance de matériau de la tête pour le trouver. S'il n'y en a pas, on en ajoutera un.
 - **Eye Material Slots** et **Eye Color Parameter** : pareil pour l'iris.
@@ -91,15 +98,55 @@ Lancer `L_Kanto`, ouvrir la console (touche **²**) :
 | `Curseur NezLargeur 0.8` | Bouge un curseur (-1 à 1, ou 0 à 1 s'il n'a qu'un morph) |
 | `CouleurPeau 0.8 0.6 0.5` | Teinte de peau (0 à 1, blanc = peau d'origine) |
 | `CouleurYeux 0.1 0.4 0.2` | Couleur de l'iris |
+| `EditeurPerso` | Ouvre l'éditeur (menu Apparence). `EditeurPerso creation` ou `EditeurPerso armoire` pour les autres modes |
 
 L'apparence est enregistrée avec la partie (`Sauvegarder`).
+
+## L'éditeur (façon inZOI)
+
+Mise en page reprise des captures d'inZOI (`personnage/references-inzoi/` dans les fichiers du projet). C'est une base : tu la redessineras au style verre, puis je l'ajusterai à ta maquette.
+
+| Zone | Contenu |
+|---|---|
+| Centre | Ton personnage dans un **studio** gris clair, éclairé à part du monde. Glisser dans le vide pour le faire tourner, molette pour zoomer |
+| Haut gauche | ‹ Retour (sauf à la création) · titre (Créer ton dresseur / Apparence / Armoire) |
+| Gauche | « À quoi ressemble ton dresseur ? », **Profil** (prénom, base ‹ Femme ›), **Phrase d'accroche** |
+| Haut | Aléatoire · Photo (capture sans interface dans `Saved/Screenshots`) · Visage · Corps · Annuler · Refaire |
+| Bas | Onglets **Modèles · Visage · Corps · Tenue · Accessoires**, et **Basique / Détaillé** au-dessus pour Visage et Corps |
+| Visage, Basique | Points à côté du visage : Modèles de visage, Cheveux, Peau, Yeux, Maquillage |
+| Visage ou Corps, Détaillé | **Poignées sur le personnage** à attraper et faire glisser, plus tous les curseurs à droite |
+| Droite | Galerie de modèles, couleurs ou curseurs selon l'onglet |
+| Bas gauche | Masquer l'interface (**U**) · Studio (3 éclairages : Studio, Doux, Soirée) |
+| Bas droite | **Terminer** (il faut un prénom) |
+
+Clavier : **U** masque l'interface, **Échap** annule (sauf à la création), **Ctrl+Z** / **Ctrl+Y** annuler / refaire.
+
+Pas encore remplis (ils disent « bientôt ») : Cheveux, Maquillage, Tenue, Accessoires. Ils attendent la garde-robe et les boutiques de vêtements.
+
+### Quand l'éditeur s'ouvre
+
+- **Début de partie** : 3 secondes après l'arrivée, si le personnage n'a jamais été créé. Ça vaut aussi pour une ancienne sauvegarde : l'éditeur s'ouvre une fois. Quand le discours du Prof. Chen existera, on décochera **Auto Open Editor** sur le composant Appearance et le discours utilisera l'événement de dialogue `OpenCharacterCreator`.
+- **Armoire** : glisser un **Wardrobe** (Armoire) dans la chambre, lui mettre ton modèle dans **Mesh**. La touche d'action (E) devant ouvre l'éditeur sur l'onglet Tenue.
+- **Menu Apparence du Pokédex** : à brancher quand tu auras redessiné le Pokédex (en attendant : `EditeurPerso` dans la console).
+
+Le studio est créé au-dessus du joueur (3 km), seulement sur son PC : en multijoueur, chacun a le sien et les autres ne le voient pas.
+
+### Remplir le catalogue pour l'éditeur
+
+Dans `DA_TrainerAppearance` :
+
+- **Full Presets** (onglet Modèles) et **Face Presets** (Visage > Modèles de visage) : un nom, une vignette (facultative, sinon le nom s'affiche dans le rond) et le **Look**. Un modèle complet remplace tout sauf les vêtements. Un modèle de visage ne change que les curseurs qu'il liste. Les modèles faits avec ActorMIXER vont ici.
+- **Skin Palette** et **Eye Palette** : les couleurs proposées (12 de chaque sont déjà mises).
+- **Drag Handles** : les poignées du mode Détaillé. Pour chacune : l'os où se placer (par exemple le bout du nez, regarder les noms dans le squelette), un petit décalage en cm, le curseur bougé en glissant de gauche à droite (Slider X) et celui bougé de haut en bas (Slider Y).
+- **Head Bones** : l'os que la caméra vise en gros plan (`CC_Base_Head` par défaut).
+- Sur chaque base, cocher **Male** pour l'homme.
 
 Si quelque chose ne bouge pas, envoie une capture de l'onglet Morph Target Preview et du Data Asset.
 
 ## Ensuite (après l'essai)
 
 1. Les 2 bases complètes et la liste de tous les curseurs (visage par zone et corps), avec les modèles de départ faits avec ActorMIXER.
-2. L'éditeur après le discours du Prof. Chen : caméra sur le visage, onglets par zone, aperçu en direct. On attend tes maquettes Figma pour le dessin.
-3. Le menu **Apparence** du Pokédex 3D et l'**armoire** de la chambre.
+2. Redessiner l'éditeur au style verre (ta maquette), et l'ajuster dans Unreal.
+3. Brancher le menu **Apparence** dans le Pokédex 3D ; écrire le discours du Prof. Chen.
 4. Les vêtements : catalogue, emplacements (haut, bas, chaussures, casquette…), boutiques de vêtements dans les villes, vêtements possédés dans la sauvegarde.
 5. Plus tard : maquillage, tatouages, piercings (points d'accroche sur le visage), taches de rousseur.

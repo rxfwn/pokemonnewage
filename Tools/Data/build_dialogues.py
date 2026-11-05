@@ -28,7 +28,7 @@ POKEMON_DIR = os.path.join(ROOT, "Data", "Pokemon")
 TOKENS = {"PlayerName", "StarterName", "RivalStarterName", "SeenCount", "CaughtCount", "MoneyLost"}
 EVENTS = {
     "None", "GiveItem", "TakeItem", "TakeMoney", "GivePokemon", "OfferNickname", "GiveBadge",
-    "HealParty", "StartTrainerBattle", "OpenShop", "OpenPC", "PlayCutscene", "ReturnToLastHeal",
+    "HealParty", "StartTrainerBattle", "OpenShop", "OpenPC", "PlayCutscene", "ReturnToLastHeal", "OpenCharacterCreator",
 }
 KINDS = {"Character", "Sign", "Object", "System"}
 TRIGGERS = {"Talk", "Script"}
