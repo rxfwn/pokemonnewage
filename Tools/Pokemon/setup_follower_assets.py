@@ -184,6 +184,11 @@ def make_closed_eyes(master):
             else:
                 instance = asset_tools.create_asset(f"{name}_Closed", f"{folder}/Materials", unreal.MaterialInstanceConstant,
                                                     unreal.MaterialInstanceConstantFactoryNew())
+            # Matériau posé en cours de jeu : le streaming des textures ne le connaît pas et ne charge que la
+            # plus petite version de la texture (yeux en gros carrés flous). On garde la texture entière en mémoire.
+            if not texture.get_editor_property("never_stream"):
+                texture.set_editor_property("never_stream", True)
+                eal.save_loaded_asset(texture)
             mel.set_material_instance_parent(instance, master)
             mel.set_material_instance_texture_parameter_value(instance, "BaseTexture", texture)
             mel.set_material_instance_vector_parameter_value(
