@@ -62,6 +62,9 @@ def make_eye_material():
     mask = mel.create_material_expression(material, unreal.MaterialExpressionComponentMask, -650, 150)
     for channel in "rgba":
         mask.set_editor_property(channel, channel in "rg")
+    # Les UV des yeux sortent de 0..1 (ex. V de -0,98 à -0,77) : on les ramène dans la planche avant de décaler,
+    # sinon la texture (bord ou répétition selon l'import) montre des carrés de peau au lieu des yeux fermés
+    frac = mel.create_material_expression(material, unreal.MaterialExpressionFrac, -650, 0)
     add = mel.create_material_expression(material, unreal.MaterialExpressionAdd, -450, 50)
     texture = mel.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -250, 0)
     texture.set_editor_property("parameter_name", "BaseTexture")
@@ -70,7 +73,8 @@ def make_eye_material():
     specular = constant(material, 0.3, -250, 400)
 
     mel.connect_material_expressions(offset, "", mask, "")
-    mel.connect_material_expressions(coords, "", add, "A")
+    mel.connect_material_expressions(coords, "", frac, "")
+    mel.connect_material_expressions(frac, "", add, "A")
     mel.connect_material_expressions(mask, "", add, "B")
     mel.connect_material_expressions(add, "", texture, "UVs")
     mel.connect_material_property(texture, "RGB", unreal.MaterialProperty.MP_BASE_COLOR)
