@@ -1,5 +1,6 @@
 #include "Follower/PokemonFollower.h"
 #include "Follower/PokemonFollowerComponent.h"
+#include "Follower/PokemonFollowerAnimInstance.h"
 #include "Animation/AnimSequence.h"
 #include "AnimationRuntime.h"
 #include "Components/CapsuleComponent.h"
@@ -101,7 +102,9 @@ APokemonFollower::APokemonFollower()
 	USkeletalMeshComponent* Skeletal = GetMesh();
 	Skeletal->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Skeletal->SetRelativeLocationAndRotation(FVector(0.f, 0.f, -PokemonFollower::MinHalfHeight), PokemonFollower::ModelRotation);
-	Skeletal->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+	// Animations mélangées avec fondus (PokemonFollowerAnimInstance), sans Animation Blueprint
+	Skeletal->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+	Skeletal->SetAnimInstanceClass(UPokemonFollowerAnimInstance::StaticClass());
 	Skeletal->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
 
 	StaticModel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticModel"));
@@ -230,8 +233,10 @@ void APokemonFollower::LoadModel()
 	bEyeMaterialsSearched = false;
 	bEyesClosed = false;
 
-	IdleAnim = WalkAnim = RunAnim = HappyAnim = SleepAnim = PlayingAnim = nullptr;
-	CurrentAnim = EAnimState::None;
+	IdleAnim = WalkAnim = RunAnim = HappyAnim = SleepAnim = nullptr;
+	MeasuredWalkSpeed = MeasuredRunSpeed = 0.f;
+	PreviousFeetLocal.Reset();
+	PreviousLowestFoot = INDEX_NONE;
 
 	USkeletalMeshComponent* Skeletal = GetMesh();
 	FBoxSphereBounds Bounds(FVector(0.f, 0.f, PlaceholderDiameter * 0.5f), FVector(PlaceholderDiameter * 0.5f), PlaceholderDiameter * 0.5f);
@@ -257,7 +262,7 @@ void APokemonFollower::LoadModel()
 				Anim->bForceRootLock = true;
 			}
 		}
-		FindFootBones(SkeletalAsset);
+		FindFootBones(SkeletalAsset, static_cast<float>(Bounds.Origin.Z - Bounds.BoxExtent.Z), static_cast<float>(Bounds.BoxExtent.Z * 2.0));
 	}
 	else
 	{
@@ -282,7 +287,11 @@ void APokemonFollower::LoadModel()
 	// Taille : celle du modèle (taille réelle du Pokédex), réduite si MaxDisplayHeight le demande
 	const FVector3f Extent(Bounds.BoxExtent);
 	const float Height = FMath::Max(Extent.Z * 2.f, 1.f);
-	const float Scale = (MaxDisplayHeight > 0.f && Height > MaxDisplayHeight) ? MaxDisplayHeight / Height : 1.f;
+	float Scale = FMath::Max(SizeMultiplier, 0.1f);
+	if (MaxDisplayHeight > 0.f && Height * Scale > MaxDisplayHeight)
+	{
+		Scale = MaxDisplayHeight / Height;
+	}
 	const float Radius = FMath::Clamp(FMath::Min(Extent.X, Extent.Y) * Scale * 0.8f, MinRadius, MaxRadius);
 	const float HalfHeight = FMath::Clamp(Extent.Z * Scale, FMath::Max(Radius, MinHalfHeight), MaxHalfHeight);
 	BodyRadius = FMath::Min(FMath::Max(Extent.X, Extent.Y) * Scale, 300.f);
@@ -306,11 +315,6 @@ void APokemonFollower::LoadModel()
 	ModelHeight = Height * Scale;
 	BaseMeshZ = MeshOffset.Z;
 	GroundOffset = 0.f;
-	for (float& RestHeight : FootRestHeights)
-	{
-		// Hauteur au-dessus du bas du modèle (et pas de son origine)
-		RestHeight -= static_cast<float>(Bounds.Origin.Z - Bounds.BoxExtent.Z);
-	}
 	StaticBaseScale = bPlaceholder ? PlaceholderDiameter / 100.f : Scale;
 	Skeletal->SetRelativeLocationAndRotation(MeshOffset, ModelRotation);
 	StaticModel->SetRelativeLocation(bPlaceholder ? MeshOffset + FVector(0.f, 0.f, PlaceholderDiameter * 0.5f) : MeshOffset);
@@ -338,7 +342,7 @@ void APokemonFollower::Tick(float DeltaSeconds)
 	}
 	if (GetNetMode() != NM_DedicatedServer)
 	{
-		UpdateAnimation();
+		UpdateAnimation(DeltaSeconds);
 		UpdateEffects(DeltaSeconds);
 	}
 	HappyTimeLeft = FMath::Max(HappyTimeLeft - DeltaSeconds, 0.f);
@@ -582,7 +586,14 @@ void APokemonFollower::UpdateBehavior(float DeltaSeconds)
 	if (bHeel || LeaderIdleTime <= 0.f || Distance > MaxDistance + BodyRadius)
 	{
 		// Au pied, ou le joueur repart (ou il est trop loin) : il se réveille et le suit
-		Pose = EFollowerPose::None;
+		WakeUp();
+		if (WakeTimeLeft > 0.f)
+		{
+			// Il se relève d'abord
+			WakeTimeLeft -= DeltaSeconds;
+			StopMoving();
+			return;
+		}
 		if (Behavior != EBehavior::Follow)
 		{
 			Behavior = EBehavior::Follow;
@@ -851,6 +862,7 @@ void APokemonFollower::TeleportBehindLeader()
 	Trail.Add(Feet);
 	StuckTimer = 0.f;
 	ForceTrailTimeLeft = 0.f;
+	WakeTimeLeft = 0.f;
 	bCatchingUp = false;
 	bRunning = false;
 	Behavior = EBehavior::Follow;
@@ -922,7 +934,7 @@ void APokemonFollower::Whistle()
 
 	bHeel = true;
 	bHeelGreeting = true;
-	Pose = EFollowerPose::None;
+	WakeUp();
 	Behavior = EBehavior::Follow;
 	bCatchingUp = true;
 	bRunning = true;
@@ -973,8 +985,9 @@ void APokemonFollower::Pet(APawn* ByPawn)
 			SetActorRotation(FRotator(0.f, Direction.Rotation().Yaw, 0.f));
 		}
 	}
-	// Réveillé par la caresse
-	Pose = EFollowerPose::None;
+	// Réveillé par la caresse (il fait sa joie sur place, pas besoin d'attendre)
+	WakeUp();
+	WakeTimeLeft = 0.f;
 	LeaderIdleTime = 0.f;
 	Behavior = EBehavior::Pause;
 	ActionTimeLeft = FMath::FRandRange(PauseDuration.X, PauseDuration.Y);
@@ -985,7 +998,7 @@ void APokemonFollower::Pet(APawn* ByPawn)
 void APokemonFollower::MulticastPlayHappy_Implementation()
 {
 	HappyTimeLeft = HappyAnim ? HappyAnim->GetPlayLength() : 0.8f;
-	CurrentAnim = EAnimState::None;
+	bRestartHappy = true;
 	if (!HappyAnim && HasAuthority() && FollowMode == EFollowMode::Walk)
 	{
 		// Pas d'animation de joie : un petit saut
@@ -995,71 +1008,127 @@ void APokemonFollower::MulticastPlayHappy_Implementation()
 
 // ---------------------------------------------------------------- Animation (tous les joueurs)
 
-void APokemonFollower::UpdateAnimation()
+void APokemonFollower::UpdateAnimation(float DeltaSeconds)
 {
+	UPokemonFollowerAnimInstance* Anim = Cast<UPokemonFollowerAnimInstance>(GetMesh()->GetAnimInstance());
+	if (!Anim || !GetMesh()->GetSkeletalMeshAsset())
+	{
+		return;
+	}
+
+	// Se coucher et se relever : fondu lent ; le reste : fondu court
+	if (Pose != AnimPose)
+	{
+		AnimPose = Pose;
+		SlowBlendTimeLeft = SleepBlendTime;
+	}
+	SlowBlendTimeLeft = FMath::Max(SlowBlendTimeLeft - DeltaSeconds, 0.f);
+	Anim->SetBlendTime(SlowBlendTimeLeft > 0.f ? SleepBlendTime : MoveBlendTime);
+
 	if (Pose == EFollowerPose::Sleep && SleepAnim)
 	{
-		PlayState(EAnimState::Sleep, 1.f);
+		Anim->Want(SleepAnim, 1.f, 1.f, true);
 		return;
 	}
 	if (HappyTimeLeft > 0.f && HappyAnim)
 	{
-		PlayState(EAnimState::Happy, 1.f);
+		if (bRestartHappy)
+		{
+			Anim->Restart(HappyAnim);
+		}
+		bRestartHappy = false;
+		Anim->Want(HappyAnim, 1.f, 1.f, false);
 		return;
 	}
+	bRestartHappy = false;
 
 	const FVector Velocity = GetVelocity();
 	const float Speed = IsFlyer() ? Velocity.Size() : Velocity.Size2D();
 	const float MinRate = IsFlyer() ? FMath::Max(static_cast<float>(PlayRateRange.X), 0.8f) : static_cast<float>(PlayRateRange.X);
 	const float MaxRate = IsFlyer() ? FMath::Min(static_cast<float>(PlayRateRange.Y), 1.4f) : static_cast<float>(PlayRateRange.Y);
-
-	// Démarche choisie d'après la vitesse réelle, et jouée au rythme du sol (les pattes ne glissent pas)
-	const float RunThreshold = FMath::Sqrt(WalkGaitSpeed * RunGaitSpeed);
-	if (Speed < 15.f)
+	const float WalkSpeed = GetAnimGaitSpeed(false);
+	const float RunSpeed = GetAnimGaitSpeed(true);
+	UAnimSequence* Walk = WalkAnim ? WalkAnim.Get() : RunAnim.Get();
+	if (!Walk)
 	{
-		PlayState(EAnimState::Idle, 1.f);
-	}
-	else if (Speed > RunThreshold && RunAnim)
-	{
-		PlayState(EAnimState::Run, FMath::Clamp(Speed / RunGaitSpeed, MinRate, MaxRate));
-	}
-	else
-	{
-		PlayState(EAnimState::Walk, FMath::Clamp(Speed / WalkGaitSpeed, MinRate, MaxRate));
-	}
-}
-
-void APokemonFollower::PlayState(EAnimState State, float PlayRate)
-{
-	USkeletalMeshComponent* Skeletal = GetMesh();
-	if (!Skeletal->GetSkeletalMeshAsset())
-	{
+		Anim->Want(IdleAnim, 1.f, 1.f, true);
 		return;
 	}
 
-	if (State != CurrentAnim)
+	// Démarche choisie d'après la vitesse réelle, et jouée au rythme du sol (les pattes ne glissent pas)
+	const float SlowestWalk = WalkSpeed * MinRate;
+	if (Speed < SlowestWalk && IdleAnim)
 	{
-		CurrentAnim = State;
-		UAnimSequence* Anim = nullptr;
-		switch (State)
+		// Démarrage et arrêt : mélange d'attente et de marche lente, les pas suivent la vitesse
+		const float WalkWeight = Speed < 5.f ? 0.f : Speed / SlowestWalk;
+		Anim->Want(IdleAnim, 1.f, 1.f - WalkWeight, true);
+		Anim->Want(Walk, MinRate, WalkWeight, true);
+	}
+	else if (RunAnim && Speed > FMath::Sqrt(WalkSpeed * RunSpeed))
+	{
+		Anim->Want(RunAnim, FMath::Clamp(Speed / RunSpeed, MinRate, MaxRate), 1.f, true);
+	}
+	else
+	{
+		Anim->Want(Walk, FMath::Clamp(Speed / WalkSpeed, 0.05f, MaxRate), 1.f, true);
+	}
+}
+
+float APokemonFollower::GetAnimGaitSpeed(bool bRun) const
+{
+	if (bRun && RunAnim)
+	{
+		return MeasuredRunSpeed > 0.f ? MeasuredRunSpeed : RunGaitSpeed;
+	}
+	return MeasuredWalkSpeed > 0.f ? MeasuredWalkSpeed : WalkGaitSpeed;
+}
+
+void APokemonFollower::MeasureGait(float DeltaSeconds, const TArray<FVector>& FeetLocal)
+{
+	// Le pied posé (le plus bas) recule sous le corps à la vitesse du sol × la vitesse de lecture.
+	// Mesurer ça donne la vraie vitesse de l'animation : plus besoin de deviner d'après la taille.
+	int32 Lowest = INDEX_NONE;
+	for (int32 Index = 0; Index < FeetLocal.Num(); ++Index)
+	{
+		if (Lowest == INDEX_NONE || FeetLocal[Index].Z < FeetLocal[Lowest].Z)
 		{
-		case EAnimState::Happy: Anim = HappyAnim; break;
-		case EAnimState::Sleep: Anim = SleepAnim; break;
-		case EAnimState::Run: Anim = RunAnim ? RunAnim : WalkAnim; break;
-		case EAnimState::Walk: Anim = WalkAnim; break;
-		default: break;
-		}
-		if (!Anim)
-		{
-			Anim = IdleAnim;
-		}
-		if (Anim && (Anim != PlayingAnim || State == EAnimState::Happy))
-		{
-			Skeletal->PlayAnimation(Anim, State != EAnimState::Happy);
-			PlayingAnim = Anim;
+			Lowest = Index;
 		}
 	}
-	Skeletal->SetPlayRate(PlayingAnim == IdleAnim || PlayingAnim == SleepAnim ? 1.f : PlayRate);
+	const UPokemonFollowerAnimInstance* Anim = Cast<UPokemonFollowerAnimInstance>(GetMesh()->GetAnimInstance());
+	if (Anim && !IsFlyer() && DeltaSeconds > KINDA_SMALL_NUMBER && Lowest != INDEX_NONE && Lowest == PreviousLowestFoot
+		&& PreviousFeetLocal.Num() == FeetLocal.Num())
+	{
+		for (const bool bRun : { false, true })
+		{
+			UAnimSequence* Sequence = bRun ? RunAnim.Get() : WalkAnim.Get();
+			const float Rate = Sequence ? Anim->GetPlayRate(Sequence) : 0.f;
+			if (!Sequence || Anim->GetWeight(Sequence) < 0.95f || Rate < 0.3f)
+			{
+				continue;
+			}
+			const float Backward = static_cast<float>(PreviousFeetLocal[Lowest].X - FeetLocal[Lowest].X) / DeltaSeconds;
+			const float Guess = bRun ? RunGaitSpeed : WalkGaitSpeed;
+			if (Backward <= 0.f)
+			{
+				continue;
+			}
+			const float Sample = FMath::Clamp(Backward / Rate, Guess * 0.3f, Guess * 3.f);
+			float& Measured = bRun ? MeasuredRunSpeed : MeasuredWalkSpeed;
+			Measured = Measured > 0.f ? FMath::Lerp(Measured, Sample, 0.04f) : Sample;
+		}
+	}
+	PreviousFeetLocal = FeetLocal;
+	PreviousLowestFoot = Lowest;
+}
+
+void APokemonFollower::WakeUp()
+{
+	if (Pose == EFollowerPose::Sleep)
+	{
+		WakeTimeLeft = WakeUpTime;
+	}
+	Pose = EFollowerPose::None;
 }
 
 // ---------------------------------------------------------------- Effets (tous les joueurs)
@@ -1102,28 +1171,40 @@ void APokemonFollower::ApplyModelScale(float Factor)
 	StaticModel->SetVisibility(bVisible && StaticModel->GetStaticMesh() != nullptr);
 }
 
-void APokemonFollower::FindFootBones(const USkeletalMesh* Asset)
+void APokemonFollower::FindFootBones(const USkeletalMesh* Asset, float BottomZ, float Height)
 {
 	FootBones.Reset();
 	FootRestHeights.Reset();
 	const FReferenceSkeleton& Skeleton = Asset->GetRefSkeleton();
-	// Points d'effet des pieds des modèles Let's Go (EffFoot01 à 04), sinon les os des pieds et des orteils
-	for (const TCHAR* Pattern : { TEXT("EffFoot"), TEXT("Foot"), TEXT("Toe") })
+	// Les vrais os des pattes (LFoot, RToe, LHand d'un quadrupède...), s'ils sont près du sol en pose de repos.
+	// Les points d'effet EffFoot ne servent qu'en dernier recours : ils ne suivent pas toujours les pattes.
+	auto Collect = [&](bool bEffectPoints)
 	{
 		for (int32 Index = 0; Index < Skeleton.GetNum(); ++Index)
 		{
-			const FName Bone = Skeleton.GetBoneName(Index);
-			if (Bone.ToString().Contains(Pattern) && !FootBones.Contains(Bone))
+			const FString Bone = Skeleton.GetBoneName(Index).ToString();
+			const bool bEffect = Bone.StartsWith(TEXT("Eff"));
+			const bool bLimb = Bone.Contains(TEXT("Foot")) || Bone.Contains(TEXT("Toe")) || Bone.Contains(TEXT("Hand"))
+				|| Bone.Contains(TEXT("Finger")) || Bone.Contains(TEXT("Paw"));
+			if (!bLimb || bEffect != bEffectPoints)
 			{
-				FootBones.Add(Bone);
-				FootRestHeights.Add(static_cast<float>(FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, Index).GetLocation().Z));
+				continue;
+			}
+			// Hauteur au-dessus du bas du modèle en pose de repos
+			const float RestHeight = static_cast<float>(FAnimationRuntime::GetComponentSpaceTransformRefPose(Skeleton, Index).GetLocation().Z) - BottomZ;
+			if (RestHeight <= Height * 0.25f)
+			{
+				FootBones.Add(Skeleton.GetBoneName(Index));
+				FootRestHeights.Add(RestHeight);
 			}
 		}
-		if (FootBones.Num() > 0)
-		{
-			return;
-		}
+	};
+	Collect(false);
+	if (FootBones.Num() == 0)
+	{
+		Collect(true);
 	}
+	UE_LOG(LogPokemonFollower, Verbose, TEXT("%s : %d os de pattes pour poser les pieds au sol"), *Species.ToString(), FootBones.Num());
 }
 
 void APokemonFollower::UpdateGrounding(float DeltaSeconds)
@@ -1133,6 +1214,18 @@ void APokemonFollower::UpdateGrounding(float DeltaSeconds)
 	{
 		return;
 	}
+	// Plante des pieds, dans le repère du Pokémon
+	const float MeshScaleZ = static_cast<float>(Skeletal->GetComponentScale().Z);
+	const FTransform ActorTransform = GetActorTransform();
+	TArray<FVector> Feet;
+	TArray<FVector> FeetLocal;
+	for (int32 Index = 0; Index < FootBones.Num(); ++Index)
+	{
+		const FVector Foot = Skeletal->GetSocketLocation(FootBones[Index]) - FVector(0.f, 0.f, FootRestHeights[Index] * MeshScaleZ);
+		Feet.Add(Foot);
+		FeetLocal.Add(ActorTransform.InverseTransformPosition(Foot));
+	}
+	MeasureGait(DeltaSeconds, FeetLocal);
 	// En sautant (joie), en tombant, en disparaissant : on ne touche à rien
 	const bool bHold = HappyTimeLeft > 0.f || GetCharacterMovement()->IsFalling() || VanishClock >= 0.f || AppearClock >= 0.f;
 	float Target = GroundOffset;
@@ -1149,12 +1242,10 @@ void APokemonFollower::UpdateGrounding(float DeltaSeconds)
 		const float HalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 		const float TopZ = static_cast<float>(GetActorLocation().Z) + HalfHeight;
 		const float BottomZ = static_cast<float>(GetActorLocation().Z) - HalfHeight - 150.f;
-		const float MeshScaleZ = static_cast<float>(Skeletal->GetComponentScale().Z);
 		float Gap = TNumericLimits<float>::Max();
-		for (int32 Index = 0; Index < FootBones.Num(); ++Index)
+		for (const FVector& Foot : Feet)
 		{
-			const FVector Foot = Skeletal->GetSocketLocation(FootBones[Index]);
-			const float SoleZ = static_cast<float>(Foot.Z) - FootRestHeights[Index] * MeshScaleZ;
+			const float SoleZ = static_cast<float>(Foot.Z);
 			FHitResult Hit;
 			if (GetWorld()->LineTraceSingleByChannel(Hit, FVector(Foot.X, Foot.Y, TopZ), FVector(Foot.X, Foot.Y, BottomZ), ECC_Visibility, Params))
 			{
@@ -1292,13 +1383,13 @@ void APokemonFollower::FindEyeMaterials()
 	{
 		return;
 	}
-	// Emplacements EyeL, EyeR, Eye... : leur matériau « yeux fermés » s'appelle <matériau>_Closed, à côté de lui
+	// Le matériau « yeux fermés » d'un emplacement s'appelle <matériau>_Closed, à côté de lui.
+	// Les matériaux des modèles s'appellent M_Pikachu_1, _2... : on essaie chaque emplacement.
 	const TArray<FSkeletalMaterial>& Materials = Asset->GetMaterials();
 	for (int32 Index = 0; Index < Materials.Num(); ++Index)
 	{
-		const FString Slot = Materials[Index].MaterialSlotName.ToString();
 		const UMaterialInterface* Material = Materials[Index].MaterialInterface;
-		if (!Material || !Slot.Contains(TEXT("Eye")) || Slot.Contains(TEXT("Iris")))
+		if (!Material)
 		{
 			continue;
 		}
@@ -1309,6 +1400,11 @@ void APokemonFollower::FindEyeMaterials()
 			ClosedEyeSlots.Add(Index);
 			ClosedEyeMaterials.Add(Closed);
 		}
+	}
+	if (ClosedEyeSlots.Num() == 0)
+	{
+		UE_LOG(LogPokemonFollower, Warning, TEXT("%s : pas de matériau « yeux fermés » (<matériau>_Closed). Lancer Tools/Pokemon/setup_follower_assets.py dans Unreal."),
+			*Species.ToString());
 	}
 }
 

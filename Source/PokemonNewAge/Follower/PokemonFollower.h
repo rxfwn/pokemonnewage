@@ -217,6 +217,24 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower", meta=(ClampMin=0, Units="cm"))
 	float MaxDisplayHeight = 0.f;
 
+	/** Tous les Pokémon qui suivent sont un peu plus grands que dans le Pokédex (1,05 = +5 %), pour mieux les voir sur la carte */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower", meta=(ClampMin=0.1))
+	float SizeMultiplier = 1.05f;
+
+	// ------------------------------------------------ Animation
+
+	/** Fondu entre deux animations (attente, marche, course, joie) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Animation", meta=(ClampMin=0.01, Units="s"))
+	float MoveBlendTime = 0.25f;
+
+	/** Fondu plus lent pour se coucher et se relever */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Animation", meta=(ClampMin=0.01, Units="s"))
+	float SleepBlendTime = 0.8f;
+
+	/** Au réveil, il reste sur place ce temps (il se relève) avant de repartir */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Animation", meta=(ClampMin=0, Units="s"))
+	float WakeUpTime = 0.9f;
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -293,11 +311,17 @@ private:
 	bool IsFlyer() const { return FollowMode == EFollowMode::Fly || FollowMode == EFollowMode::Float; }
 
 	// Tous les joueurs : animation d'après la vitesse, effets
-	void UpdateAnimation();
+	void UpdateAnimation(float DeltaSeconds);
+	/** Vitesse du sol à laquelle l'animation de marche (ou course) ne glisse pas, à vitesse de lecture 1 */
+	float GetAnimGaitSpeed(bool bRun) const;
+	/** Mesure cette vitesse sur l'animation : le pied posé recule à la vitesse du sol */
+	void MeasureGait(float DeltaSeconds, const TArray<FVector>& FeetLocal);
+	/** Serveur : sort du sommeil (il se relève avant de repartir) */
+	void WakeUp();
 	void UpdateEffects(float DeltaSeconds);
 	/** Pose les pieds sur le sol à chaque image (d'après les os des pieds de l'animation) */
 	void UpdateGrounding(float DeltaSeconds);
-	void FindFootBones(const USkeletalMesh* Asset);
+	void FindFootBones(const USkeletalMesh* Asset, float BottomZ, float Height);
 	/** Serveur : disparition, avec la raison dans le Journal de sortie (Output Log) */
 	void TeleportBecause(const TCHAR* Reason);
 	void UpdateSleepEffects(float DeltaSeconds, bool bAsleep);
@@ -307,8 +331,6 @@ private:
 	void UpdateSparkles(float DeltaSeconds);
 	void ApplyModelScale(float Factor);
 	FVector GetBodyPoint(FName Socket, float HeightRatio) const;
-	enum class EAnimState : uint8 { None, Idle, Walk, Run, Happy, Sleep };
-	void PlayState(EAnimState State, float PlayRate);
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequence> IdleAnim;
@@ -325,11 +347,16 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequence> SleepAnim;
 
-	UPROPERTY(Transient)
-	TObjectPtr<UAnimSequence> PlayingAnim;
-
-	EAnimState CurrentAnim = EAnimState::None;
 	float HappyTimeLeft = 0.f;
+	bool bRestartHappy = false;
+	/** Pose à l'image précédente (fondu lent quand il se couche ou se relève) */
+	EFollowerPose AnimPose = EFollowerPose::None;
+	float SlowBlendTimeLeft = 0.f;
+	/** Vitesses mesurées sur les animations (0 = pas encore mesurée : celle d'après la taille) */
+	float MeasuredWalkSpeed = 0.f;
+	float MeasuredRunSpeed = 0.f;
+	TArray<FVector> PreviousFeetLocal;
+	int32 PreviousLowestFoot = INDEX_NONE;
 
 	// Tous les joueurs : effets
 	/** Échelle du modèle (taille réelle ou réduite) et sa hauteur affichée */
@@ -395,6 +422,8 @@ private:
 	/** Positions des pieds du joueur, pour contourner un mur par son chemin */
 	TArray<FVector> Trail;
 	float StuckTimer = 0.f;
+	/** Il se relève (réveil) : immobile encore ce temps */
+	float WakeTimeLeft = 0.f;
 	/** Bloqué une fois : il passe par le chemin du joueur pendant ce temps avant d'abandonner */
 	float ForceTrailTimeLeft = 0.f;
 	float BobTime = 0.f;
