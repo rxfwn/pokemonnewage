@@ -55,6 +55,8 @@ def constant(material, value, x, y):
 
 def make_eye_material():
     material = new_material("M_PokemonEyeExpression")
+    # Les surfaces des yeux peuvent être retournées (vues de dos) : sans « deux faces », on voit le trou derrière
+    material.set_editor_property("two_sided", True)
     coords = mel.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate, -900, 0)
     offset = mel.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -900, 150)
     offset.set_editor_property("parameter_name", "EyeUVOffset")
