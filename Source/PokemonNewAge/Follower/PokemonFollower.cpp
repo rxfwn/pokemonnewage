@@ -22,6 +22,8 @@ namespace PokemonFollower
 	constexpr float PlaceholderDiameter = 50.f;
 	/** Rayon approximatif du joueur, pour ne pas lui marcher dans les talons */
 	constexpr float LeaderRadius = 40.f;
+	/** Le joueur est arrêté en dessous de cette vitesse (cm/s) */
+	constexpr float LeaderStillSpeed = 20.f;
 	/** Un point du chemin du joueur tous les... (cm) */
 	constexpr float TrailSpacing = 20.f;
 	constexpr int32 MaxTrailPoints = 150;
@@ -77,12 +79,12 @@ APokemonFollower::APokemonFollower()
 	Move->bRunPhysicsWithNoController = true;
 	Move->bOrientRotationToMovement = false;
 	Move->bUseControllerDesiredRotation = false;
-	Move->MaxWalkSpeed = WalkSpeed;
-	Move->MaxFlySpeed = WalkSpeed;
-	Move->MaxAcceleration = 1600.f;
-	Move->BrakingDecelerationWalking = 1400.f;
+	// Démarrages et arrêts progressifs, comme un animal (pas une glissade instantanée)
+	Move->MaxAcceleration = 900.f;
+	Move->BrakingDecelerationWalking = 900.f;
+	Move->GroundFriction = 6.f;
 	// Sans freinage en vol, il glisserait sans fin
-	Move->BrakingDecelerationFlying = 1400.f;
+	Move->BrakingDecelerationFlying = 700.f;
 	Move->NavAgentProps.bCanFly = true;
 }
 
@@ -92,6 +94,7 @@ void APokemonFollower::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(APokemonFollower, Species);
 	DOREPLIFETIME(APokemonFollower, FollowMode);
 	DOREPLIFETIME(APokemonFollower, Leader);
+	DOREPLIFETIME(APokemonFollower, Pose);
 }
 
 void APokemonFollower::BeginPlay()
@@ -144,7 +147,7 @@ void APokemonFollower::LoadModel()
 	LoadedSpecies = Species;
 	const FString Id = Species.ToString();
 
-	IdleAnim = WalkAnim = RunAnim = HappyAnim = PlayingAnim = nullptr;
+	IdleAnim = WalkAnim = RunAnim = HappyAnim = SleepAnim = PlayingAnim = nullptr;
 	CurrentAnim = EAnimState::None;
 
 	USkeletalMeshComponent* Skeletal = GetMesh();
@@ -161,6 +164,7 @@ void APokemonFollower::LoadModel()
 		WalkAnim = Cast<UAnimSequence>(LoadModelAsset(Id, FString::Printf(TEXT("A_%s_Walk"), *Id)));
 		RunAnim = Cast<UAnimSequence>(LoadModelAsset(Id, FString::Printf(TEXT("A_%s_Run"), *Id)));
 		HappyAnim = Cast<UAnimSequence>(LoadModelAsset(Id, FString::Printf(TEXT("A_%s_Happy"), *Id)));
+		SleepAnim = Cast<UAnimSequence>(LoadModelAsset(Id, FString::Printf(TEXT("A_%s_Sleep"), *Id)));
 	}
 	else
 	{
@@ -189,6 +193,17 @@ void APokemonFollower::LoadModel()
 	BodyRadius = FMath::Min(FMath::Max(Extent.X, Extent.Y) * Scale, 300.f);
 	GetCapsuleComponent()->SetCapsuleSize(Radius, HalfHeight);
 
+	// Démarche : un petit Pokémon fait de petits pas, il doit trottiner pour suivre un humain
+	const float HeightMeters = Height * Scale / 100.f;
+	WalkGaitSpeed = FMath::Clamp(HeightMeters * WalkSpeedPerMeter, static_cast<float>(WalkSpeedRange.X), static_cast<float>(WalkSpeedRange.Y));
+	RunGaitSpeed = FMath::Clamp(HeightMeters * RunSpeedPerMeter, static_cast<float>(RunSpeedRange.X), static_cast<float>(RunSpeedRange.Y));
+	if (const FVector2D* Override = SpeedOverrides.Find(Species))
+	{
+		WalkGaitSpeed = FMath::Max(static_cast<float>(Override->X), 30.f);
+		RunGaitSpeed = FMath::Max(static_cast<float>(Override->Y), WalkGaitSpeed);
+	}
+	RunGaitSpeed = FMath::Max(RunGaitSpeed, WalkGaitSpeed * 1.5f);
+
 	// Pieds du modèle (Z = 0 dans le mesh) en bas de la capsule
 	const FVector MeshOffset(0.f, 0.f, -HalfHeight);
 	Skeletal->SetRelativeScale3D(FVector(Scale));
@@ -207,7 +222,7 @@ void APokemonFollower::LoadModel()
 	CacheInitialMeshOffset(MeshOffset, ModelRotation);
 }
 
-// ---------------------------------------------------------------- Déplacement (serveur)
+// ---------------------------------------------------------------- Boucle
 
 void APokemonFollower::Tick(float DeltaSeconds)
 {
@@ -215,14 +230,16 @@ void APokemonFollower::Tick(float DeltaSeconds)
 
 	if (HasAuthority())
 	{
-		UpdateFollow(DeltaSeconds);
+		UpdateBehavior(DeltaSeconds);
 	}
 	if (GetNetMode() != NM_DedicatedServer)
 	{
-		UpdateAnimation(DeltaSeconds);
+		UpdateAnimation();
 	}
 	HappyTimeLeft = FMath::Max(HappyTimeLeft - DeltaSeconds, 0.f);
 }
+
+// ---------------------------------------------------------------- Outils (serveur)
 
 FVector APokemonFollower::GetLeaderFeet() const
 {
@@ -233,6 +250,11 @@ FVector APokemonFollower::GetLeaderFeet() const
 	float Radius = 0.f, HalfHeight = 0.f;
 	Leader->GetSimpleCollisionCylinder(Radius, HalfHeight);
 	return Leader->GetActorLocation() - FVector(0.f, 0.f, HalfHeight);
+}
+
+float APokemonFollower::GetLeaderYaw() const
+{
+	return Leader ? Leader->GetActorRotation().Yaw : GetActorRotation().Yaw;
 }
 
 void APokemonFollower::RecordTrail()
@@ -288,51 +310,133 @@ bool APokemonFollower::FindGround(const FVector& Around, float& OutGroundZ) cons
 	return false;
 }
 
-FVector APokemonFollower::GetDesiredLocation() const
+bool APokemonFollower::IsReachable(const FVector& Target) const
+{
+	// Ligne droite libre (pas de mur ni de rocher entre lui et le point), à mi-hauteur de son corps
+	FCollisionObjectQueryParams Objects;
+	Objects.AddObjectTypesToQuery(ECC_WorldStatic);
+	Objects.AddObjectTypesToQuery(ECC_WorldDynamic);
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(PokemonFollowerPath), false, this);
+	Params.AddIgnoredActor(Leader.Get());
+	FVector To = Target;
+	if (!IsFlyer())
+	{
+		float GroundZ = Target.Z;
+		FindGround(Target, GroundZ);
+		To.Z = GroundZ + GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	}
+	return !GetWorld()->LineTraceTestByObjectType(GetActorLocation(), To, Objects, Params);
+}
+
+FVector APokemonFollower::ToFlightHeight(const FVector& Spot) const
 {
 	const float HalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 	const float Bob = BobAmplitude * FMath::Sin(BobTime * BobFrequency * UE_TWO_PI);
-
-	if (FollowMode == EFollowMode::Fly)
-	{
-		// À côté du joueur, un peu en arrière, à hauteur d'épaule
-		const FVector Feet = GetLeaderFeet();
-		const FRotator Yaw(0.f, Leader ? Leader->GetActorRotation().Yaw : GetActorRotation().Yaw, 0.f);
-		const FVector Forward = Yaw.Vector();
-		const FVector Right = FRotationMatrix(Yaw).GetUnitAxis(EAxis::Y);
-		FVector Spot = Feet - Forward * (FlyBackOffset + BodyRadius * 0.5f) + Right * (FlySideOffset + BodyRadius);
-		Spot.Z = Feet.Z + FMath::Max(FlyHeight, HalfHeight + 20.f) + Bob;
-		float GroundZ = 0.f;
-		if (FindGround(Spot, GroundZ))
-		{
-			Spot.Z = FMath::Max<double>(Spot.Z, GroundZ + HalfHeight + 30.f);
-		}
-		return Spot;
-	}
-
-	// Dans les pas du joueur
-	FVector Spot = GetTrailPoint(FollowDistance + BodyRadius + PokemonFollower::LeaderRadius);
+	FVector Result = Spot;
+	float GroundZ = Spot.Z;
+	const bool bGround = FindGround(Spot, GroundZ);
 	if (FollowMode == EFollowMode::Float)
 	{
-		float GroundZ = Spot.Z;
-		FindGround(Spot, GroundZ);
-		Spot.Z = GroundZ + FloatHeight + HalfHeight + Bob;
+		Result.Z = GroundZ + FloatHeight + HalfHeight + Bob;
 	}
-	return Spot;
-}
-
-void APokemonFollower::FaceTowards(const FVector& Target, float DeltaSeconds, float Speed)
-{
-	const FVector Direction = (Target - GetActorLocation()).GetSafeNormal2D();
-	if (Direction.IsNearlyZero())
+	else
 	{
-		return;
+		Result.Z = GetLeaderFeet().Z + FMath::Max(FlyHeight, HalfHeight + 20.f) + Bob;
+		if (bGround)
+		{
+			Result.Z = FMath::Max<double>(Result.Z, GroundZ + HalfHeight + 30.f);
+		}
 	}
-	const FRotator Wanted(0.f, Direction.Rotation().Yaw, 0.f);
-	SetActorRotation(FMath::RInterpTo(GetActorRotation(), Wanted, DeltaSeconds, Speed));
+	return Result;
 }
 
-void APokemonFollower::UpdateFollow(float DeltaSeconds)
+bool APokemonFollower::TurnTowardsYaw(float Yaw, float DeltaSeconds)
+{
+	const float Current = GetActorRotation().Yaw;
+	const float NewYaw = FMath::FixedTurn(Current, Yaw, TurnRate * DeltaSeconds);
+	SetActorRotation(FRotator(0.f, NewYaw, 0.f));
+	return FMath::Abs(FMath::FindDeltaAngleDegrees(NewYaw, Yaw)) < 5.f;
+}
+
+bool APokemonFollower::MoveTowards(const FVector& Target, float Speed, float AcceptRadius, float DeltaSeconds)
+{
+	FVector ToTarget = Target - GetActorLocation();
+	if (!IsFlyer())
+	{
+		ToTarget.Z = 0.f;
+	}
+	const float Distance = ToTarget.Size();
+	if (Distance < AcceptRadius)
+	{
+		StuckTimer = 0.f;
+		return true;
+	}
+
+	// Il tourne d'abord, puis avance droit devant lui : des courbes, pas de glissade de côté
+	const FVector Direction2D = ToTarget.GetSafeNormal2D();
+	if (!Direction2D.IsNearlyZero())
+	{
+		TurnTowardsYaw(Direction2D.Rotation().Yaw, DeltaSeconds);
+	}
+	const FVector Forward = GetActorForwardVector().GetSafeNormal2D();
+	const float Facing = Direction2D.IsNearlyZero() ? 1.f : FVector::DotProduct(Forward, Direction2D);
+
+	UCharacterMovementComponent* Move = GetCharacterMovement();
+	Move->MaxWalkSpeed = Speed;
+	Move->MaxFlySpeed = Speed;
+	float Push = 0.f;
+	if (IsFlyer())
+	{
+		// En l'air il peut se décaler un peu de côté, et monter ou descendre
+		Push = FMath::Clamp((Facing + 0.5f) / 1.5f, 0.2f, 1.f);
+		AddMovementInput(ToTarget / Distance, Push);
+	}
+	else
+	{
+		Push = FMath::Clamp((Facing - 0.3f) / 0.7f, 0.f, 1.f);
+		if (Push > 0.f)
+		{
+			AddMovementInput(Forward, Push);
+		}
+	}
+
+	// Il veut avancer mais ne bouge pas : coincé
+	if (Push > 0.5f && GetVelocity().Size() < 20.f)
+	{
+		StuckTimer += DeltaSeconds;
+	}
+	else
+	{
+		StuckTimer = 0.f;
+	}
+	return false;
+}
+
+void APokemonFollower::StopMoving()
+{
+	// Pas d'entrée : le mouvement freine tout seul (BrakingDeceleration)
+	StuckTimer = 0.f;
+}
+
+void APokemonFollower::PickFollowSpot()
+{
+	if (FollowMode == EFollowMode::Fly)
+	{
+		// Un volant reste plutôt sur un côté du joueur
+		const float Side = FMath::RandBool() ? 1.f : -1.f;
+		SpotAngle = Side * FMath::FRandRange(55.f, 120.f);
+	}
+	else
+	{
+		SpotAngle = FMath::FRandRange(-SideAngle, SideAngle);
+	}
+	SpotDistance = FMath::FRandRange(MinDistance, FMath::Max(MinDistance, ComfortDistance * 0.85f));
+	ReplanTimeLeft = FMath::FRandRange(ReplanInterval.X, ReplanInterval.Y);
+}
+
+// ---------------------------------------------------------------- Comportement (serveur)
+
+void APokemonFollower::UpdateBehavior(float DeltaSeconds)
 {
 	if (!Leader)
 	{
@@ -350,53 +454,247 @@ void APokemonFollower::UpdateFollow(float DeltaSeconds)
 		return;
 	}
 
-	// Pendant sa joie (caresse), il reste sur place
+	// Pendant sa joie (caresse), il reste sur place, tourné vers le joueur
 	if (HappyTimeLeft > 0.f)
 	{
-		FaceTowards(LeaderLocation, DeltaSeconds, 6.f);
+		StopMoving();
+		TurnTowardsYaw((LeaderLocation - Location).GetSafeNormal2D().Rotation().Yaw, DeltaSeconds);
 		return;
 	}
 
-	FVector ToTarget = GetDesiredLocation() - Location;
-	if (!IsFlyer())
-	{
-		ToTarget.Z = 0.f;
-	}
-	const float Distance = ToTarget.Size();
 	const float LeaderSpeed = Leader->GetVelocity().Size2D();
-	const float ArriveDistance = IsFlyer() ? 15.f : 25.f;
+	LeaderIdleTime = LeaderSpeed > PokemonFollower::LeaderStillSpeed ? 0.f : LeaderIdleTime + DeltaSeconds;
+	const float Distance = FVector::Dist2D(Location, LeaderLocation);
 
-	UCharacterMovementComponent* Move = GetCharacterMovement();
-	if (Distance > ArriveDistance)
+	if (LeaderIdleTime <= 0.f || Distance > MaxDistance + BodyRadius)
 	{
-		// Va à la vitesse du joueur, plus vite s'il est en retard
-		const float Speed = FMath::Clamp(LeaderSpeed + (Distance - ArriveDistance) * 2.f, 80.f, RunSpeed);
-		Move->MaxWalkSpeed = Speed;
-		Move->MaxFlySpeed = Speed;
-		AddMovementInput(ToTarget / Distance, 1.f);
-
-		const FVector Velocity = GetVelocity();
-		FaceTowards(Location + (Velocity.SizeSquared2D() > FMath::Square(30.f) ? Velocity : ToTarget), DeltaSeconds, 10.f);
-	}
-	else if (LeaderSpeed < 10.f)
-	{
-		// Arrivé et le joueur s'est arrêté : il se tourne vers lui
-		FaceTowards(LeaderLocation, DeltaSeconds, 3.f);
-	}
-
-	// Coincé (mur, falaise, eau) : il réapparaît derrière le joueur
-	if (Distance > 300.f && GetVelocity().Size() < 40.f)
-	{
-		StuckTimer += DeltaSeconds;
-		if (StuckTimer > StuckTime)
+		// Le joueur repart (ou il est trop loin) : il se réveille et le suit
+		Pose = EFollowerPose::None;
+		if (Behavior != EBehavior::Follow)
 		{
-			TeleportBehindLeader();
+			Behavior = EBehavior::Follow;
+			PickFollowSpot();
 		}
+		UpdateFollow(DeltaSeconds, Distance);
+	}
+	else if (LeaderIdleTime < IdleDelay && Behavior == EBehavior::Follow)
+	{
+		// Le joueur vient de s'arrêter : il finit d'arriver à sa place
+		UpdateFollow(DeltaSeconds, Distance);
 	}
 	else
 	{
-		StuckTimer = 0.f;
+		UpdateIdle(DeltaSeconds);
 	}
+}
+
+void APokemonFollower::UpdateFollow(float DeltaSeconds, float DistanceToLeader)
+{
+	ReplanTimeLeft -= DeltaSeconds;
+	if (ReplanTimeLeft <= 0.f)
+	{
+		PickFollowSpot();
+	}
+
+	const float LeaderSpeed = Leader->GetVelocity().Size2D();
+	const bool bLeaderMoving = LeaderSpeed > PokemonFollower::LeaderStillSpeed;
+	const float Reach = BodyRadius + PokemonFollower::LeaderRadius;
+
+	// Il ne repart que quand le joueur sort de sa zone de confort (ou s'il est trop collé à lui)
+	if (!bCatchingUp && (DistanceToLeader > ComfortDistance + Reach || DistanceToLeader < MinDistance * 0.6f + Reach))
+	{
+		bCatchingUp = true;
+	}
+	if (!bCatchingUp)
+	{
+		StopMoving();
+		// Il regarde le joueur, sans tourner la tête au moindre pas
+		const float ToLeaderYaw = (Leader->GetActorLocation() - GetActorLocation()).GetSafeNormal2D().Rotation().Yaw;
+		if (FMath::Abs(FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw, ToLeaderYaw)) > 45.f)
+		{
+			TurnTowardsYaw(ToLeaderYaw, DeltaSeconds);
+		}
+		return;
+	}
+
+	// Sa place autour du joueur
+	const FRotator SpotRotation(0.f, GetLeaderYaw() + 180.f + SpotAngle, 0.f);
+	FVector Spot = GetLeaderFeet() + SpotRotation.Vector() * (SpotDistance + Reach);
+	if (!IsReachable(IsFlyer() ? ToFlightHeight(Spot) : Spot))
+	{
+		// Mur ou rocher sur la route : il passe par où le joueur est passé
+		Spot = GetTrailPoint(SpotDistance + Reach);
+	}
+	if (IsFlyer())
+	{
+		Spot = ToFlightHeight(Spot);
+	}
+
+	// Vitesse : celle du joueur, plus son retard ; il court au-delà de MaxDistance
+	FVector ToSpot = Spot - GetActorLocation();
+	if (!IsFlyer())
+	{
+		ToSpot.Z = 0.f;
+	}
+	const float SpotDistanceNow = ToSpot.Size();
+	if (DistanceToLeader > MaxDistance + Reach)
+	{
+		bRunning = true;
+	}
+	else if (DistanceToLeader < ComfortDistance + Reach)
+	{
+		bRunning = false;
+	}
+	const float MinSpeed = WalkGaitSpeed * static_cast<float>(PlayRateRange.X);
+	const float MaxSpeed = RunGaitSpeed * static_cast<float>(PlayRateRange.Y);
+	float Speed = FMath::Clamp(LeaderSpeed + SpotDistanceNow * 1.5f, MinSpeed, MaxSpeed);
+	if (bRunning)
+	{
+		Speed = FMath::Clamp(FMath::Max(Speed, RunGaitSpeed), RunGaitSpeed, MaxSpeed);
+	}
+
+	const bool bArrived = MoveTowards(Spot, Speed, 35.f, DeltaSeconds);
+	if (bArrived && !bLeaderMoving)
+	{
+		// Arrivé et le joueur est arrêté : il se pose
+		bCatchingUp = false;
+		bRunning = false;
+	}
+
+	if (StuckTimer > StuckTime)
+	{
+		StuckTimer = 0.f;
+		if (DistanceToLeader > ComfortDistance + Reach)
+		{
+			TeleportBehindLeader();
+		}
+		else
+		{
+			// Assez près quand même : il renonce à cette place
+			bCatchingUp = false;
+			PickFollowSpot();
+		}
+	}
+}
+
+void APokemonFollower::UpdateIdle(float DeltaSeconds)
+{
+	switch (Behavior)
+	{
+	case EBehavior::Follow:
+		// Il vient de s'arrêter : une petite pause avant de faire sa vie
+		bCatchingUp = false;
+		bRunning = false;
+		Behavior = EBehavior::Pause;
+		ActionTimeLeft = FMath::FRandRange(PauseDuration.X, PauseDuration.Y) * 0.5f;
+		break;
+
+	case EBehavior::Pause:
+		StopMoving();
+		if (FollowMode == EFollowMode::Walk && SleepAnim && SleepAfter > 0.f && LeaderIdleTime > SleepAfter)
+		{
+			Pose = EFollowerPose::Sleep;
+		}
+		if (Pose == EFollowerPose::Sleep)
+		{
+			return;
+		}
+		ActionTimeLeft -= DeltaSeconds;
+		if (ActionTimeLeft <= 0.f)
+		{
+			ChooseIdleAction();
+		}
+		break;
+
+	case EBehavior::LookAround:
+		StopMoving();
+		if (TurnTowardsYaw(LookYaw, DeltaSeconds * 0.5f))
+		{
+			ActionTimeLeft -= DeltaSeconds;
+			if (ActionTimeLeft <= 0.f)
+			{
+				Behavior = EBehavior::Pause;
+				ActionTimeLeft = FMath::FRandRange(PauseDuration.X, PauseDuration.Y);
+			}
+		}
+		break;
+
+	case EBehavior::Wander:
+	{
+		const FVector Target = IsFlyer() ? ToFlightHeight(WanderTarget) + FVector(0.f, 0.f, WanderHeightOffset) : WanderTarget;
+		const float Speed = bRunning ? RunGaitSpeed : WalkGaitSpeed;
+		if (MoveTowards(Target, Speed, 35.f, DeltaSeconds) || StuckTimer > StuckTime)
+		{
+			StuckTimer = 0.f;
+			bRunning = false;
+			Behavior = EBehavior::Pause;
+			ActionTimeLeft = FMath::FRandRange(PauseDuration.X, PauseDuration.Y);
+		}
+		break;
+	}
+	}
+}
+
+void APokemonFollower::ChooseIdleAction()
+{
+	const FVector Feet = GetLeaderFeet();
+	const FVector Location = GetActorLocation();
+	const float Distance = FVector::Dist2D(Location, Feet);
+	const float Roll = FMath::FRand();
+	const float Reach = BodyRadius + PokemonFollower::LeaderRadius;
+
+	// Une balade : vers un point au hasard autour du joueur (ou retour près de lui s'il s'est éloigné)
+	const bool bGoBack = Distance > ComfortDistance + Reach && Roll < 0.6f;
+	if (bGoBack || Roll < 0.45f)
+	{
+		for (int32 Attempt = 0; Attempt < 6; ++Attempt)
+		{
+			const float Angle = FMath::FRandRange(0.f, 360.f);
+			const float Radius = bGoBack ? FMath::FRandRange(MinDistance, ComfortDistance) : FMath::FRandRange(MinDistance, WanderRadius);
+			FVector Candidate = Feet + FRotator(0.f, Angle, 0.f).Vector() * (Radius + Reach);
+			float GroundZ = Candidate.Z;
+			if (!FindGround(Candidate, GroundZ))
+			{
+				continue;
+			}
+			// Pas en bas d'une falaise ni en haut d'un talus
+			if (!IsFlyer() && FMath::Abs(GroundZ - Feet.Z) > 120.f)
+			{
+				continue;
+			}
+			Candidate.Z = GroundZ;
+			if (!IsReachable(IsFlyer() ? ToFlightHeight(Candidate) : Candidate))
+			{
+				continue;
+			}
+			WanderTarget = Candidate;
+			// Un volant monte ou descend un peu en se baladant
+			WanderHeightOffset = IsFlyer() ? FMath::FRandRange(-40.f, 60.f) : 0.f;
+			bRunning = !bGoBack && FMath::FRand() < 0.15f;
+			Behavior = EBehavior::Wander;
+			return;
+		}
+	}
+
+	if (Roll < 0.85f)
+	{
+		// Regarde autour de lui, ou se tourne vers le joueur
+		const float ToLeaderYaw = (Feet - Location).GetSafeNormal2D().Rotation().Yaw;
+		LookYaw = Roll < 0.7f
+			? GetActorRotation().Yaw + (FMath::RandBool() ? 1.f : -1.f) * FMath::FRandRange(50.f, 150.f)
+			: ToLeaderYaw;
+		ActionTimeLeft = FMath::FRandRange(1.f, 3.f);
+		Behavior = EBehavior::LookAround;
+		return;
+	}
+
+	// Un moment de joie
+	if (HappyAnim)
+	{
+		MulticastPlayHappy();
+	}
+	Behavior = EBehavior::Pause;
+	ActionTimeLeft = FMath::FRandRange(PauseDuration.X, PauseDuration.Y);
 }
 
 void APokemonFollower::TeleportBehindLeader()
@@ -407,23 +705,27 @@ void APokemonFollower::TeleportBehindLeader()
 	}
 	const FVector Feet = GetLeaderFeet();
 	const float HalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-	const FRotator Rotation(0.f, Leader->GetActorRotation().Yaw, 0.f);
+	const FRotator Rotation(0.f, GetLeaderYaw(), 0.f);
 
 	Trail.Reset();
 	Trail.Add(Feet);
 	StuckTimer = 0.f;
+	bCatchingUp = false;
+	bRunning = false;
+	Behavior = EBehavior::Follow;
+	Pose = EFollowerPose::None;
+	PickFollowSpot();
 
-	FVector Spot;
-	if (FollowMode == EFollowMode::Fly)
+	FVector Spot = Feet - Rotation.Vector() * (SpotDistance + BodyRadius + PokemonFollower::LeaderRadius);
+	if (IsFlyer())
 	{
-		Spot = GetDesiredLocation();
+		Spot = ToFlightHeight(Spot);
 	}
 	else
 	{
-		Spot = Feet - Rotation.Vector() * (FollowDistance + BodyRadius + PokemonFollower::LeaderRadius);
 		float GroundZ = Feet.Z;
 		FindGround(Spot, GroundZ);
-		Spot.Z = GroundZ + HalfHeight + (FollowMode == EFollowMode::Float ? FloatHeight : 2.f);
+		Spot.Z = GroundZ + HalfHeight + 2.f;
 	}
 
 	if (!TeleportTo(Spot, Rotation, false, false))
@@ -469,6 +771,11 @@ void APokemonFollower::Pet(APawn* ByPawn)
 			SetActorRotation(FRotator(0.f, Direction.Rotation().Yaw, 0.f));
 		}
 	}
+	// Réveillé par la caresse
+	Pose = EFollowerPose::None;
+	LeaderIdleTime = 0.f;
+	Behavior = EBehavior::Pause;
+	ActionTimeLeft = FMath::FRandRange(PauseDuration.X, PauseDuration.Y);
 	GetCharacterMovement()->StopMovementImmediately();
 	MulticastPlayHappy();
 }
@@ -486,8 +793,13 @@ void APokemonFollower::MulticastPlayHappy_Implementation()
 
 // ---------------------------------------------------------------- Animation (tous les joueurs)
 
-void APokemonFollower::UpdateAnimation(float DeltaSeconds)
+void APokemonFollower::UpdateAnimation()
 {
+	if (Pose == EFollowerPose::Sleep && SleepAnim)
+	{
+		PlayState(EAnimState::Sleep, 1.f);
+		return;
+	}
 	if (HappyTimeLeft > 0.f && HappyAnim)
 	{
 		PlayState(EAnimState::Happy, 1.f);
@@ -496,17 +808,22 @@ void APokemonFollower::UpdateAnimation(float DeltaSeconds)
 
 	const FVector Velocity = GetVelocity();
 	const float Speed = IsFlyer() ? Velocity.Size() : Velocity.Size2D();
-	if (Speed < 20.f)
+	const float MinRate = IsFlyer() ? FMath::Max(static_cast<float>(PlayRateRange.X), 0.8f) : static_cast<float>(PlayRateRange.X);
+	const float MaxRate = IsFlyer() ? FMath::Min(static_cast<float>(PlayRateRange.Y), 1.4f) : static_cast<float>(PlayRateRange.Y);
+
+	// Démarche choisie d'après la vitesse réelle, et jouée au rythme du sol (les pattes ne glissent pas)
+	const float RunThreshold = FMath::Sqrt(WalkGaitSpeed * RunGaitSpeed);
+	if (Speed < 15.f)
 	{
 		PlayState(EAnimState::Idle, 1.f);
 	}
-	else if (Speed > RunAnimationSpeed && RunAnim)
+	else if (Speed > RunThreshold && RunAnim)
 	{
-		PlayState(EAnimState::Run, FMath::Clamp(Speed / RunSpeed * 1.2f, 0.7f, 1.5f));
+		PlayState(EAnimState::Run, FMath::Clamp(Speed / RunGaitSpeed, MinRate, MaxRate));
 	}
 	else
 	{
-		PlayState(EAnimState::Walk, FMath::Clamp(Speed / WalkSpeed, 0.5f, 1.6f));
+		PlayState(EAnimState::Walk, FMath::Clamp(Speed / WalkGaitSpeed, MinRate, MaxRate));
 	}
 }
 
@@ -525,6 +842,7 @@ void APokemonFollower::PlayState(EAnimState State, float PlayRate)
 		switch (State)
 		{
 		case EAnimState::Happy: Anim = HappyAnim; break;
+		case EAnimState::Sleep: Anim = SleepAnim; break;
 		case EAnimState::Run: Anim = RunAnim ? RunAnim : WalkAnim; break;
 		case EAnimState::Walk: Anim = WalkAnim; break;
 		default: break;
@@ -539,5 +857,5 @@ void APokemonFollower::PlayState(EAnimState State, float PlayRate)
 			PlayingAnim = Anim;
 		}
 	}
-	Skeletal->SetPlayRate(PlayingAnim == IdleAnim ? 1.f : PlayRate);
+	Skeletal->SetPlayRate(PlayingAnim == IdleAnim || PlayingAnim == SleepAnim ? 1.f : PlayRate);
 }

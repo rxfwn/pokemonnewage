@@ -9,11 +9,23 @@
 class UAnimSequence;
 class UStaticMeshComponent;
 
+/** Pose longue jouée chez tous les joueurs (le reste se déduit de la vitesse) */
+UENUM()
+enum class EFollowerPose : uint8
+{
+	None,
+	Sleep
+};
+
 /**
- *  Le Pokémon de tête de l'équipe, qui suit son dresseur hors combat (SCRUM-78, docs/POKEMON_QUI_SUIT.md).
- *  - Walk : marche dans les pas du joueur (il suit le chemin du joueur, pas la ligne droite).
- *  - Fly : vole à côté du joueur, à hauteur d'épaule, en ondulant un peu.
- *  - Float : flotte juste au-dessus du sol, dans les pas du joueur (Fantominus, Smogo, Magnéti...).
+ *  Le Pokémon de tête de l'équipe, qui accompagne son dresseur hors combat (SCRUM-78, docs/POKEMON_QUI_SUIT.md).
+ *  Il a son propre petit comportement au lieu de marcher dans les pas du joueur :
+ *  - le joueur bouge : il choisit une place autour de lui (derrière, un peu sur le côté) entre MinDistance
+ *    et ComfortDistance, ne repart que quand le joueur s'éloigne, et change de place de temps en temps ;
+ *    il marche ou court selon le retard (vitesse de démarche calculée d'après sa taille), tourne avant d'avancer ;
+ *  - le joueur s'arrête : il se balade autour de lui, s'arrête, regarde autour, revient le voir,
+ *    et finit par s'endormir s'il a une animation de sommeil.
+ *  Fly : mêmes règles, en l'air à côté du joueur. Float : au ras du sol.
  *  Créé et déplacé par le serveur (UPokemonFollowerComponent), vu par tous les joueurs du monde.
  *  Il ne bloque ni les joueurs ni la caméra. Coincé ou trop loin : il réapparaît derrière le joueur.
  *  Touche d'action (E) devant lui : il se tourne vers le joueur et montre sa joie.
@@ -50,35 +62,87 @@ public:
 	/** Serveur : se tourne vers ce pion et montre sa joie, chez tous les joueurs */
 	void Pet(APawn* ByPawn);
 
-	// ------------------------------------------------ Réglages (un Blueprint enfant peut les changer)
+	// ------------------------------------------------ Distances
 
-	/** Distance derrière le joueur, mesurée sur son chemin (en plus de la taille des deux) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower", meta=(ClampMin=50, Units="cm"))
-	float FollowDistance = 110.f;
+	/** Il ne s'approche pas plus près du joueur que ça */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Distance", meta=(ClampMin=50, Units="cm"))
+	float MinDistance = 120.f;
 
-	/** Vitesse de marche (le joueur marche à 250 cm/s) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower", meta=(ClampMin=50, Units="cm/s"))
-	float WalkSpeed = 270.f;
+	/** Tant qu'il est plus près que ça, il reste où il est (il ne repart pas au moindre pas du joueur) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Distance", meta=(ClampMin=100, Units="cm"))
+	float ComfortDistance = 260.f;
 
-	/** Vitesse maximale pour rattraper le joueur (il court à 500 cm/s) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower", meta=(ClampMin=100, Units="cm/s"))
-	float RunSpeed = 620.f;
+	/** Au-delà, il court pour rattraper le joueur */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Distance", meta=(ClampMin=200, Units="cm"))
+	float MaxDistance = 500.f;
 
-	/** Au-dessus de cette vitesse, animation de course (si le modèle en a une) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower", meta=(ClampMin=50, Units="cm/s"))
-	float RunAnimationSpeed = 380.f;
+	/** Plus loin que ça du joueur : il réapparaît derrière lui */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Distance", meta=(ClampMin=500, Units="cm"))
+	float TeleportDistance = 2500.f;
+
+	/** Côté où il se place : jusqu'à cet angle de part et d'autre de « juste derrière le joueur » */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Distance", meta=(ClampMin=0, ClampMax=180, Units="deg"))
+	float SideAngle = 75.f;
+
+	/** Il change de place autour du joueur toutes les... (au hasard entre les deux) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Distance", meta=(Units="s"))
+	FVector2D ReplanInterval = FVector2D(4.f, 9.f);
+
+	// ------------------------------------------------ Démarche
+
+	/**
+	 *  Vitesse de l'animation de marche jouée à vitesse normale, par mètre de taille du Pokémon.
+	 *  Pikachu (40 cm) marche à 100 cm/s, Bulbizarre (70 cm) à 175 cm/s. Les pattes vont au rythme du sol.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Demarche", meta=(ClampMin=50, Units="cm/s"))
+	float WalkSpeedPerMeter = 250.f;
+
+	/** Pareil pour la course : Pikachu court à 320 cm/s */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Demarche", meta=(ClampMin=100, Units="cm/s"))
+	float RunSpeedPerMeter = 800.f;
+
+	/** Bornes de ces vitesses (minimum, maximum) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Demarche")
+	FVector2D WalkSpeedRange = FVector2D(70.f, 260.f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Demarche")
+	FVector2D RunSpeedRange = FVector2D(240.f, 650.f);
+
+	/** Vitesses propres à une espèce (X = marche, Y = course, en cm/s), si le calcul par la taille ne va pas */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Demarche")
+	TMap<FName, FVector2D> SpeedOverrides;
+
+	/** Vitesse de rotation (il tourne avant d'avancer, au lieu de glisser de côté) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Demarche", meta=(ClampMin=30, Units="deg/s"))
+	float TurnRate = 300.f;
+
+	/** L'animation peut accélérer ou ralentir jusque-là pour coller à la vitesse réelle */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Demarche")
+	FVector2D PlayRateRange = FVector2D(0.6f, 1.8f);
+
+	// ------------------------------------------------ Quand le joueur ne bouge pas
+
+	/** Le joueur est immobile depuis ce temps : il commence à faire sa vie */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Balade", meta=(ClampMin=0, Units="s"))
+	float IdleDelay = 1.5f;
+
+	/** Il se balade jusqu'à cette distance du joueur */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Balade", meta=(ClampMin=100, Units="cm"))
+	float WanderRadius = 400.f;
+
+	/** Pause entre deux envies (au hasard entre les deux) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Balade", meta=(Units="s"))
+	FVector2D PauseDuration = FVector2D(2.f, 6.f);
+
+	/** Le joueur est immobile depuis ce temps : il s'endort (s'il a une animation Sleep). 0 = jamais */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Balade", meta=(ClampMin=0, Units="s"))
+	float SleepAfter = 45.f;
+
+	// ------------------------------------------------ Vol
 
 	/** Pokémon qui vole : hauteur du milieu de son corps au-dessus des pieds du joueur */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Vol", meta=(Units="cm"))
 	float FlyHeight = 150.f;
-
-	/** Pokémon qui vole : écart sur le côté droit du joueur */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Vol", meta=(Units="cm"))
-	float FlySideOffset = 120.f;
-
-	/** Pokémon qui vole : un peu en arrière du joueur */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Vol", meta=(Units="cm"))
-	float FlyBackOffset = 50.f;
 
 	/** Pokémon qui flotte : hauteur au-dessus du sol */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Vol", meta=(Units="cm"))
@@ -91,11 +155,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower|Vol")
 	float BobFrequency = 0.7f;
 
-	/** Plus loin que ça du joueur : il réapparaît derrière lui */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower", meta=(ClampMin=500, Units="cm"))
-	float TeleportDistance = 2500.f;
+	// ------------------------------------------------ Divers
 
-	/** Bloqué (loin de sa place et presque immobile) pendant ce temps : il réapparaît derrière le joueur */
+	/** Bloqué (il veut avancer mais ne bouge presque pas) pendant ce temps : il abandonne, ou réapparaît */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Follower", meta=(ClampMin=0.5, Units="s"))
 	float StuckTime = 2.f;
 
@@ -124,6 +186,10 @@ protected:
 	UPROPERTY(Replicated)
 	TObjectPtr<APawn> Leader;
 
+	/** Endormi... (joué chez tous les joueurs) */
+	UPROPERTY(Replicated)
+	EFollowerPose Pose = EFollowerPose::None;
+
 	/** Modèle sans squelette (SM_<Espèce>), ou sphère tant qu'il n'y a pas de modèle */
 	UPROPERTY(VisibleAnywhere, Category="Follower")
 	TObjectPtr<UStaticMeshComponent> StaticModel;
@@ -133,21 +199,30 @@ private:
 	void LoadModel();
 	void ApplyMovementMode();
 
-	/** Serveur : chemin du joueur, direction, vitesse, réapparition */
-	void UpdateFollow(float DeltaSeconds);
-	void RecordTrail();
-	/** Point à DistanceBack derrière le joueur, mesuré le long de son chemin */
-	FVector GetTrailPoint(float DistanceBack) const;
-	FVector GetDesiredLocation() const;
-	FVector GetLeaderFeet() const;
+	// Serveur : comportement
+	enum class EBehavior : uint8 { Follow, Wander, Pause, LookAround };
+	void UpdateBehavior(float DeltaSeconds);
+	void UpdateFollow(float DeltaSeconds, float DistanceToLeader);
+	void UpdateIdle(float DeltaSeconds);
+	void ChooseIdleAction();
+	void PickFollowSpot();
+	/** Avance vers Target à la vitesse donnée en tournant d'abord. Vrai une fois arrivé */
+	bool MoveTowards(const FVector& Target, float Speed, float AcceptRadius, float DeltaSeconds);
+	void StopMoving();
+	bool TurnTowardsYaw(float Yaw, float DeltaSeconds);
+	/** Hauteur voulue du centre de la capsule au-dessus de ce point (vol, flotte) */
+	FVector ToFlightHeight(const FVector& Spot) const;
+	bool IsReachable(const FVector& Target) const;
 	bool FindGround(const FVector& Around, float& OutGroundZ) const;
-	void FaceTowards(const FVector& Target, float DeltaSeconds, float Speed);
+	void RecordTrail();
+	FVector GetTrailPoint(float DistanceBack) const;
+	FVector GetLeaderFeet() const;
+	float GetLeaderYaw() const;
 	bool IsFlyer() const { return FollowMode == EFollowMode::Fly || FollowMode == EFollowMode::Float; }
 
-	/** Tous les joueurs : animation d'après la vitesse */
-	void UpdateAnimation(float DeltaSeconds);
-
-	enum class EAnimState : uint8 { None, Idle, Walk, Run, Happy };
+	// Tous les joueurs : animation d'après la vitesse
+	void UpdateAnimation();
+	enum class EAnimState : uint8 { None, Idle, Walk, Run, Happy, Sleep };
 	void PlayState(EAnimState State, float PlayRate);
 
 	UPROPERTY(Transient)
@@ -163,12 +238,33 @@ private:
 	TObjectPtr<UAnimSequence> HappyAnim;
 
 	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> SleepAnim;
+
+	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequence> PlayingAnim;
 
 	EAnimState CurrentAnim = EAnimState::None;
 	float HappyTimeLeft = 0.f;
 
-	/** Serveur : positions des pieds du joueur, de la plus ancienne à la plus récente */
+	/** Vitesse de marche et de course de cette espèce (animation à vitesse normale) */
+	float WalkGaitSpeed = 150.f;
+	float RunGaitSpeed = 400.f;
+
+	// Serveur
+	EBehavior Behavior = EBehavior::Follow;
+	/** Place choisie autour du joueur : angle depuis « juste derrière » et distance */
+	float SpotAngle = 0.f;
+	float SpotDistance = 180.f;
+	float ReplanTimeLeft = 0.f;
+	/** Il est en route vers sa place (il ne s'arrête qu'en y arrivant) */
+	bool bCatchingUp = false;
+	bool bRunning = false;
+	float LeaderIdleTime = 0.f;
+	float ActionTimeLeft = 0.f;
+	FVector WanderTarget = FVector::ZeroVector;
+	float WanderHeightOffset = 0.f;
+	float LookYaw = 0.f;
+	/** Positions des pieds du joueur, pour contourner un mur par son chemin */
 	TArray<FVector> Trail;
 	float StuckTimer = 0.f;
 	float BobTime = 0.f;
