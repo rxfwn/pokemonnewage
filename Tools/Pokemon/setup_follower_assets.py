@@ -116,6 +116,8 @@ def make_eye_material(name="M_PokemonEyeExpression", sampler=None, example=None)
     mel.connect_material_property(texture, "RGB", unreal.MaterialProperty.MP_BASE_COLOR)
     mel.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)
     mel.connect_material_property(specular, "", unreal.MaterialProperty.MP_SPECULAR)
+    # Posé sur un mesh à squelette : sans ce réglage, Unreal affiche à la place son damier gris (WorldGridMaterial)
+    material.set_editor_property("used_with_skeletal_mesh", True)
     mel.recompile_material(material)
     eal.save_loaded_asset(material)
     return material
