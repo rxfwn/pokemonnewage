@@ -253,6 +253,8 @@ private:
 	/** Pokédex : espèces triées par numéro */
 	TArray<FName> SpeciesList;
 	int32 DexIndex = 0;
+	/** Page En ligne : action de chaque ligne (0 créer un monde, 1 rejoindre, 2 quitter le monde) */
+	TArray<uint8> OnlineActions;
 	/** Menu ouvert (titre des pages « bientôt ») */
 	EPokedexMenu CurrentMenu = EPokedexMenu::Pokedex;
 

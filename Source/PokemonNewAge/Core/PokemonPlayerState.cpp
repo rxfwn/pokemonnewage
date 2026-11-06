@@ -25,6 +25,7 @@ void APokemonPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME_CONDITION(APokemonPlayerState, PlayTimeBeforeSession, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(APokemonPlayerState, SessionStartServerTime, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(APokemonPlayerState, StepCount, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(APokemonPlayerState, bSaveApplied, COND_OwnerOnly);
 }
 
 void APokemonPlayerState::BeginPlay()
@@ -101,6 +102,7 @@ void APokemonPlayerState::ApplySaveData(const FPlayerSaveData& Data)
 	PlayTimeBeforeSession = FMath::Max(0.f, Data.PlayTimeSeconds);
 	StepCount = FMath::Max(0, Data.StepCount);
 	SessionStartServerTime = GetWorld()->GetTimeSeconds();
+	bSaveApplied = true;
 }
 
 int32 APokemonPlayerState::GetItemCount(FName Item) const
