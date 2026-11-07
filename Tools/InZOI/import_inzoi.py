@@ -93,7 +93,36 @@ CATEGORY_FR = {
 
 TEXTURE_PARAMS = {"color": "BaseColorMap", "normal": "NormalMap", "arm": "ARMMap", "mask": "ColorMask"}
 
-stats = {"textures": 0, "meshes": 0, "materials": 0, "missing": []}
+stats = {"textures": 0, "meshes": 0, "materials": 0, "missing": [], "skipped": []}
+
+# Modèle qui fait planter Unreal : le script note le modèle en cours dans Saved/ ; si Unreal plante pendant son
+# import, il est mis de côté au lancement suivant (liste dans Saved/InZOI_ignores.txt, à vider pour réessayer).
+SAVED = unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_saved_dir())
+IN_PROGRESS = os.path.join(SAVED, "InZOI_en_cours.txt")
+IGNORED_FILE = os.path.join(SAVED, "InZOI_ignores.txt")
+
+
+def load_ignored():
+    ignored = set()
+    if os.path.isfile(IGNORED_FILE):
+        with open(IGNORED_FILE, encoding="utf-8") as handle:
+            ignored = {line.strip() for line in handle if line.strip()}
+    if os.path.isfile(IN_PROGRESS):
+        with open(IN_PROGRESS, encoding="utf-8") as handle:
+            crashed = handle.read().strip()
+        os.remove(IN_PROGRESS)
+        if crashed and crashed not in ignored:
+            ignored.add(crashed)
+            with open(IGNORED_FILE, "a", encoding="utf-8") as handle:
+                handle.write(crashed + "\n")
+            unreal.log_warning("[InZOI] Unreal a planté pendant l'import de %s : modèle mis de côté (%s)" % (crashed, IGNORED_FILE))
+    return ignored
+
+
+# Modèles connus pour faire planter la carte graphique à l'import (nom du fichier sans extension)
+SKIP_MESHES = {"SKM_M_Costume_Outer_JK009"}
+
+IGNORED = load_ignored() | SKIP_MESHES
 
 
 # ---------------------------------------------------------------- Outils
@@ -403,6 +432,11 @@ def import_mesh(rel):
     if not os.path.isfile(filename):
         stats["missing"].append(rel + ".glb")
         return None
+    if rel in IGNORED or rel.rsplit("/", 1)[-1] in IGNORED:
+        stats["skipped"].append(rel)
+        return None
+    with open(IN_PROGRESS, "w", encoding="utf-8") as handle:
+        handle.write(rel)
     folder, name = split(asset_path)
     task = unreal.AssetImportTask()
     task.set_editor_property("filename", filename)
@@ -412,6 +446,8 @@ def import_mesh(rel):
     task.set_editor_property("replace_existing", True)
     task.set_editor_property("save", True)
     asset_tools.import_asset_tasks([task])
+    if os.path.isfile(IN_PROGRESS):
+        os.remove(IN_PROGRESS)
     mesh = load(asset_path)
     if not mesh:
         # L'import glTF peut nommer le mesh d'après le nœud du fichier : on prend le Skeletal Mesh du dossier
@@ -705,6 +741,8 @@ def main():
 
     log("Terminé : %d textures, %d modèles, %d matériaux, %d pièces, %d bases." % (
         stats["textures"], stats["meshes"], stats["materials"], len(parts), len(bases)))
+    if stats["skipped"]:
+        log("%d modèles mis de côté car ils ont fait planter Unreal : %s" % (len(stats["skipped"]), ", ".join(r.rsplit("/", 1)[-1] for r in stats["skipped"])))
     if stats["missing"]:
         log("%d fichiers absents de l'export (ex. %s)" % (len(stats["missing"]), ", ".join(stats["missing"][:5])))
     log("Catalogue : " + DATA_ASSET + " (le jeu le prend automatiquement à la place de DA_TrainerAppearance)")
