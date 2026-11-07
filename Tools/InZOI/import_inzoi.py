@@ -1431,10 +1431,11 @@ def main():
             if str(part.get_editor_property("slot")) == "Head":
                 mesh = part.get_editor_property("mesh")
                 if mesh:
-                    for slot in mesh.get_editor_property("materials"):
-                        interface = slot.get_editor_property("material_interface")
+                    # Les matériaux voulus (SKIN_MATERIALS), pas ceux de l'asset : Python ne les enregistre pas sur le mesh
+                    chosen = SKIN_MATERIALS.get(mesh.get_path_name(), [])
+                    for slot_name, interface in zip(material_slot_names(mesh), chosen):
                         if interface and interface.get_name().startswith("MI_Skin"):
-                            skin_slots.add(str(slot.get_editor_property("material_slot_name")))
+                            skin_slots.add(slot_name)
 
         for base in bases:
             base_defaults = defaults.get(str(base.get_editor_property("id")), {})
@@ -1471,6 +1472,7 @@ def main():
         data.set_editor_property("part_slots", slot_defs)
         data.set_editor_property("full_presets", presets)
         data.set_editor_property("parts", parts)
+        log("Emplacements teintés par la couleur de peau : " + ", ".join(sorted(skin_slots)))
         data.set_editor_property("skin_material_slots", sorted(skin_slots))
         data.set_editor_property("skin_color_parameter", "SkinTint")
         data.set_editor_property("eye_material_slots", sorted(EYE_SLOTS))
