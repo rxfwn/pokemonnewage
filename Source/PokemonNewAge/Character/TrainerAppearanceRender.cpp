@@ -276,6 +276,15 @@ bool TrainerAppearanceRender::Apply(const UTrainerAppearanceData* Data, AActor* 
 		InOutAppliedBase = Base->Id;
 	}
 
+	// Matériaux du corps (peau) : posés à chaque fois, les MID de couleur sont recréés juste après
+	for (int32 Index = 0; Index < Base->Materials.Num(); ++Index)
+	{
+		if (UMaterialInterface* Material = Base->Materials[Index].LoadSynchronous())
+		{
+			Mesh->SetMaterial(Index, Material);
+		}
+	}
+
 	// Pièces (tête, vêtements) avant les couleurs : la peau de la tête doit aussi être teintée
 	ApplyParts(Data, *Base, Appearance, Owner, Mesh);
 

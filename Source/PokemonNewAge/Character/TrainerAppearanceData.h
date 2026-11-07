@@ -251,6 +251,10 @@ struct FTrainerBaseDef
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	TSoftObjectPtr<USkeletalMesh> Mesh;
 
+	/** Matériaux posés sur le corps, un par emplacement (vide = ceux du mesh). Le script inZOI y met la peau */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<TSoftObjectPtr<UMaterialInterface>> Materials;
+
 	/**
 	 *  Animation Blueprint retargeté (vide = garder celui du personnage). Pour que les curseurs « par os » marchent,
 	 *  sa classe parente doit être TrainerAnimInstance (ou TrainerAnimInstance lui-même : pose de référence).

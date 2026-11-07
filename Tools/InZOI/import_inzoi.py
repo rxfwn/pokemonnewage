@@ -603,6 +603,8 @@ EYE_MASTER = DEST + "/Materials/M_InZOI_Eye"
 TEETH_MATERIAL = DEST + "/Materials/M_InZOI_Teeth"
 HIDDEN_MATERIAL = DEST + "/Materials/M_InZOI_Hidden"
 EYE_SLOTS = set()
+# Chemin du mesh -> matériaux voulus, un par emplacement (rempli par apply_skin)
+SKIN_MATERIALS = {}
 
 
 def new_material(asset_path):
@@ -765,38 +767,33 @@ def apply_skin(mesh, rel_folder, age, only_skin_slots):
     mi_folder = dest(rel_folder + "/Materials")
     # Nouveau nom (MI_SkinV2_) : les anciennes instances mélangeaient d'autres textures
     instance = skin_instance(mi_folder + "/MI_SkinV2_" + mesh.get_name(), textures.get("color"))
-    mesh.modify()
-    materials = mesh.get_editor_property("materials")
+    # Le matériau voulu pour chaque emplacement. On ne compte plus sur l'asset : Unreal ignorait les changements
+    # faits depuis Python sur les emplacements du Skeletal Mesh. Le jeu les pose lui-même (Materials de la base
+    # ou de la pièce, appliqués par TrainerAppearanceRender).
+    chosen = []
     tinted = []
-    for index, slot in enumerate(materials):
+    for index, slot in enumerate(mesh.get_editor_property("materials")):
         slot_name = str(slot.get_editor_property("material_slot_name"))
         lower = slot_name.lower()
+        material = slot.get_editor_property("material_interface")
         if "eyeball" in lower:
-            slot.set_editor_property("material_interface", build_eye_master())
+            material = build_eye_master()
             EYE_SLOTS.add(slot_name)
-            continue
-        if any(key in lower for key in ("saliva", "eyeao", "eyetear", "eye_ao", "eye_tear", "lash", "cartilage")):
-            slot.set_editor_property("material_interface", build_hidden())
-            continue
-        if "teeth" in lower or "tooth" in lower or "tongue" in lower:
-            slot.set_editor_property("material_interface", build_teeth())
-            continue
-        is_skin = any(key in lower for key in ("skin", "head", "body", "face"))
-        if only_skin_slots and not is_skin and not (index == 0 and len(materials) == 1):
-            continue
-        slot.set_editor_property("material_interface", instance)
-        tinted.append(slot_name)
-    mesh.set_editor_property("materials", materials)
-    # Sans only_if_is_dirty=False, Unreal ne voyait pas le changement (« Tous les fichiers sont déjà
-    # enregistrés ») et le mesh gardait le matériau d'Interchange, avec sa normale inZOI qui strie la peau
-    mesh.modify()
-    EAL.save_loaded_asset(mesh, only_if_is_dirty=False)
-    placed = [m.get_editor_property("material_interface") for m in mesh.get_editor_property("materials")]
-    log("Matériaux enregistrés sur %s : %s" % (mesh.get_name(), ", ".join(m.get_name() if m else "aucun" for m in placed)))
+        elif any(key in lower for key in ("saliva", "eyeao", "eyetear", "eye_ao", "eye_tear", "lash", "cartilage")):
+            material = build_hidden()
+        elif "teeth" in lower or "tooth" in lower or "tongue" in lower:
+            material = build_teeth()
+        else:
+            is_skin = any(key in lower for key in ("skin", "head", "body", "face"))
+            if not only_skin_slots or is_skin or (index == 0 and len(mesh.get_editor_property("materials")) == 1):
+                material = instance
+                tinted.append(slot_name)
+        chosen.append(material)
+    SKIN_MATERIALS[mesh.get_path_name()] = chosen
     texture = MEL.get_material_instance_texture_parameter_value(instance, "BaseColorMap")
-    log("Peau sur %s : %s (emplacements du mesh : %s) ; matériau %s, texture %s" % (
-        mesh.get_name(), ", ".join(tinted) or "aucun", ", ".join(material_slot_names(mesh)),
-        instance.get_path_name(), texture.get_path_name() if texture else "AUCUNE"))
+    log("Matériaux de %s (posés par le jeu) : %s ; peau %s, texture %s" % (
+        mesh.get_name(), ", ".join(m.get_name() if m else "aucun" for m in chosen),
+        instance.get_name(), texture.get_name() if texture else "AUCUNE"))
     return tinted
 
 
@@ -1057,9 +1054,9 @@ def build_parts(slow):
                     part.set_editor_property("bases", [base_id])
                     part.set_editor_property("mesh", mesh)
                     if slot == "Head":
-                        # Têtes : peau, yeux et dents sont déjà posés sur le mesh (apply_skin). Les matériaux
-                        # « OverrideMaterial » d'inZOI recouvraient la peau (taches) et les yeux (damier)
-                        materials = []
+                        # Têtes : nos matériaux de peau, yeux et dents (apply_skin). Les « OverrideMaterial »
+                        # d'inZOI et ceux créés par l'import donnaient des taches et des yeux en damier
+                        materials = list(SKIN_MATERIALS.get(mesh.get_path_name(), []))
                     else:
                         materials = [part_material(rel) for rel in (game_rel(p) for p in parse_list(row.get("OverrideMaterial"))) if rel]
                     part.set_editor_property("materials", [m for m in materials if m])
@@ -1152,6 +1149,7 @@ def main():
             base.set_editor_property("id", base_id)
             base.set_editor_property("label", label)
             base.set_editor_property("mesh", body)
+            base.set_editor_property("materials", [m for m in SKIN_MATERIALS.get(body.get_path_name(), []) if m])
             base.set_editor_property("male", male)
             base.set_editor_property("anim_class", unreal.TrainerAnimInstance.static_class())
             base.set_editor_property("sliders", body_sliders(gender, age) + face_sliders(gender, age))
