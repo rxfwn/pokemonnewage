@@ -452,7 +452,7 @@ void UTitleScreenWidget::RefreshSave()
 	if (ContinueEntry.Button)
 	{
 		// Pas de partie : Continuer disparaît et Nouvelle partie remonte à sa place
-		const bool bHasSave = UPokemonSaveLibrary::HasSaveGame();
+		const bool bHasSave = UPokemonSaveLibrary::HasSaveGame(this);
 		if (UWidget* Row = ContinueEntry.Button->GetParent())
 		{
 			Row->SetVisibility(bHasSave ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
@@ -654,7 +654,7 @@ void UTitleScreenWidget::OnNewGameClicked()
 	{
 		Subsystem->PlaySound(true);
 	}
-	if (UPokemonSaveLibrary::HasSaveGame())
+	if (UPokemonSaveLibrary::HasSaveGame(this))
 	{
 		// Une partie existe : on demande avant de l'effacer
 		SetStage(EStage::Confirm);

@@ -311,14 +311,14 @@ void UTitleScreenSubsystem::StartNewGame()
 	{
 		return;
 	}
-	if (!UPokemonSaveLibrary::HasSaveGame())
+	if (!UPokemonSaveLibrary::HasSaveGame(GetWorld()))
 	{
 		// Rien de sauvegardé : la partie qui tourne dessous est déjà neuve
 		Leave();
 		return;
 	}
 	// Le widget a déjà demandé confirmation : on efface et on recharge la map sans écran de titre
-	UPokemonSaveLibrary::DeleteSaveGame();
+	UPokemonSaveLibrary::DeleteSaveGame(GetWorld());
 	UWorld* World = GetWorld();
 	const FString MapPath = UWorld::RemovePIEPrefix(World->GetOutermost()->GetName());
 	UE_LOG(LogPokemonNewAge, Log, TEXT("Nouvelle partie : sauvegarde effacee, rechargement de %s"), *MapPath);

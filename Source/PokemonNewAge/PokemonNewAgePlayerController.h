@@ -201,6 +201,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Save")
 	bool bLoadSaveOnStart = true;
 
+	/** Joueur local : sauvegarde envoyée au serveur, on attend qu'elle revienne avant de pouvoir réécrire le fichier */
+	bool bWaitingForSave = false;
+
 	/** Serveur : position chargée à donner au personnage dès qu'il existe */
 	bool bHasPendingTransform = false;
 	FVector PendingLocation = FVector::ZeroVector;
@@ -216,6 +219,9 @@ protected:
 
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
+
+	/** Joueur local : sauvegarde en quittant le jeu, le monde ou une partie dont l'hôte est parti */
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	/** Compteur de pas (serveur), lieu, sauvegarde automatique (joueur local) */
 	virtual void Tick(float DeltaSeconds) override;
@@ -371,6 +377,50 @@ public:
 	/** Efface la sauvegarde : le prochain lancement repart de zéro (console) */
 	UFUNCTION(Exec)
 	void NouvellePartie();
+
+	/** Faux tant que la sauvegarde envoyée au serveur n'est pas revenue (on ne doit pas l'écraser) */
+	bool IsSaveSynced() const;
+
+	// ------------------------------------------------ Multijoueur : créer un monde, rejoindre (docs/MULTIJOUEUR.md)
+
+	/** Joueurs au plus dans un monde (avec l'hôte) ; MaxPlayers de DefaultGame.ini doit suivre */
+	static constexpr int32 MaxWorldPlayers = 4;
+
+	/** Sauvegarde puis relance la map en hébergeant : les amis peuvent rejoindre. Faux si déjà en ligne */
+	bool HostWorld();
+
+	/** Sauvegarde puis rejoint le monde d'un ami (IP du réseau local ou de Tailscale ; vide = la dernière). Faux sans adresse */
+	bool JoinWorld(const FString& Address);
+
+	/** Sauvegarde puis repart en solo (ferme le monde pour tous si on l'héberge) */
+	void LeaveWorld();
+
+	/** Adresses IP de ce PC à donner aux amis quand on héberge */
+	static TArray<FString> GetLocalAddresses();
+
+	/** CreerMonde : héberger (console) */
+	UFUNCTION(Exec)
+	void CreerMonde();
+
+	/** Rejoindre 192.168.1.20 (console) ; sans adresse = le dernier monde rejoint */
+	UFUNCTION(Exec)
+	void Rejoindre(const FString& Address);
+
+	/** QuitterMonde : retour en solo (console) */
+	UFUNCTION(Exec)
+	void QuitterMonde();
+
+	/** DossierAmis "D:\OneDrive\PokemonAmis" : dossier partagé des cartes dresseur ; sans chemin = l'affiche (console) */
+	UFUNCTION(Exec)
+	void DossierAmis(const FString& Folder);
+
+	/** ServeurSaves 100.x.x.x:8787 Marie <clé> (sans « http:// », que la console coupe) : règle le serveur de saves ; sans rien = l'affiche ; « aucun » = l'enlève (console) */
+	UFUNCTION(Exec)
+	void ServeurSaves(const FString& Url, const FString& PlayerId, const FString& Key);
+
+	/** Barrière d'histoire : message au joueur repoussé (AStoryGate) */
+	UFUNCTION(Client, Reliable)
+	void ClientShowGateMessage(const FText& Message);
 
 	// Commandes de test du combat, à taper dans la console (touche ²) tant que l'UI n'existe pas.
 	// Voir docs/COMBAT.md. Les numéros commencent à 1 comme à l'écran.

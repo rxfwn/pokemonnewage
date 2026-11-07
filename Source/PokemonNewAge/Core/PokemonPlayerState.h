@@ -89,6 +89,10 @@ public:
 	/** Longueur d'un pas du compteur, en cm */
 	static constexpr float StepLength = 75.f;
 
+	/** Vrai quand le serveur a remis la sauvegarde du joueur (ServerLoadSave) : avant, le client ne doit pas l'écraser */
+	UPROPERTY(Replicated, BlueprintReadOnly, Category="Save")
+	bool bSaveApplied = false;
+
 	/** Heure du serveur au début de cette session */
 	UPROPERTY(Replicated, BlueprintReadOnly, Category="Story")
 	float SessionStartServerTime = 0.f;

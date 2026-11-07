@@ -937,7 +937,7 @@ void USettingsMenuWidget::OnRowAction(USettingsRowWidget* Row)
 			return;
 		}
 		bConfirmDelete = false;
-		const bool bDeleted = UPokemonSaveLibrary::DeleteSaveGame();
+		const bool bDeleted = UPokemonSaveLibrary::DeleteSaveGame(this);
 		Row->ButtonText = LOCTEXT("DeleteSave", "Effacer la partie");
 		Row->RefreshValue();
 		SetStatus(bDeleted ? LOCTEXT("Deleted", "Sauvegarde effacée : le prochain lancement repartira de zéro.")
