@@ -402,7 +402,7 @@ void UCharacterCreatorWidget::BuildTabs()
 
 void UCharacterCreatorWidget::BuildBottomLeft()
 {
-	Place(Canvas, MakeTextButton(WidgetTree, LOCTEXT("HideUI", "◯  Masquer l'interface (U)"), 20.f, [this]() { ToggleUI(); }),
+	Place(Canvas, MakeTextButton(WidgetTree, LOCTEXT("HideUI", "Masquer l'interface (U)"), 20.f, [this]() { ToggleUI(); }),
 		FVector2D(36.f, 944.f), FVector2D(300.f, 36.f));
 
 	StudioText = MakeText(WidgetTree, LOCTEXT("Studio", "Studio"), 24.f);
@@ -689,9 +689,30 @@ void UCharacterCreatorWidget::AddPresetGrid(const TArray<FTrainerPresetDef>& Pre
 			const FTrainerAppearance& Look = List[Index].Look;
 			if (bFull)
 			{
-				// Tout le personnage, sauf les vêtements (achetés en boutique)
+				// Tout le personnage, sauf les vêtements (achetés en boutique) ; la tête (onglet Visage) vient du modèle
 				New = Look;
-				New.Outfit = Current.Outfit;
+				auto IsFacePart = [this](FName Id)
+				{
+					FString Text = Id.ToString();
+					const FTrainerPartDef* Part = Data->FindPart(Id);
+					const FTrainerPartSlotDef* Slot = Data->FindSlot(Part ? Part->Slot : FName(*Text.RightChop(1)));
+					return Slot && Slot->Tab == TEXT("Face");
+				};
+				New.Outfit.Reset();
+				for (const FName Id : Current.Outfit)
+				{
+					if (!IsFacePart(Id))
+					{
+						New.Outfit.Add(Id);
+					}
+				}
+				for (const FName Id : Look.Outfit)
+				{
+					if (IsFacePart(Id))
+					{
+						New.Outfit.Add(Id);
+					}
+				}
 				New.bCreated = Current.bCreated;
 				if (Look.Base.IsNone())
 				{

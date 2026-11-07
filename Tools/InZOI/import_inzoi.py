@@ -660,6 +660,44 @@ def build_parts(slow):
     return parts, defaults
 
 
+# Onglet Modèles : un personnage complet par tête importée (base + tête + teint + silhouette)
+PRESET_SKINS = [(0.98, 0.86, 0.76), (0.86, 0.68, 0.52), (0.64, 0.46, 0.33), (0.93, 0.78, 0.64),
+                (0.42, 0.28, 0.19), (1.0, 0.93, 0.88), (0.76, 0.57, 0.42), (0.52, 0.36, 0.25)]
+PRESET_SHAPES = [(0.0, 0.0), (0.4, 0.1), (-0.2, 0.3), (0.2, -0.3), (0.6, 0.2), (-0.1, -0.1)]
+
+
+def full_presets(bases, parts):
+    presets = []
+    for base in bases:
+        base_id = str(base.get_editor_property("id"))
+        base_label = str(base.get_editor_property("label"))
+        heads = [p for p in parts if str(p.get_editor_property("slot")) == "Head"
+                 and base_id in [str(b) for b in p.get_editor_property("bases")]]
+        for index, head in enumerate(heads):
+            look = unreal.TrainerAppearance()
+            look.set_editor_property("base", base_id)
+            look.set_editor_property("outfit", [head.get_editor_property("id")])
+            r, g, b = PRESET_SKINS[index % len(PRESET_SKINS)]
+            look.set_editor_property("skin_color", unreal.LinearColor(r, g, b, 1.0))
+            muscle, mass = PRESET_SHAPES[index % len(PRESET_SHAPES)]
+            values = []
+            for slider_id, value in (("Muscle", muscle), ("Masse", mass)):
+                entry = unreal.TrainerSliderValue()
+                entry.set_editor_property("slider", slider_id)
+                entry.set_editor_property("value", value)
+                values.append(entry)
+            look.set_editor_property("sliders", values)
+            preset = unreal.TrainerPresetDef()
+            preset.set_editor_property("label", "%s %d" % (base_label, index + 1))
+            thumbnail = head.get_editor_property("thumbnail")
+            if thumbnail:
+                preset.set_editor_property("thumbnail", thumbnail)
+            preset.set_editor_property("look", look)
+            presets.append(preset)
+    log("Modèles complets : %d" % len(presets))
+    return presets
+
+
 def count_work():
     total = 0
     for _slot, _label, _tab, _req, _rep, table in SLOTS:
@@ -733,6 +771,8 @@ def main():
             definition.set_editor_property("replaces", replaces)
             slot_defs.append(definition)
 
+        presets = full_presets(bases, parts)
+
         data = load(DATA_ASSET)
         if not data:
             folder, name = split(DATA_ASSET)
@@ -742,6 +782,7 @@ def main():
         data.set_editor_property("bases", bases)
         data.set_editor_property("common_sliders", [])
         data.set_editor_property("part_slots", slot_defs)
+        data.set_editor_property("full_presets", presets)
         data.set_editor_property("parts", parts)
         data.set_editor_property("skin_material_slots", sorted(skin_slots))
         data.set_editor_property("skin_color_parameter", "SkinTint")
