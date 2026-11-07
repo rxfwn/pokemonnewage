@@ -79,7 +79,13 @@ SLOTS = [
 ]
 
 # Pièces portées au départ (si la base n'a rien de choisi)
-DEFAULT_SLOTS = ["Head", "Hair", "Top", "Bottom", "Shoes"]
+DEFAULT_SLOTS = ["Head", "Hair", "Eyebrows", "Eyelashes", "Top", "Bottom", "Shoes"]
+# Tenue de départ « normale » : la première pièce de la base (homme ou femme) dans ces catégories, dans l'ordre
+DEFAULT_CATEGORIES = {
+    "Top": ["T-shirts manches courtes", "T-shirts", "Chemises", "Pulls", "Sweats à capuche"],
+    "Bottom": ["Jeans", "Pantalons", "Pantalons de ville", "Joggings"],
+    "Shoes": ["Baskets", "Mocassins", "Bottes"],
+}
 
 CATEGORY_FR = {
     "TShirt": "T-shirts", "Shirt": "Chemises", "Blouse": "Blouses", "Sweater": "Pulls", "Vest": "Gilets", "Apron": "Tabliers",
@@ -1039,7 +1045,16 @@ def build_parts(slow):
                 meshes.setdefault(mesh_rel, []).append(row)
             mesh_items = list(meshes.items())
             if MAX_MESHES_PER_SLOT:
-                mesh_items = mesh_items[:MAX_MESHES_PER_SLOT]
+                # Une pièce de chaque catégorie à tour de rôle : l'essai a des T-shirts ET des chemises, pas 15 blouses
+                by_category = OrderedDict()
+                for item in mesh_items:
+                    by_category.setdefault(category_of(item[0], slot), []).append(item)
+                mixed = []
+                while len(mixed) < len(mesh_items):
+                    for items in by_category.values():
+                        if items:
+                            mixed.append(items.pop(0))
+                mesh_items = mixed[:MAX_MESHES_PER_SLOT]
             counters = {}
             for mesh_rel, variants in mesh_items:
                 if slow.should_cancel():
@@ -1084,7 +1099,14 @@ HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
 HAIR_VERSION = 2  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
-GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head")]
+GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"),
+               ("Eyebrows", "Sourcils", "Hair", "Head"), ("Eyelashes", "Cils", "Hair", "Head")]
+# Sourcils et cils : tables inZOI (Data/JsonResult), meshes dans Groom/Eyebrows et Groom/Eyelashes
+FACE_GROOMS = [
+    ("Eyebrows", "Sourcils", "AppearanceEyebrow.json", GROOM_REL + "/Textures/Eyebrows/Eyebrows_001_DIRO", (0.03, 0.017, 0.006)),
+    ("Eyelashes", "Cils", "AppearanceEyelash.json", GROOM_REL + "/Textures/Eyelashes/Eyelashes_old_DIRO", (0.010417, 0.005399, 0.001878)),
+]
+JSON_TABLES = os.path.join(EXPORTS, "Data", "JsonResult")
 HAIR_CATEGORY_FR = {"Short": "Courts", "Shaved": "Rasés", "Medium": "Mi-longs", "Long": "Longs", "Bob": "Carrés",
                     "Bald": "Chauve"}
 HAIR_CATEGORY_ORDER = ["Short", "Shaved", "Bob", "Medium", "Long", "Bald"]
@@ -1332,6 +1354,62 @@ def build_hairs(slow, bases):
     return parts, defaults
 
 
+def build_face_grooms(slow, bases):
+    """Sourcils et cils d'après les tables AppearanceEyebrow / AppearanceEyelash ; ils suivent la tête (FollowSlot)"""
+    parts, defaults = [], {}
+    for slot, label, table, fallback_diro, fallback_tip in FACE_GROOMS:
+        filename = os.path.join(JSON_TABLES, table)
+        try:
+            with open(filename, encoding="utf-8") as handle:
+                rows = json.load(handle)
+        except (OSError, ValueError):
+            log("%s : table %s introuvable" % (label, filename))
+            continue
+        missing = 0
+        for (gender, age), (base_id, _label, _male, _body) in BASES.items():
+            if age not in AGES or not any(str(b.get_editor_property("id")) == base_id for b in bases):
+                continue
+            count = 0
+            for row in rows:
+                if row.get("GenderType") != gender or row.get("BodyAgeType") != age or row.get("HiddenFromUI"):
+                    continue
+                if MAX_MESHES_PER_SLOT and count >= MAX_MESHES_PER_SLOT:
+                    break
+                mesh_rel = game_rel(row.get("Mesh"))
+                if not mesh_rel or not os.path.isfile(src(mesh_rel, ".glb")):
+                    missing += 1
+                    continue
+                slow.enter_progress_frame(0, "%s : %s" % (label, mesh_rel.rsplit("/", 1)[-1]))
+                mesh = import_mesh(mesh_rel)
+                if not mesh:
+                    continue
+                folder = mesh_rel.rsplit("/Mesh/", 1)[0]
+                materials = []
+                for slot_name in material_slot_names(mesh):
+                    json_rel = folder + "/Materials/" + slot_name
+                    colors, diro = groom_json(json_rel)
+                    tip = colors.get("TipColor", fallback_tip)
+                    root = colors.get("RootColor", tuple(v * 0.7 for v in tip))
+                    materials.append(hair_instance(dest(json_rel + "_Jeu"), diro or fallback_diro, (root, tip)))
+                count += 1
+                part = unreal.TrainerPartDef()
+                part.set_editor_property("id", row["Id"])
+                part.set_editor_property("label", "%s %d" % (label, count))
+                part.set_editor_property("slot", slot)
+                part.set_editor_property("bases", [base_id])
+                part.set_editor_property("mesh", mesh)
+                part.set_editor_property("materials", materials)
+                thumbnail = import_texture(game_rel(row.get("Thumbnail")), "ui")
+                if thumbnail:
+                    part.set_editor_property("thumbnail", thumbnail)
+                parts.append(part)
+                defaults.setdefault(base_id, {}).setdefault(slot, row["Id"])
+            log("%s %s : %d modèles" % (label, base_id, count))
+        if missing:
+            log("%s : %d modèles absents (exporter Groom/%s avec FModel, puis copier_coiffures.bat)" % (label, missing, slot))
+    return parts, defaults
+
+
 # Onglet Modèles : un personnage complet par tête importée (base + tête + teint + silhouette)
 PRESET_SKINS = [(0.98, 0.86, 0.76), (0.86, 0.68, 0.52), (0.64, 0.46, 0.33), (0.93, 0.78, 0.64),
                 (0.42, 0.28, 0.19), (1.0, 0.93, 0.88), (0.76, 0.57, 0.42), (0.52, 0.36, 0.25)]
@@ -1425,6 +1503,10 @@ def main():
         for base_id, slots in hair_defaults.items():
             defaults.setdefault(base_id, {}).update(slots)
         parts += build_beards(slow, bases, parts)
+        face_parts, face_defaults = build_face_grooms(slow, bases)
+        parts += face_parts
+        for base_id, slots in face_defaults.items():
+            defaults.setdefault(base_id, {}).update(slots)
 
         # Peau de la tête teintée aussi
         for part in parts:
@@ -1438,7 +1520,17 @@ def main():
                             skin_slots.add(slot_name)
 
         for base in bases:
-            base_defaults = defaults.get(str(base.get_editor_property("id")), {})
+            base_id = str(base.get_editor_property("id"))
+            base_defaults = defaults.setdefault(base_id, {})
+            for slot, wanted in DEFAULT_CATEGORIES.items():
+                fitting = [p for p in parts if str(p.get_editor_property("slot")) == slot
+                           and base_id in [str(b) for b in p.get_editor_property("bases")]]
+                for category in wanted:
+                    match = [p for p in fitting if str(p.get_editor_property("category")).startswith(category)]
+                    if match:
+                        base_defaults[slot] = match[0].get_editor_property("id")
+                        break
+            log("Tenue de départ %s : %s" % (base_id, ", ".join("%s=%s" % (k, base_defaults[k]) for k in DEFAULT_SLOTS if k in base_defaults)))
             base.set_editor_property("default_parts", [base_defaults[s] for s in DEFAULT_SLOTS if s in base_defaults])
 
         slot_defs = []

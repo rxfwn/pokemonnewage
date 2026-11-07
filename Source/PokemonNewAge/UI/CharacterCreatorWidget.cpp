@@ -168,6 +168,21 @@ namespace CharacterCreator
 		return Border;
 	}
 
+	/** Vignette découpée en rond (le pinceau « boîte arrondie » d'Unreal rogne l'image elle-même) */
+	UImage* MakeRoundImage(UWidgetTree* Tree, UTexture2D* Texture)
+	{
+		UImage* Image = Tree->ConstructWidget<UImage>(UImage::StaticClass());
+		FSlateBrush Brush;
+		Brush.SetResourceObject(Texture);
+		Brush.ImageSize = FVector2D(Texture->GetSizeX(), Texture->GetSizeY());
+		Brush.DrawAs = ESlateBrushDrawType::RoundedBox;
+		Brush.OutlineSettings.RoundingType = ESlateBrushRoundingType::FullyRounded;
+		Brush.OutlineSettings.Width = 0.f;
+		Brush.TintColor = FSlateColor(FLinearColor::White);
+		Image->SetBrush(Brush);
+		return Image;
+	}
+
 	USizeBox* MakeBox(UWidgetTree* Tree, const FVector2D& Size, UWidget* Content)
 	{
 		USizeBox* Box = Tree->ConstructWidget<USizeBox>(USizeBox::StaticClass());
@@ -699,8 +714,7 @@ void UCharacterCreatorWidget::AddPresetGrid(const TArray<FTrainerPresetDef>& Pre
 		UWidget* Inside = nullptr;
 		if (UTexture2D* Thumbnail = Preset.Thumbnail.LoadSynchronous())
 		{
-			UImage* Image = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
-			Image->SetBrushFromTexture(Thumbnail);
+			UImage* Image = MakeRoundImage(WidgetTree, Thumbnail);
 			Inside = MakeBox(WidgetTree, FVector2D(100.f, 100.f), Image);
 		}
 		else
@@ -938,8 +952,7 @@ bool UCharacterCreatorWidget::AddPartGrid(FName TabName)
 		UWidget* Inside = nullptr;
 		if (UTexture2D* Thumbnail = Part->Thumbnail.LoadSynchronous())
 		{
-			UImage* Image = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
-			Image->SetBrushFromTexture(Thumbnail);
+			UImage* Image = MakeRoundImage(WidgetTree, Thumbnail);
 			Inside = MakeBox(WidgetTree, FVector2D(TileSize - 8.f, TileSize - 8.f), Image);
 		}
 		else
@@ -1142,8 +1155,7 @@ void UCharacterCreatorWidget::RefreshWornColumn()
 		UWidget* Inside = nullptr;
 		if (UTexture2D* Thumbnail = Part->Thumbnail.LoadSynchronous())
 		{
-			UImage* Image = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
-			Image->SetBrushFromTexture(Thumbnail);
+			UImage* Image = MakeRoundImage(WidgetTree, Thumbnail);
 			Inside = MakeBox(WidgetTree, FVector2D(76.f, 76.f), Image);
 		}
 		else
@@ -1547,6 +1559,13 @@ void UCharacterCreatorWidget::NativeTick(const FGeometry& MyGeometry, float InDe
 
 FReply UCharacterCreatorWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
+	// Clic droit maintenu : tourner le personnage (comme glisser dans le vide au clic gauche)
+	if (InMouseEvent.GetEffectingButton() == EKeys::RightMouseButton)
+	{
+		LastMouse = ToCanvas(InMouseEvent.GetScreenSpacePosition());
+		DragTarget = -2;
+		return FReply::Handled().CaptureMouse(TakeWidget());
+	}
 	if (InMouseEvent.GetEffectingButton() != EKeys::LeftMouseButton)
 	{
 		return Super::NativeOnMouseButtonDown(InGeometry, InMouseEvent);
@@ -1564,7 +1583,9 @@ FReply UCharacterCreatorWidget::NativeOnMouseButtonDown(const FGeometry& InGeome
 
 FReply UCharacterCreatorWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-	if (DragTarget == -1 || !InMouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
+	const bool bButton = InMouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton)
+		|| (DragTarget == -2 && InMouseEvent.IsMouseButtonDown(EKeys::RightMouseButton));
+	if (DragTarget == -1 || !bButton)
 	{
 		return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
 	}
@@ -1608,7 +1629,7 @@ FReply UCharacterCreatorWidget::NativeOnMouseMove(const FGeometry& InGeometry, c
 
 FReply UCharacterCreatorWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-	if (DragTarget != -1 && InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+	if (DragTarget != -1 && (InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton || InMouseEvent.GetEffectingButton() == EKeys::RightMouseButton))
 	{
 		DragTarget = -1;
 		return FReply::Handled().ReleaseMouseCapture();

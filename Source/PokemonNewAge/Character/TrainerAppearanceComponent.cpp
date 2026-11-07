@@ -210,7 +210,9 @@ bool UTrainerAppearanceComponent::OpenEditor(ETrainerEditorMode Mode)
 		Studio = nullptr;
 		return false;
 	}
-	Editor->Init(this, Studio, Data, Mode, Current, State ? State->GetPlayerName() : FString(), State ? State->Catchphrase : FString());
+	// Création : prénom vide (sinon Unreal propose le nom de l'ordinateur, qui sert de nom de joueur par défaut)
+	const FString StartName = (State && Mode != ETrainerEditorMode::Creation) ? State->GetPlayerName() : FString();
+	Editor->Init(this, Studio, Data, Mode, Current, StartName, State ? State->Catchphrase : FString());
 
 	PlayerController->SetViewTargetWithBlend(Studio, 0.f);
 	Editor->SetIsFocusable(true);
