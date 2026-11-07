@@ -152,14 +152,12 @@ def glb_needs_fix(filename):
             gltf = json.loads(handle.read(length).decode("utf-8"))
     except Exception:
         return False
-    accessors = gltf.get("accessors", [])
+    # Tous les morphs sont retirés : vides, ils font jeter des parties (yeux, dents) ; « creux » (sparse, comme
+    # Body_Muscle du corps), Unreal les lit mal et la peau se couvre de traînées sombres le long des muscles
     for mesh in gltf.get("meshes", []):
         for primitive in mesh.get("primitives", []):
-            for target in primitive.get("targets", []):
-                for index in target.values():
-                    accessor = accessors[index]
-                    if "bufferView" not in accessor and "sparse" not in accessor:
-                        return True
+            if primitive.get("targets"):
+                return True
     return False
 
 
@@ -533,7 +531,7 @@ def import_mesh(rel):
         with open(FIXED_FILE, "a", encoding="utf-8") as handle:
             handle.write(rel + "\n")
         if existing:
-            log("Réimporté avec les yeux et les dents : " + name)
+            log("Réimporté sans morphs (yeux, dents, peau) : " + name)
     if mesh:
         stats["meshes"] += 1
         if GARBAGE_EVERY and stats["meshes"] % GARBAGE_EVERY == 0:
