@@ -2,6 +2,7 @@
 
 Le Raspberry Pi à la maison garde la save de chaque joueur, en plus de la copie sur son PC. Choix fait avec L'amie le 2026-11-02 (voir `docs/MULTIJOUEUR.md`).
 
+- **Le Pi garde aussi les mises à jour du jeu** (port 8788) : voir `docs/MISES_A_JOUR.md`.
 - **Le jeu ne tourne pas sur le Pi.** Il ne fait que garder les saves et les cartes dresseur. Jouer à plusieurs passe toujours d'un PC à l'autre.
 - **Au lancement**, le jeu récupère la save du serveur si elle est plus récente que celle du PC (partie faite sur un autre PC). Si c'est celle du PC qui est plus récente (partie hors ligne), elle part sur le serveur. Le lancement n'attend jamais plus de 4 secondes.
 - **À chaque sauvegarde**, la save et la carte dresseur partent en arrière-plan. Si le serveur ne répond pas, on joue normalement, et le jeu réessaie toutes les minutes.

@@ -59,3 +59,7 @@ Un Raspberry Pi à la maison garde aussi la save de chaque joueur, et les cartes
 - Échanges et combats entre joueurs **connectés** (SCRUM-69).
 - Heure et météo données par le serveur (chaque PC a encore son propre cycle jour/nuit).
 - Rejoindre sans adresse IP (Steam ou Epic Online Services), si un jour Tailscale ne suffit plus.
+
+## Même version pour tout le monde
+
+L'hôte refuse un joueur qui n'a pas la même version du jeu. Ouvrir le jeu par le launcher (`docs/MISES_A_JOUR.md`) le met à jour automatiquement depuis le Raspberry Pi.

@@ -1,0 +1,18 @@
+# Lance le serveur de mises à jour au démarrage du Raspberry Pi et le relance s'il s'arrête.
+# Installation : voir docs/MISES_A_JOUR.md. Remplacer « marie » par ton nom d'utilisateur du Pi.
+[Unit]
+Description=Serveur de mises à jour du jeu Pokémon
+After=network-online.target tailscaled.service local-fs.target
+Wants=network-online.target
+# Le disque USB des builds doit être monté avant (voir le guide)
+RequiresMountsFor=/mnt/jeu
+
+[Service]
+User=marie
+WorkingDirectory=/home/marie/serveur-mises-a-jour
+ExecStart=/usr/bin/python3 /home/marie/serveur-mises-a-jour/pokemon_update_server.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,23 @@
+# Compile le launcher (Pokemon.exe) sur un Windows de GitHub à chaque changement :
+# vérifie que le code compile, et l'exe est téléchargeable dans l'onglet Actions > Artifacts.
+name: Launcher
+
+on:
+  push:
+    paths:
+      - "Tools/Updater/Launcher/**"
+      - ".github/workflows/launcher.yml"
+  workflow_dispatch:
+
+jobs:
+  compiler:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compiler Pokemon.exe
+        shell: cmd
+        run: Tools\Updater\Launcher\compiler_launcher.bat ci
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Pokemon-launcher
+          path: Tools/Updater/Launcher/Pokemon.exe

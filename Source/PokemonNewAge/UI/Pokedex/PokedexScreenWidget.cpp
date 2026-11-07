@@ -21,6 +21,7 @@
 #include "Core/PokemonPlayerState.h"
 #include "Core/PokemonSaveGame.h"
 #include "Core/SaveServerSubsystem.h"
+#include "Core/GameVersionSubsystem.h"
 #include "Engine/DataTable.h"
 #include "Engine/Engine.h"
 #include "Engine/Texture2D.h"
@@ -1552,6 +1553,16 @@ void UPokedexScreenWidget::BuildOnline()
 	}
 	RowCount = OnlineActions.Num();
 	AddSpacer(10.f);
+
+	// Version installée (launcher, docs/MISES_A_JOUR.md) et raison du dernier refus pour rejoindre un monde
+	AddLabelValue(LOCTEXT("GameVersion", "Version du jeu"), FText::FromString(UGameVersionSubsystem::GetVersion()));
+	if (const UGameVersionSubsystem* Version = UGameVersionSubsystem::Get(this))
+	{
+		if (!Version->GetLastNetworkError().IsEmpty())
+		{
+			AddLine(Version->GetLastNetworkError(), 16, Dim);
+		}
+	}
 
 	// Serveur de saves (Raspberry Pi) : état, et nouvelles cartes demandées pour la prochaine ouverture
 	USaveServerSubsystem* SaveServer = USaveServerSubsystem::Get(this);
