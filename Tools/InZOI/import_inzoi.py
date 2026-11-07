@@ -421,11 +421,28 @@ def scan_textures(rel_folder, prefer=("Main_D", "_D")):
 
 # ---------------------------------------------------------------- Modèles
 
+def find_mesh(asset_path):
+    """Le Skeletal Mesh importé. Interchange (glTF) le range dans <nom>/SkeletalMeshes/<nom>
+    au lieu de <nom> directement : on cherche aux deux endroits, puis dans tout le dossier <nom>."""
+    folder, name = split(asset_path)
+    for candidate in (asset_path, "%s/%s/SkeletalMeshes/%s" % (folder, name, name)):
+        asset = load(candidate)
+        if isinstance(asset, unreal.SkeletalMesh):
+            return asset
+    sub = folder + "/" + name
+    if EAL.does_directory_exist(sub):
+        for path in EAL.list_assets(sub, recursive=True, include_folder=False):
+            data = EAL.find_asset_data(path)
+            if str(data.asset_class_path.asset_name) == "SkeletalMesh":
+                return unreal.load_asset(path)
+    return None
+
+
 def import_mesh(rel):
     if not rel:
         return None
     asset_path = dest(rel)
-    existing = load(asset_path)
+    existing = find_mesh(asset_path)
     if existing:
         return existing
     filename = src(rel, ".glb")
@@ -448,16 +465,7 @@ def import_mesh(rel):
     asset_tools.import_asset_tasks([task])
     if os.path.isfile(IN_PROGRESS):
         os.remove(IN_PROGRESS)
-    mesh = load(asset_path)
-    if not mesh:
-        # L'import glTF peut nommer le mesh d'après le nœud du fichier : on prend le Skeletal Mesh du dossier
-        for path in EAL.list_assets(folder, recursive=False, include_folder=False):
-            asset = unreal.load_asset(path)
-            if isinstance(asset, unreal.SkeletalMesh):
-                if path.split(".")[0] != asset_path:
-                    EAL.rename_asset(path.split(".")[0], asset_path)
-                mesh = load(asset_path)
-                break
+    mesh = find_mesh(asset_path)
     if mesh:
         stats["meshes"] += 1
         if GARBAGE_EVERY and stats["meshes"] % GARBAGE_EVERY == 0:

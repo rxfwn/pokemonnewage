@@ -106,7 +106,11 @@ def main():
         mesh = base.get_editor_property("mesh")
         if not isinstance(mesh, unreal.SkeletalMesh) and base_id in BODIES:
             body_path = DEST + "/" + BODIES[base_id]
-            mesh = unreal.load_asset(body_path) if EAL.does_asset_exist(body_path) else None
+            folder, name = body_path.rsplit("/", 1)
+            for candidate in (body_path, "%s/%s/SkeletalMeshes/%s" % (folder, name, name)):
+                if EAL.does_asset_exist(candidate):
+                    mesh = unreal.load_asset(candidate)
+                    break
         skeleton = mesh.get_editor_property("skeleton") if mesh else None
         if not skeleton:
             log("Pas de squelette pour la base " + base_id)
