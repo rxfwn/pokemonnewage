@@ -122,12 +122,28 @@ Pour que le personnage inZOI marche dans Kanto :
    (sinon les curseurs « par os » ne s'appliquent pas).
 4. Dans `DA_TrainerAppearance_InZOI` > Bases > **Anim Class** = cet Animation Blueprint.
 
+## Menu façon inZOI (2026-11-07)
+
+- **Colonne de gauche** : hors onglet Modèles, une vignette par pièce portée (tête, haut, bas, chaussures…) ; un clic
+  ouvre l'onglet et l'emplacement de la pièce. Le Profil (prénom, base, phrase d'accroche) reste dans l'onglet Modèles.
+- **Panneau de droite** en trois colonnes : emplacements (Haut, Veste, Bas…), catégories (T-shirts, Sweats… avec
+  « Tout »), grille de vignettes. Le personnage est décalé vers la gauche de l'écran (`ScreenShift` dans
+  `CharacterStudio.cpp`).
+- **Nuancier** sous la grille pour la pièce portée : rangée de couleurs toutes faites, teintes claires, foncées, gris,
+  code hexadécimal, Réinitialiser. Zone « Principale » = paramètre `Tint` du matériau `M_InZOI_Part` ; Zone 1 à 3 =
+  `Color1` à `Color3` quand le matériau de la pièce a un masque de couleur. Sauvegardé dans
+  `FTrainerAppearance::PartColors`.
+- **Traits du visage** (point du visage « Traits du visage », ou mode Détaillé) : 140 curseurs créés par le script
+  d'après `Morphologie_Visage_Os.csv` (côtés gauche et droit réunis ; X = écart, Y = avancée, Z = hauteur, d'après le
+  squelette de la tête). La tête n'est plus en Leader Pose : elle copie la pose du corps (`UTrainerAnimInstance` en
+  mode « suit le corps ») et ses os du visage reçoivent les curseurs.
+- **Studio** : éclairage « Doux » par défaut, murs plus clairs.
+
 ## Ce qui reste à faire
 
-1. Premier import et premier test dans Unreal (L'amie), retours sur le journal.
-2. Corriger l'import selon les retours (matériaux, échelle, squelettes).
-3. Visage détaillé : curseurs « par os » du visage d'après `Morphologie_Visage_Os.csv` (la tête a son propre
-   squelette : il faudra une animation pour la tête qui copie la pose du corps).
-4. Animations de marche et de course retargetées (section 5) ; émotes et poses de la carte dresseur avec les animations importées.
-5. Cheveux : trouver des coiffures en mesh (l'export n'a que les textures des cheveux Groom).
-6. Le style verre de L'amie sur l'éditeur, avec les icônes importées (`ImportedAssets/InZOI/UI/...`).
+1. Tester dans Unreal le nouveau menu, les traits du visage et le nuancier (L'amie).
+2. Cheveux et barbes : les barbes existent en `.glb` (`Groom/Beard/.../SKM_Beard_00X_For_Male_Head_00Y.glb`) ; les
+   cheveux n'ont que des textures (`*_Scalp_DIRO.png`, cartes de mèches), pas de mesh.
+3. Animations de marche et de course retargetées (section 5) ; émotes et poses de la carte dresseur avec les animations importées.
+4. Taches de rousseur, grains de beauté, cicatrices, maquillage : chercher leurs textures dans l'export.
+5. Le style verre de L'amie sur l'éditeur, avec les icônes importées (`ImportedAssets/InZOI/UI/...`).

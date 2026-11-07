@@ -47,6 +47,7 @@ DEST = "/Game/ImportedAssets/InZOI"
 EXPORTS = os.path.join(SOURCE, "Output", "Exports", "BlueClient", "Content")
 TABLES = os.path.join(SOURCE, "Index_Complet", "Tables_CSV")
 MORPHO_BODY = os.path.join(SOURCE, "Index_Complet", "Morphologie_Corps_Os.csv")
+MORPHO_FACE = os.path.join(SOURCE, "Index_Complet", "Morphologie_Visage_Os.csv")
 DATA_ASSET = DEST + "/DA_TrainerAppearance_InZOI"
 MASTER = DEST + "/Materials/M_InZOI_Part"
 
@@ -877,6 +878,119 @@ def body_sliders(gender, age):
     return sliders
 
 
+# ---------------------------------------------------------------- Traits du visage
+
+# Partie du visage (nom du groupe inZOI sans « C_ », ni côté L/R, ni axe) -> (section, nom affiché)
+FACE_FEATURE_FR = OrderedDict([
+    ("Head", ("Forme du visage", "Visage")),
+    ("ForeHead", ("Forme du visage", "Front")),
+    ("Brow", ("Sourcils", "Sourcils")),
+    ("BrowIn", ("Sourcils", "Début des sourcils")),
+    ("BrowMid", ("Sourcils", "Milieu des sourcils")),
+    ("BrowOut", ("Sourcils", "Fin des sourcils")),
+    ("Eye", ("Yeux", "Yeux")),
+    ("Eyelash", ("Yeux", "Cils")),
+    ("EyeUpIn", ("Yeux", "Paupière haute, intérieur")),
+    ("EyeUpMid", ("Yeux", "Paupière haute, milieu")),
+    ("EyeUpOut", ("Yeux", "Paupière haute, extérieur")),
+    ("EyeLowIn", ("Yeux", "Paupière basse, intérieur")),
+    ("EyeLowMid", ("Yeux", "Paupière basse, milieu")),
+    ("EyeLowOut", ("Yeux", "Paupière basse, extérieur")),
+    ("EyeCornerIn", ("Yeux", "Coin intérieur de l'œil")),
+    ("EyeCornerOut", ("Yeux", "Coin extérieur de l'œil")),
+    ("EyesackUpper", ("Yeux", "Pli de la paupière")),
+    ("EyesackUpperIn", ("Yeux", "Pli de la paupière, intérieur")),
+    ("EyesackUpperMid", ("Yeux", "Pli de la paupière, milieu")),
+    ("EyesackUpperOut", ("Yeux", "Pli de la paupière, extérieur")),
+    ("Nose", ("Nez", "Nez")),
+    ("NoseUp", ("Nez", "Arête du nez")),
+    ("NoseMid", ("Nez", "Milieu du nez")),
+    ("NoseTip", ("Nez", "Bout du nez")),
+    ("NoseLow", ("Nez", "Base du nez")),
+    ("Nostril", ("Nez", "Narines")),
+    ("Cheek", ("Joues", "Pommettes")),
+    ("CheekInner", ("Joues", "Pommettes, intérieur")),
+    ("CheekOuter", ("Joues", "Pommettes, extérieur")),
+    ("CheekLow", ("Joues", "Joues")),
+    ("CheekLowInner", ("Joues", "Joues, intérieur")),
+    ("CheekLowOuter", ("Joues", "Joues, extérieur")),
+    ("Mouth", ("Bouche", "Bouche")),
+    ("MouthUp", ("Bouche", "Lèvre du haut")),
+    ("MouthLow", ("Bouche", "Lèvre du bas")),
+    ("MouthLipUpper", ("Bouche", "Épaisseur lèvre du haut")),
+    ("MouthLipLower", ("Bouche", "Épaisseur lèvre du bas")),
+    ("MouthCorner", ("Bouche", "Coins de la bouche")),
+    ("UpperMouth", ("Bouche", "Au-dessus de la bouche")),
+    ("LowerMouth", ("Bouche", "Sous la bouche")),
+    ("Tongue", ("Bouche", "Langue")),
+    ("Jaw", ("Mâchoire et menton", "Mâchoire")),
+    ("JawBack", ("Mâchoire et menton", "Angle de la mâchoire")),
+    ("JawUnder", ("Mâchoire et menton", "Dessous de la mâchoire")),
+    ("JawLower", ("Mâchoire et menton", "Bas de la mâchoire")),
+    ("Chin", ("Mâchoire et menton", "Menton")),
+    ("Chin_C", ("Mâchoire et menton", "Pointe du menton")),
+    ("UnderChin", ("Mâchoire et menton", "Sous le menton")),
+    ("Ear", ("Oreilles", "Oreilles")),
+    ("EarUp", ("Oreilles", "Haut des oreilles")),
+    ("EarMid", ("Oreilles", "Milieu des oreilles")),
+    ("EarLow", ("Oreilles", "Lobes")),
+])
+
+# Axe du groupe -> réglage (calculé d'après le squelette de la tête : X = côté, Y = avant, Z = haut)
+FACE_AXIS_FR = {"": "", "X": "écart", "Y": "avancée", "Z": "hauteur", "Scale": "taille", "ScaleX": "largeur",
+                "ScaleY": "hauteur", "RotateX": "inclinaison", "RotateY": "rotation", "RotateZ": "inclinaison"}
+# Oreilles : leurs os sont tournés, les axes ne veulent pas dire la même chose
+EAR_AXIS_FR = {"X": "hauteur", "Y": "décollement", "Z": "écart"}
+
+
+def face_group_key(group):
+    """C_EyeUpIn_L_X -> ('EyeUpIn', 'X') ; C_Chin_C_Y -> ('Chin_C', 'Y') ; C_Nose -> ('Nose', '')"""
+    name = re.sub(r"_(L|R)(?=_|$)", "", group)
+    name = name[2:] if name.startswith("C_") else name
+    feature, _, axis = name.rpartition("_")
+    if not feature or axis not in FACE_AXIS_FR:
+        return name, ""
+    return feature, axis
+
+
+def face_sliders(gender, age):
+    """Traits du visage d'après Morphologie_Visage_Os.csv : un curseur par partie et par axe, côtés gauche et droit ensemble"""
+    if not os.path.isfile(MORPHO_FACE):
+        log("Morphologie_Visage_Os.csv introuvable : pas de curseurs du visage")
+        return []
+    groups = OrderedDict()
+    for row in read_csv(MORPHO_FACE):
+        if row.get("genre") != gender or row.get("age") != age:
+            continue
+        feature, axis = face_group_key(row["groupe"])
+        group = groups.setdefault((feature, axis), {"pos": [], "neg": []})
+        offset = unreal.TrainerBoneOffset()
+        offset.set_editor_property("bone", row["os"])
+        offset.set_editor_property("location", unreal.Vector(float_of(row, "loc_x"), float_of(row, "loc_y"), float_of(row, "loc_z")))
+        offset.set_editor_property("rotation", unreal.Quat(float_of(row, "rot_x"), float_of(row, "rot_y"), float_of(row, "rot_z"), float_of(row, "rot_w", 1.0)))
+        offset.set_editor_property("scale", unreal.Vector(float_of(row, "scale_x"), float_of(row, "scale_y"), float_of(row, "scale_z")))
+        group["pos" if row.get("signe") == "+" else "neg"].append(offset)
+
+    order = list(FACE_FEATURE_FR)
+    keys = sorted(groups, key=lambda k: (order.index(k[0]) if k[0] in order else len(order), k[1]))
+    sliders = []
+    for feature, axis in keys:
+        group = groups[(feature, axis)]
+        section, label = FACE_FEATURE_FR.get(feature, ("Autres", feature))
+        axis_fr = (EAR_AXIS_FR if feature.startswith("Ear") else FACE_AXIS_FR).get(axis, axis)
+        definition = unreal.TrainerSliderDef()
+        definition.set_editor_property("id", "Visage_" + feature + ("_" + axis if axis else ""))
+        definition.set_editor_property("label", label + (" : " + axis_fr if axis_fr else ""))
+        definition.set_editor_property("section", section)
+        definition.set_editor_property("group", unreal.TrainerSliderGroup.FACE)
+        definition.set_editor_property("signed", bool(group["neg"]))
+        definition.set_editor_property("bones_positive", group["pos"])
+        definition.set_editor_property("bones_negative", group["neg"])
+        sliders.append(definition)
+    log("Traits du visage %s %s : %d curseurs" % (gender, age, len(sliders)))
+    return sliders
+
+
 # ---------------------------------------------------------------- Catalogue
 
 def category_of(mesh_rel, slot):
@@ -1040,7 +1154,7 @@ def main():
             base.set_editor_property("mesh", body)
             base.set_editor_property("male", male)
             base.set_editor_property("anim_class", unreal.TrainerAnimInstance.static_class())
-            base.set_editor_property("sliders", body_sliders(gender, age))
+            base.set_editor_property("sliders", body_sliders(gender, age) + face_sliders(gender, age))
             bases.append(base)
 
         parts, defaults = build_parts(slow)

@@ -6,6 +6,9 @@
 #include "Character/TrainerAppearanceData.h"
 #include "TrainerAnimInstance.generated.h"
 
+class USkeletalMesh;
+class USkeletalMeshComponent;
+
 /** Côté « fil d'animation » de UTrainerAnimInstance : calcule la pose normale, puis ajoute les déplacements d'os */
 USTRUCT()
 struct FTrainerAnimInstanceProxy : public FAnimInstanceProxy
@@ -25,6 +28,15 @@ private:
 
 	/** Copie faite sur le fil principal à chaque image (PreUpdate) */
 	TArray<FTrainerBoneOffset> Offsets;
+
+	/** Pose copiée du corps (mode « suit le corps » des têtes) : index d'os de ce mesh -> transformation locale */
+	TArray<TPair<int32, FTransform>> CopiedBones;
+	TSet<FName> CopiedNames;
+
+	/** Correspondance os de ce mesh -> os du corps, refaite quand l'un des deux meshes change */
+	TArray<int32> SourceMap;
+	TWeakObjectPtr<const USkeletalMesh> MappedOwnMesh;
+	TWeakObjectPtr<const USkeletalMesh> MappedSourceMesh;
 
 	/** Animation jouée en boucle quand il n'y a pas de graphe (studio de l'éditeur) */
 	UAnimSequenceBase* Idle = nullptr; // gardé en vie par UTrainerAnimInstance::IdleAnimation
@@ -54,6 +66,15 @@ public:
 
 	UAnimSequenceBase* GetIdleAnimation() const { return IdleAnimation; }
 
+	/**
+	 *  Mode « suit le corps » (têtes inZOI) : les os communs prennent la pose du corps, les autres (os du visage,
+	 *  absents du corps) gardent leur pose de référence et reçoivent les curseurs du visage. Remplace la Leader Pose,
+	 *  qui ne laisse pas bouger les os propres à la tête.
+	 */
+	void SetPoseSource(USkeletalMeshComponent* InSource) { PoseSource = InSource; }
+
+	USkeletalMeshComponent* GetPoseSource() const { return PoseSource.Get(); }
+
 protected:
 
 	virtual FAnimInstanceProxy* CreateAnimInstanceProxy() override { return new FTrainerAnimInstanceProxy(this); }
@@ -62,6 +83,8 @@ protected:
 private:
 
 	TArray<FTrainerBoneOffset> BoneOffsets;
+
+	TWeakObjectPtr<USkeletalMeshComponent> PoseSource;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequenceBase> IdleAnimation;

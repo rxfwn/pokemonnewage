@@ -16,6 +16,7 @@ class UCanvasPanelSlot;
 class UEditableText;
 class UScrollBox;
 class UTextBlock;
+class UVerticalBox;
 class UTrainerAppearanceData;
 class UWidget;
 
@@ -98,12 +99,15 @@ protected:
 	UFUNCTION()
 	void HandleCatchphraseChanged(const FText& Text);
 
+	UFUNCTION()
+	void HandleHexCommitted(const FText& Text, ETextCommit::Type CommitType);
+
 private:
 
 	enum class ETab : uint8 { Presets, Face, Body, Outfit, Accessories };
 
 	/** Ce que montre le panneau de droite dans l'onglet Visage (points sur le visage) */
-	enum class EFacePart : uint8 { Presets, Hair, Skin, Eyes, Makeup };
+	enum class EFacePart : uint8 { Presets, Hair, Skin, Features, Eyes, Makeup };
 
 	// ------------------------------------------------ Construction
 	void BuildLeftColumn();
@@ -112,6 +116,14 @@ private:
 	void BuildBottomLeft();
 	void BuildFaceHotspots();
 	void BuildRightPanel();
+	void BuildWornColumn();
+
+	/** Colonne de gauche (hors Modèles) : une vignette par pièce portée, comme inZOI */
+	void RefreshWornColumn();
+
+	/** Nuancier de la pièce portée dans l'emplacement montré (sous la grille, comme inZOI) */
+	void RefreshColorPanel(FName SlotName, const FTrainerPartDef* Part);
+	void SetPartColor(FName SlotName, int32 Zone, const FLinearColor& Color);
 
 	/** Remplit le panneau de droite selon l'onglet, la partie du visage et le mode */
 	void RefreshRightPanel();
@@ -166,6 +178,12 @@ private:
 	ETab Tab = ETab::Presets;
 	/** Emplacement montré dans la Tenue / les Accessoires (None = le premier) */
 	FName PartSlotFilter;
+	/** Catégorie montrée dans la grille (vide = toutes) */
+	FString PartCategoryFilter;
+	/** Zone de couleur réglée dans le nuancier (0 = couleur principale, 1 à 3 = zones du masque) */
+	int32 ColorZone = 0;
+	/** Emplacement dont le nuancier est affiché */
+	FName ColorSlot;
 	EFacePart FacePart = EFacePart::Presets;
 	bool bDetailed = false;
 	bool bUIHidden = false;
@@ -191,6 +209,11 @@ private:
 	UPROPERTY(Transient) TObjectPtr<UWidget> RightPanel;
 	UPROPERTY(Transient) TObjectPtr<UWidget> ModeBar;
 	UPROPERTY(Transient) TObjectPtr<UWidget> Hotspots;
+	UPROPERTY(Transient) TObjectPtr<UWidget> ProfileGroup;
+	UPROPERTY(Transient) TObjectPtr<UWidget> WornColumn;
+	UPROPERTY(Transient) TObjectPtr<UVerticalBox> WornList;
+	UPROPERTY(Transient) TObjectPtr<UVerticalBox> ColorBox;
+	UPROPERTY(Transient) TObjectPtr<UEditableText> HexBox;
 	UPROPERTY(Transient) TObjectPtr<UCreatorButton> FinishButton;
 	UPROPERTY(Transient) TArray<TObjectPtr<UCreatorButton>> TabButtons;
 	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> TabLabels;

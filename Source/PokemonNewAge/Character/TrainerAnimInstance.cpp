@@ -3,6 +3,8 @@
 #include "Animation/AnimSequenceBase.h"
 #include "Animation/AnimationPoseData.h"
 #include "BonePose.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 
 void FTrainerAnimInstanceProxy::PreUpdate(UAnimInstance* InAnimInstance, float DeltaSeconds)
 {
@@ -14,6 +16,39 @@ void FTrainerAnimInstanceProxy::PreUpdate(UAnimInstance* InAnimInstance, float D
 		{
 			Idle = Trainer->GetIdleAnimation();
 			IdleTime = 0.f;
+		}
+
+		// Mode « suit le corps » : copie (fil principal) de la pose locale du corps pour les os qu'on a en commun
+		CopiedBones.Reset();
+		CopiedNames.Reset();
+		const USkeletalMeshComponent* Source = Trainer->GetPoseSource();
+		const USkeletalMeshComponent* Own = Trainer->GetSkelMeshComponent();
+		const USkeletalMesh* SourceMesh = Source ? Cast<USkeletalMesh>(Source->GetSkeletalMeshAsset()) : nullptr;
+		const USkeletalMesh* OwnMesh = Own ? Cast<USkeletalMesh>(Own->GetSkeletalMeshAsset()) : nullptr;
+		if (SourceMesh && OwnMesh)
+		{
+			if (MappedOwnMesh.Get() != OwnMesh || MappedSourceMesh.Get() != SourceMesh)
+			{
+				const FReferenceSkeleton& OwnRef = OwnMesh->GetRefSkeleton();
+				const FReferenceSkeleton& SourceRef = SourceMesh->GetRefSkeleton();
+				SourceMap.Init(INDEX_NONE, OwnRef.GetNum());
+				for (int32 Index = 0; Index < OwnRef.GetNum(); ++Index)
+				{
+					SourceMap[Index] = SourceRef.FindBoneIndex(OwnRef.GetBoneName(Index));
+				}
+				MappedOwnMesh = OwnMesh;
+				MappedSourceMesh = SourceMesh;
+			}
+			const TArray<FTransform>& SourcePose = Source->GetBoneSpaceTransforms();
+			const FReferenceSkeleton& OwnRef = OwnMesh->GetRefSkeleton();
+			for (int32 Index = 0; Index < SourceMap.Num(); ++Index)
+			{
+				if (SourceMap[Index] != INDEX_NONE && SourcePose.IsValidIndex(SourceMap[Index]))
+				{
+					CopiedBones.Emplace(Index, SourcePose[SourceMap[Index]]);
+					CopiedNames.Add(OwnRef.GetBoneName(Index));
+				}
+			}
 		}
 	}
 }
@@ -51,18 +86,32 @@ bool FTrainerAnimInstanceProxy::Evaluate(FPoseContext& Output)
 		Output.ResetToRefPose();
 	}
 
+	// 1 bis) Mode « suit le corps » : les os communs prennent la pose du corps (déjà déformée par ses curseurs)
+	const FBoneContainer& Bones = Output.Pose.GetBoneContainer();
+	for (const TPair<int32, FTransform>& Copied : CopiedBones)
+	{
+		const FCompactPoseBoneIndex PoseIndex = Bones.MakeCompactPoseIndex(FMeshPoseBoneIndex(Copied.Key));
+		if (PoseIndex.IsValid())
+		{
+			Output.Pose[PoseIndex] = Copied.Value;
+		}
+	}
+
 	// 2) Les curseurs : on ajoute les déplacements dans l'espace local de chaque os
 	if (Offsets.IsEmpty())
 	{
 		return true;
 	}
-	const FBoneContainer& Bones = Output.Pose.GetBoneContainer();
 	const FReferenceSkeleton& RefSkeleton = Bones.GetReferenceSkeleton();
 	// Rapport d'échelle ajouté à chaque os : ses enfants ne doivent pas en hériter (comme inZOI) ;
 	// sinon grossir le cou grossirait aussi la tête, et les deux os du cou s'additionneraient
 	TMap<int32, FVector> ScaleRatio;
 	for (const FTrainerBoneOffset& Offset : Offsets)
 	{
+		if (CopiedNames.Contains(Offset.Bone))
+		{
+			continue; // os copié du corps : il a déjà reçu ce déplacement
+		}
 		const int32 MeshIndex = RefSkeleton.FindBoneIndex(Offset.Bone);
 		if (MeshIndex == INDEX_NONE)
 		{

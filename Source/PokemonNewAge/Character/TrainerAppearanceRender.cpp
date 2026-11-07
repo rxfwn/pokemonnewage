@@ -81,7 +81,29 @@ namespace
 				}
 			}
 			Component->SetVisibility(true);
-			Component->SetLeaderPoseComponent(Mesh);
+
+			// Tête (onglet Visage) : elle a ses propres os du visage, que la Leader Pose ne laisse pas bouger.
+			// Elle suit donc le corps par copie de pose et reçoit les curseurs du visage (UTrainerAnimInstance).
+			const FTrainerPartSlotDef* SlotDef = Data->FindSlot(Pair.Key);
+			if (SlotDef && SlotDef->Tab == TEXT("Face"))
+			{
+				Component->SetLeaderPoseComponent(nullptr);
+				Component->bUseBoundsFromLeaderPoseComponent = false;
+				if (!Cast<UTrainerAnimInstance>(Component->GetAnimInstance()))
+				{
+					Component->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+					Component->SetAnimInstanceClass(UTrainerAnimInstance::StaticClass());
+				}
+				if (UTrainerAnimInstance* Anim = Cast<UTrainerAnimInstance>(Component->GetAnimInstance()))
+				{
+					Anim->SetPoseSource(Mesh);
+				}
+				Component->AddTickPrerequisiteComponent(Mesh);
+			}
+			else
+			{
+				Component->SetLeaderPoseComponent(Mesh);
+			}
 		}
 	}
 
@@ -123,6 +145,36 @@ namespace
 			if (MID)
 			{
 				MID->SetVectorParameterValue(Parameter, Color);
+			}
+		}
+	}
+
+	/** Couleurs choisies dans le nuancier pour la pièce de cet emplacement (Tint = couleur principale, Color1-3 = zones du masque) */
+	void ApplyPartColors(USkeletalMeshComponent* Component, const FTrainerAppearance& Appearance)
+	{
+		if (!Component->ComponentHasTag(PartTag) || Component->ComponentTags.Num() < 2)
+		{
+			return;
+		}
+		const FName Slot = Component->ComponentTags[1];
+		for (const FTrainerPartColor& Choice : Appearance.PartColors)
+		{
+			if (Choice.Slot != Slot)
+			{
+				continue;
+			}
+			const FName Parameter = TrainerPartColorParameter(Choice.Zone);
+			for (int32 Index = 0; Index < Component->GetNumMaterials(); ++Index)
+			{
+				UMaterialInstanceDynamic* MID = Cast<UMaterialInstanceDynamic>(Component->GetMaterial(Index));
+				if (!MID)
+				{
+					MID = Component->CreateDynamicMaterialInstance(Index);
+				}
+				if (MID)
+				{
+					MID->SetVectorParameterValue(Parameter, Choice.Color);
+				}
 			}
 		}
 	}
@@ -179,6 +231,16 @@ FTrainerAppearance TrainerAppearanceRender::Sanitize(const UTrainerAppearanceDat
 		}
 	}
 	BySlot.GenerateValueArray(Clean.Outfit);
+	// Couleurs des pièces : une par emplacement et par zone (la dernière gagne), zones 0 à 3
+	Clean.PartColors.Reset();
+	for (const FTrainerPartColor& Choice : Appearance.PartColors)
+	{
+		if (Choice.Slot.IsNone() || Choice.Zone < 0 || Choice.Zone > 3)
+		{
+			continue;
+		}
+		Clean.SetPartColor(Choice.Slot, Choice.Zone, ClampColor(Choice.Color));
+	}
 	return Clean;
 }
 
@@ -218,13 +280,14 @@ bool TrainerAppearanceRender::Apply(const UTrainerAppearanceData* Data, AActor* 
 	ApplyParts(Data, *Base, Appearance, Owner, Mesh);
 
 	// Curseurs « par os » : seulement si l'animation sait les appliquer (TrainerAnimInstance ou un enfant)
+	const TArray<FTrainerBoneOffset> Offsets = Data->ComputeBoneOffsets(*Base, Appearance);
 	if (UTrainerAnimInstance* Anim = Cast<UTrainerAnimInstance>(Mesh->GetAnimInstance()))
 	{
-		Anim->SetBoneOffsets(Data->ComputeBoneOffsets(*Base, Appearance));
+		Anim->SetBoneOffsets(Offsets);
 		Anim->SetIdleAnimation(Base->IdleAnimation.LoadSynchronous());
 	}
 
-	// Le corps et tout ce qui le suit (vêtements, cheveux en Leader Pose) reçoivent les mêmes morphs et couleurs
+	// Le corps et ses pièces (vêtements en Leader Pose, tête qui copie la pose) reçoivent les mêmes morphs et couleurs
 	TArray<USkeletalMeshComponent*> Targets = { Mesh };
 	if (Owner)
 	{
@@ -232,7 +295,8 @@ bool TrainerAppearanceRender::Apply(const UTrainerAppearanceData* Data, AActor* 
 		Owner->GetComponents<USkeletalMeshComponent>(Children);
 		for (USkeletalMeshComponent* Child : Children)
 		{
-			if (Child != Mesh && Child->LeaderPoseComponent.Get() == Mesh)
+			const bool bPart = Child->ComponentHasTag(PartTag) && Child->GetSkeletalMeshAsset();
+			if (Child != Mesh && (Child->LeaderPoseComponent.Get() == Mesh || bPart))
 			{
 				Targets.Add(Child);
 			}
@@ -240,9 +304,17 @@ bool TrainerAppearanceRender::Apply(const UTrainerAppearanceData* Data, AActor* 
 	}
 	for (USkeletalMeshComponent* Target : Targets)
 	{
+		if (Target != Mesh)
+		{
+			if (UTrainerAnimInstance* PartAnim = Cast<UTrainerAnimInstance>(Target->GetAnimInstance()))
+			{
+				PartAnim->SetBoneOffsets(Offsets); // curseurs du visage sur les os de la tête
+			}
+		}
 		ApplyMorphs(Data, *Base, Appearance, Target);
 		ApplyColor(Target, Data->SkinMaterialSlots, Data->SkinColorParameter, Appearance.SkinColor);
 		ApplyColor(Target, Data->EyeMaterialSlots, Data->EyeColorParameter, Appearance.EyeColor);
+		ApplyPartColors(Target, Appearance);
 	}
 	return true;
 }

@@ -27,6 +27,7 @@
 #include "Components/VerticalBoxSlot.h"
 #include "Components/WrapBox.h"
 #include "Engine/Texture2D.h"
+#include "Materials/MaterialInstance.h"
 #include "GameFramework/PlayerController.h"
 #include "HAL/PlatformTime.h"
 
@@ -71,10 +72,20 @@ namespace CharacterCreator
 	const FVector2D DesignSize(1920.f, 1080.f);
 	constexpr float LeftX = 70.f;
 	constexpr float LeftWidth = 390.f;
-	const FVector2D PanelPos(1410.f, 100.f);
-	const FVector2D PanelSize(460.f, 820.f);
-	constexpr float HotspotX = 1226.f;
-	const float HotspotTops[] = { 342.f, 447.f, 532.f, 622.f, 712.f };
+	// Panneau de droite élargi (colonne des emplacements + colonne des catégories + grille, comme inZOI)
+	const FVector2D PanelPos(1250.f, 90.f);
+	const FVector2D PanelSize(630.f, 830.f);
+	constexpr float HotspotX = 1010.f;
+	const float HotspotTops[] = { 300.f, 390.f, 480.f, 570.f, 660.f, 750.f };
+	constexpr float SlotColumnWidth = 104.f;
+	constexpr float CategoryColumnWidth = 128.f;
+	constexpr float TileSize = 98.f;
+	/** Couleurs toutes faites du nuancier (rangée « Modèles » d'inZOI) puis le nuancier complet */
+	const FLinearColor ClothTemplates[] = {
+		FLinearColor::FromSRGBColor(FColor(0x2B, 0x2E, 0x33)), FLinearColor::FromSRGBColor(FColor(0x3B, 0x2F, 0x28)),
+		FLinearColor::FromSRGBColor(FColor(0xB8, 0xA4, 0x88)), FLinearColor::FromSRGBColor(FColor(0x3C, 0x55, 0x6E)),
+		FLinearColor::FromSRGBColor(FColor(0x40, 0x3C, 0x5F)), FLinearColor::FromSRGBColor(FColor(0x8C, 0x8F, 0x94)),
+		FLinearColor::FromSRGBColor(FColor(0xE6, 0xE4, 0xDF)) };
 	constexpr float BottomY = 994.f;
 	constexpr float PillHeight = 52.f;
 	constexpr int32 GridColumns = 3;
@@ -262,6 +273,7 @@ TSharedRef<SWidget> UCharacterCreatorWidget::RebuildWidget()
 		BuildToolbar();
 		BuildFaceHotspots();
 		BuildRightPanel();
+		BuildWornColumn();
 		BuildTabs();
 		BuildBottomLeft();
 
@@ -314,32 +326,37 @@ void UCharacterCreatorWidget::BuildLeftColumn()
 		: (Mode == ETrainerEditorMode::Wardrobe ? LOCTEXT("TitleWardrobe", "Armoire") : LOCTEXT("TitleAppearance", "Apparence"));
 	Place(Canvas, MakeText(WidgetTree, Title, 28.f, PokemonFonts::EStyle::Regular, FLinearColor(0.75f, 0.88f, 1.f, 1.f)), FVector2D(TitleX, 20.f), FVector2D(500.f, 40.f));
 
-	Place(Canvas, MakeText(WidgetTree, LOCTEXT("Question", "À quoi ressemble ton dresseur ?"), 34.f, PokemonFonts::EStyle::Bold), FVector2D(66.f, 86.f), FVector2D(700.f, 46.f));
-	Place(Canvas, MakeText(WidgetTree, LOCTEXT("Subtitle", "Donne vie au dresseur que tu imagines."), 22.f, PokemonFonts::EStyle::Regular, DimColor), FVector2D(LeftX, 130.f), FVector2D(700.f, 30.f));
+	// Profil (onglet Modèles seulement ; ailleurs la colonne des pièces portées prend sa place, comme inZOI)
+	UCanvasPanel* Group = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("Profile"));
+	Group->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	Place(Group, MakeText(WidgetTree, LOCTEXT("Question", "À quoi ressemble ton dresseur ?"), 34.f, PokemonFonts::EStyle::Bold), FVector2D(66.f, 86.f), FVector2D(700.f, 46.f));
+	Place(Group, MakeText(WidgetTree, LOCTEXT("Subtitle", "Donne vie au dresseur que tu imagines."), 22.f, PokemonFonts::EStyle::Regular, DimColor), FVector2D(LeftX, 130.f), FVector2D(700.f, 30.f));
 
 	// Profil : prénom et base
-	Place(Canvas, MakeText(WidgetTree, LOCTEXT("Profile", "Profil"), 28.f, PokemonFonts::EStyle::Bold), FVector2D(LeftX, 200.f), FVector2D(LeftWidth, 40.f));
-	Place(Canvas, MakeLine(WidgetTree), FVector2D(LeftX, 244.f), FVector2D(LeftWidth, 1.f));
+	Place(Group, MakeText(WidgetTree, LOCTEXT("Profile", "Profil"), 28.f, PokemonFonts::EStyle::Bold), FVector2D(LeftX, 200.f), FVector2D(LeftWidth, 40.f));
+	Place(Group, MakeLine(WidgetTree), FVector2D(LeftX, 244.f), FVector2D(LeftWidth, 1.f));
 
-	Place(Canvas, MakeText(WidgetTree, LOCTEXT("Name", "Prénom"), 24.f), FVector2D(LeftX, 268.f), FVector2D(150.f, 34.f));
-	NameBox = MakeField(WidgetTree, Canvas, FVector2D(230.f, 262.f), FVector2D(230.f, 44.f), LOCTEXT("NameHint", "Ton prénom"), 24.f);
+	Place(Group, MakeText(WidgetTree, LOCTEXT("Name", "Prénom"), 24.f), FVector2D(LeftX, 268.f), FVector2D(150.f, 34.f));
+	NameBox = MakeField(WidgetTree, Group, FVector2D(230.f, 262.f), FVector2D(230.f, 44.f), LOCTEXT("NameHint", "Ton prénom"), 24.f);
 	NameBox->SetText(FText::FromString(Name));
 	NameBox->OnTextChanged.AddUniqueDynamic(this, &UCharacterCreatorWidget::HandleNameChanged);
 
-	Place(Canvas, MakeText(WidgetTree, LOCTEXT("Base", "Base"), 24.f), FVector2D(LeftX, 326.f), FVector2D(150.f, 34.f));
-	Place(Canvas, MakeTextButton(WidgetTree, FText::FromString(TEXT("‹")), 34.f, [this]() { SelectBase(-1); }), FVector2D(230.f, 318.f), FVector2D(44.f, 44.f));
+	Place(Group, MakeText(WidgetTree, LOCTEXT("Base", "Base"), 24.f), FVector2D(LeftX, 326.f), FVector2D(150.f, 34.f));
+	Place(Group, MakeTextButton(WidgetTree, FText::FromString(TEXT("‹")), 34.f, [this]() { SelectBase(-1); }), FVector2D(230.f, 318.f), FVector2D(44.f, 44.f));
 	BaseText = MakeText(WidgetTree, FText::GetEmpty(), 24.f);
 	BaseText->SetJustification(ETextJustify::Center);
-	Place(Canvas, BaseText, FVector2D(274.f, 324.f), FVector2D(142.f, 34.f));
-	Place(Canvas, MakeTextButton(WidgetTree, FText::FromString(TEXT("›")), 34.f, [this]() { SelectBase(1); }), FVector2D(416.f, 318.f), FVector2D(44.f, 44.f));
+	Place(Group, BaseText, FVector2D(274.f, 324.f), FVector2D(142.f, 34.f));
+	Place(Group, MakeTextButton(WidgetTree, FText::FromString(TEXT("›")), 34.f, [this]() { SelectBase(1); }), FVector2D(416.f, 318.f), FVector2D(44.f, 44.f));
 
 	// Phrase d'accroche (à la place des Traits d'inZOI) : affichée sur la carte dresseur
-	Place(Canvas, MakeText(WidgetTree, LOCTEXT("Catchphrase", "Phrase d'accroche"), 28.f, PokemonFonts::EStyle::Bold), FVector2D(LeftX, 418.f), FVector2D(LeftWidth, 40.f));
-	Place(Canvas, MakeLine(WidgetTree), FVector2D(LeftX, 462.f), FVector2D(LeftWidth, 1.f));
-	CatchBox = MakeField(WidgetTree, Canvas, FVector2D(LeftX, 482.f), FVector2D(LeftWidth, 48.f), LOCTEXT("CatchHint", "« Je serai le meilleur dresseur ! »"), 22.f);
+	Place(Group, MakeText(WidgetTree, LOCTEXT("Catchphrase", "Phrase d'accroche"), 28.f, PokemonFonts::EStyle::Bold), FVector2D(LeftX, 418.f), FVector2D(LeftWidth, 40.f));
+	Place(Group, MakeLine(WidgetTree), FVector2D(LeftX, 462.f), FVector2D(LeftWidth, 1.f));
+	CatchBox = MakeField(WidgetTree, Group, FVector2D(LeftX, 482.f), FVector2D(LeftWidth, 48.f), LOCTEXT("CatchHint", "« Je serai le meilleur dresseur ! »"), 22.f);
 	CatchBox->SetText(FText::FromString(Catch));
 	CatchBox->OnTextChanged.AddUniqueDynamic(this, &UCharacterCreatorWidget::HandleCatchphraseChanged);
-	Place(Canvas, MakeText(WidgetTree, LOCTEXT("CatchNote", "Elle s'affiche sur ta carte dresseur."), 20.f, PokemonFonts::EStyle::Regular, DimColor), FVector2D(LeftX + 6.f, 540.f), FVector2D(LeftWidth, 30.f));
+	Place(Group, MakeText(WidgetTree, LOCTEXT("CatchNote", "Elle s'affiche sur ta carte dresseur."), 20.f, PokemonFonts::EStyle::Regular, DimColor), FVector2D(LeftX + 6.f, 540.f), FVector2D(LeftWidth, 30.f));
+	ProfileGroup = Group;
+	Place(Canvas, Group, FVector2D::ZeroVector, DesignSize);
 }
 
 void UCharacterCreatorWidget::BuildToolbar()
@@ -432,7 +449,7 @@ void UCharacterCreatorWidget::BuildFaceHotspots()
 	UCanvasPanel* Group = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("Hotspots"));
 	Group->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	const FText Parts[] = { LOCTEXT("PartPresets", "Modèles de visage"), LOCTEXT("PartHair", "Cheveux"), LOCTEXT("PartSkin", "Peau"),
-		LOCTEXT("PartEyes", "Yeux"), LOCTEXT("PartMakeup", "Maquillage") };
+		LOCTEXT("PartFeatures", "Traits du visage"), LOCTEXT("PartEyes", "Yeux"), LOCTEXT("PartMakeup", "Maquillage") };
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Parts); ++Index)
 	{
 		UHorizontalBox* Row = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
@@ -469,6 +486,10 @@ void UCharacterCreatorWidget::BuildRightPanel()
 	PanelList->SetScrollbarThickness(FVector2D(4.f, 4.f));
 	UVerticalBoxSlot* ListSlot = Column->AddChildToVerticalBox(PanelList);
 	ListSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	// Nuancier de la pièce portée, fixe sous la grille
+	ColorBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("ColorBox"));
+	ColorBox->SetVisibility(ESlateVisibility::Collapsed);
+	Column->AddChildToVerticalBox(ColorBox)->SetPadding(FMargin(0.f, 10.f, 0.f, 0.f));
 
 	PokemonGlass::FGlassLook Look;
 	Look.CornerRadius = 20.f;
@@ -482,6 +503,9 @@ void UCharacterCreatorWidget::RefreshRightPanel()
 {
 	PanelList->ClearChildren();
 	Sliders.Reset();
+	ColorBox->ClearChildren();
+	ColorBox->SetVisibility(ESlateVisibility::Collapsed);
+	HexBox = nullptr;
 	if (!Data)
 	{
 		return;
@@ -513,12 +537,20 @@ void UCharacterCreatorWidget::RefreshRightPanel()
 			break;
 		case EFacePart::Hair:
 			PanelTitle->SetText(LOCTEXT("PanelHair", "Cheveux"));
-			AddNote(LOCTEXT("HairSoon", "Les coiffures arrivent avec la garde-robe : elles se rangeront ici."));
+			if (!AddPartGrid(TEXT("Hair")))
+			{
+				AddNote(LOCTEXT("HairSoon", "Les coiffures, barbes et moustaches se rangeront ici dès qu'elles seront importées."));
+			}
 			break;
 		case EFacePart::Skin:
 			PanelTitle->SetText(LOCTEXT("PanelSkin", "Peau"));
 			AddSection(LOCTEXT("SkinTone", "Teint"));
 			AddSwatches(Data->SkinPalette, true);
+			break;
+		case EFacePart::Features:
+			PanelTitle->SetText(LOCTEXT("PanelFeatures", "Traits du visage"));
+			AddNote(LOCTEXT("FeaturesHint", "Chaque curseur déplace une partie du visage. Le mode Détaillé permet aussi d'attraper les points sur le visage."));
+			AddSliders(ETrainerSliderGroup::Face);
 			break;
 		case EFacePart::Eyes:
 			PanelTitle->SetText(LOCTEXT("PanelEyes", "Yeux"));
@@ -773,48 +805,87 @@ bool UCharacterCreatorWidget::AddPartGrid(FName TabName)
 			Shown = SlotDef;
 		}
 	}
-
-	// Puces des emplacements (Haut, Bas, Chaussures...) quand il y en a plusieurs
-	if (Slots.Num() > 1)
-	{
-		UWrapBox* Chips = WidgetTree->ConstructWidget<UWrapBox>(UWrapBox::StaticClass());
-		Chips->SetInnerSlotPadding(FVector2D(8.f, 8.f));
-		for (const FTrainerPartSlotDef* SlotDef : Slots)
-		{
-			const bool bSelected = SlotDef == Shown;
-			const FName SlotName = SlotDef->Slot;
-			UTextBlock* Label = nullptr;
-			UCreatorButton* Chip = MakeTextButton(WidgetTree, SlotDef->Label.IsEmpty() ? FText::FromName(SlotName) : SlotDef->Label, 20.f,
-				[this, SlotName]() { PartSlotFilter = SlotName; RefreshRightPanel(); }, &Label, bSelected ? SelectedFill : ButtonFill, 18.f);
-			if (bSelected && Label)
-			{
-				Label->SetColorAndOpacity(FSlateColor(DarkText));
-				Label->SetShadowColorAndOpacity(FLinearColor::Transparent);
-			}
-			Chips->AddChildToWrapBox(MakeBox(WidgetTree, FVector2D(0.f, 40.f), Chip));
-		}
-		PanelList->AddChild(Chips);
-		if (UScrollBoxSlot* ChipsSlot = Cast<UScrollBoxSlot>(Chips->Slot))
-		{
-			ChipsSlot->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
-		}
-	}
+	const FName SlotName = Shown->Slot;
 
 	// Pièce portée maintenant dans cet emplacement
 	const TMap<FName, const FTrainerPartDef*> Worn = Data->ResolveParts(*Base, Current);
-	const FTrainerPartDef* const* WornPart = Worn.Find(Shown->Slot);
-	const FName WornId = WornPart && *WornPart ? (*WornPart)->Id : NAME_None;
+	const FTrainerPartDef* const* WornPart = Worn.Find(SlotName);
+	const FTrainerPartDef* WornDef = WornPart ? *WornPart : nullptr;
+	const FName WornId = WornDef ? WornDef->Id : NAME_None;
 
 	TArray<const FTrainerPartDef*> List;
+	TArray<FString> Categories;
 	for (const FTrainerPartDef& Part : Data->Parts)
 	{
-		if (Part.Slot == Shown->Slot && Part.FitsBase(Base->Id))
+		if (Part.Slot == SlotName && Part.FitsBase(Base->Id))
 		{
 			List.Add(&Part);
+			Categories.AddUnique(Part.Category.ToString());
 		}
 	}
+	Categories.Remove(FString());
+	if (!PartCategoryFilter.IsEmpty() && !Categories.Contains(PartCategoryFilter))
+	{
+		PartCategoryFilter.Reset();
+	}
 
-	const FName SlotName = Shown->Slot;
+	// Trois colonnes comme inZOI : emplacements (Haut, Bas...), catégories (T-shirts, Sweats...), grille
+	UHorizontalBox* Columns = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+	PanelList->AddChild(Columns);
+
+	auto AddListEntry = [this](UVerticalBox* Box, const FText& Label, bool bSelected, TFunction<void()> OnClick)
+	{
+		UTextBlock* Text = nullptr;
+		UCreatorButton* Button = MakeTextButton(WidgetTree, Label, 19.f, MoveTemp(OnClick), &Text, bSelected ? SelectedFill : FLinearColor(1.f, 1.f, 1.f, 0.f), 14.f);
+		if (Text)
+		{
+			Text->SetAutoWrapText(true);
+			if (bSelected)
+			{
+				Text->SetColorAndOpacity(FSlateColor(DarkText));
+				Text->SetShadowColorAndOpacity(FLinearColor::Transparent);
+			}
+			else
+			{
+				Text->SetColorAndOpacity(FSlateColor(DimColor));
+			}
+		}
+		Box->AddChildToVerticalBox(MakeBox(WidgetTree, FVector2D(0.f, 56.f), Button))->SetPadding(FMargin(0.f, 0.f, 0.f, 6.f));
+	};
+
+	if (Slots.Num() > 1)
+	{
+		UVerticalBox* SlotColumn = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
+		for (const FTrainerPartSlotDef* SlotDef : Slots)
+		{
+			const FName EntrySlot = SlotDef->Slot;
+			AddListEntry(SlotColumn, SlotDef->Label.IsEmpty() ? FText::FromName(EntrySlot) : SlotDef->Label, SlotDef == Shown,
+				[this, EntrySlot]() { PartSlotFilter = EntrySlot; PartCategoryFilter.Reset(); ColorZone = 0; RefreshRightPanel(); });
+		}
+		Columns->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(SlotColumnWidth, 0.f), SlotColumn))->SetPadding(FMargin(0.f, 0.f, 10.f, 0.f));
+	}
+	if (Categories.Num() > 1)
+	{
+		UVerticalBox* CategoryColumn = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
+		AddListEntry(CategoryColumn, LOCTEXT("CategoryAll", "Tout"), PartCategoryFilter.IsEmpty(), [this]() { PartCategoryFilter.Reset(); RefreshRightPanel(); });
+		for (const FString& Category : Categories)
+		{
+			AddListEntry(CategoryColumn, FText::FromString(Category), Category == PartCategoryFilter,
+				[this, Category]() { PartCategoryFilter = Category; RefreshRightPanel(); });
+		}
+		UBorder* Back = MakeRounded(WidgetTree, FLinearColor(1.f, 1.f, 1.f, 0.08f), 14.f);
+		Back->SetPadding(FMargin(6.f));
+		Back->SetContent(CategoryColumn);
+		Back->SetVerticalAlignment(VAlign_Top);
+		UHorizontalBoxSlot* CategorySlot = Columns->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(CategoryColumnWidth, 0.f), Back));
+		CategorySlot->SetPadding(FMargin(0.f, 0.f, 10.f, 0.f));
+		CategorySlot->SetVerticalAlignment(VAlign_Top);
+	}
+
+	UVerticalBox* Grid = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
+	UHorizontalBoxSlot* GridSlot = Columns->AddChildToHorizontalBox(Grid);
+	GridSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+
 	auto Wear = [this, SlotName](FName Id)
 	{
 		FTrainerAppearance New = Current;
@@ -831,9 +902,9 @@ bool UCharacterCreatorWidget::AddPartGrid(FName TabName)
 		New.Outfit.Add(Id);
 		ChangeAppearance(New, SlotName, false);
 		RefreshRightPanel();
+		RefreshWornColumn();
 	};
 
-	FString Category = TEXT("\x01");
 	int32 Column = 0;
 	UHorizontalBox* Row = nullptr;
 	auto AddTile = [&](UWidget* Inside, bool bSelected, TFunction<void()> OnClick)
@@ -841,17 +912,13 @@ bool UCharacterCreatorWidget::AddPartGrid(FName TabName)
 		if (!Row || Column == GridColumns)
 		{
 			Row = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
-			PanelList->AddChild(Row);
-			if (UScrollBoxSlot* RowSlot = Cast<UScrollBoxSlot>(Row->Slot))
-			{
-				RowSlot->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
-			}
+			Grid->AddChildToVerticalBox(Row)->SetPadding(FMargin(0.f, 0.f, 0.f, 10.f));
 			Column = 0;
 		}
-		UCreatorButton* Button = MakeButton(WidgetTree, Inside, ButtonFill, 16.f, MoveTemp(OnClick),
-			bSelected ? FLinearColor::White : FLinearColor(1.f, 1.f, 1.f, 0.25f), bSelected ? 4.f : 1.f);
-		UHorizontalBoxSlot* TileSlot = Row->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(124.f, 124.f), Button));
-		TileSlot->SetPadding(FMargin(0.f, 0.f, 12.f, 0.f));
+		UCreatorButton* Button = MakeButton(WidgetTree, Inside, ButtonFill, TileSize * 0.5f, MoveTemp(OnClick),
+			bSelected ? FLinearColor(0.45f, 0.72f, 1.f, 1.f) : FLinearColor(1.f, 1.f, 1.f, 0.25f), bSelected ? 4.f : 1.f);
+		UHorizontalBoxSlot* TileSlot = Row->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(TileSize, TileSize), Button));
+		TileSlot->SetPadding(FMargin(0.f, 0.f, 10.f, 0.f));
 		++Column;
 	};
 
@@ -864,21 +931,16 @@ bool UCharacterCreatorWidget::AddPartGrid(FName TabName)
 	}
 	for (const FTrainerPartDef* Part : List)
 	{
-		if (Part->Category.ToString() != Category)
+		if (!PartCategoryFilter.IsEmpty() && Part->Category.ToString() != PartCategoryFilter)
 		{
-			Category = Part->Category.ToString();
-			if (!Category.IsEmpty())
-			{
-				Row = nullptr;
-				AddSection(Part->Category);
-			}
+			continue;
 		}
 		UWidget* Inside = nullptr;
 		if (UTexture2D* Thumbnail = Part->Thumbnail.LoadSynchronous())
 		{
 			UImage* Image = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
 			Image->SetBrushFromTexture(Thumbnail);
-			Inside = MakeBox(WidgetTree, FVector2D(112.f, 112.f), Image);
+			Inside = MakeBox(WidgetTree, FVector2D(TileSize - 8.f, TileSize - 8.f), Image);
 		}
 		else
 		{
@@ -890,7 +952,231 @@ bool UCharacterCreatorWidget::AddPartGrid(FName TabName)
 		const FName Id = Part->Id;
 		AddTile(Inside, Id == WornId, [Wear, Id]() { Wear(Id); });
 	}
+
+	// Nuancier de la pièce portée (pas pour les têtes : leur couleur, c'est la peau)
+	if (WornDef && TabName != TEXT("Face"))
+	{
+		RefreshColorPanel(SlotName, WornDef);
+	}
 	return true;
+}
+
+void UCharacterCreatorWidget::RefreshColorPanel(FName SlotName, const FTrainerPartDef* Part)
+{
+	ColorBox->ClearChildren();
+	ColorBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+	// Zones : couleur principale, plus les zones du masque que le matériau de la pièce utilise vraiment
+	TArray<int32> Zones = { 0 };
+	for (const TSoftObjectPtr<UMaterialInterface>& Soft : Part->Materials)
+	{
+		if (const UMaterialInstance* Instance = Cast<UMaterialInstance>(Soft.LoadSynchronous()))
+		{
+			for (const FVectorParameterValue& Value : Instance->VectorParameterValues)
+			{
+				for (int32 Zone = 1; Zone <= 3; ++Zone)
+				{
+					if (Value.ParameterInfo.Name == TrainerPartColorParameter(Zone))
+					{
+						Zones.AddUnique(Zone);
+					}
+				}
+			}
+		}
+	}
+	Zones.Sort();
+	if (!Zones.Contains(ColorZone))
+	{
+		ColorZone = 0;
+	}
+
+	auto ZoneColor = [this, SlotName](int32 Zone)
+	{
+		const FTrainerPartColor* Found = Current.FindPartColor(SlotName, Zone);
+		return Found ? Found->Color : FLinearColor::White;
+	};
+
+	// En-tête : « Couleur » et Réinitialiser
+	UHorizontalBox* Header = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+	UHorizontalBoxSlot* TitleSlot = Header->AddChildToHorizontalBox(MakeText(WidgetTree, LOCTEXT("ColorTitle", "Couleur"), 22.f, PokemonFonts::EStyle::Bold));
+	TitleSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	TitleSlot->SetVerticalAlignment(VAlign_Center);
+	UCreatorButton* Reset = MakeTextButton(WidgetTree, LOCTEXT("ColorReset", "Réinitialiser"), 18.f, [this, SlotName]()
+	{
+		FTrainerAppearance New = Current;
+		New.ClearPartColors(SlotName);
+		ChangeAppearance(New, TEXT("Color"), false);
+		RefreshRightPanel();
+	}, nullptr, ButtonFill, 16.f);
+	Header->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(150.f, 34.f), Reset));
+	ColorBox->AddChildToVerticalBox(Header)->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
+
+	// Zones (Couleur principale, Couleur 1...) quand il y en a plusieurs
+	if (Zones.Num() > 1)
+	{
+		UHorizontalBox* ZoneRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+		for (const int32 Zone : Zones)
+		{
+			const bool bSelected = Zone == ColorZone;
+			UHorizontalBox* Inside = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+			UHorizontalBoxSlot* DotSlot = Inside->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(18.f, 18.f), MakeRounded(WidgetTree, ZoneColor(Zone), 9.f, FLinearColor::White, 1.f)));
+			DotSlot->SetVerticalAlignment(VAlign_Center);
+			DotSlot->SetPadding(FMargin(8.f, 0.f, 6.f, 0.f));
+			UTextBlock* Label = MakeText(WidgetTree, Zone == 0 ? LOCTEXT("ZoneMain", "Principale") : FText::Format(LOCTEXT("ZoneN", "Zone {0}"), Zone), 18.f,
+				PokemonFonts::EStyle::Regular, bSelected ? DarkText : TextColor);
+			if (bSelected)
+			{
+				Label->SetShadowColorAndOpacity(FLinearColor::Transparent);
+			}
+			Inside->AddChildToHorizontalBox(Label)->SetVerticalAlignment(VAlign_Center);
+			UCreatorButton* Button = MakeButton(WidgetTree, Inside, bSelected ? SelectedFill : ButtonFill, 16.f, [this, Zone]() { ColorZone = Zone; RefreshRightPanel(); });
+			ZoneRow->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(0.f, 34.f), Button))->SetPadding(FMargin(0.f, 0.f, 8.f, 0.f));
+		}
+		ColorBox->AddChildToVerticalBox(ZoneRow)->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
+	}
+
+	const FLinearColor Selected = ZoneColor(ColorZone);
+	auto AddColorRow = [this, SlotName, Selected](const TArray<FLinearColor>& Colors, float Size)
+	{
+		UHorizontalBox* Row = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+		for (const FLinearColor& Color : Colors)
+		{
+			const bool bSelected = SameColor(Color, Selected);
+			UCreatorButton* Button = MakeButton(WidgetTree, nullptr, Color, Size * 0.5f, [this, SlotName, Color]() { SetPartColor(SlotName, ColorZone, Color); },
+				bSelected ? FLinearColor::White : FLinearColor(1.f, 1.f, 1.f, 0.35f), bSelected ? 3.f : 1.f);
+			Row->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(Size, Size), Button))->SetPadding(FMargin(0.f, 0.f, 8.f, 0.f));
+		}
+		ColorBox->AddChildToVerticalBox(Row)->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
+	};
+
+	// Rangée « Modèles » puis nuancier : 2 rangées de teintes (claires, foncées) + gris
+	AddColorRow(TArray<FLinearColor>(ClothTemplates, UE_ARRAY_COUNT(ClothTemplates)), 40.f);
+	TArray<FLinearColor> Light, Dark, Greys;
+	for (int32 Index = 0; Index < 11; ++Index)
+	{
+		const float Hue = 360.f * Index / 11.f;
+		Light.Add(FLinearColor::MakeFromHSV8(uint8(Hue / 360.f * 255.f), 150, 230));
+		Dark.Add(FLinearColor::MakeFromHSV8(uint8(Hue / 360.f * 255.f), 200, 110));
+		Greys.Add(FLinearColor::MakeFromHSV8(0, 0, uint8(255.f * Index / 10.f)));
+	}
+	AddColorRow(Light, 32.f);
+	AddColorRow(Dark, 32.f);
+	AddColorRow(Greys, 32.f);
+
+	// Code hexadécimal, comme le champ « 403C5F » d'inZOI
+	UHorizontalBox* HexRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+	HexRow->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(40.f, 32.f), MakeRounded(WidgetTree, Selected, 8.f, FLinearColor::White, 1.f)))->SetPadding(FMargin(0.f, 0.f, 10.f, 0.f));
+	UBorder* Field = MakeRounded(WidgetTree, FieldColor, 16.f, FLinearColor(1.f, 1.f, 1.f, 0.35f), 1.f);
+	Field->SetPadding(FMargin(12.f, 2.f));
+	Field->SetVerticalAlignment(VAlign_Center);
+	HexBox = WidgetTree->ConstructWidget<UEditableText>(UEditableText::StaticClass());
+	HexBox->SetFont(PokemonFonts::Get(20.f * FontScale));
+	HexBox->SetText(FText::FromString(Selected.ToFColorSRGB().ToHex().Left(6)));
+	HexBox->OnTextCommitted.AddUniqueDynamic(this, &UCharacterCreatorWidget::HandleHexCommitted);
+	Field->SetContent(HexBox);
+	HexRow->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(140.f, 32.f), Field));
+	ColorBox->AddChildToVerticalBox(HexRow);
+	ColorSlot = SlotName;
+}
+
+void UCharacterCreatorWidget::HandleHexCommitted(const FText& Text, ETextCommit::Type CommitType)
+{
+	FString Hex = Text.ToString().TrimStartAndEnd();
+	Hex.RemoveFromStart(TEXT("#"));
+	if (Hex.Len() != 6 || ColorSlot.IsNone())
+	{
+		return;
+	}
+	for (const TCHAR Char : Hex)
+	{
+		if (!FChar::IsHexDigit(Char))
+		{
+			return;
+		}
+	}
+	SetPartColor(ColorSlot, ColorZone, FLinearColor::FromSRGBColor(FColor::FromHex(Hex)));
+}
+
+void UCharacterCreatorWidget::SetPartColor(FName SlotName, int32 Zone, const FLinearColor& Color)
+{
+	FTrainerAppearance New = Current;
+	New.SetPartColor(SlotName, Zone, FLinearColor(Color.R, Color.G, Color.B, 1.f));
+	ChangeAppearance(New, TEXT("Color"), false);
+	RefreshRightPanel();
+}
+
+void UCharacterCreatorWidget::BuildWornColumn()
+{
+	// Colonne de gauche d'inZOI : les pièces portées en vignettes rondes, un clic ouvre leur onglet
+	WornList = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("WornList"));
+	UScrollBox* Scroll = WidgetTree->ConstructWidget<UScrollBox>(UScrollBox::StaticClass());
+	Scroll->SetScrollbarThickness(FVector2D(3.f, 3.f));
+	Scroll->AddChild(WornList);
+	PokemonGlass::FGlassLook Look;
+	Look.CornerRadius = 44.f;
+	WornColumn = PokemonGlass::Make(WidgetTree, Scroll, FMargin(10.f, 16.f), Look, TEXT("WornColumn"));
+	Place(Canvas, WornColumn, FVector2D(40.f, 150.f), FVector2D(108.f, 760.f));
+}
+
+void UCharacterCreatorWidget::RefreshWornColumn()
+{
+	if (!WornList || !Data)
+	{
+		return;
+	}
+	WornList->ClearChildren();
+	const FTrainerBaseDef* Base = Data->FindBase(Current.Base);
+	if (!Base)
+	{
+		return;
+	}
+	const TMap<FName, const FTrainerPartDef*> Worn = Data->ResolveParts(*Base, Current);
+	for (const FTrainerPartSlotDef& SlotDef : Data->PartSlots)
+	{
+		const FTrainerPartDef* const* Found = Worn.Find(SlotDef.Slot);
+		if (!Found || !*Found)
+		{
+			continue;
+		}
+		const FTrainerPartDef* Part = *Found;
+		UWidget* Inside = nullptr;
+		if (UTexture2D* Thumbnail = Part->Thumbnail.LoadSynchronous())
+		{
+			UImage* Image = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+			Image->SetBrushFromTexture(Thumbnail);
+			Inside = MakeBox(WidgetTree, FVector2D(76.f, 76.f), Image);
+		}
+		else
+		{
+			UTextBlock* Text = MakeText(WidgetTree, SlotDef.Label.IsEmpty() ? FText::FromName(SlotDef.Slot) : SlotDef.Label, 15.f);
+			Text->SetJustification(ETextJustify::Center);
+			Text->SetAutoWrapText(true);
+			Inside = Text;
+		}
+		const FName SlotName = SlotDef.Slot;
+		const FName SlotTab = SlotDef.Tab;
+		UCreatorButton* Button = MakeButton(WidgetTree, Inside, ButtonFill, 42.f, [this, SlotName, SlotTab]()
+		{
+			if (SlotTab == TEXT("Face"))
+			{
+				FacePart = EFacePart::Presets;
+				SelectTab(ETab::Face);
+			}
+			else if (SlotTab == TEXT("Hair"))
+			{
+				FacePart = EFacePart::Hair;
+				SelectTab(ETab::Face);
+			}
+			else
+			{
+				SelectTab(SlotTab == TEXT("Accessories") ? ETab::Accessories : ETab::Outfit);
+			}
+			PartSlotFilter = SlotName;
+			RefreshRightPanel();
+		}, FLinearColor(1.f, 1.f, 1.f, 0.45f), 1.f);
+		Button->SetToolTipText(SlotDef.Label);
+		WornList->AddChildToVerticalBox(MakeBox(WidgetTree, FVector2D(84.f, 84.f), Button))->SetPadding(FMargin(2.f, 0.f, 2.f, 10.f));
+	}
 }
 
 void UCharacterCreatorWidget::AddSwatches(const TArray<FLinearColor>& Colors, bool bSkin)
@@ -948,6 +1234,10 @@ void UCharacterCreatorWidget::RefreshAll()
 	const FTrainerBaseDef* Base = Data ? Data->FindBase(Current.Base) : nullptr;
 	BaseText->SetText(Base ? (Base->Label.IsEmpty() ? FText::FromName(Base->Id) : Base->Label) : FText::GetEmpty());
 
+	ProfileGroup->SetVisibility(Tab == ETab::Presets ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+	WornColumn->SetVisibility(Tab == ETab::Presets ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
+	RefreshWornColumn();
+
 	const bool bFaceOrBody = Tab == ETab::Face || Tab == ETab::Body;
 	ModeBar->SetVisibility(bFaceOrBody ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 	Hotspots->SetVisibility(Tab == ETab::Face && !bDetailed ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
@@ -986,6 +1276,12 @@ void UCharacterCreatorWidget::SetStatus(const FText& Text)
 
 void UCharacterCreatorWidget::SelectTab(ETab NewTab)
 {
+	if (Tab != NewTab)
+	{
+		PartSlotFilter = NAME_None;
+		PartCategoryFilter.Reset();
+		ColorZone = 0;
+	}
 	Tab = NewTab;
 	RefreshAll();
 }
@@ -1133,6 +1429,7 @@ void UCharacterCreatorWidget::Finish()
 	if (CleanName.IsEmpty())
 	{
 		SetStatus(LOCTEXT("NeedName", "Choisis d'abord un prénom."));
+		SelectTab(ETab::Presets); // le prénom est dans le Profil, onglet Modèles
 		if (NameBox)
 		{
 			NameBox->SetKeyboardFocus();

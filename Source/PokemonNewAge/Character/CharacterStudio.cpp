@@ -20,8 +20,8 @@ namespace CharacterStudio
 	constexpr float WallThickness = 20.f;
 
 	/** Gris clair doux des captures d'inZOI */
-	const FLinearColor WallColor(0.50f, 0.51f, 0.53f);
-	const FLinearColor FloorColor(0.42f, 0.43f, 0.45f);
+	const FLinearColor WallColor(0.58f, 0.59f, 0.62f);
+	const FLinearColor FloorColor(0.48f, 0.49f, 0.52f);
 
 	/** Cadrages : point visé, distance (cm), champ de vision (degrés) */
 	// Corps : ~2,1 m visibles en hauteur (16:9) ; visage : ~40 cm
@@ -30,6 +30,8 @@ namespace CharacterStudio
 	constexpr float BodyFov = 45.f;
 	constexpr float FaceDistance = 140.f;
 	constexpr float FaceFov = 28.f;
+	/** Décalage du personnage vers la gauche de l'écran (0 = centré, 0,25 = à 37,5 % de la largeur) */
+	constexpr float ScreenShift = 0.25f;
 	/** Tête par défaut si l'os n'est pas trouvé */
 	constexpr float DefaultHeadHeight = 158.f;
 
@@ -44,8 +46,9 @@ namespace CharacterStudio
 	{
 		const FLinearColor White(1.f, 1.f, 1.f);
 		return {
+			// Doux en premier : lumière de face presque sans ombre dure, comme le studio d'inZOI
+			{ LOCTEXT("LightSoft", "Doux"), 20.f, 17.f, 8.f, 12.f, FLinearColor(1.f, 0.97f, 0.94f), FLinearColor(0.97f, 0.98f, 1.f), White },
 			{ LOCTEXT("LightStudio", "Studio"), 30.f, 11.f, 22.f, 8.f, White, White, White },
-			{ LOCTEXT("LightSoft", "Doux"), 22.f, 18.f, 10.f, 14.f, FLinearColor(1.f, 0.96f, 0.92f), FLinearColor(1.f, 0.97f, 0.95f), White },
 			{ LOCTEXT("LightEvening", "Soirée"), 32.f, 6.f, 28.f, 3.f, FLinearColor(1.f, 0.78f, 0.55f), FLinearColor(0.75f, 0.8f, 1.f), FLinearColor(0.55f, 0.7f, 1.f) },
 		};
 	}
@@ -245,9 +248,14 @@ void ACharacterStudio::Tick(float DeltaSeconds)
 	const bool bFace = Focus == EStudioFocus::Face;
 	const FVector Target = GetFocusPoint();
 	const float Distance = (bFace ? FaceDistance : BodyDistance) * ZoomFactor;
-	const FVector WantedLocation = Target + GetActorForwardVector() * Distance;
-	const FRotator WantedRotation = (Target - WantedLocation).Rotation();
 	const float WantedFov = bFace ? FaceFov : BodyFov;
+	// Comme inZOI : le personnage un peu à gauche de l'écran, la droite reste libre pour le panneau et ses points.
+	// On glisse caméra et point visé ensemble vers la droite de la caméra (ScreenShift = part de la demi-largeur).
+	const FVector ToCamera = GetActorForwardVector();
+	const FVector CameraRight = FVector::CrossProduct(FVector::UpVector, -ToCamera).GetSafeNormal();
+	const FVector Shift = CameraRight * (ScreenShift * Distance * FMath::Tan(FMath::DegreesToRadians(WantedFov * 0.5f)));
+	const FVector WantedLocation = Target + ToCamera * Distance + Shift;
+	const FRotator WantedRotation = (Target + Shift - WantedLocation).Rotation();
 
 	const float Alpha = bSnapCamera ? 1.f : FMath::Clamp(DeltaSeconds * 6.f, 0.f, 1.f);
 	Camera->SetWorldLocation(FMath::Lerp(Camera->GetComponentLocation(), WantedLocation, Alpha));
