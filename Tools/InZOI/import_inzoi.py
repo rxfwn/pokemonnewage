@@ -885,7 +885,12 @@ def build_parts(slow):
                     part.set_editor_property("category", category)
                     part.set_editor_property("bases", [base_id])
                     part.set_editor_property("mesh", mesh)
-                    materials = [part_material(rel) for rel in (game_rel(p) for p in parse_list(row.get("OverrideMaterial"))) if rel]
+                    if slot == "Head":
+                        # Têtes : peau, yeux et dents sont déjà posés sur le mesh (apply_skin). Les matériaux
+                        # « OverrideMaterial » d'inZOI recouvraient la peau (taches) et les yeux (damier)
+                        materials = []
+                    else:
+                        materials = [part_material(rel) for rel in (game_rel(p) for p in parse_list(row.get("OverrideMaterial"))) if rel]
                     part.set_editor_property("materials", [m for m in materials if m])
                     thumbnail = import_texture(game_rel(row.get("Thumbnail")), "ui")
                     if thumbnail:
