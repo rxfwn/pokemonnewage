@@ -667,15 +667,41 @@ def build_hidden():
     return finish_material(material, HIDDEN_MATERIAL)
 
 
+def force_color_texture(texture):
+    """Une texture de couleur importée plus tôt avec un autre rôle (masque, normale...) garde ces réglages :
+    on les remet en couleur sRGB et on note ce qui a été corrigé dans le journal"""
+    TCS = unreal.TextureCompressionSettings
+    before = (str(texture.get_editor_property("compression_settings")), texture.get_editor_property("srgb"),
+              str(texture.get_editor_property("address_x")), str(texture.get_editor_property("lod_group")))
+    changed = False
+    if texture.get_editor_property("compression_settings") != TCS.TC_DEFAULT:
+        set_prop(texture, "compression_settings", TCS.TC_DEFAULT)
+        changed = True
+    if not texture.get_editor_property("srgb"):
+        set_prop(texture, "srgb", True)
+        changed = True
+    for axis in ("address_x", "address_y"):
+        if texture.get_editor_property(axis) != unreal.TextureAddress.TA_WRAP:
+            set_prop(texture, axis, unreal.TextureAddress.TA_WRAP)
+            changed = True
+    log("Texture de peau %s : %s%s" % (texture.get_name(), before, " -> corrigée" if changed else ""))
+    if changed:
+        EAL.save_loaded_asset(texture)
+
+
 def skin_instance(asset_path, color_rel):
     existing = load(asset_path)
     if existing:
+        texture = MEL.get_material_instance_texture_parameter_value(existing, "BaseColorMap")
+        if texture:
+            force_color_texture(texture)
         return existing
     folder, name = split(asset_path)
     instance = asset_tools.create_asset(name, folder, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
     MEL.set_material_instance_parent(instance, build_skin_master())
     texture = import_texture(color_rel, "color") if color_rel else None
     if texture:
+        force_color_texture(texture)
         MEL.set_material_instance_texture_parameter_value(instance, "BaseColorMap", texture)
     MEL.update_material_instance(instance)
     EAL.save_loaded_asset(instance)
