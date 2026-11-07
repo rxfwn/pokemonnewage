@@ -206,8 +206,17 @@ def split(asset_path):
     return folder, name
 
 
+GROOM_REL = "Characters/AvatarParts/Groom"
+
+
 def src(rel, ext):
-    return os.path.join(EXPORTS, *rel.split("/")) + ext
+    path = os.path.join(EXPORTS, *rel.split("/")) + ext
+    # Poils (barbes) : aussi cherchés dans la copie Groom/ à la racine de l'exercice
+    if not os.path.isfile(path) and rel.startswith(GROOM_REL + "/"):
+        copy = os.path.join(SOURCE, "Groom", *rel[len(GROOM_REL) + 1:].split("/")) + ext
+        if os.path.isfile(copy):
+            return copy
+    return path
 
 
 def read_csv(path):
@@ -1069,6 +1078,149 @@ def build_parts(slow):
     return parts, defaults
 
 
+# ---------------------------------------------------------------- Barbes (dossier Groom)
+
+HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
+# Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
+GROOM_SLOTS = [("Beard", "Barbe", "Hair", "Head")]
+# Barbes d'inZOI qui ont un modèle 3D (les 006 à 010 n'ont que des textures)
+BEARDS = ["Beard_001", "Beard_002", "Beard_003"]
+BEARD_CARD = GROOM_REL + "/Textures/Beard/BeardCard_002/BeardCard_002_DIRO"
+# Brun foncé d'inZOI (MI_Beard_Scalp_003) quand le dossier n'a pas de fichier de matériau
+BEARD_ROOT = (0.03434, 0.017642, 0.006049)
+BEARD_TIP = (0.084376, 0.043735, 0.015209)
+
+
+def build_hair_master():
+    """M_InZOI_Hair : poils en cartes (barbe), texture DIRO d'inZOI (A = opacité, R = dégradé racine -> pointe).
+    Couleur : RootColor -> TipColor ; une couleur choisie dans le nuancier (Tint, blanc = couleur d'origine) la remplace."""
+    existing = load(HAIR_MASTER)
+    if existing:
+        return existing
+    material = new_material(HAIR_MASTER)
+    set_prop(material, "blend_mode", unreal.BlendMode.BLEND_MASKED)
+    set_prop(material, "two_sided", True)
+    set_prop(material, "opacity_mask_clip_value", 0.3333)
+    diro = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -900, -200)
+    set_prop(diro, "parameter_name", "DIROMap")
+    set_prop(diro, "texture", unreal.load_asset("/Engine/EngineResources/WhiteSquareTexture"))
+    params = []
+    for index, (name, color) in enumerate((("RootColor", BEARD_ROOT), ("TipColor", BEARD_TIP), ("Tint", (1.0, 1.0, 1.0)))):
+        node = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -900, 50 + index * 150)
+        set_prop(node, "parameter_name", name)
+        set_prop(node, "default_value", unreal.LinearColor(color[0], color[1], color[2], 1))
+        params.append((name, node))
+    custom = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -500, -50)
+    set_prop(custom, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+    set_prop(custom, "code", (
+        "float3 natural = lerp(Root.rgb, Tip.rgb, saturate(Grad));\n"
+        "bool picked = any(Tint.rgb < 0.999);\n"
+        "return picked ? Tint.rgb * lerp(0.55, 1.0, saturate(Grad)) : natural;"))
+    inputs = []
+    for input_name in ("Grad", "Root", "Tip", "Tint"):
+        entry = unreal.CustomInput()
+        entry.set_editor_property("input_name", input_name)
+        inputs.append(entry)
+    set_prop(custom, "inputs", inputs)
+    MEL.connect_material_expressions(diro, "R", custom, "Grad")
+    for (name, node), input_name in zip(params, ("Root", "Tip", "Tint")):
+        MEL.connect_material_expressions(node, "", custom, input_name)
+    MEL.connect_material_property(custom, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    MEL.connect_material_property(diro, "A", unreal.MaterialProperty.MP_OPACITY_MASK)
+    roughness = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -500, 200)
+    set_prop(roughness, "parameter_name", "Roughness")
+    set_prop(roughness, "default_value", 0.7)
+    MEL.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)
+    MEL.connect_material_property(constant(material, 0.25, -500, 300), "", unreal.MaterialProperty.MP_SPECULAR)
+    return finish_material(material, HAIR_MASTER)
+
+
+def groom_colors(json_rel):
+    """RootColor / TipColor d'un fichier de matériau inZOI (valeurs linéaires), sinon le brun par défaut"""
+    root, tip = BEARD_ROOT, BEARD_TIP
+    filename = src(json_rel, ".json")
+    if os.path.isfile(filename):
+        try:
+            with open(filename, encoding="utf-8") as handle:
+                colors = json.load(handle).get("Colors", {})
+            if "RootColor" in colors:
+                root = tuple(colors["RootColor"][c] for c in "RGB")
+            if "TipColor" in colors:
+                tip = tuple(colors["TipColor"][c] for c in "RGB")
+                if "RootColor" not in colors:
+                    root = tuple(v * 0.5 for v in tip)
+        except (ValueError, KeyError):
+            pass
+    return root, tip
+
+
+def hair_instance(asset_path, diro_rel, colors):
+    existing = load(asset_path)
+    if existing:
+        return existing
+    folder, name = split(asset_path)
+    instance = asset_tools.create_asset(name, folder, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
+    MEL.set_material_instance_parent(instance, build_hair_master())
+    texture = import_texture(diro_rel, "color")
+    if texture:
+        MEL.set_material_instance_texture_parameter_value(instance, "DIROMap", texture)
+    root, tip = colors
+    MEL.set_material_instance_vector_parameter_value(instance, "RootColor", unreal.LinearColor(root[0], root[1], root[2], 1))
+    MEL.set_material_instance_vector_parameter_value(instance, "TipColor", unreal.LinearColor(tip[0], tip[1], tip[2], 1))
+    MEL.update_material_instance(instance)
+    EAL.save_loaded_asset(instance)
+    stats["materials"] += 1
+    return instance
+
+
+def build_beards(slow, bases, parts):
+    """Barbes 1 à 3 : un modèle par tête (SKM_Beard_00X_For_Male_Head_00Y), le modèle par défaut pour les autres têtes.
+    Elles suivent la tête (FollowSlot) : les curseurs du visage les déforment avec elle."""
+    male_bases = [str(b.get_editor_property("id")) for b in bases if b.get_editor_property("male")]
+    if not male_bases:
+        return []
+    heads = set()
+    for part in parts:
+        mesh = part.get_editor_property("mesh")
+        if str(part.get_editor_property("slot")) == "Head" and mesh:
+            heads.add(mesh.get_name())
+    beards = []
+    for number, beard in enumerate(BEARDS, 1):
+        folder = GROOM_REL + "/Beard/" + beard
+        slow.enter_progress_frame(1, "Barbe %d" % number)
+        default = import_mesh(folder + "/Mesh/SKM_" + beard)
+        if not default:
+            continue
+        variants = []
+        for head in sorted(heads):
+            # SKM_Male_Head_002 -> SKM_Beard_001_For_Male_Head_002
+            mesh_rel = "%s/Mesh/SKM_%s_For_%s" % (folder, beard, head[4:] if head.startswith("SKM_") else head)
+            if not os.path.isfile(src(mesh_rel, ".glb")):
+                continue
+            mesh = import_mesh(mesh_rel)
+            if mesh:
+                variant = unreal.TrainerPartVariant()
+                variant.set_editor_property("head_mesh", head)
+                variant.set_editor_property("mesh", mesh)
+                variants.append(variant)
+        colors = groom_colors(folder + "/Materials/MI_Beard_Scalp_" + beard[len("Beard_"):])
+        card = hair_instance(dest(folder + "/Materials/MI_" + beard + "_Card"), BEARD_CARD, colors)
+        scalp = hair_instance(dest(folder + "/Materials/MI_" + beard + "_Scalp"),
+                              "%s/Textures/%s_Scalp_DIRO" % (folder, beard), colors)
+        materials = [scalp if "scalp" in name.lower() else card for name in material_slot_names(default)] or [card, scalp]
+        part = unreal.TrainerPartDef()
+        part.set_editor_property("id", "InZOI_" + beard)
+        part.set_editor_property("label", "Barbe %d" % number)
+        part.set_editor_property("slot", "Beard")
+        part.set_editor_property("bases", male_bases)
+        part.set_editor_property("mesh", default)
+        part.set_editor_property("variants", variants)
+        part.set_editor_property("materials", materials)
+        beards.append(part)
+        log("Barbe %d : %d variantes par tête, matériaux %s" % (number, len(variants), ", ".join(m.get_name() for m in materials)))
+    return beards
+
+
 # Onglet Modèles : un personnage complet par tête importée (base + tête + teint + silhouette)
 PRESET_SKINS = [(0.98, 0.86, 0.76), (0.86, 0.68, 0.52), (0.64, 0.46, 0.33), (0.93, 0.78, 0.64),
                 (0.42, 0.28, 0.19), (1.0, 0.93, 0.88), (0.76, 0.57, 0.42), (0.52, 0.36, 0.25)]
@@ -1116,7 +1268,7 @@ def count_work():
                 continue
             meshes = {game_rel(r.get("Mesh")) for r in rows if r.get("GenderType") == gender and r.get("BodyAgeType") == age}
             total += min(len(meshes), MAX_MESHES_PER_SLOT) if MAX_MESHES_PER_SLOT else len(meshes)
-    return total + 10
+    return total + 10 + len(BEARDS)
 
 
 def main():
@@ -1156,6 +1308,7 @@ def main():
             bases.append(base)
 
         parts, defaults = build_parts(slow)
+        parts += build_beards(slow, bases, parts)
 
         # Peau de la tête teintée aussi
         for part in parts:
@@ -1179,6 +1332,13 @@ def main():
             definition.set_editor_property("tab", tab)
             definition.set_editor_property("required", required)
             definition.set_editor_property("replaces", replaces)
+            slot_defs.append(definition)
+        for slot, slot_label, tab, follow in GROOM_SLOTS:
+            definition = unreal.TrainerPartSlotDef()
+            definition.set_editor_property("slot", slot)
+            definition.set_editor_property("label", slot_label)
+            definition.set_editor_property("tab", tab)
+            definition.set_editor_property("follow_slot", follow)
             slot_defs.append(definition)
 
         presets = full_presets(bases, parts)

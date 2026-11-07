@@ -142,8 +142,21 @@ Pour que le personnage inZOI marche dans Kanto :
 ## Ce qui reste à faire
 
 1. Tester dans Unreal le nouveau menu, les traits du visage et le nuancier (L'amie).
-2. Cheveux et barbes : les barbes existent en `.glb` (`Groom/Beard/.../SKM_Beard_00X_For_Male_Head_00Y.glb`) ; les
-   cheveux n'ont que des textures (`*_Scalp_DIRO.png`, cartes de mèches), pas de mesh.
+2. Cheveux : les coiffures « groom » n'ont que des textures (`*_Scalp_DIRO.png`, cartes de mèches), leurs mèches ne
+   sont pas exportées. Piste : les vrais maillages de `Costumes/<Child|Female|Male>/Acc/Hair/` (66 `.glb`, `SM_...`),
+   à examiner (statiques ou skinnés ? position par rapport à la tête ?) avant de les brancher.
+
+### Barbes (2026-11-07)
+
+- Emplacement `Beard` (onglet Cheveux, bases masculines), ajouté par le script hors tables CSV (`GROOM_SLOTS`, `BEARDS`).
+- Barbes 1 à 3 (les 006 à 010 n'ont que des textures). inZOI fait une barbe par tête :
+  `SKM_Beard_00X_For_Male_Head_00Y` devient une variante (`FTrainerPartDef::Variants`, choisie d'après le nom du mesh de
+  la tête portée), `SKM_Beard_00X` sert pour les autres têtes.
+- L'emplacement a `FollowSlot = Head` : la barbe est en Leader Pose sur la **tête** (pas le corps), donc les curseurs
+  du visage la déforment avec la mâchoire.
+- Matériau `M_InZOI_Hair` (masqué, deux faces) : texture DIRO d'inZOI (A = opacité, R = dégradé racine → pointe),
+  `RootColor`/`TipColor` lus dans `MI_Beard_Scalp_00X.json`. Le nuancier règle `Tint` (blanc = couleur d'origine).
+- Le script cherche aussi les fichiers dans la copie `Groom/` à la racine de l'exercice.
 3. Animations de marche et de course retargetées (section 5) ; émotes et poses de la carte dresseur avec les animations importées.
 4. Taches de rousseur, grains de beauté, cicatrices, maquillage : chercher leurs textures dans l'export.
 5. Le style verre de L'amie sur l'éditeur, avec les icônes importées (`ImportedAssets/InZOI/UI/...`).

@@ -193,6 +193,25 @@ struct FTrainerPartSlotDef
 	/** Emplacements retirés quand celui-ci est porté (une robe enlève le haut et le bas) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	TArray<FName> Replaces;
+
+	/** Emplacement que cette pièce suit au lieu du corps (la barbe suit la tête : Leader Pose sur la tête,
+	 *  et le modèle de la variante faite pour cette tête, voir FTrainerPartDef::Variants). Vide = le corps */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FName FollowSlot;
+};
+
+/** Modèle d'une pièce ajusté à une tête précise (inZOI fait une barbe par tête) */
+USTRUCT(BlueprintType)
+struct FTrainerPartVariant
+{
+	GENERATED_BODY()
+
+	/** Nom de l'asset de la tête portée (ex. SKM_Male_Head_002) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FName HeadMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TSoftObjectPtr<USkeletalMesh> Mesh;
 };
 
 /** Une pièce : une tête, un vêtement, une paire de chaussures... (catalogue rempli par Tools/InZOI/import_inzoi.py) */
@@ -221,6 +240,10 @@ struct FTrainerPartDef
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	TSoftObjectPtr<USkeletalMesh> Mesh;
+
+	/** Modèles ajustés à chaque tête (pièces d'un emplacement avec FollowSlot) ; Mesh sert pour les autres têtes */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<FTrainerPartVariant> Variants;
 
 	/** Matériaux à mettre à la place de ceux du mesh, dans l'ordre des emplacements (vide = ceux du mesh) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")

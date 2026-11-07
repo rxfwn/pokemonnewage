@@ -48,9 +48,47 @@ namespace
 			}
 		}
 
-		for (const TPair<FName, const FTrainerPartDef*>& Pair : Wanted)
+		// Les pièces qui suivent une autre pièce (barbe -> tête) passent en dernier, pour trouver le composant suivi
+		auto FollowOf = [Data](FName Slot)
 		{
-			USkeletalMesh* PartMesh = Pair.Value->Mesh.LoadSynchronous();
+			const FTrainerPartSlotDef* Def = Data->FindSlot(Slot);
+			return Def ? Def->FollowSlot : NAME_None;
+		};
+		TArray<TPair<FName, const FTrainerPartDef*>> Ordered = Wanted.Array();
+		Ordered.StableSort([&FollowOf](const TPair<FName, const FTrainerPartDef*>& A, const TPair<FName, const FTrainerPartDef*>& B)
+		{
+			return FollowOf(A.Key).IsNone() && !FollowOf(B.Key).IsNone();
+		});
+		TMap<FName, USkeletalMeshComponent*> Placed;
+
+		for (const TPair<FName, const FTrainerPartDef*>& Pair : Ordered)
+		{
+			// Composant suivi : le corps, ou la pièce d'un autre emplacement (la tête pour la barbe)
+			USkeletalMeshComponent* Leader = Mesh;
+			const FName Follow = FollowOf(Pair.Key);
+			if (!Follow.IsNone())
+			{
+				USkeletalMeshComponent* Followed = Placed.FindRef(Follow);
+				if (Followed && Followed->GetSkeletalMeshAsset())
+				{
+					Leader = Followed;
+				}
+			}
+			// Variante faite pour la tête portée, sinon le modèle par défaut
+			TSoftObjectPtr<USkeletalMesh> MeshRef = Pair.Value->Mesh;
+			if (Leader != Mesh)
+			{
+				const FName LeaderName = Leader->GetSkeletalMeshAsset()->GetFName();
+				for (const FTrainerPartVariant& Variant : Pair.Value->Variants)
+				{
+					if (Variant.HeadMesh == LeaderName && !Variant.Mesh.IsNull())
+					{
+						MeshRef = Variant.Mesh;
+						break;
+					}
+				}
+			}
+			USkeletalMesh* PartMesh = MeshRef.LoadSynchronous();
 			if (!PartMesh)
 			{
 				continue;
@@ -102,8 +140,9 @@ namespace
 			}
 			else
 			{
-				Component->SetLeaderPoseComponent(Mesh);
+				Component->SetLeaderPoseComponent(Leader);
 			}
+			Placed.Add(Pair.Key, Component);
 		}
 	}
 
