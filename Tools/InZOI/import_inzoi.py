@@ -598,13 +598,23 @@ def build_skin_master():
     return finish_material(material, SKIN_MASTER)
 
 
+EYE_VERSION = 2  # à augmenter quand le dessin de l'œil change : le matériau est alors refait
+
+
 def build_eye_master():
     """M_InZOI_Eye : blanc de l'œil + iris (IrisColor) + pupille, dessinés d'après les UV du globe
     (iris centré en 0,5 0,5 sur les têtes inZOI). La couleur des yeux du joueur passe par IrisColor."""
     existing = load(EYE_MASTER)
-    if existing:
+    if existing and EAL.get_metadata_tag(existing, "InZOIVersion") == str(EYE_VERSION):
         return existing
-    material = new_material(EYE_MASTER)
+    if existing:
+        # Version précédente : on vide le graphe et on le refait au même endroit (les têtes gardent le lien)
+        MEL.delete_all_material_expressions(existing)
+        material = existing
+    else:
+        material = None
+    material = material or new_material(EYE_MASTER)
+    EAL.set_metadata_tag(material, "InZOIVersion", str(EYE_VERSION))
     uv = MEL.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate, -900, -200)
     iris = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -900, 0)
     set_prop(iris, "parameter_name", "IrisColor")
@@ -617,7 +627,7 @@ def build_eye_master():
         "float pupil = 1.0 - smoothstep(0.035, 0.045, d);\n"
         "float ring = smoothstep(0.08, 0.125, d);\n"
         "float3 sclera = float3(0.80, 0.78, 0.76) * (1.0 - 0.25 * smoothstep(0.2, 0.45, d));\n"
-        "float3 irisColor = Iris * lerp(1.0, 0.45, ring);\n"
+        "float3 irisColor = Iris.rgb * lerp(1.0, 0.45, ring);\n"
         "float3 c = lerp(sclera, irisColor, irisMask);\n"
         "return lerp(c, float3(0.01, 0.01, 0.01), pupil);"))
     inputs = []
