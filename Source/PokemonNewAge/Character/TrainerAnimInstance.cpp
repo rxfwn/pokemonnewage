@@ -21,7 +21,7 @@ void FTrainerAnimInstanceProxy::PreUpdate(UAnimInstance* InAnimInstance, float D
 		// Mode « suit le corps » : copie (fil principal) de la pose locale du corps pour les os qu'on a en commun
 		CopiedBones.Reset();
 		CopiedNames.Reset();
-		const USkeletalMeshComponent* Source = Trainer->GetPoseSource();
+		USkeletalMeshComponent* Source = Trainer->GetPoseSource();
 		const USkeletalMeshComponent* Own = Trainer->GetSkelMeshComponent();
 		const USkeletalMesh* SourceMesh = Source ? Cast<USkeletalMesh>(Source->GetSkeletalMeshAsset()) : nullptr;
 		const USkeletalMesh* OwnMesh = Own ? Cast<USkeletalMesh>(Own->GetSkeletalMeshAsset()) : nullptr;
@@ -39,7 +39,7 @@ void FTrainerAnimInstanceProxy::PreUpdate(UAnimInstance* InAnimInstance, float D
 				MappedOwnMesh = OwnMesh;
 				MappedSourceMesh = SourceMesh;
 			}
-			const TArray<FTransform>& SourcePose = Source->GetBoneSpaceTransforms();
+			const TArray<FTransform> SourcePose = Source->GetBoneSpaceTransforms();
 			const FReferenceSkeleton& OwnRef = OwnMesh->GetRefSkeleton();
 			for (int32 Index = 0; Index < SourceMap.Num(); ++Index)
 			{
