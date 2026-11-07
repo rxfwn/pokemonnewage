@@ -142,24 +142,41 @@ def install_pokedex():
     module.main()
 
 
-# Une seule fois, quand l'éditeur a fini de s'ouvrir (le registre des assets est alors chargé)
+# Une seule fois, quand l'éditeur a fini de s'ouvrir (le registre des assets est alors chargé).
+# On attend en plus quelques secondes, puis on fait UNE étape par image : charger des assets dès la première
+# image faisait planter l'éditeur chez L'amie (EXCEPTION_ACCESS_VIOLATION, 2026-11-07). Chaque étape écrit son nom
+# dans le Journal de sortie avant de commencer : en cas de crash, la dernière ligne « Démarrage : ... » dit laquelle.
+START_DELAY_SECONDS = 5.0
+STEPS = [
+    ("Pokédex 3D", install_pokedex),
+    ("polices et images du HUD", install_fonts),
+    ("images de l'écran de titre", install_title_images),
+    ("matériau de verre", install_glass),
+    ("classes de son", install_sound_classes),
+]
 _handle = None
+_waited = 0.0
+_next_step = 0
 
 
 def _on_tick(delta_seconds):
-    global _handle
+    global _handle, _waited, _next_step
     registry = unreal.AssetRegistryHelpers.get_asset_registry()
     if registry.is_loading_assets():
         return
-    unreal.unregister_slate_post_tick_callback(_handle)
+    if _waited < START_DELAY_SECONDS:
+        _waited += delta_seconds
+        return
+    if _next_step >= len(STEPS):
+        unreal.unregister_slate_post_tick_callback(_handle)
+        return
+    name, step = STEPS[_next_step]
+    _next_step += 1
+    unreal.log("Démarrage : %s..." % name)
     try:
-        install_pokedex()
-        install_fonts()
-        install_title_images()
-        install_glass()
-        install_sound_classes()
+        step()
     except Exception as error:
-        unreal.log_error("Installation du Pokédex 3D ratée : %s (lancer Tools/Pokedex/import_pokedex_unreal.py à la main)" % error)
+        unreal.log_error("Démarrage : %s raté : %s" % (name, error))
 
 
 if not unreal.SystemLibrary.is_unattended():
