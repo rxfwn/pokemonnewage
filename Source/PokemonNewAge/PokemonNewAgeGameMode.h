@@ -18,6 +18,9 @@ public:
 	
 	/** Constructor */
 	APokemonNewAgeGameMode();
+
+	/** Refuse un joueur qui n'a pas la même version du jeu (docs/MISES_A_JOUR.md) */
+	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 };
 
 

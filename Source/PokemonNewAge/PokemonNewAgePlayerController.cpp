@@ -41,6 +41,7 @@
 #include "Engine/GameViewportClient.h"
 #include "GameFramework/InputSettings.h"
 #include "PokemonNewAge.h"
+#include "Core/GameVersionSubsystem.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 #include "Kismet/GameplayStatics.h"
 #include "HAL/FileManager.h"
@@ -1118,8 +1119,14 @@ bool APokemonNewAgePlayerController::JoinWorld(const FString& Address)
 		Options->LastHostAddress = Target;
 		UPokemonSaveLibrary::SaveOptions(Options);
 	}
-	UE_LOG(LogPokemonNewAge, Log, TEXT("Connexion au monde de %s"), *Target);
-	ClientTravel(Target, TRAVEL_Absolute);
+	// L'hôte refuse un joueur qui n'a pas la même version du jeu (docs/MISES_A_JOUR.md)
+	if (UGameVersionSubsystem* Version = UGameVersionSubsystem::Get(this))
+	{
+		Version->ClearLastNetworkError();
+	}
+	const FString Url = FString::Printf(TEXT("%s?Version=%s"), *Target, *UGameVersionSubsystem::GetVersion());
+	UE_LOG(LogPokemonNewAge, Log, TEXT("Connexion au monde de %s"), *Url);
+	ClientTravel(Url, TRAVEL_Absolute);
 	return true;
 }
 
