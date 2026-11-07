@@ -131,8 +131,10 @@ TArray<FTrainerBoneOffset> UTrainerAppearanceData::ComputeBoneOffsets(const FTra
 				New.Bone = Bone.Bone;
 			}
 			FTrainerBoneOffset& Sum = Offsets[Index];
-			Sum.Location += Bone.Location * Weight;
-			Sum.Scale += Bone.Scale * Weight;
+			const FVector Location = bSwapBoneYZ ? FVector(Bone.Location.X, Bone.Location.Z, Bone.Location.Y) : Bone.Location;
+			const FVector Scale = bSwapBoneYZ ? FVector(Bone.Scale.X, Bone.Scale.Z, Bone.Scale.Y) : Bone.Scale;
+			Sum.Location += Location * Weight;
+			Sum.Scale += Scale * Weight;
 			Sum.Rotation = FQuat::Slerp(FQuat::Identity, Bone.Rotation.GetNormalized(), FMath::Min(Weight, 1.f)) * Sum.Rotation;
 		}
 	}

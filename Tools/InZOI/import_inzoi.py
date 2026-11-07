@@ -124,6 +124,67 @@ SKIP_MESHES = {"SKM_M_Costume_Outer_JK009"}
 
 IGNORED = load_ignored() | SKIP_MESHES
 
+# .glb réparés (morphs vides retirés) : les têtes d'avant ce correctif sont réimportées une fois
+FIXED_DIR = os.path.join(SAVED, "InZOI_glb")
+FIXED_FILE = os.path.join(SAVED, "InZOI_glb_repares.txt")
+FIXED = set()
+if os.path.isfile(FIXED_FILE):
+    with open(FIXED_FILE, encoding="utf-8") as _handle:
+        FIXED = {line.strip() for line in _handle if line.strip()}
+
+
+def read_glb(filename):
+    with open(filename, "rb") as handle:
+        data = handle.read()
+    if data[:4] != b"glTF":
+        return None, data
+    length = int.from_bytes(data[12:16], "little")
+    return json.loads(data[20:20 + length].decode("utf-8")), data
+
+
+def glb_needs_fix(filename):
+    """Vrai si une partie du modèle a des morphs sans données : Unreal la jette (« primitive non valide »),
+    c'est ce qui faisait disparaître les yeux et les dents des têtes"""
+    try:
+        with open(filename, "rb") as handle:
+            head = handle.read(20)
+            length = int.from_bytes(head[12:16], "little")
+            gltf = json.loads(handle.read(length).decode("utf-8"))
+    except Exception:
+        return False
+    accessors = gltf.get("accessors", [])
+    for mesh in gltf.get("meshes", []):
+        for primitive in mesh.get("primitives", []):
+            for target in primitive.get("targets", []):
+                for index in target.values():
+                    accessor = accessors[index]
+                    if "bufferView" not in accessor and "sparse" not in accessor:
+                        return True
+    return False
+
+
+def fixed_glb(filename):
+    """Copie du .glb sans les morphs (Saved/InZOI_glb), même nom de fichier"""
+    gltf, data = read_glb(filename)
+    if gltf is None:
+        return filename
+    for mesh in gltf.get("meshes", []):
+        mesh.pop("weights", None)
+        if isinstance(mesh.get("extras"), dict):
+            mesh["extras"].pop("targetNames", None)
+        for primitive in mesh.get("primitives", []):
+            primitive.pop("targets", None)
+    length = int.from_bytes(data[12:16], "little")
+    rest = data[20 + length:]
+    chunk = json.dumps(gltf, separators=(",", ":")).encode("utf-8")
+    chunk += b" " * ((4 - len(chunk) % 4) % 4)
+    body = len(chunk).to_bytes(4, "little") + b"JSON" + chunk + rest
+    os.makedirs(FIXED_DIR, exist_ok=True)
+    out = os.path.join(FIXED_DIR, os.path.basename(filename))
+    with open(out, "wb") as handle:
+        handle.write(data[:8] + (12 + len(body)).to_bytes(4, "little") + body)
+    return out
+
 
 # ---------------------------------------------------------------- Outils
 
@@ -442,10 +503,11 @@ def import_mesh(rel):
     if not rel:
         return None
     asset_path = dest(rel)
-    existing = find_mesh(asset_path)
-    if existing:
-        return existing
     filename = src(rel, ".glb")
+    existing = find_mesh(asset_path)
+    needs_fix = os.path.isfile(filename) and glb_needs_fix(filename)
+    if existing and (not needs_fix or rel in FIXED):
+        return existing
     if not os.path.isfile(filename):
         stats["missing"].append(rel + ".glb")
         return None
@@ -456,7 +518,7 @@ def import_mesh(rel):
         handle.write(rel)
     folder, name = split(asset_path)
     task = unreal.AssetImportTask()
-    task.set_editor_property("filename", filename)
+    task.set_editor_property("filename", fixed_glb(filename) if needs_fix else filename)
     task.set_editor_property("destination_path", folder)
     task.set_editor_property("destination_name", name)
     task.set_editor_property("automated", True)
@@ -466,6 +528,12 @@ def import_mesh(rel):
     if os.path.isfile(IN_PROGRESS):
         os.remove(IN_PROGRESS)
     mesh = find_mesh(asset_path)
+    if mesh and needs_fix:
+        FIXED.add(rel)
+        with open(FIXED_FILE, "a", encoding="utf-8") as handle:
+            handle.write(rel + "\n")
+        if existing:
+            log("Réimporté avec les yeux et les dents : " + name)
     if mesh:
         stats["meshes"] += 1
         if GARBAGE_EVERY and stats["meshes"] % GARBAGE_EVERY == 0:
@@ -483,19 +551,153 @@ def material_slot_names(mesh):
         return []
 
 
+SKIN_MASTER = DEST + "/Materials/M_InZOI_Skin"
+EYE_MASTER = DEST + "/Materials/M_InZOI_Eye"
+TEETH_MATERIAL = DEST + "/Materials/M_InZOI_Teeth"
+HIDDEN_MATERIAL = DEST + "/Materials/M_InZOI_Hidden"
+EYE_SLOTS = set()
+
+
+def new_material(asset_path):
+    folder, name = split(asset_path)
+    material = asset_tools.create_asset(name, folder, unreal.Material, unreal.MaterialFactoryNew())
+    set_prop(material, "used_with_skeletal_mesh", True)
+    return material
+
+
+def finish_material(material, asset_path):
+    MEL.recompile_material(material)
+    EAL.save_loaded_asset(material)
+    log("Matériau créé : " + asset_path)
+    return material
+
+
+def constant(material, value, x, y):
+    node = MEL.create_material_expression(material, unreal.MaterialExpressionConstant, x, y)
+    set_prop(node, "r", value)
+    return node
+
+
+def build_skin_master():
+    """M_InZOI_Skin : la couleur _Main_D d'inZOI (déjà une vraie couleur de peau) x SkinTint, rien d'autre.
+    Les _Main_M d'inZOI sont des normales de détail encodées à leur façon : on ne s'en sert pas pour l'instant."""
+    existing = load(SKIN_MASTER)
+    if existing:
+        return existing
+    material = new_material(SKIN_MASTER)
+    base = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -700, -200)
+    set_prop(base, "parameter_name", "BaseColorMap")
+    set_prop(base, "texture", unreal.load_asset("/Engine/EngineResources/WhiteSquareTexture"))
+    tint = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -700, 50)
+    set_prop(tint, "parameter_name", "SkinTint")
+    set_prop(tint, "default_value", unreal.LinearColor(1, 1, 1, 1))
+    mul = MEL.create_material_expression(material, unreal.MaterialExpressionMultiply, -400, -100)
+    MEL.connect_material_expressions(base, "RGB", mul, "A")
+    MEL.connect_material_expressions(tint, "", mul, "B")
+    MEL.connect_material_property(mul, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    MEL.connect_material_property(constant(material, 0.55, -400, 150), "", unreal.MaterialProperty.MP_ROUGHNESS)
+    MEL.connect_material_property(constant(material, 0.35, -400, 250), "", unreal.MaterialProperty.MP_SPECULAR)
+    return finish_material(material, SKIN_MASTER)
+
+
+def build_eye_master():
+    """M_InZOI_Eye : blanc de l'œil + iris (IrisColor) + pupille, dessinés d'après les UV du globe
+    (iris centré en 0,5 0,5 sur les têtes inZOI). La couleur des yeux du joueur passe par IrisColor."""
+    existing = load(EYE_MASTER)
+    if existing:
+        return existing
+    material = new_material(EYE_MASTER)
+    uv = MEL.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate, -900, -200)
+    iris = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -900, 0)
+    set_prop(iris, "parameter_name", "IrisColor")
+    set_prop(iris, "default_value", unreal.LinearColor(0.25, 0.15, 0.08, 1))
+    custom = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -500, -100)
+    set_prop(custom, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+    set_prop(custom, "code", (
+        "float d = distance(UV, float2(0.5, 0.5));\n"
+        "float irisMask = 1.0 - smoothstep(0.115, 0.13, d);\n"
+        "float pupil = 1.0 - smoothstep(0.035, 0.045, d);\n"
+        "float ring = smoothstep(0.08, 0.125, d);\n"
+        "float3 sclera = float3(0.80, 0.78, 0.76) * (1.0 - 0.25 * smoothstep(0.2, 0.45, d));\n"
+        "float3 irisColor = Iris * lerp(1.0, 0.45, ring);\n"
+        "float3 c = lerp(sclera, irisColor, irisMask);\n"
+        "return lerp(c, float3(0.01, 0.01, 0.01), pupil);"))
+    inputs = []
+    for input_name in ("UV", "Iris"):
+        entry = unreal.CustomInput()
+        entry.set_editor_property("input_name", input_name)
+        inputs.append(entry)
+    set_prop(custom, "inputs", inputs)
+    MEL.connect_material_expressions(uv, "", custom, "UV")
+    MEL.connect_material_expressions(iris, "", custom, "Iris")
+    MEL.connect_material_property(custom, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    MEL.connect_material_property(constant(material, 0.08, -500, 150), "", unreal.MaterialProperty.MP_ROUGHNESS)
+    MEL.connect_material_property(constant(material, 0.5, -500, 250), "", unreal.MaterialProperty.MP_SPECULAR)
+    return finish_material(material, EYE_MASTER)
+
+
+def build_teeth():
+    existing = load(TEETH_MATERIAL)
+    if existing:
+        return existing
+    material = new_material(TEETH_MATERIAL)
+    color = MEL.create_material_expression(material, unreal.MaterialExpressionConstant3Vector, -500, -100)
+    set_prop(color, "constant", unreal.LinearColor(0.78, 0.75, 0.68, 1))
+    MEL.connect_material_property(color, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    MEL.connect_material_property(constant(material, 0.35, -500, 100), "", unreal.MaterialProperty.MP_ROUGHNESS)
+    return finish_material(material, TEETH_MATERIAL)
+
+
+def build_hidden():
+    """Pour les couches d'effet d'inZOI (larmes, ombre des yeux, salive) qu'on ne sait pas reproduire : invisibles"""
+    existing = load(HIDDEN_MATERIAL)
+    if existing:
+        return existing
+    material = new_material(HIDDEN_MATERIAL)
+    set_prop(material, "blend_mode", unreal.BlendMode.BLEND_MASKED)
+    MEL.connect_material_property(constant(material, 0.0, -500, 0), "", unreal.MaterialProperty.MP_OPACITY_MASK)
+    return finish_material(material, HIDDEN_MATERIAL)
+
+
+def skin_instance(asset_path, color_rel):
+    existing = load(asset_path)
+    if existing:
+        return existing
+    folder, name = split(asset_path)
+    instance = asset_tools.create_asset(name, folder, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
+    MEL.set_material_instance_parent(instance, build_skin_master())
+    texture = import_texture(color_rel, "color") if color_rel else None
+    if texture:
+        MEL.set_material_instance_texture_parameter_value(instance, "BaseColorMap", texture)
+    MEL.update_material_instance(instance)
+    EAL.save_loaded_asset(instance)
+    stats["materials"] += 1
+    return instance
+
+
 def apply_skin(mesh, rel_folder, age, only_skin_slots):
-    """Met notre matériau de peau sur le corps ou la tête ; renvoie les emplacements teintés par la couleur de peau"""
+    """Peau sur le corps ou la tête, plus yeux et dents des têtes ; renvoie les emplacements teintés par la couleur de peau"""
     prefer = ("Youth_D", "Main_D", "_D") if age == "Youth" else ("Main_D", "_D")
     textures = scan_textures(rel_folder, prefer)
     mi_folder = dest(rel_folder + "/Materials")
-    instance = make_instance(mi_folder + "/MI_Skin_" + mesh.get_name(), textures, {}, skin=True)
+    # Nouveau nom (MI_SkinV2_) : les anciennes instances mélangeaient d'autres textures
+    instance = skin_instance(mi_folder + "/MI_SkinV2_" + mesh.get_name(), textures.get("color"))
     materials = mesh.get_editor_property("materials")
     tinted = []
     for index, slot in enumerate(materials):
         slot_name = str(slot.get_editor_property("material_slot_name"))
         lower = slot_name.lower()
-        is_skin = any(key in lower for key in ("skin", "head", "body", "face")) and not any(
-            key in lower for key in ("eye", "teeth", "tooth", "lash", "brow", "tongue", "saliva", "cartilage"))
+        if "eyeball" in lower:
+            slot.set_editor_property("material_interface", build_eye_master())
+            EYE_SLOTS.add(slot_name)
+            continue
+        if any(key in lower for key in ("saliva", "eyeao", "eyetear", "eye_ao", "eye_tear", "lash", "cartilage")):
+            slot.set_editor_property("material_interface", build_hidden())
+            continue
+        if "teeth" in lower or "tooth" in lower or "tongue" in lower:
+            slot.set_editor_property("material_interface", build_teeth())
+            continue
+        is_skin = any(key in lower for key in ("skin", "head", "body", "face"))
         if only_skin_slots and not is_skin and not (index == 0 and len(materials) == 1):
             continue
         slot.set_editor_property("material_interface", instance)
@@ -786,7 +988,8 @@ def main():
         data.set_editor_property("parts", parts)
         data.set_editor_property("skin_material_slots", sorted(skin_slots))
         data.set_editor_property("skin_color_parameter", "SkinTint")
-        data.set_editor_property("eye_material_slots", [])  # les yeux gardent leur matériau pour l'instant
+        data.set_editor_property("eye_material_slots", sorted(EYE_SLOTS))
+        data.set_editor_property("eye_color_parameter", "IrisColor")
         data.set_editor_property("drag_handles", [])  # les poignées de CC visaient des os CC_Base_*
         EAL.save_loaded_asset(data)
         EAL.save_directory(DEST, only_if_is_dirty=True, recursive=True)

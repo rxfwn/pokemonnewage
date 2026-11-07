@@ -349,6 +349,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones", meta=(ClampMin=0, ClampMax=2))
 	float BoneDeformationScale = 1.f;
 
+	/** Essai : échange les axes Y et Z des déplacements et échelles d'os (si l'import .glb a tourné les repères des os) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones")
+	bool bSwapBoneYZ = false;
+
 	/** Os que la caméra vise en gros plan sur le visage (le premier trouvé dans le mesh) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Editor")
 	TArray<FName> HeadBones = { TEXT("CC_Base_Head"), TEXT("head"), TEXT("FACIAL_C_FacialRoot") };
