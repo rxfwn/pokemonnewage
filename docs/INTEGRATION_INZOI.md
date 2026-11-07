@@ -60,7 +60,7 @@ script saute ce qui est déjà importé.
 **Conseillé (sans carte graphique)** : fermer Unreal, puis double-cliquer sur `Tools/InZOI/import_inzoi.bat`.
 L'import tourne dans une fenêtre noire, sans éditeur ni rendu (`-nullrhi`) : plus de plantage « Le GPU a planté ou
 le dispositif D3D a été retiré » (RTX 3070 = 8 Go de mémoire vidéo, les textures 4K d'inZOI la saturent dans
-l'éditeur). Si Unreal n'est pas dans `C:\Program Files\Epic Games\UE_5.8`, corriger la ligne `set UE=` du .bat.
+l'éditeur). Le .bat cherche Unreal dans D:\Games\UE_5.8 puis C:\Program Files\Epic Games\UE_5.8 ; sinon, corriger la ligne `set UE=` du .bat.
 
 Autre façon, dans l'éditeur : **Outils > Exécuter un script Python** (Tools > Execute Python Script) > choisir
 `Tools/InZOI/import_inzoi.py`. Une barre de progression s'affiche (bouton Annuler possible). À la fin, le
