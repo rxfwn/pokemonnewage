@@ -716,6 +716,7 @@ def apply_skin(mesh, rel_folder, age, only_skin_slots):
     mi_folder = dest(rel_folder + "/Materials")
     # Nouveau nom (MI_SkinV2_) : les anciennes instances mélangeaient d'autres textures
     instance = skin_instance(mi_folder + "/MI_SkinV2_" + mesh.get_name(), textures.get("color"))
+    mesh.modify()
     materials = mesh.get_editor_property("materials")
     tinted = []
     for index, slot in enumerate(materials):
@@ -737,7 +738,12 @@ def apply_skin(mesh, rel_folder, age, only_skin_slots):
         slot.set_editor_property("material_interface", instance)
         tinted.append(slot_name)
     mesh.set_editor_property("materials", materials)
-    EAL.save_loaded_asset(mesh)
+    # Sans only_if_is_dirty=False, Unreal ne voyait pas le changement (« Tous les fichiers sont déjà
+    # enregistrés ») et le mesh gardait le matériau d'Interchange, avec sa normale inZOI qui strie la peau
+    mesh.modify()
+    EAL.save_loaded_asset(mesh, only_if_is_dirty=False)
+    placed = [m.get_editor_property("material_interface") for m in mesh.get_editor_property("materials")]
+    log("Matériaux enregistrés sur %s : %s" % (mesh.get_name(), ", ".join(m.get_name() if m else "aucun" for m in placed)))
     texture = MEL.get_material_instance_texture_parameter_value(instance, "BaseColorMap")
     log("Peau sur %s : %s (emplacements du mesh : %s) ; matériau %s, texture %s" % (
         mesh.get_name(), ", ".join(tinted) or "aucun", ", ".join(material_slot_names(mesh)),
@@ -998,7 +1004,7 @@ def main():
                 if mesh:
                     for slot in mesh.get_editor_property("materials"):
                         interface = slot.get_editor_property("material_interface")
-                        if interface and interface.get_name().startswith("MI_Skin_"):
+                        if interface and interface.get_name().startswith("MI_Skin"):
                             skin_slots.add(str(slot.get_editor_property("material_slot_name")))
 
         for base in bases:
