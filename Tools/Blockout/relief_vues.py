@@ -62,6 +62,8 @@ TOWN_FALLOFF = 90.0       # autour des villes, le terrain rejoint la ville en pe
 PATH_SMOOTH = 25.0        # lissage des chemins (pas de marches)
 PATH_MAX_SLOPE = 0.15     # pente maximale dans les routes (8,5°) : le personnage est petit
 PATH_EDGE = 60.0          # le bord des routes rejoint le relief sur cette distance
+PATH_MAX_CHANGE = 20.0    # les chemins ne sont jamais remontés ni creusés de plus de 20 m
+EDGE_SEA = 320.0          # au bord de la carte, la terre plonge dans la mer sur ~320 m
 EMBANK_SLOPE = 0.6        # bords de route (remblai ou déblai) : 31° en moyenne (de 17 à 42°)
 
 # Où mettre montagnes et forêts : la carte de L'amie (reference/kanto_relief_amie.png, 1009 × 1009,
@@ -514,8 +516,11 @@ def smooth_paths(height, inside, keep, wobble):
     zone = ndimage.binary_closing(zone, iterations=int(22 / STEP), border_value=1) & (keep < 0.5)
     rise = np.full(soft.shape, PATH_MAX_SLOPE * STEP)
     limited = (_cone(soft, zone, rise, True) + _cone(soft, zone, rise, False)) / 2
-    del soft
+    # Jamais plus de PATH_MAX_CHANGE m de remblai ou de déblai : une route trop raide pour 15 %
+    # (Route 23 vers le Plateau Indigo) reste en pente forte, sans être remontée d'un bloc.
+    limited = np.clip(limited, soft - PATH_MAX_CHANGE, soft + PATH_MAX_CHANGE)
     limited = ndimage.gaussian_filter(limited, 3.0 / STEP)
+    del soft
     weight = np.clip(ndimage.gaussian_filter(zone.astype(np.float32), PATH_EDGE / 2.5 / STEP) * 2.0, 0, 1)
     weight = np.maximum(weight, zone * 1.0) * (1 - keep)
     out = height + (limited - height) * weight
@@ -630,7 +635,7 @@ def main():
     mountains = ndimage.binary_dilation(mountains, iterations=4)
     wobble = np.clip(0.5 + 0.8 * fbm(x, y, 140, 3, SEED + 140), 0, 1)
     height = soften_talus(height, upsample(1.0 - mountains.astype(np.float64)), upsample(wobble))
-    height = smooth_paths(height, upsample(signed), upsample(np.maximum(protected(x, y, 650), smoothstep(10, 40, peaks))),
+    height = smooth_paths(height, upsample(signed), upsample(np.maximum(protected(x, y), smoothstep(10, 40, peaks))),
                           upsample(wobble))
     del wobble
     if not TEST:
@@ -653,6 +658,11 @@ def main():
     height = height + (ndimage.gaussian_filter(height, 2.0) - height) * (d_out < 25)
     del dry, ground, depth_in, bed, d_out, target
     ground, lip = waterfall(height)
+    # Bords de la carte : la terre plonge dans la mer (plus de mur coupé net au bord du Landscape).
+    edge = np.minimum(np.minimum(x, y), np.minimum(SIZE * STEP - x, SIZE * STEP - y))
+    edge = upsample(smoothstep(40, EDGE_SEA, edge + fbm(x, y, 300, 3, SEED + 150) * 90))
+    height = np.where(height > -15, -15 + (height + 15) * edge, height)
+    del edge
     print(f"{len(lakes)} lacs ; cascade : bassin à {ground:.0f} m, lèvre à {lip:.0f} m")
     print("Villes : " + ", ".join(f"{n} {now[n]:.0f} m" + (f" -> {TOWN_LEVELS[n]:.0f} m" if n in TOWN_LEVELS else "")
                                   for n in now if n != "Forêt de Jade"))
