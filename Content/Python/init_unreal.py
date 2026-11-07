@@ -220,5 +220,17 @@ def _on_tick(delta_seconds):
         unreal.log_error("Démarrage : %s raté : %s" % (name, error))
 
 
-if not unreal.SystemLibrary.is_unattended():
+def _in_editor():
+    """Faux dans le jeu lancé à part (Jouer > Partie autonome / Standalone Game, ou -game) : ce processus charge aussi
+    ce script, mais sans éditeur, et les fonctions EditorAssetLibrary y plantent (EXCEPTION_ACCESS_VIOLATION, 2026-11-07)."""
+    command_line = unreal.SystemLibrary.get_command_line().lower()
+    if " -game" in " " + command_line or "-server" in command_line:
+        return False
+    try:
+        return unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem) is not None
+    except Exception:
+        return False
+
+
+if not unreal.SystemLibrary.is_unattended() and _in_editor():
     _handle = unreal.register_slate_post_tick_callback(_on_tick)
