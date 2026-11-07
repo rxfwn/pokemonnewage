@@ -414,7 +414,7 @@ public:
 	UFUNCTION(Exec)
 	void DossierAmis(const FString& Folder);
 
-	/** ServeurSaves http://100.x.x.x:8787 Marie <clé> : règle le serveur de saves ; sans rien = l'affiche ; « aucun » = l'enlève (console) */
+	/** ServeurSaves 100.x.x.x:8787 Marie <clé> (sans « http:// », que la console coupe) : règle le serveur de saves ; sans rien = l'affiche ; « aucun » = l'enlève (console) */
 	UFUNCTION(Exec)
 	void ServeurSaves(const FString& Url, const FString& PlayerId, const FString& Key);
 

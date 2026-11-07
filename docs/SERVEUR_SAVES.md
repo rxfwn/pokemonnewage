@@ -20,7 +20,7 @@ Le Raspberry Pi à la maison garde la save de chaque joueur, en plus de la copie
 2. Dans l'Explorateur, ouvrir `Tools\SaveServer`, taper `cmd` dans la barre d'adresse, puis Entrée.
 3. `python pokemon_save_server.py ajouter-joueur Marie`, puis noter la clé affichée.
 4. `python pokemon_save_server.py` : le serveur tourne tant que la fenêtre est ouverte. Windows peut demander d'autoriser Python dans le pare-feu.
-5. Dans le jeu, console (**²**) : `ServeurSaves http://127.0.0.1:8787 Marie <la clé>`. Puis sauvegarder (F5). Le Pokédex > **En ligne** doit afficher « Serveur de saves : à jour », et la fenêtre du serveur affiche `save de Marie : version 1`.
+5. Dans le jeu, console (**²**) : `ServeurSaves 127.0.0.1:8787 Marie <la clé>` (sans `http://` : la console d'Unreal coupe tout ce qui suit `//`). Puis sauvegarder (F5). Le Pokédex > **En ligne** doit afficher « Serveur de saves : à jour », et la fenêtre du serveur affiche `save de Marie : version 1`.
 
 ## Installer le Pi (environ 45 minutes la première fois)
 
@@ -99,7 +99,7 @@ Si ton nom d'utilisateur n'est pas `marie`, remplacer `marie` dans `pokemon-save
 ## Brancher le jeu (chaque joueur, une seule fois)
 
 1. Installer Tailscale sur son PC. Si c'est un ami : dans la page **Machines** de ton compte Tailscale, menu **…** du Pi > **Share** (Partager), et lui envoyer l'invitation. Il ne verra que le Pi. Pour qu'il rejoigne ton monde, partage aussi ton PC de la même façon.
-2. Dans le jeu, console (**²**) : `ServeurSaves http://100.x.x.x:8787 <son nom> <sa clé>`.
+2. Dans le jeu, console (**²**) : `ServeurSaves 100.x.x.x:8787 <son nom> <sa clé>` (sans `http://`).
 3. `ServeurSaves` sans rien affiche l'état. `ServeurSaves aucun` retire le serveur (la save reste seulement sur le PC).
 4. Le Pokédex > **En ligne** affiche « Serveur de saves : à jour », et les cartes des amis viennent alors du serveur (plus besoin du dossier partagé).
 
