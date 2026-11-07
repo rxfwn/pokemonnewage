@@ -738,7 +738,10 @@ def apply_skin(mesh, rel_folder, age, only_skin_slots):
         tinted.append(slot_name)
     mesh.set_editor_property("materials", materials)
     EAL.save_loaded_asset(mesh)
-    log("Peau sur %s : %s (emplacements du mesh : %s)" % (mesh.get_name(), ", ".join(tinted) or "aucun", ", ".join(material_slot_names(mesh))))
+    texture = MEL.get_material_instance_texture_parameter_value(instance, "BaseColorMap")
+    log("Peau sur %s : %s (emplacements du mesh : %s) ; matériau %s, texture %s" % (
+        mesh.get_name(), ", ".join(tinted) or "aucun", ", ".join(material_slot_names(mesh)),
+        instance.get_path_name(), texture.get_path_name() if texture else "AUCUNE"))
     return tinted
 
 
