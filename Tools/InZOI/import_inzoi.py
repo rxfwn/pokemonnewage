@@ -33,6 +33,14 @@ MAX_MESHES_PER_SLOT = 15
 # Variantes de couleur gardées par modèle (0 = toutes)
 MAX_VARIANTS_PER_MESH = 4
 
+# Taille maximale des textures dans Unreal (pixels). Les textures d'inZOI vont jusqu'à 4K et remplissent la mémoire
+# de la carte graphique : 1024 pour les personnages suffit dans l'éditeur. Monter à 2048 sur une grosse carte.
+MAX_TEXTURE_SIZE = 1024
+MAX_ICON_SIZE = 256
+
+# Libère la mémoire tous les N modèles importés (évite « mémoire vidéo insuffisante » pendant un long import)
+GARBAGE_EVERY = 10
+
 # ---------------------------------------------------------------- Chemins
 
 DEST = "/Game/ImportedAssets/InZOI"
@@ -145,6 +153,7 @@ def hex_color(text):
 
 def configure_texture(texture, role):
     TCS = unreal.TextureCompressionSettings
+    set_prop(texture, "max_texture_size", MAX_ICON_SIZE if role == "ui" else MAX_TEXTURE_SIZE)
     if role == "ui":
         set_prop(texture, "compression_settings", TCS.TC_EDITOR_ICON)
         set_prop(texture, "lod_group", unreal.TextureGroup.TEXTUREGROUP_UI)
@@ -168,6 +177,9 @@ def import_texture(rel, role):
     asset_path = dest(rel)
     existing = load(asset_path)
     if existing:
+        if existing.get_editor_property("max_texture_size") == 0:
+            configure_texture(existing, role)  # textures d'un import précédent sans limite de taille
+            EAL.save_loaded_asset(existing)
         return existing
     filename = src(rel, ".png")
     if not os.path.isfile(filename):
@@ -413,6 +425,9 @@ def import_mesh(rel):
                 break
     if mesh:
         stats["meshes"] += 1
+        if GARBAGE_EVERY and stats["meshes"] % GARBAGE_EVERY == 0:
+            EAL.save_directory(DEST, only_if_is_dirty=True, recursive=True)
+            unreal.SystemLibrary.collect_garbage()
     else:
         log("Import raté : " + filename)
     return mesh
