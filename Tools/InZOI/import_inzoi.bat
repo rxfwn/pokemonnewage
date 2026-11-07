@@ -5,7 +5,8 @@ rem évite « Le GPU a planté ou le dispositif D3D a été retiré » pendant l
 rem Fermer Unreal avant de lancer. Double-cliquer sur ce fichier. Relançable : ce qui est fait est sauté.
 
 rem Dossier d'Unreal 5.8 (à corriger s'il est installé ailleurs)
-set "UE=C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe"
+set "UE=D:\Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe"
+if not exist "%UE%" set "UE=C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe"
 
 if not exist "%UE%" (
   echo Unreal introuvable : %UE%
