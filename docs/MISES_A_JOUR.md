@@ -4,7 +4,7 @@ Choix fait avec L'amie le 2026-11-07 : le Raspberry Pi garde la dernière versio
 
 ```
 Ton PC                          Raspberry Pi (Tailscale)              PC d'un joueur
-Packager le projet  ──publier──> builds (port 8788)  <──launcher──    Lancer Pokemon.bat
+Packager le projet  ──publier──> builds (port 8788)  <──launcher──    Pokemon.exe
                                  + saves (port 8787)                    ├─ télécharge ce qui a changé
                                                                         └─ lance le jeu
 ```
@@ -21,7 +21,8 @@ Packager le projet  ──publier──> builds (port 8788)  <──launcher─�
 | `Tools/Updater/pokemon-updates.service` | Le lance au démarrage du Pi |
 | `Tools/Updater/publier_version.py` | Sur ton PC : envoie un nouveau build au Pi |
 | `Tools/Updater/creer_decoupage_pak.py` | Dans l'éditeur, une seule fois : découpe le jeu en plusieurs .pak |
-| `Tools/Updater/Launcher/` | Le launcher à donner à chaque joueur (`Lancer Pokemon.bat` + `launcher.ps1`) |
+| `Tools/Updater/Launcher/` | Le launcher `Pokemon.exe` : code (`Launcher.cs`), icône, et `compiler_launcher.bat` qui fabrique l'exe |
+| `.github/workflows/launcher.yml` | Compile aussi `Pokemon.exe` sur GitHub à chaque changement du launcher |
 | `Source/PokemonNewAge/Core/GameVersionSubsystem.*` | Côté jeu : version installée, refus d'un monde d'une autre version |
 
 ## Pourquoi découper le jeu en plusieurs .pak
@@ -101,15 +102,22 @@ Si ton nom d'utilisateur n'est pas `marie`, le remplacer dans `pokemon-updates.s
 
 Unreal ne refait pas toujours un .pak strictement identique même quand rien n'a changé dans son dossier. Si une publication envoie beaucoup plus que prévu, ce n'est pas grave, c'est juste plus long.
 
-## 5. Installer le launcher chez chaque joueur (une seule fois)
+## 5. Fabriquer Pokemon.exe (une seule fois, puis à chaque changement du launcher)
+
+Le launcher est un vrai programme Windows, `Pokemon.exe`, avec l'icône du Pokédex, une fenêtre et une barre de progression. Deux façons de l'obtenir :
+
+- **Sur ton PC** : double-cliquer sur `Tools\Updater\Launcher\compiler_launcher.bat`. Il utilise le compilateur C# déjà présent dans Windows, donc rien à installer. `Pokemon.exe` apparaît dans le même dossier.
+- **Sur GitHub** : à chaque changement du launcher, GitHub le compile tout seul. Onglet **Actions** > **Launcher** > le dernier passage > **Artifacts** > `Pokemon-launcher` (un .zip qui contient l'exe).
+
+## 6. Installer le jeu chez chaque joueur (une seule fois)
 
 1. Tailscale doit être installé et connecté, avec le Pi partagé (déjà fait si le serveur de saves marche, voir `docs/SERVEUR_SAVES.md`).
-2. Créer un dossier, par exemple `D:\Jeux\Pokemon`, et y copier les deux fichiers de `Tools\Updater\Launcher\` : `Lancer Pokemon.bat` et `launcher.ps1`.
-3. Double-cliquer sur **Lancer Pokemon.bat**. La première fois, le launcher crée `launcher_config.json` et s'arrête. Ouvrir ce fichier avec le Bloc-notes et remplacer `100.x.x.x` par l'adresse Tailscale du Pi.
-4. Relancer **Lancer Pokemon.bat** : le jeu se télécharge dans `D:\Jeux\Pokemon\Jeu\`, puis se lance. Si Windows affiche « Windows a protégé votre ordinateur », cliquer sur **Informations complémentaires > Exécuter quand même** (le jeu n'est pas signé, c'est normal pour un jeu privé).
-5. Pour un raccourci sur le Bureau : clic droit sur **Lancer Pokemon.bat** > **Afficher d'autres options** > **Envoyer vers > Bureau (créer un raccourci)**.
+2. Créer un dossier, par exemple `D:\Jeux\Pokemon`, et y mettre `Pokemon.exe`.
+3. Double-cliquer sur **Pokemon.exe**. La première fois, il demande l'adresse Tailscale du Pi (`100.x.x.x`), puis la garde dans `launcher_config.json`.
+4. Le jeu se télécharge dans `D:\Jeux\Pokemon\Jeu\`, puis se lance. Si Windows affiche « Windows a protégé votre ordinateur », cliquer sur **Informations complémentaires > Exécuter quand même**. C'est normal pour un programme privé non signé, et ça ne se produit qu'une fois.
+5. Pour un raccourci sur le Bureau : clic droit sur **Pokemon.exe** > **Afficher d'autres options** > **Envoyer vers > Bureau (créer un raccourci)**.
 
-Ensuite, toujours ouvrir le jeu par ce raccourci, et plus directement par `PokemonNewAge.exe`, sinon il ne se met pas à jour. Les options passées au .bat vont au jeu (par exemple `Lancer Pokemon.bat -windowed`).
+Ensuite, toujours ouvrir le jeu par **Pokemon.exe**, et plus directement par `Jeu\PokemonNewAge.exe`, sinon il ne se met pas à jour. En cas de problème (Pi injoignable pendant une mise à jour, disque plein...), la fenêtre propose **Réessayer**, **Jouer quand même** (avec la version installée) ou **Fermer**. Les options données à `Pokemon.exe` passent au jeu (par exemple un raccourci avec `-windowed`).
 
 ## Revenir à une version précédente
 
@@ -125,8 +133,8 @@ Les launchers reprennent cette version à leur prochaine ouverture.
 
 ## À savoir
 
-- **En multijoueur**, l'hôte et les amis doivent avoir la même version. Si quelqu'un est refusé, il ferme le jeu et le relance par le launcher. Un jeu lancé depuis l'éditeur (version « dev ») est toujours accepté, pour les tests.
+- **En multijoueur**, l'hôte et les amis doivent avoir la même version. Si quelqu'un est refusé, il ferme le jeu et le relance par `Pokemon.exe`. Un jeu lancé depuis l'éditeur (version « dev ») est toujours accepté, pour les tests.
 - La version installée s'affiche dans le Pokédex > **En ligne**, ligne **Version du jeu**.
-- **Le launcher ne se met pas à jour tout seul.** S'il change un jour, il faudra recopier `launcher.ps1` chez chaque joueur.
+- **Le launcher ne se met pas à jour tout seul.** S'il change un jour, il faudra redonner `Pokemon.exe` à chaque joueur.
 - Lire les fichiers du jeu ne demande pas de clé : seuls ceux à qui tu partages le Pi sur Tailscale peuvent les télécharger. Publier demande la clé de publication.
 - `config.json` et `data/` (sur le Pi), `publier_config.json` et `.cache_publication.json` (sur ton PC), `launcher_config.json` et `Jeu\` (chez les joueurs) ne vont jamais dans Git (`Tools/Updater/.gitignore`).

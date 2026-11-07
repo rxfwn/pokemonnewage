@@ -25,7 +25,7 @@ void APokemonNewAgeGameMode::PreLogin(const FString& Options, const FString& Add
 	{
 		UE_LOG(LogPokemonNewAge, Warning, TEXT("Joueur refuse (%s) : version %s, le monde est en %s"),
 			*Address, ClientVersion.IsEmpty() ? TEXT("inconnue") : *ClientVersion, *UGameVersionSubsystem::GetVersion());
-		ErrorMessage = FString::Printf(TEXT("Version différente : toi %s, le monde %s. Fermez le jeu et relancez-le avec « Lancer Pokemon » pour le mettre à jour."),
+		ErrorMessage = FString::Printf(TEXT("Version différente : toi %s, le monde %s. Fermez le jeu et relancez-le avec Pokemon.exe pour le mettre à jour."),
 			ClientVersion.IsEmpty() ? TEXT("ancienne") : *ClientVersion, *UGameVersionSubsystem::GetVersion());
 	}
 }

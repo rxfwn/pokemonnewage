@@ -44,3 +44,4 @@ Tools/Capture/Balls/**/*.fbx -filter -diff -merge binary
 # Launcher Windows (Tools/Updater/Launcher) : fins de ligne Windows obligatoires
 *.bat text eol=crlf
 *.ps1 text eol=crlf
+*.ico binary
