@@ -1226,7 +1226,7 @@ void APokemonNewAgePlayerController::ServeurSaves(const FString& Url, const FStr
 	}
 	if (PlayerId.IsEmpty() || Key.IsEmpty())
 	{
-		PrintDebug(TEXT("ServeurSaves http://100.x.x.x:8787 <joueur> <cle>"));
+		PrintDebug(TEXT("ServeurSaves 100.x.x.x:8787 <joueur> <cle>  (sans http:// : la console coupe tout apres //)"));
 		return;
 	}
 	Options->SaveServerUrl = Url;
