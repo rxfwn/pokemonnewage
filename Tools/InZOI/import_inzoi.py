@@ -33,10 +33,10 @@ MAX_MESHES_PER_SLOT = 15
 # Variantes de couleur gardées par modèle (0 = toutes)
 MAX_VARIANTS_PER_MESH = 4
 
-# Taille maximale des textures dans Unreal (pixels). Les textures d'inZOI vont jusqu'à 4K et remplissent la mémoire
-# de la carte graphique : 1024 pour les personnages suffit dans l'éditeur. Monter à 2048 sur une grosse carte.
-MAX_TEXTURE_SIZE = 1024
-MAX_ICON_SIZE = 256
+# Taille maximale des textures dans Unreal (pixels, 0 = taille d'origine). L'amie veut la qualité d'origine :
+# on ne réduit rien. Les personnages utilisent le streaming de textures (Unreal ne charge que ce qui sert).
+MAX_TEXTURE_SIZE = 0
+MAX_ICON_SIZE = 0
 
 # Libère la mémoire tous les N modèles importés (évite « mémoire vidéo insuffisante » pendant un long import)
 GARBAGE_EVERY = 10
@@ -153,7 +153,9 @@ def hex_color(text):
 
 def configure_texture(texture, role):
     TCS = unreal.TextureCompressionSettings
-    set_prop(texture, "max_texture_size", MAX_ICON_SIZE if role == "ui" else MAX_TEXTURE_SIZE)
+    limit = MAX_ICON_SIZE if role == "ui" else MAX_TEXTURE_SIZE
+    if limit:
+        set_prop(texture, "max_texture_size", limit)
     if role == "ui":
         set_prop(texture, "compression_settings", TCS.TC_EDITOR_ICON)
         set_prop(texture, "lod_group", unreal.TextureGroup.TEXTUREGROUP_UI)
@@ -177,9 +179,6 @@ def import_texture(rel, role):
     asset_path = dest(rel)
     existing = load(asset_path)
     if existing:
-        if existing.get_editor_property("max_texture_size") == 0:
-            configure_texture(existing, role)  # textures d'un import précédent sans limite de taille
-            EAL.save_loaded_asset(existing)
         return existing
     filename = src(rel, ".png")
     if not os.path.isfile(filename):
