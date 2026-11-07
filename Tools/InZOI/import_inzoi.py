@@ -497,6 +497,52 @@ def find_mesh(asset_path):
     return None
 
 
+USAGE_CHECKED = set()
+
+
+def ensure_skeletal_usage(mesh):
+    """Les matériaux créés par l'import (vêtements, chaussures...) n'ont pas l'usage « Skeletal Mesh »
+    quand on importe sans rendu (-nullrhi) : en jeu Unreal met alors le damier à leur place.
+    On coche l'usage sur le matériau de base (s'il est dans le projet) et on réenregistre."""
+    try:
+        slots = mesh.get_editor_property("materials")
+    except Exception:  # noqa: BLE001
+        return
+    for slot in slots:
+        material = slot.get_editor_property("material_interface")
+        if not material:
+            continue
+        path = material.get_path_name()
+        if path in USAGE_CHECKED:
+            continue
+        USAGE_CHECKED.add(path)
+        fixed = False
+        setter = getattr(MEL, "set_material_usage", None)
+        if setter and hasattr(unreal, "MaterialUsage"):
+            try:
+                setter(material, unreal.MaterialUsage.MATUSAGE_SKELETAL_MESH)
+                fixed = True
+            except Exception:  # noqa: BLE001
+                pass
+        base = material.get_base_material() if hasattr(material, "get_base_material") else material
+        if base and base.get_path_name().startswith("/Game/"):
+            try:
+                if not base.get_editor_property("used_with_skeletal_mesh"):
+                    base.set_editor_property("used_with_skeletal_mesh", True)
+                    MEL.recompile_material(base)
+                    EAL.save_loaded_asset(base, only_if_is_dirty=False)
+                    log("Usage Skeletal Mesh ajouté : " + base.get_path_name())
+                fixed = True
+            except Exception as error:  # noqa: BLE001
+                log("Usage Skeletal Mesh impossible sur %s : %s" % (base.get_path_name(), error))
+        if path.startswith("/Game/") and material != base:
+            material.modify()
+            EAL.save_loaded_asset(material, only_if_is_dirty=False)
+        if not fixed:
+            log("Matériau sans usage Skeletal Mesh (damier possible en jeu) : %s, base %s" % (
+                path, base.get_path_name() if base else "?"))
+
+
 def import_mesh(rel):
     if not rel:
         return None
@@ -505,6 +551,7 @@ def import_mesh(rel):
     existing = find_mesh(asset_path)
     needs_fix = os.path.isfile(filename) and glb_needs_fix(filename)
     if existing and (not needs_fix or rel in FIXED):
+        ensure_skeletal_usage(existing)
         return existing
     if not os.path.isfile(filename):
         stats["missing"].append(rel + ".glb")
@@ -533,6 +580,7 @@ def import_mesh(rel):
         if existing:
             log("Réimporté sans morphs (yeux, dents, peau) : " + name)
     if mesh:
+        ensure_skeletal_usage(mesh)
         stats["meshes"] += 1
         if GARBAGE_EVERY and stats["meshes"] % GARBAGE_EVERY == 0:
             EAL.save_directory(DEST, only_if_is_dirty=True, recursive=True)
