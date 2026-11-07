@@ -669,6 +669,9 @@ def main():
         unreal.log_error("[InZOI] Dossier introuvable : %s (corrige SOURCE en haut du script)" % EXPORTS)
         return
 
+    already = len(EAL.list_assets(DEST, recursive=True, include_folder=False)) if EAL.does_directory_exist(DEST) else 0
+    log("Déjà importé : %d assets (ils sont sautés, la barre repart de 0 mais passe vite dessus)" % already)
+
     with unreal.ScopedSlowTask(count_work(), "Import des ressources du créateur de personnage") as slow:
         slow.make_dialog(True)
 
