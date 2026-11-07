@@ -18,6 +18,8 @@ Le joueur crée son propre dresseur, réaliste, façon Cyberpunk. On le fait ave
 | V1 | Couleur de peau et couleur des yeux. Maquillage, tatouages, piercings, taches de rousseur… viendront après |
 | Multijoueur | Les autres joueurs voient ton apparence (elle est dans le PlayerState) |
 
+> **Ressources de l'exercice inZOI (2026-11-07)** : corps, têtes, vêtements et déformation du corps « par os » importés depuis le dossier local de L'amie, hors Git. Voir [INTEGRATION_INZOI.md](INTEGRATION_INZOI.md).
+
 ## Est-ce compliqué d'ajouter des choses après ?
 
 Non, c'est prévu pour :

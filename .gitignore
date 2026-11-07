@@ -48,3 +48,7 @@ Tools/Pokemon/.glb/
 # Modèle et sons du Pokédex 3D générés (Tools/Pokedex/)
 Tools/Pokedex/Source/*.blend
 Tools/Progression/Generated/
+
+# Ressources du créateur de personnage étudié en cours (Tools/InZOI/import_inzoi.py) :
+# importées depuis le dossier local de l'exercice, elles ne doivent JAMAIS partir sur GitHub
+Content/ImportedAssets/

@@ -7,6 +7,7 @@
 
 class USkeletalMesh;
 class UAnimInstance;
+class UMaterialInterface;
 class UTexture2D;
 
 /** Onglet de l'éditeur où apparaît un curseur */
@@ -18,7 +19,32 @@ enum class ETrainerSliderGroup : uint8
 };
 
 /**
- *  Un curseur de l'éditeur. Il pilote un ou deux morph targets exportés de Character Creator :
+ *  Déplacement d'un os quand un curseur est au maximum (déformation « par os », comme inZOI).
+ *  Ajouté à la pose de l'animation : Location en cm, Scale ajouté à l'échelle (0,3 = +30 %), Rotation composée.
+ *  Appliqué par UTrainerAnimInstance ; le curseur à 0,5 donne la moitié.
+ */
+USTRUCT(BlueprintType)
+struct FTrainerBoneOffset
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	FName Bone;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	FVector Location = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	FQuat Rotation = FQuat::Identity;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	FVector Scale = FVector::ZeroVector;
+};
+
+/**
+ *  Un curseur de l'éditeur. Deux façons de déformer, cumulables :
+ *  - par os (BonesPositive / BonesNegative), pour les corps importés (inZOI, voir docs/INTEGRATION_INZOI.md) ;
+ *  - par morph targets exportés de Character Creator :
  *  vers la droite MorphPositive monte de 0 à 1, vers la gauche MorphNegative (s'il existe).
  *  Le même nom de morph est appliqué au corps ET aux vêtements qui l'ont (CC les exporte ensemble).
  */
@@ -53,6 +79,32 @@ struct FTrainerSliderDef
 	/** Bornes pour qu'on ne puisse pas « casser » le visage */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance", meta=(ClampMin=0, ClampMax=1))
 	float Limit = 1.f;
+
+	/** Os déplacés quand le curseur va vers la droite (valeur au maximum) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones")
+	TArray<FTrainerBoneOffset> BonesPositive;
+
+	/** Os déplacés quand le curseur va vers la gauche */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones")
+	TArray<FTrainerBoneOffset> BonesNegative;
+
+	/** Part de ce curseur poussée par le curseur global Muscles (MuscleSliderId) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones")
+	float MuscleCoef = 0.f;
+
+	/** Part de ce curseur poussée par le curseur global Corpulence (MassSliderId) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones")
+	float MassCoef = 0.f;
+
+	/** Curseur de -1 à 1 même sans morph ni os négatifs (Muscles, Corpulence) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	bool bSigned = false;
+
+	/** Vrai si le curseur descend sous 0 */
+	bool HasNegative() const { return bSigned || !MorphNegative.IsNone() || !BonesNegative.IsEmpty(); }
+
+	/** Vrai si le curseur déplace des os */
+	bool HasBones() const { return !BonesPositive.IsEmpty() || !BonesNegative.IsEmpty(); }
 };
 
 /**
@@ -113,6 +165,76 @@ struct FTrainerPresetDef
 	FTrainerAppearance Look;
 };
 
+/**
+ *  Emplacement de pièce (tête, haut, bas, chaussures...). Chaque emplacement est un Skeletal Mesh qui suit le corps
+ *  (Leader Pose). L'ordre de la liste est celui des sous-onglets de la Tenue.
+ */
+USTRUCT(BlueprintType)
+struct FTrainerPartSlotDef
+{
+	GENERATED_BODY()
+
+	/** Head, Top, Bottom, Outer, Full, Shoes, Acc... */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FName Slot;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FText Label;
+
+	/** Onglet de l'éditeur : Visage (têtes, barbes), Tenue ou Accessoires */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FName Tab = TEXT("Outfit");
+
+	/** Faux = on peut l'enlever (bouton « Aucun ») ; vrai pour la tête */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	bool bRequired = false;
+
+	/** Emplacements retirés quand celui-ci est porté (une robe enlève le haut et le bas) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<FName> Replaces;
+};
+
+/** Une pièce : une tête, un vêtement, une paire de chaussures... (catalogue rempli par Tools/InZOI/import_inzoi.py) */
+USTRUCT(BlueprintType)
+struct FTrainerPartDef
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FName Id;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FText Label;
+
+	/** Emplacement (FTrainerPartSlotDef::Slot) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FName Slot;
+
+	/** Rangement dans la liste (T-shirt, Chemise, Pull...) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FText Category;
+
+	/** Bases qui peuvent la porter (vide = toutes) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<FName> Bases;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TSoftObjectPtr<USkeletalMesh> Mesh;
+
+	/** Matériaux à mettre à la place de ceux du mesh, dans l'ordre des emplacements (vide = ceux du mesh) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<TSoftObjectPtr<UMaterialInterface>> Materials;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TSoftObjectPtr<UTexture2D> Thumbnail;
+
+	/** Faux = à acheter en boutique (pas encore branché : tout est disponible pour l'instant) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	bool bStartOwned = true;
+
+	bool FitsBase(FName Base) const { return Bases.IsEmpty() || Bases.Contains(Base); }
+};
+
 /** Une base de personnage (Homme, Femme), exportée de Character Creator avec Auto Setup */
 USTRUCT(BlueprintType)
 struct FTrainerBaseDef
@@ -128,7 +250,10 @@ struct FTrainerBaseDef
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	TSoftObjectPtr<USkeletalMesh> Mesh;
 
-	/** Animation Blueprint retargeté (vide = garder celui du personnage) */
+	/**
+	 *  Animation Blueprint retargeté (vide = garder celui du personnage). Pour que les curseurs « par os » marchent,
+	 *  sa classe parente doit être TrainerAnimInstance (ou TrainerAnimInstance lui-même : pose de référence).
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	TSubclassOf<UAnimInstance> AnimClass;
 
@@ -139,6 +264,10 @@ struct FTrainerBaseDef
 	/** Curseurs propres à cette base (les curseurs communs sont dans CommonSliders) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	TArray<FTrainerSliderDef> Sliders;
+
+	/** Pièces portées quand le joueur n'a rien choisi pour un emplacement (la tête, une tenue de départ) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<FName> DefaultParts;
 };
 
 /**
@@ -195,9 +324,29 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Editor")
 	TArray<FLinearColor> EyePalette;
 
+	/** Emplacements de pièces, dans l'ordre d'affichage */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Parts")
+	TArray<FTrainerPartSlotDef> PartSlots;
+
+	/** Toutes les pièces (têtes, vêtements, chaussures, accessoires) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Parts")
+	TArray<FTrainerPartDef> Parts;
+
+	/** Curseur global qui pousse tous les groupes d'os selon leur MuscleCoef */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones")
+	FName MuscleSliderId = TEXT("Muscle");
+
+	/** Curseur global qui pousse tous les groupes d'os selon leur MassCoef */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones")
+	FName MassSliderId = TEXT("Masse");
+
+	/** Multiplie toutes les déformations par os (pour adoucir si c'est trop fort) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones", meta=(ClampMin=0, ClampMax=2))
+	float BoneDeformationScale = 1.f;
+
 	/** Os que la caméra vise en gros plan sur le visage (le premier trouvé dans le mesh) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Editor")
-	TArray<FName> HeadBones = { TEXT("CC_Base_Head"), TEXT("head") };
+	TArray<FName> HeadBones = { TEXT("CC_Base_Head"), TEXT("head"), TEXT("FACIAL_C_FacialRoot") };
 
 	UTrainerAppearanceData();
 
@@ -208,4 +357,13 @@ public:
 
 	/** Tous les curseurs d'une base (communs puis propres) */
 	TArray<FTrainerSliderDef> GetSliders(const FTrainerBaseDef& Base) const;
+
+	const FTrainerPartDef* FindPart(FName Id) const;
+	const FTrainerPartSlotDef* FindSlot(FName Slot) const;
+
+	/** Pièce effectivement portée par emplacement : choix du joueur, sinon pièce par défaut de la base ; robes et combinaisons retirent haut et bas */
+	TMap<FName, const FTrainerPartDef*> ResolveParts(const FTrainerBaseDef& Base, const FTrainerAppearance& Appearance) const;
+
+	/** Déplacements d'os de toute l'apparence (curseurs + Muscles + Corpulence), un par os */
+	TArray<FTrainerBoneOffset> ComputeBoneOffsets(const FTrainerBaseDef& Base, const FTrainerAppearance& Appearance) const;
 };

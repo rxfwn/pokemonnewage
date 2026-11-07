@@ -41,3 +41,100 @@ TArray<FTrainerSliderDef> UTrainerAppearanceData::GetSliders(const FTrainerBaseD
 	All.Append(Base.Sliders);
 	return All;
 }
+
+const FTrainerPartDef* UTrainerAppearanceData::FindPart(FName Id) const
+{
+	return Id.IsNone() ? nullptr : Parts.FindByPredicate([Id](const FTrainerPartDef& P) { return P.Id == Id; });
+}
+
+const FTrainerPartSlotDef* UTrainerAppearanceData::FindSlot(FName Slot) const
+{
+	return PartSlots.FindByPredicate([Slot](const FTrainerPartSlotDef& S) { return S.Slot == Slot; });
+}
+
+TMap<FName, const FTrainerPartDef*> UTrainerAppearanceData::ResolveParts(const FTrainerBaseDef& Base, const FTrainerAppearance& Appearance) const
+{
+	TMap<FName, const FTrainerPartDef*> Result;
+	TSet<FName> Emptied; // « -Top » = le joueur a choisi « Aucun » pour le haut
+
+	auto Use = [&](FName Id, bool bPlayerChoice)
+	{
+		const FString Text = Id.ToString();
+		if (bPlayerChoice && Text.StartsWith(TEXT("-")))
+		{
+			const FName Slot(*Text.Mid(1));
+			Emptied.Add(Slot);
+			Result.Remove(Slot);
+			return;
+		}
+		const FTrainerPartDef* Part = FindPart(Id);
+		if (Part && Part->FitsBase(Base.Id) && (bPlayerChoice || !Emptied.Contains(Part->Slot)))
+		{
+			Result.Add(Part->Slot, Part);
+		}
+	};
+	for (const FName Id : Appearance.Outfit)
+	{
+		Use(Id, true);
+	}
+	for (const FName Id : Base.DefaultParts)
+	{
+		const FTrainerPartDef* Part = FindPart(Id);
+		if (Part && !Result.Contains(Part->Slot))
+		{
+			Use(Id, false);
+		}
+	}
+	// Une robe ou une combinaison retire le haut et le bas (FTrainerPartSlotDef::Replaces)
+	TArray<FName> ToRemove;
+	for (const TPair<FName, const FTrainerPartDef*>& Pair : Result)
+	{
+		if (const FTrainerPartSlotDef* Slot = FindSlot(Pair.Key))
+		{
+			ToRemove.Append(Slot->Replaces);
+		}
+	}
+	for (const FName Slot : ToRemove)
+	{
+		Result.Remove(Slot);
+	}
+	return Result;
+}
+
+TArray<FTrainerBoneOffset> UTrainerAppearanceData::ComputeBoneOffsets(const FTrainerBaseDef& Base, const FTrainerAppearance& Appearance) const
+{
+	const float Muscle = Appearance.GetSlider(MuscleSliderId);
+	const float Mass = Appearance.GetSlider(MassSliderId);
+
+	TArray<FTrainerBoneOffset> Offsets;
+	TMap<FName, int32> IndexByBone;
+	for (const FTrainerSliderDef& Def : GetSliders(Base))
+	{
+		if (!Def.HasBones())
+		{
+			continue;
+		}
+		// Comme inZOI : chaque groupe = son curseur + une part des curseurs globaux Muscles et Corpulence
+		const float Value = FMath::Clamp(Appearance.GetSlider(Def.Id) + Muscle * Def.MuscleCoef + Mass * Def.MassCoef, -1.f, 1.f);
+		if (FMath::IsNearlyZero(Value))
+		{
+			continue;
+		}
+		const float Weight = FMath::Abs(Value) * BoneDeformationScale;
+		for (const FTrainerBoneOffset& Bone : Value > 0.f ? Def.BonesPositive : Def.BonesNegative)
+		{
+			int32& Index = IndexByBone.FindOrAdd(Bone.Bone, INDEX_NONE);
+			if (Index == INDEX_NONE)
+			{
+				Index = Offsets.Num();
+				FTrainerBoneOffset& New = Offsets.AddDefaulted_GetRef();
+				New.Bone = Bone.Bone;
+			}
+			FTrainerBoneOffset& Sum = Offsets[Index];
+			Sum.Location += Bone.Location * Weight;
+			Sum.Scale += Bone.Scale * Weight;
+			Sum.Rotation = FQuat::Slerp(FQuat::Identity, Bone.Rotation.GetNormalized(), FMath::Min(Weight, 1.f)) * Sum.Rotation;
+		}
+	}
+	return Offsets;
+}

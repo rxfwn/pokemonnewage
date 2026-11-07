@@ -25,6 +25,7 @@
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
+#include "Components/WrapBox.h"
 #include "Engine/Texture2D.h"
 #include "GameFramework/PlayerController.h"
 #include "HAL/PlatformTime.h"
@@ -504,7 +505,11 @@ void UCharacterCreatorWidget::RefreshRightPanel()
 		{
 		case EFacePart::Presets:
 			PanelTitle->SetText(LOCTEXT("PanelFacePresets", "Modèles de visage"));
-			AddPresetGrid(Data->FacePresets, false);
+			// Têtes importées (inZOI) d'abord, puis les réglages de curseurs enregistrés
+			if (!AddPartGrid(TEXT("Face")) || !Data->FacePresets.IsEmpty())
+			{
+				AddPresetGrid(Data->FacePresets, false);
+			}
 			break;
 		case EFacePart::Hair:
 			PanelTitle->SetText(LOCTEXT("PanelHair", "Cheveux"));
@@ -534,12 +539,18 @@ void UCharacterCreatorWidget::RefreshRightPanel()
 
 	case ETab::Outfit:
 		PanelTitle->SetText(LOCTEXT("PanelOutfit", "Tenue"));
-		AddNote(LOCTEXT("OutfitSoon", "Les vêtements arriveront avec les boutiques de vêtements des villes. Ceux que tu achètes se rangeront ici et dans l'armoire de ta chambre."));
+		if (!AddPartGrid(TEXT("Outfit")))
+		{
+			AddNote(LOCTEXT("OutfitSoon", "Les vêtements arriveront avec les boutiques de vêtements des villes. Ceux que tu achètes se rangeront ici et dans l'armoire de ta chambre."));
+		}
 		break;
 
 	case ETab::Accessories:
 		PanelTitle->SetText(LOCTEXT("PanelAccessories", "Accessoires"));
-		AddNote(LOCTEXT("AccessoriesSoon", "Bientôt : casquettes, sacs, lunettes, bijoux, piercings…"));
+		if (!AddPartGrid(TEXT("Accessories")))
+		{
+			AddNote(LOCTEXT("AccessoriesSoon", "Bientôt : casquettes, sacs, lunettes, bijoux, piercings…"));
+		}
 		break;
 	}
 }
@@ -597,7 +608,7 @@ void UCharacterCreatorWidget::AddSliders(ETrainerSliderGroup Group)
 
 		UCreatorSlider* Slider = WidgetTree->ConstructWidget<UCreatorSlider>(UCreatorSlider::StaticClass());
 		Slider->SliderId = Def.Id;
-		Slider->SetMinValue(Def.MorphNegative.IsNone() ? 0.f : -Def.Limit);
+		Slider->SetMinValue(Def.HasNegative() ? -Def.Limit : 0.f);
 		Slider->SetMaxValue(Def.Limit);
 		Slider->SetStepSize(0.01f);
 		Slider->SetIndentHandle(false);
@@ -710,6 +721,155 @@ void UCharacterCreatorWidget::AddPresetGrid(const TArray<FTrainerPresetDef>& Pre
 		UHorizontalBoxSlot* CellSlot = Row->AddChildToHorizontalBox(Cell);
 		CellSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	}
+}
+
+bool UCharacterCreatorWidget::AddPartGrid(FName TabName)
+{
+	const FTrainerBaseDef* Base = Data->FindBase(Current.Base);
+	if (!Base)
+	{
+		return false;
+	}
+	// Emplacements de cet onglet qui ont au moins une pièce pour cette base
+	TArray<const FTrainerPartSlotDef*> Slots;
+	for (const FTrainerPartSlotDef& SlotDef : Data->PartSlots)
+	{
+		const FName SlotName = SlotDef.Slot;
+		if (SlotDef.Tab == TabName && Data->Parts.ContainsByPredicate([&](const FTrainerPartDef& P) { return P.Slot == SlotName && P.FitsBase(Base->Id); }))
+		{
+			Slots.Add(&SlotDef);
+		}
+	}
+	if (Slots.IsEmpty())
+	{
+		return false;
+	}
+	const FTrainerPartSlotDef* Shown = Slots[0];
+	for (const FTrainerPartSlotDef* SlotDef : Slots)
+	{
+		if (SlotDef->Slot == PartSlotFilter)
+		{
+			Shown = SlotDef;
+		}
+	}
+
+	// Puces des emplacements (Haut, Bas, Chaussures...) quand il y en a plusieurs
+	if (Slots.Num() > 1)
+	{
+		UWrapBox* Chips = WidgetTree->ConstructWidget<UWrapBox>(UWrapBox::StaticClass());
+		Chips->SetInnerSlotPadding(FVector2D(8.f, 8.f));
+		for (const FTrainerPartSlotDef* SlotDef : Slots)
+		{
+			const bool bSelected = SlotDef == Shown;
+			const FName SlotName = SlotDef->Slot;
+			UTextBlock* Label = nullptr;
+			UCreatorButton* Chip = MakeTextButton(WidgetTree, SlotDef->Label.IsEmpty() ? FText::FromName(SlotName) : SlotDef->Label, 20.f,
+				[this, SlotName]() { PartSlotFilter = SlotName; RefreshRightPanel(); }, &Label, bSelected ? SelectedFill : ButtonFill, 18.f);
+			if (bSelected && Label)
+			{
+				Label->SetColorAndOpacity(FSlateColor(DarkText));
+				Label->SetShadowColorAndOpacity(FLinearColor::Transparent);
+			}
+			Chips->AddChildToWrapBox(MakeBox(WidgetTree, FVector2D(0.f, 40.f), Chip));
+		}
+		PanelList->AddChild(Chips);
+		if (UScrollBoxSlot* ChipsSlot = Cast<UScrollBoxSlot>(Chips->Slot))
+		{
+			ChipsSlot->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
+		}
+	}
+
+	// Pièce portée maintenant dans cet emplacement
+	const TMap<FName, const FTrainerPartDef*> Worn = Data->ResolveParts(*Base, Current);
+	const FTrainerPartDef* const* WornPart = Worn.Find(Shown->Slot);
+	const FName WornId = WornPart && *WornPart ? (*WornPart)->Id : NAME_None;
+
+	TArray<const FTrainerPartDef*> List;
+	for (const FTrainerPartDef& Part : Data->Parts)
+	{
+		if (Part.Slot == Shown->Slot && Part.FitsBase(Base->Id))
+		{
+			List.Add(&Part);
+		}
+	}
+
+	const FName SlotName = Shown->Slot;
+	auto Wear = [this, SlotName](FName Id)
+	{
+		FTrainerAppearance New = Current;
+		New.Outfit.RemoveAll([&](FName Existing)
+		{
+			const FString Text = Existing.ToString();
+			if (Text.StartsWith(TEXT("-")))
+			{
+				return FName(*Text.Mid(1)) == SlotName;
+			}
+			const FTrainerPartDef* Part = Data->FindPart(Existing);
+			return !Part || Part->Slot == SlotName;
+		});
+		New.Outfit.Add(Id);
+		ChangeAppearance(New, SlotName, false);
+		RefreshRightPanel();
+	};
+
+	FString Category = TEXT("\x01");
+	int32 Column = 0;
+	UHorizontalBox* Row = nullptr;
+	auto AddTile = [&](UWidget* Inside, bool bSelected, TFunction<void()> OnClick)
+	{
+		if (!Row || Column == GridColumns)
+		{
+			Row = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+			PanelList->AddChild(Row);
+			if (UScrollBoxSlot* RowSlot = Cast<UScrollBoxSlot>(Row->Slot))
+			{
+				RowSlot->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
+			}
+			Column = 0;
+		}
+		UCreatorButton* Button = MakeButton(WidgetTree, Inside, ButtonFill, 16.f, MoveTemp(OnClick),
+			bSelected ? FLinearColor::White : FLinearColor(1.f, 1.f, 1.f, 0.25f), bSelected ? 4.f : 1.f);
+		UHorizontalBoxSlot* TileSlot = Row->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(124.f, 124.f), Button));
+		TileSlot->SetPadding(FMargin(0.f, 0.f, 12.f, 0.f));
+		++Column;
+	};
+
+	if (!Shown->bRequired)
+	{
+		UTextBlock* NoneText = MakeText(WidgetTree, LOCTEXT("PartNone", "Aucun"), 20.f);
+		NoneText->SetJustification(ETextJustify::Center);
+		const FName NoneId(*(TEXT("-") + SlotName.ToString()));
+		AddTile(NoneText, WornId.IsNone(), [Wear, NoneId]() { Wear(NoneId); });
+	}
+	for (const FTrainerPartDef* Part : List)
+	{
+		if (Part->Category.ToString() != Category)
+		{
+			Category = Part->Category.ToString();
+			if (!Category.IsEmpty())
+			{
+				Row = nullptr;
+				AddSection(Part->Category);
+			}
+		}
+		UWidget* Inside = nullptr;
+		if (UTexture2D* Thumbnail = Part->Thumbnail.LoadSynchronous())
+		{
+			UImage* Image = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+			Image->SetBrushFromTexture(Thumbnail);
+			Inside = MakeBox(WidgetTree, FVector2D(112.f, 112.f), Image);
+		}
+		else
+		{
+			UTextBlock* Text = MakeText(WidgetTree, Part->Label.IsEmpty() ? FText::FromName(Part->Id) : Part->Label, 16.f);
+			Text->SetJustification(ETextJustify::Center);
+			Text->SetAutoWrapText(true);
+			Inside = Text;
+		}
+		const FName Id = Part->Id;
+		AddTile(Inside, Id == WornId, [Wear, Id]() { Wear(Id); });
+	}
+	return true;
 }
 
 void UCharacterCreatorWidget::AddSwatches(const TArray<FLinearColor>& Colors, bool bSkin)
@@ -851,7 +1011,7 @@ void UCharacterCreatorWidget::Randomize()
 		{
 			// Reste dans les 60 % du milieu, deux tirages pour que les valeurs extrêmes soient rares
 			const float Spread = 0.6f * Def.Limit;
-			const float Value = Def.MorphNegative.IsNone()
+			const float Value = !Def.HasNegative()
 				? FMath::Abs(FMath::FRandRange(-Spread, Spread) + FMath::FRandRange(-Spread, Spread)) * 0.5f
 				: (FMath::FRandRange(-Spread, Spread) + FMath::FRandRange(-Spread, Spread)) * 0.5f;
 			New.SetSlider(Def.Id, Value);

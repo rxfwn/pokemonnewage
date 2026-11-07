@@ -121,6 +121,9 @@ private:
 	void AddSwatches(const TArray<FLinearColor>& Colors, bool bSkin);
 	void AddNote(const FText& Text);
 
+	/** Pièces (têtes, vêtements, accessoires) des emplacements dont FTrainerPartSlotDef::Tab vaut TabName ; faux s'il n'y en a aucune */
+	bool AddPartGrid(FName TabName);
+
 	/** Remet les textes et les styles (onglets, base, curseurs) d'après l'état courant */
 	void RefreshAll();
 	void RefreshSliderValues();
@@ -161,6 +164,8 @@ private:
 	FString Catch;
 
 	ETab Tab = ETab::Presets;
+	/** Emplacement montré dans la Tenue / les Accessoires (None = le premier) */
+	FName PartSlotFilter;
 	EFacePart FacePart = EFacePart::Presets;
 	bool bDetailed = false;
 	bool bUIHidden = false;
