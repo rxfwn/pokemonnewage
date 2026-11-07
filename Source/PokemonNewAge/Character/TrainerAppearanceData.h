@@ -7,6 +7,7 @@
 
 class USkeletalMesh;
 class UAnimInstance;
+class UAnimSequenceBase;
 class UMaterialInterface;
 class UTexture2D;
 
@@ -256,6 +257,10 @@ struct FTrainerBaseDef
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	TSubclassOf<UAnimInstance> AnimClass;
+
+	/** Animation d'attente du studio quand Anim Class n'a pas de graphe (TrainerAnimInstance seul) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TSoftObjectPtr<UAnimSequenceBase> IdleAnimation;
 
 	/** Bouton de l'éditeur (♂ ou ♀) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")

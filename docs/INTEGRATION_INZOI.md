@@ -16,8 +16,10 @@ Le prof de jeu vidéo de L'amie a fait extraire le menu de création de personna
   toute façon pas dans le dépôt. Conséquence : l'ami(e) qui récupère le projet par Git n'a **pas** ces ressources ;
   le jeu marche quand même (il reprend `DA_TrainerAppearance`, le catalogue de base). Pour qu'il ou elle les voie,
   il faut lancer le même script sur son PC avec une copie du dossier de l'exercice.
-- Pas d'animations d'adulte dans l'export : le personnage est en pose de référence dans le studio. Pour marcher en
-  jeu, il faudra retargeter nos animations sur le squelette inZOI (étape 4).
+- Animations : l'export en contient ~2 000 d'adulte (attentes, émotions, gestes, poses, danses) au format
+  `.ueanim`, mais **ni marche ni course** (seulement un jogging sur tapis de course). Elles s'importent avec le
+  plugin UEFormat (étape « Animations »). Pour marcher dans Kanto, il faudra retargeter nos animations sur le
+  squelette inZOI (section 5).
 - Le visage détaillé (91 points, squelette de visage MetaHuman), les cheveux (poils « Groom », non exportés en .glb)
   et le maquillage viendront plus tard.
 
@@ -85,6 +87,24 @@ Ce qui peut coincer, et quoi m'envoyer :
 | Tout est gris / blanc | Textures absentes de l'export ou mal reconnues | Le bilan « fichiers absents » du journal |
 | Déformation trop forte | Les valeurs d'inZOI sont pensées pour sa formule | Dans `DA_TrainerAppearance_InZOI`, baisser **Bone Deformation Scale** (0,5 par exemple) |
 
+### Animations (attente du studio, gestes, émotions)
+
+1. Télécharger le plugin **UEFormat** : <https://github.com/h4lfheart/UEFormat> > bouton vert **Code** >
+   **Download ZIP**. Dans le zip, copier le dossier `plugins/unreal/UEFormat` dans le dossier `Plugins/` du projet
+   (créer `Plugins/` s'il n'existe pas) : on doit avoir `D:\Dev\pokemonnewage\Plugins\UEFormat\UEFormat.uplugin`.
+   Ce dossier est exclu de Git (le plugin n'a pas de licence qui permette de le mettre dans notre dépôt).
+2. Supprimer `Plugins/UEFormat/Binaries` (compilé pour une autre version d'Unreal), fermer Unreal, recompiler
+   (« PokemonNewAgeEditor Win64 Development Build ») : le plugin se compile avec le projet.
+3. Unreal : **Outils > Exécuter un script Python** > `Tools/InZOI/import_inzoi_anims.py`. Pour chaque base, un
+   message indique quel squelette choisir ; la fenêtre « Animation Import Options » s'ouvre : choisir ce squelette,
+   puis **Import All**.
+4. Résultat : `ImportedAssets/InZOI/Anims/Homme/...` et `.../Femme/...`, et l'attente `ANIM_F_NPC_Idle1` jouée en
+   boucle dans le studio de l'éditeur. La liste des animations est en haut du script (`ANIMATIONS`), on peut en
+   ajouter (noms dans `Index_Complet/Manifeste_Assets.csv`).
+
+Si le plugin ne compile pas avec Unreal 5.8, m'envoyer les erreurs : on passera par Blender (extension UEFormat
+pour Blender, puis export FBX).
+
 ### 5. Animations en jeu (plus tard)
 
 Pour que le personnage inZOI marche dans Kanto :
@@ -103,6 +123,6 @@ Pour que le personnage inZOI marche dans Kanto :
 2. Corriger l'import selon les retours (matériaux, échelle, squelettes).
 3. Visage détaillé : curseurs « par os » du visage d'après `Morphologie_Visage_Os.csv` (la tête a son propre
    squelette : il faudra une animation pour la tête qui copie la pose du corps).
-4. Animations retargetées (section 5).
+4. Animations de marche et de course retargetées (section 5) ; émotes et poses de la carte dresseur avec les animations importées.
 5. Cheveux : trouver des coiffures en mesh (l'export n'a que les textures des cheveux Groom).
 6. Le style verre de L'amie sur l'éditeur, avec les icônes importées (`ImportedAssets/InZOI/UI/...`).

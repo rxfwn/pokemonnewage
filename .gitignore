@@ -52,3 +52,5 @@ Tools/Progression/Generated/
 # Ressources du créateur de personnage étudié en cours (Tools/InZOI/import_inzoi.py) :
 # importées depuis le dossier local de l'exercice, elles ne doivent JAMAIS partir sur GitHub
 Content/ImportedAssets/
+# Plugin UEFormat (import des .ueanim de l'exercice) : téléchargé par chacun, pas de licence pour le redistribuer
+Plugins/UEFormat/

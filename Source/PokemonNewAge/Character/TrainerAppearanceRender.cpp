@@ -3,6 +3,7 @@
 #include "Character/TrainerAnimInstance.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
+#include "Animation/AnimSequenceBase.h"
 #include "GameFramework/Actor.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -220,6 +221,7 @@ bool TrainerAppearanceRender::Apply(const UTrainerAppearanceData* Data, AActor* 
 	if (UTrainerAnimInstance* Anim = Cast<UTrainerAnimInstance>(Mesh->GetAnimInstance()))
 	{
 		Anim->SetBoneOffsets(Data->ComputeBoneOffsets(*Base, Appearance));
+		Anim->SetIdleAnimation(Base->IdleAnimation.LoadSynchronous());
 	}
 
 	// Le corps et tout ce qui le suit (vêtements, cheveux en Leader Pose) reçoivent les mêmes morphs et couleurs

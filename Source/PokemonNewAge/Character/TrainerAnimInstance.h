@@ -18,12 +18,17 @@ struct FTrainerAnimInstanceProxy : public FAnimInstanceProxy
 protected:
 
 	virtual void PreUpdate(UAnimInstance* InAnimInstance, float DeltaSeconds) override;
+	virtual void Update(float DeltaSeconds) override;
 	virtual bool Evaluate(FPoseContext& Output) override;
 
 private:
 
 	/** Copie faite sur le fil principal à chaque image (PreUpdate) */
 	TArray<FTrainerBoneOffset> Offsets;
+
+	/** Animation jouée en boucle quand il n'y a pas de graphe (studio de l'éditeur) */
+	UAnimSequenceBase* Idle = nullptr; // gardé en vie par UTrainerAnimInstance::IdleAnimation
+	float IdleTime = 0.f;
 };
 
 /**
@@ -44,6 +49,11 @@ public:
 
 	const TArray<FTrainerBoneOffset>& GetBoneOffsets() const { return BoneOffsets; }
 
+	/** Animation d'attente jouée en boucle s'il n'y a pas d'Animation Blueprint enfant (studio) ; nul = pose de référence */
+	void SetIdleAnimation(UAnimSequenceBase* InIdle) { IdleAnimation = InIdle; }
+
+	UAnimSequenceBase* GetIdleAnimation() const { return IdleAnimation; }
+
 protected:
 
 	virtual FAnimInstanceProxy* CreateAnimInstanceProxy() override { return new FTrainerAnimInstanceProxy(this); }
@@ -52,4 +62,7 @@ protected:
 private:
 
 	TArray<FTrainerBoneOffset> BoneOffsets;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequenceBase> IdleAnimation;
 };
