@@ -1,7 +1,7 @@
 """Lancé tout seul par Unreal à chaque ouverture de l'éditeur (plugin Python, fichier Content/Python/init_unreal.py).
 
-Installe le Pokédex 3D (SCRUM-64) s'il manque : quand /Game/UI/Pokedex/DA_PokedexModel n'existe pas ou n'a pas
-les pièces du modèle de L'amie, lance Tools/Pokedex/import_pokedex_unreal.py (modèle, textures, icônes, carte,
+Installe le Pokédex 3D (SCRUM-64) s'il manque ou si son FBX ou son script d'import a changé (empreintes dans Saved/StartupImports.json, sans charger d'asset),
+et lance Tools/Pokedex/import_pokedex_unreal.py (modèle, textures, icônes, carte,
 sons, HUD). Fait aussi le matériau de verre des menus (Tools/UI/make_glass_material.py). Importe aussi les polices FF_*.ttf de Tools/HUD/Assets/fonts nouvelles ou modifiées. Sinon ne fait rien. Pour réimporter de force : Outils > Exécuter un script Python > ce même script d'import.
 """
 
@@ -15,33 +15,57 @@ PROJECT_DIR = unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_di
 IMPORT_SCRIPT = os.path.join(PROJECT_DIR, "Tools", "Pokedex", "import_pokedex_unreal.py")
 FBX_PATH = os.path.join(PROJECT_DIR, "Tools", "Pokedex", "Generated", "Pokedex.fbx")
 
+# Empreintes des scripts d'import déjà passés sur CE PC (Saved/ n'est pas dans Git).
+# Charger des assets au démarrage (load_asset + get_metadata_tag) faisait planter l'éditeur chez L'amie
+# (EXCEPTION_ACCESS_VIOLATION dans EditorScriptingUtilities, 2026-11-07) : quand rien n'a changé depuis la dernière
+# fois, on ne charge plus rien, on compare juste l'empreinte des fichiers sources.
+STAMP_FILE = os.path.join(PROJECT_DIR, "Saved", "StartupImports.json")
 
-def pokedex_installed():
-    eal = unreal.EditorAssetLibrary
-    # M_PokedexWidget : ajouté le 2026-10-31 (écrans noirs sans lui) ; son absence relance l'import
-    if not eal.does_asset_exist(MODEL_PATH) or not eal.does_asset_exist("/Game/UI/Pokedex/M_PokedexWidget"):
-        return False
-    # Icône appareil photo et écrans lissés (version 8 du matériau) : ajoutés le 2026-11-01
-    if not eal.does_asset_exist("/Game/UI/Pokedex/Icons/T_PokedexButton_Camera"):
-        return False
-    widget_material = eal.load_asset("/Game/UI/Pokedex/M_PokedexWidget")
-    if not widget_material or eal.get_metadata_tag(widget_material, "PokedexWidgetVersion") != "8":
-        return False
-    # Objectif d'appareil photo (ajouté le 2026-11-01)
-    if not eal.does_asset_exist("/Game/UI/Pokedex/M_PokedexLens"):
-        return False
-    lens = eal.load_asset("/Game/UI/Pokedex/M_PokedexLens")
-    if not lens or eal.get_metadata_tag(lens, "PokedexVersion") != "2":
-        return False
-    textured = eal.load_asset("/Game/UI/Pokedex/M_PokedexTextured")
-    if not textured or eal.get_metadata_tag(textured, "PokedexVersion") != "2":
-        return False
-    model = eal.load_asset(MODEL_PATH)
+
+def _load_stamps():
+    import json
     try:
-        parts = model.get_editor_property("parts")
+        with open(STAMP_FILE, encoding="utf-8") as handle:
+            return json.load(handle)
     except Exception:
-        return False
-    return any(str(key) == "Body" and value for key, value in parts.items())
+        return {}
+
+
+def _fingerprint(paths):
+    import hashlib
+    digest = hashlib.sha1()
+    for path in paths:
+        try:
+            with open(path, "rb") as handle:
+                digest.update(handle.read())
+        except OSError:
+            digest.update(b"absent")
+    return digest.hexdigest()
+
+
+def up_to_date(step, paths, assets):
+    """Vrai si les fichiers sources n'ont pas changé depuis le dernier passage de cette étape.
+    Premier passage avec les assets déjà là (does_asset_exist ne charge rien) : on note l'empreinte et on ne fait rien."""
+    stamps = _load_stamps()
+    fingerprint = _fingerprint(paths)
+    if stamps.get(step) == fingerprint:
+        return True
+    if step not in stamps and all(unreal.EditorAssetLibrary.does_asset_exist(a) for a in assets):
+        mark_done(step, paths)
+        return True
+    return False
+
+
+def mark_done(step, paths):
+    import json
+    stamps = _load_stamps()
+    stamps[step] = _fingerprint(paths)
+    try:
+        os.makedirs(os.path.dirname(STAMP_FILE), exist_ok=True)
+        with open(STAMP_FILE, "w", encoding="utf-8") as handle:
+            json.dump(stamps, handle, indent=2)
+    except OSError as error:
+        unreal.log_warning("Empreinte de démarrage non écrite : %s" % error)
 
 
 def missing_fonts():
@@ -106,14 +130,14 @@ def install_fonts():
 def install_glass():
     """Matériau de verre des menus (M_UI_Glass, 2026-11-01) : fait ou refait s'il manque ou a changé de version."""
     script = os.path.join(PROJECT_DIR, "Tools", "UI", "make_glass_material.py")
-    if not os.path.exists(script):
+    if not os.path.exists(script) or up_to_date("verre", [script], ["/Game/UI/Materials/M_UI_Glass"]):
         return
     spec = importlib.util.spec_from_file_location("make_glass_material", script)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    if not module.glass_material_up_to_date():
-        unreal.log("Matériau de verre absent ou ancien : création automatique (Tools/UI/make_glass_material.py)...")
-        module.make_glass_material()
+    unreal.log("Matériau de verre absent ou modifié : création automatique (Tools/UI/make_glass_material.py)...")
+    module.make_glass_material()
+    mark_done("verre", [script])
 
 
 def install_sound_classes():
@@ -129,8 +153,15 @@ def install_sound_classes():
         module.make_sound_classes()
 
 
+POKEDEX_SOURCES = [FBX_PATH, IMPORT_SCRIPT]
+POKEDEX_ASSETS = [MODEL_PATH, "/Game/UI/Pokedex/M_PokedexWidget", "/Game/UI/Pokedex/Icons/T_PokedexButton_Camera",
+                  "/Game/UI/Pokedex/M_PokedexLens", "/Game/UI/Pokedex/M_PokedexTextured"]
+
+
 def install_pokedex():
-    if pokedex_installed() or not os.path.exists(FBX_PATH) or not os.path.exists(IMPORT_SCRIPT):
+    if not os.path.exists(FBX_PATH) or not os.path.exists(IMPORT_SCRIPT):
+        return
+    if up_to_date("pokedex", POKEDEX_SOURCES, POKEDEX_ASSETS):
         return
     if unreal.load_class(None, "/Script/PokemonNewAge.PokedexModel") is None:
         unreal.log_warning("Pokédex 3D pas installé : compiler le C++ d'abord.")
@@ -140,6 +171,7 @@ def install_pokedex():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.main()
+    mark_done("pokedex", POKEDEX_SOURCES)
 
 
 # Une seule fois, quand l'éditeur a fini de s'ouvrir (le registre des assets est alors chargé).
