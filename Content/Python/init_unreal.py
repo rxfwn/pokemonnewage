@@ -191,10 +191,19 @@ _waited = 0.0
 _next_step = 0
 
 
+def _game_running():
+    """Vrai pendant une partie lancée avec Jouer : importer ou enregistrer des assets à ce moment-là plante l'éditeur
+    (EXCEPTION_ACCESS_VIOLATION dans EditorScriptingUtilities, 2026-11-07). On attend la fin de la partie."""
+    try:
+        return unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_game_world() is not None
+    except Exception:
+        return False
+
+
 def _on_tick(delta_seconds):
     global _handle, _waited, _next_step
     registry = unreal.AssetRegistryHelpers.get_asset_registry()
-    if registry.is_loading_assets():
+    if registry.is_loading_assets() or _game_running():
         return
     if _waited < START_DELAY_SECONDS:
         _waited += delta_seconds
