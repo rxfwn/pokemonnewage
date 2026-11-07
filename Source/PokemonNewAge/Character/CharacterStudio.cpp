@@ -78,6 +78,9 @@ ACharacterStudio::ACharacterStudio()
 	Camera->PostProcessSettings.AutoExposureBias = 0.4f;
 	Camera->PostProcessSettings.bOverride_VignetteIntensity = true;
 	Camera->PostProcessSettings.VignetteIntensity = 0.25f;
+	// Pas de flou de mouvement quand le personnage tourne
+	Camera->PostProcessSettings.bOverride_MotionBlurAmount = true;
+	Camera->PostProcessSettings.MotionBlurAmount = 0.f;
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> ShapeMaterial(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
@@ -233,8 +236,10 @@ void ACharacterStudio::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	// Rotation du personnage, en douceur
-	const float Yaw = FMath::FInterpTo(Turntable->GetRelativeRotation().Yaw, TargetYaw, DeltaSeconds, 10.f);
-	Turntable->SetRelativeRotation(FRotator(0.f, Yaw, 0.f));
+	// CurrentYaw garde les tours complets : la rotation lue sur le composant repasse à -180 après 180,
+	// et l'interpolation ne rattrapait alors jamais la cible (le perso tournait tout seul)
+	CurrentYaw = FMath::FInterpTo(CurrentYaw, TargetYaw, DeltaSeconds, 10.f);
+	Turntable->SetRelativeRotation(FRotator(0.f, CurrentYaw, 0.f));
 
 	// Caméra : toujours de face (+X), à la bonne distance du point visé
 	const bool bFace = Focus == EStudioFocus::Face;

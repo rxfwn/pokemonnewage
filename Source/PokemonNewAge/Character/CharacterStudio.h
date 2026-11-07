@@ -99,6 +99,7 @@ private:
 	EStudioFocus Focus = EStudioFocus::Body;
 	float ZoomFactor = 1.f;
 	float TargetYaw = 0.f;
+	float CurrentYaw = 0.f;
 	int32 LightingIndex = 0;
 	bool bSnapCamera = true;
 };
