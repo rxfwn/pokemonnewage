@@ -54,11 +54,11 @@ void UCreatorSlider::Setup(TFunction<void(float)> InOnChange)
 	OnValueChanged.AddUniqueDynamic(this, &UCreatorSlider::HandleValue);
 }
 
-void UCreatorSlider::HandleValue(float Value)
+void UCreatorSlider::HandleValue(float NewValue)
 {
 	if (OnChange)
 	{
-		OnChange(Value);
+		OnChange(NewValue);
 	}
 }
 

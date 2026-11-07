@@ -56,7 +56,7 @@ public:
 private:
 
 	UFUNCTION()
-	void HandleValue(float Value);
+	void HandleValue(float NewValue);
 
 	TFunction<void(float)> OnChange;
 };
