@@ -202,3 +202,20 @@ Pour que le personnage inZOI marche dans Kanto :
   **Cils** : densité 0,55 (moins épais).
 - **Poses** : bouton **Pose** de la barre du haut de l'éditeur (attente, salut, applaudir, selfie, muscles, cœur, fierté,
   colère, peur, excuses).
+
+## Export « MakeupV2 » : maquillage complet et détails de peau (2026-11-08)
+
+Le dossier `Exercice Compilation\MakeupV2` (export FModel à part) est fouillé automatiquement par `import_inzoi.py`
+(`EXTRA_EXPORT_DIRS`). Il apporte :
+
+- les **90 masques de maquillage** en PNG (`MakeupMasks/Makeup_Part_A` à `F`) : les 81 styles de la table
+  `AppearanceMakeup` s'importent enfin (Reflets, Blush, Fard, Eye-liner, Lèvres, Sourcils dessinés) ;
+- les **détails de peau**, rangés dans l'onglet Visage > Maquillage après le maquillage :
+  - Taches de rousseur (9), Grains de beauté (15) : masque à une couleur réglable ;
+  - Cicatrices (12) : masque + couleur `_D` de la cicatrice, teinte réglable (blanc = couleur d'origine) ;
+  - Tatouages (14) et Peintures de visage (16) : une couleur par canal R, V, B comme le maquillage.
+
+Les lignes homme/femme et adulte/enfant d'inZOI partagent le même masque : une seule pièce par masque.
+Pour les taches, grains de beauté et cicatrices, le script lit le premier masque de chaque sorte pour savoir quels
+canaux portent le dessin (ligne « canaux du masque … » dans le journal ; un canal presque tout blanc est ignoré).
+`M_InZOI_Skin` passe en version 3 : il est refait au même endroit au prochain import.

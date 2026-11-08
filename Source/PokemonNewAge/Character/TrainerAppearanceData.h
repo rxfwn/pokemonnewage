@@ -288,6 +288,10 @@ struct FTrainerPartDef
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	TMap<FName, float> MaskScalars;
 
+	/** Autres textures posées avec le masque (ex. SkinScarColor : couleur d'une cicatrice) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TMap<FName, TSoftObjectPtr<UTexture>> MaskExtraTextures;
+
 	/** Faux = à acheter en boutique (pas encore branché : tout est disponible pour l'instant) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	bool bStartOwned = true;

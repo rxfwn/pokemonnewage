@@ -216,9 +216,10 @@ def split(asset_path):
 GROOM_REL = "Characters/AvatarParts/Groom"
 
 
-# Exports FModel faits à part et rangés à la racine de l'exercice (ex. le dossier « makeup » des masques de maquillage) :
-# chaque <dossier>/BlueClient/Content ou <dossier>/Output/Exports/BlueClient/Content est aussi fouillé
-EXTRA_EXPORT_DIRS = ["makeup"]
+# Exports FModel faits à part et rangés à la racine de l'exercice (ex. « MakeupV2 » : masques de maquillage, taches de
+# rousseur, grains de beauté, cicatrices, tatouages + leurs tables) : chaque <dossier>/BlueClient/Content ou
+# <dossier>/Output/Exports/BlueClient/Content est aussi fouillé
+EXTRA_EXPORT_DIRS = ["MakeupV2", "makeup"]
 
 
 def extra_exports():
@@ -244,6 +245,22 @@ def src(rel, ext):
         if os.path.isfile(copy):
             return copy
     return path
+
+
+def read_table(name):
+    """Table JSON d'inZOI (Data/JsonResult/<name>.json) : export principal puis exports à part. [] si absente"""
+    candidates = [os.path.join(EXPORTS, "Data", "JsonResult", name + ".json")]
+    candidates += [os.path.join(root, "Data", "JsonResult", name + ".json") for root in extra_exports()]
+    for filename in candidates:
+        try:
+            with open(filename, encoding="utf-8") as handle:
+                rows = json.load(handle)
+        except (OSError, ValueError):
+            continue
+        if isinstance(rows, list):
+            return rows
+    log("Table %s.json introuvable (export principal et %s)" % (name, ", ".join(EXTRA_EXPORT_DIRS)))
+    return []
 
 
 def read_csv(path):
@@ -704,7 +721,7 @@ def constant(material, value, x, y):
     return node
 
 
-SKIN_VERSION = 2  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
+SKIN_VERSION = 3  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
 # Maquillage d'inZOI (table AppearanceMakeup) : catégorie, lettre du dossier de masques, emplacement du jeu (= nom du
 # paramètre texture de M_InZOI_Skin, couleurs dans <emplacement>_R/_G/_B), libellé, force du mélange (les reflets d'inZOI
 # mêlent un éclat blanc et une ombre de contour : à moitié pour rester naturels)
@@ -717,6 +734,21 @@ MAKEUP_PARTS = [
     ("Eyebrow", "F", "MakeupBrows", "Sourcils dessinés", 1.0),
 ]
 MAKEUP_MASKS = "Characters/Materials/DefaultTextures/Skin/MakeupMasks"
+# Détails de peau d'inZOI (Visage > Maquillage, après le maquillage) : emplacement (= paramètre texture de M_InZOI_Skin),
+# libellé, table, sorte. « single » = un masque à une couleur (<emplacement>_R, canaux lus selon <emplacement>_WR/_WG/
+# _WB/_WA) ; « scar » = pareil mais la couleur vient de la texture _D de la cicatrice (SkinScarColor) ; « rgb » = comme
+# le maquillage, une couleur par canal R, V, B (tatouages, peintures)
+SKIN_FEATURES = [
+    ("SkinFreckles", "Taches de rousseur", "AppearanceFreckles", "single"),
+    ("SkinMoles", "Grains de beauté", "AppearanceMole", "single"),
+    ("SkinScars", "Cicatrices", "AppearanceScar", "scar"),
+    ("SkinTattoo", "Tatouages", "AppearanceTattoo", "rgb"),
+    ("SkinFacePaint", "Peintures", "AppearanceTattoo", "rgb"),
+]
+SKIN_FEATURE_SINGULAR = {"SkinFreckles": "Taches", "SkinMoles": "Grain de beauté", "SkinScars": "Cicatrice",
+                         "SkinTattoo": "Tatouage", "SkinFacePaint": "Peinture"}
+SCAR_COLOR_PARAM = "SkinScarColor"
+FRECKLE_COLOR = "8A5A3C"  # pas de couleur dans la table d'inZOI : brun clair
 
 
 def default_mask_texture():
@@ -724,6 +756,7 @@ def default_mask_texture():
     candidates = ["Characters/Materials/DefaultTextures/T_Default_Black_M"]
     candidates += ["%s/Makeup_Part_%s/Makeup_Part_%s_001_M" % (MAKEUP_MASKS, letter, letter) for _c, letter, _s, _l, _b in MAKEUP_PARTS]
     candidates += IRIS_MASKS
+    candidates += ["Characters/Materials/DefaultTextures/Skin/SkinFeatures/Mole/Head/Head_Mole_001_GRY"]
     for rel in candidates:
         texture = import_texture(rel, "mask")
         if texture:
@@ -775,6 +808,48 @@ def build_skin_master():
                 links.append((color, "", "%s%d" % (channel, index)))
                 code.append("c = lerp(c, %s%d.rgb, saturate(M%d.%s * %s%d.a * %.2f));" % (
                     channel, index, index, channel.lower(), channel, index, blend))
+        shared = getattr(getattr(unreal, "SamplerSourceMode", None), "SSM_WRAP_WORLD_GROUP_SETTINGS", None)
+        for index, (slot, _label, _table, kind) in enumerate(SKIN_FEATURES):
+            y = (len(MAKEUP_PARTS) + index) * 450
+            name = "F%d" % index
+            sample = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -1100, y)
+            set_prop(sample, "parameter_name", slot)
+            set_prop(sample, "texture", mask_texture)
+            set_prop(sample, "sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_MASKS)
+            if shared is not None:
+                set_prop(sample, "sampler_source", shared)
+            links.append((sample, "RGBA", name))
+            channels = "RGB" if kind == "rgb" else "R"
+            for offset, channel in enumerate(channels):
+                color = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -800, y + offset * 130)
+                set_prop(color, "parameter_name", "%s_%s" % (slot, channel))
+                default = unreal.LinearColor(1, 1, 1, 0) if kind == "scar" else unreal.LinearColor(0, 0, 0, 0)
+                set_prop(color, "default_value", default)
+                links.append((color, "", "%s%s" % (name, channel)))
+            if kind == "rgb":
+                for channel in "RGB":
+                    code.append("c = lerp(c, %s%s.rgb, saturate(%s.%s * %s%s.a));" % (
+                        name, channel, name, channel.lower(), name, channel))
+                continue
+            # Canaux du masque qui portent le dessin (trouvés à l'import, R par défaut)
+            for offset, channel in enumerate("RGBA"):
+                weight = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -800, y + 150 + offset * 70)
+                set_prop(weight, "parameter_name", "%s_W%s" % (slot, channel))
+                set_prop(weight, "default_value", 1.0 if channel == "R" else 0.0)
+                links.append((weight, "", "%sW%s" % (name, channel)))
+            code.append("float m%d = max(max(%s.r * %sWR, %s.g * %sWG), max(%s.b * %sWB, %s.a * %sWA));" % (
+                index, name, name, name, name, name, name, name, name))
+            if kind == "scar":
+                scar = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -1100, y + 250)
+                set_prop(scar, "parameter_name", SCAR_COLOR_PARAM)
+                set_prop(scar, "texture", unreal.load_asset("/Engine/EngineResources/WhiteSquareTexture"))
+                if shared is not None:
+                    set_prop(scar, "sampler_source", shared)
+                links.append((scar, "RGB", "%sD" % name))
+                # Couleur de la cicatrice (texture _D d'inZOI) teintée dans le nuancier (blanc = telle quelle)
+                code.append("c = lerp(c, %sD.rgb * %sR.rgb, saturate(m%d * %sR.a));" % (name, name, index, name))
+            else:
+                code.append("c = lerp(c, %sR.rgb, saturate(m%d * %sR.a));" % (name, index, name))
     else:
         log("Peau : aucune texture de masque trouvée, maquillage désactivé")
     code.append("return c;")
@@ -1830,13 +1905,7 @@ MAKEUP_AMOUNT_LABELS = ["", "Intensité", "Intensité", "Intensité"]
 def build_makeup():
     """Maquillage d'inZOI (table AppearanceMakeup) : une pièce sans modèle par ligne dont le masque est dans l'export.
     Chaque canal R, V, B du masque garde la couleur et l'intensité d'inZOI (modifiables dans le nuancier)."""
-    filename = os.path.join(JSON_TABLES, "AppearanceMakeup.json")
-    try:
-        with open(filename, encoding="utf-8") as handle:
-            rows = json.load(handle)
-    except (OSError, ValueError):
-        log("Maquillage : table %s introuvable" % filename)
-        return []
+    rows = read_table("AppearanceMakeup")
     by_category = {category: (slot, label) for category, _letter, slot, label, _blend in MAKEUP_PARTS}
     parts, counts, missing = [], {}, []
     for row in rows if isinstance(rows, list) else []:
@@ -1878,6 +1947,96 @@ def build_makeup():
         log("Maquillage : %d masques absents (ex. %s) : dans FModel, clic droit sur %s > Save Folder's Packages "
             "Textures (.png), vers Exercice Compilation\\makeup (les .json seuls ne suffisent pas)" % (
                 len(missing), ", ".join(missing[:4]), MAKEUP_MASKS))
+    return parts
+
+
+def mask_weights(rel):
+    """Canaux d'un masque qui portent le dessin : ceux qui varient sans être presque tout blancs (un canal plein sert
+    à autre chose chez inZOI). {"_WR": 1, "_WG": 0, ...} ; R seul si la texture ne se lit pas"""
+    image = png_rgba(src(rel, ".png"))
+    weights = {"R": 1.0, "G": 0.0, "B": 0.0, "A": 0.0}
+    if not image:
+        return weights, "non lu"
+    width, height, rows = image
+    step = max(1, width // 256)
+    sums, peaks, count = [0.0] * 4, [0] * 4, 0
+    for y in range(0, height, step):
+        line = rows[y]
+        for x in range(0, width, step):
+            count += 1
+            for channel in range(4):
+                value = line[x * 4 + channel]
+                sums[channel] += value
+                if value > peaks[channel]:
+                    peaks[channel] = value
+    means = [total / (255.0 * max(1, count)) for total in sums]
+    useful = [channel for channel in range(4) if peaks[channel] > 60 and means[channel] < 0.6]
+    if useful:
+        weights = {name: (1.0 if index in useful else 0.0) for index, name in enumerate("RGBA")}
+    detail = "moyennes " + " ".join("%s %.2f" % (name, means[index]) for index, name in enumerate("RGBA"))
+    return weights, detail
+
+
+def build_skin_features():
+    """Détails de peau d'inZOI : taches de rousseur, grains de beauté, cicatrices, tatouages, peintures de visage.
+    Pièces sans modèle comme le maquillage (masque posé sur la peau de la tête). Les lignes homme/femme et adulte/enfant
+    d'inZOI partagent le même masque : une seule pièce par masque."""
+    parts = []
+    for slot, label, table, kind in SKIN_FEATURES:
+        rows = read_table(table)
+        if table == "AppearanceTattoo":
+            rows = [row for row in rows if bool(row.get("bIsFacePainting")) == (slot == "SkinFacePaint")]
+        seen, weights, number, missing = set(), None, 0, 0
+        for row in rows:
+            mask_rel = game_rel(row.get("MaskTexture"))
+            if not mask_rel or mask_rel in seen or row.get("HiddenFromUI"):
+                continue
+            seen.add(mask_rel)
+            if not os.path.isfile(src(mask_rel, ".png")):
+                missing += 1
+                continue
+            mask = import_texture(mask_rel, "mask")
+            if not mask:
+                continue
+            part = unreal.TrainerPartDef()
+            number += 1
+            part.set_editor_property("id", "InZOI_%s_%s" % (slot, mask_rel.rsplit("/", 1)[-1]))
+            part.set_editor_property("label", "%s %d" % (SKIN_FEATURE_SINGULAR.get(slot, label), number))
+            part.set_editor_property("slot", slot)
+            part.set_editor_property("mask_texture", mask)
+            if kind == "rgb":
+                colors = []
+                for key in ("DefaultTattooColor1", "DefaultTattooColor2", "DefaultTattooColor3"):
+                    text = (row.get(key) or "").strip()
+                    rgb = linear_hex(text)
+                    # 000000 = couleur inutilisée, sauf la 1re (tatouage noir)
+                    if rgb and (key.endswith("1") or text.upper()[:6] != "000000"):
+                        colors.append(unreal.LinearColor(rgb[0], rgb[1], rgb[2], 1.0))
+                    else:
+                        colors.append(unreal.LinearColor(0, 0, 0, 0))
+            else:
+                if weights is None:
+                    # Une analyse par sorte (pixels lus en Python : quelques secondes)
+                    weights, detail = mask_weights(mask_rel)
+                    log("%s : canaux du masque %s (%s)" % (label, "".join(k for k, v in weights.items() if v) or "R", detail))
+                part.set_editor_property("mask_scalars", {"%s_W%s" % (slot, k): v for k, v in weights.items()})
+                if kind == "scar":
+                    rgb = (1.0, 1.0, 1.0)
+                    color_rel = game_rel(row.get("ColorTexture"))
+                    color = import_texture(color_rel, "color") if color_rel and os.path.isfile(src(color_rel, ".png")) else None
+                    if color:
+                        part.set_editor_property("mask_extra_textures", {SCAR_COLOR_PARAM: color})
+                    amount = 0.9
+                else:
+                    rgb = linear_hex(row.get("DefaultMoleColor") or FRECKLE_COLOR) or linear_hex(FRECKLE_COLOR)
+                    amount = 1.0 if slot == "SkinMoles" else 0.7
+                colors = [unreal.LinearColor(rgb[0], rgb[1], rgb[2], amount)]
+            part.set_editor_property("mask_colors", colors)
+            thumbnail = import_texture(game_rel(row.get("Thumbnail")), "ui")
+            if thumbnail:
+                part.set_editor_property("thumbnail", thumbnail)
+            parts.append(part)
+        log("%s : %d%s" % (label, number, (" (%d masques absents de l'export)" % missing) if missing else ""))
     return parts
 
 
@@ -2271,6 +2430,7 @@ def main():
             defaults.setdefault(base_id, {}).update(slots)
         slow.enter_progress_frame(1, "Maquillage et motifs d'iris")
         parts += build_makeup()
+        parts += build_skin_features()
         parts += build_lenses()
         slow.enter_progress_frame(1, "Animations")
         build_animations(bases)
@@ -2331,6 +2491,17 @@ def main():
             definition.set_editor_property("mask_parameter", slot)
             definition.set_editor_property("zone_labels", [unreal.Text(t) for t in MAKEUP_ZONE_LABELS])
             definition.set_editor_property("zone_amount_labels", [unreal.Text(t) for t in MAKEUP_AMOUNT_LABELS])
+            slot_defs.append(definition)
+        for slot, slot_label, _table, kind in SKIN_FEATURES:
+            definition = unreal.TrainerPartSlotDef()
+            definition.set_editor_property("slot", slot)
+            definition.set_editor_property("label", slot_label)
+            definition.set_editor_property("tab", "Makeup")
+            definition.set_editor_property("follow_slot", "Head")
+            definition.set_editor_property("mask_parameter", slot)
+            labels = MAKEUP_ZONE_LABELS if kind == "rgb" else ["", "Teinte" if kind == "scar" else "Couleur"]
+            definition.set_editor_property("zone_labels", [unreal.Text(t) for t in labels])
+            definition.set_editor_property("zone_amount_labels", [unreal.Text(t) for t in MAKEUP_AMOUNT_LABELS[:len(labels)]])
             slot_defs.append(definition)
         definition = unreal.TrainerPartSlotDef()
         definition.set_editor_property("slot", "Lens")

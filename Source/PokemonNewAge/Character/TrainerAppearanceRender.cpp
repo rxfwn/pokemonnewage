@@ -287,6 +287,7 @@ namespace
 						}
 						// Réglages des pièces de cet emplacement remis à la valeur du matériau
 						TSet<FName> Scalars;
+						TSet<FName> Extras;
 						for (const FTrainerPartDef& Other : Data->Parts)
 						{
 							if (Other.Slot == SlotDef->Slot)
@@ -295,6 +296,18 @@ namespace
 								{
 									Scalars.Add(Scalar.Key);
 								}
+								for (const TPair<FName, TSoftObjectPtr<UTexture>>& Extra : Other.MaskExtraTextures)
+								{
+									Extras.Add(Extra.Key);
+								}
+							}
+						}
+						for (const FName Extra : Extras)
+						{
+							UTexture* ExtraOriginal = nullptr;
+							if (MID->Parent && MID->Parent->GetTextureParameterValue(FHashedMaterialParameterInfo(Extra), ExtraOriginal) && ExtraOriginal)
+							{
+								MID->SetTextureParameterValue(Extra, ExtraOriginal);
 							}
 						}
 						for (const FName Scalar : Scalars)
@@ -314,6 +327,13 @@ namespace
 					for (const TPair<FName, float>& Scalar : Part->MaskScalars)
 					{
 						MID->SetScalarParameterValue(Scalar.Key, Scalar.Value);
+					}
+					for (const TPair<FName, TSoftObjectPtr<UTexture>>& Extra : Part->MaskExtraTextures)
+					{
+						if (UTexture* ExtraTexture = Extra.Value.LoadSynchronous())
+						{
+							MID->SetTextureParameterValue(Extra.Key, ExtraTexture);
+						}
 					}
 					// Couleurs des canaux R, V, B : choix du nuancier (zones 1 à 3), sinon celles de l'export inZOI
 					for (int32 Channel = 0; Channel < 3 && Channel < Part->MaskColors.Num(); ++Channel)
