@@ -333,14 +333,22 @@ def texture_role(rel):
 
 # ---------------------------------------------------------------- Matériaux
 
+PART_VERSION = 2  # à augmenter quand le graphe de M_InZOI_Part change : refait au même endroit
+
+
 def build_master():
-    """M_InZOI_Part : texture de couleur x 3 teintes par masque (R, V, B) x Tint x SkinTint, normale, ARM"""
+    """M_InZOI_Part. Couleur comme dans inZOI : la texture _D telle quelle, ou, si la variante a des couleurs
+    (CustomIntensity > 0, ou une couleur choisie dans le nuancier), chaque zone du masque _M (R, V, B) prend sa couleur
+    Color1-3, avec le grain de la texture. Puis x Tint x SkinTint. Normale et ARM classiques."""
     existing = load(MASTER)
-    if existing:
+    if existing and EAL.get_metadata_tag(existing, "InZOIVersion") == str(PART_VERSION):
         return existing
-    folder, name = split(MASTER)
-    material = asset_tools.create_asset(name, folder, unreal.Material, unreal.MaterialFactoryNew())
-    set_prop(material, "used_with_skeletal_mesh", True)
+    if existing:
+        MEL.delete_all_material_expressions(existing)
+        material = existing
+    else:
+        material = new_material(MASTER)
+    EAL.set_metadata_tag(material, "InZOIVersion", str(PART_VERSION))
 
     default_arm = import_texture("Characters/Materials/DefaultTextures/T_Default_ARM", "arm")
     default_mask = import_texture("Characters/Materials/DefaultTextures/T_Default_Black_M", "mask")
@@ -362,26 +370,36 @@ def build_master():
         set_prop(node, "default_value", unreal.LinearColor(1, 1, 1, 1))
         return node
 
-    def multiply(a, a_out, b, b_out, x, y):
-        node = MEL.create_material_expression(material, unreal.MaterialExpressionMultiply, x, y)
-        MEL.connect_material_expressions(a, a_out, node, "A")
-        MEL.connect_material_expressions(b, b_out, node, "B")
-        return node
-
     base = sampler("BaseColorMap", white, ST.SAMPLERTYPE_COLOR, -1400, -300)
     mask = sampler("ColorMask", default_mask, ST.SAMPLERTYPE_MASKS, -1400, 0)
-    current, current_out = base, "RGB"
-    for index, channel in enumerate(["R", "G", "B"]):
-        color = vector("Color%d" % (index + 1), -1100, 200 + index * 150)
-        lerp = MEL.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, -900, 200 + index * 150)
-        set_prop(lerp, "const_a", 1.0)
-        MEL.connect_material_expressions(color, "", lerp, "B")
-        MEL.connect_material_expressions(mask, channel, lerp, "Alpha")
-        current = multiply(current, current_out, lerp, "", -700 + index * 120, -200)
-        current_out = ""
-    current = multiply(current, "", vector("Tint", -500, 100), "", -250, -200)
-    current = multiply(current, "", vector("SkinTint", -250, 100), "", -50, -200)
-    MEL.connect_material_property(current, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    intensity = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -1100, 650)
+    set_prop(intensity, "parameter_name", "CustomIntensity")
+    set_prop(intensity, "default_value", 0.0)
+    custom = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -500, -100)
+    set_prop(custom, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+    set_prop(custom, "code", (
+        "float picked = (any(C1.rgb < 0.999) || any(C2.rgb < 0.999) || any(C3.rgb < 0.999)) ? 1.0 : 0.0;\n"
+        "float amount = saturate(max(I, picked));\n"
+        "float3 grain = saturate(D.rgb * 2.2);\n"
+        "float3 c = D.rgb;\n"
+        "c = lerp(c, C1.rgb * grain, M.r);\n"
+        "c = lerp(c, C2.rgb * grain, M.g);\n"
+        "c = lerp(c, C3.rgb * grain, M.b);\n"
+        "return lerp(D.rgb, c, amount) * Tint.rgb * Skin.rgb;"))
+    inputs = []
+    for input_name in ("D", "M", "C1", "C2", "C3", "I", "Tint", "Skin"):
+        entry = unreal.CustomInput()
+        entry.set_editor_property("input_name", input_name)
+        inputs.append(entry)
+    set_prop(custom, "inputs", inputs)
+    MEL.connect_material_expressions(base, "RGB", custom, "D")
+    MEL.connect_material_expressions(mask, "RGB", custom, "M")
+    for index in range(3):
+        MEL.connect_material_expressions(vector("Color%d" % (index + 1), -1100, 200 + index * 150), "", custom, "C%d" % (index + 1))
+    MEL.connect_material_expressions(intensity, "", custom, "I")
+    MEL.connect_material_expressions(vector("Tint", -800, 650), "", custom, "Tint")
+    MEL.connect_material_expressions(vector("SkinTint", -800, 800), "", custom, "Skin")
+    MEL.connect_material_property(custom, "", unreal.MaterialProperty.MP_BASE_COLOR)
 
     normal = sampler("NormalMap", flat, ST.SAMPLERTYPE_NORMAL, -500, 400)
     MEL.connect_material_property(normal, "RGB", unreal.MaterialProperty.MP_NORMAL)
@@ -390,15 +408,27 @@ def build_master():
     MEL.connect_material_property(arm, "R", unreal.MaterialProperty.MP_AMBIENT_OCCLUSION)
     MEL.connect_material_property(arm, "G", unreal.MaterialProperty.MP_ROUGHNESS)
     MEL.connect_material_property(arm, "B", unreal.MaterialProperty.MP_METALLIC)
+    return finish_material(material, MASTER)
 
-    MEL.recompile_material(material)
-    EAL.save_loaded_asset(material)
-    log("Matériau maître créé : " + MASTER)
-    return material
+
+def material_json_values(data, textures, colors):
+    """Format de l'exercice : {"Textures": {nom: {ObjectPath}}, "Colors": {nom: {R, G, B}}, "Scalars": {nom: valeur}}"""
+    for name, value in (data.get("Textures") or {}).items():
+        texture_rel = game_rel(value.get("ObjectPath", "")) if isinstance(value, dict) else None
+        role = texture_role(texture_rel) if texture_rel else None
+        if role and (role not in textures or name in ("Base Color Map", "RGB Mask Map", "ARM Map", "Normal Map")):
+            textures[role] = texture_rel
+    for name, value in (data.get("Colors") or {}).items():
+        if isinstance(value, dict) and "R" in value:
+            colors[name] = unreal.LinearColor(value["R"], value["G"], value["B"], 1.0)
+    scalars = data.get("Scalars") or {}
+    if "Custom Color Intensity" in scalars:
+        colors["__intensity"] = float(scalars["Custom Color Intensity"])
 
 
 def read_material_json(rel, depth=0):
-    """Textures et couleurs d'une Material Instance exportée en JSON (avec celles de ses parents)"""
+    """Textures et couleurs d'une Material Instance exportée en JSON (avec celles de ses parents).
+    « __intensity » = Custom Color Intensity d'inZOI (0 : la texture telle quelle, sans les couleurs du masque)."""
     textures, colors = {}, {}
     filename = src(rel, ".json") if rel else ""
     if not rel or not os.path.isfile(filename):
@@ -407,6 +437,9 @@ def read_material_json(rel, depth=0):
         with open(filename, encoding="utf-8") as handle:
             data = json.load(handle)
     except (OSError, ValueError):
+        return textures, colors
+    if isinstance(data, dict) and ("Textures" in data or "Colors" in data):
+        material_json_values(data, textures, colors)
         return textures, colors
     objects = data if isinstance(data, list) else [data]
     props = {}
@@ -429,6 +462,9 @@ def read_material_json(rel, depth=0):
         value = entry.get("ParameterValue") or {}
         if isinstance(value, dict) and "R" in value:
             colors[name] = unreal.LinearColor(value["R"], value["G"], value["B"], 1.0)
+    for entry in props.get("ScalarParameterValues", []) or []:
+        if (entry.get("ParameterInfo") or {}).get("Name") == "Custom Color Intensity":
+            colors["__intensity"] = float(entry.get("ParameterValue", 1.0))
     return textures, colors
 
 
@@ -436,6 +472,8 @@ def mask_colors(colors):
     """Couleurs des canaux du masque : paramètres « Custom(R) », « Color1 »... -> Color1, Color2, Color3"""
     result = {}
     for name, color in colors.items():
+        if name.startswith("__"):
+            continue
         lower = name.lower()
         for index, keys in enumerate([("(r)", "color1", "_r"), ("(g)", "color2", "_g"), ("(b)", "color3", "_b")]):
             if any(key in lower for key in keys):
@@ -444,25 +482,28 @@ def mask_colors(colors):
 
 
 def make_instance(asset_path, textures, colors, skin):
-    existing = load(asset_path)
-    if existing:
-        return existing
-    master = build_master()
-    folder, name = split(asset_path)
-    instance = asset_tools.create_asset(name, folder, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
-    MEL.set_material_instance_parent(instance, master)
+    """Material Instance de M_InZOI_Part ; une instance déjà importée est remise à jour (textures, couleurs)"""
+    instance = load(asset_path)
+    if not instance:
+        folder, name = split(asset_path)
+        instance = asset_tools.create_asset(name, folder, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
+        stats["materials"] += 1
+    MEL.set_material_instance_parent(instance, build_master())
     for role, texture_rel in textures.items():
         if skin and role == "mask":
             continue  # les masques de peau ne sont pas des masques de couleur
         texture = import_texture(texture_rel, role)
         if texture:
             MEL.set_material_instance_texture_parameter_value(instance, TEXTURE_PARAMS[role], texture)
-    if "mask" in textures and not skin:
-        for param, color in mask_colors(colors).items():
-            MEL.set_material_instance_vector_parameter_value(instance, param, color)
+    found = mask_colors(colors) if ("mask" in textures and not skin) else {}
+    for index in range(1, 4):
+        color = found.get("Color%d" % index, unreal.LinearColor(1, 1, 1, 1))
+        MEL.set_material_instance_vector_parameter_value(instance, "Color%d" % index, color)
+    # Sans valeur dans le JSON : couleurs présentes = variante colorée (intensité 1), sinon la texture telle quelle
+    intensity = colors.get("__intensity", 1.0 if found else 0.0)
+    MEL.set_material_instance_scalar_parameter_value(instance, "CustomIntensity", intensity if found else 0.0)
     MEL.update_material_instance(instance)
     EAL.save_loaded_asset(instance)
-    stats["materials"] += 1
     return instance
 
 
@@ -664,12 +705,17 @@ def build_skin_master():
     return finish_material(material, SKIN_MASTER)
 
 
-EYE_VERSION = 2  # à augmenter quand le dessin de l'œil change : le matériau est alors refait
+EYE_VERSION = 3  # à augmenter quand le dessin de l'œil change : le matériau est alors refait
+# Masque d'iris d'inZOI (celui de MetaHuman) : R = relief, V = fibres de l'iris, B = mélange des 2 couleurs, A = pupille
+IRIS_MASKS = ["MetaHumans/Common/Face/Textures/IrisTextures/iris_001/T_Iris_A_M",
+              "Characters/Materials/DefaultTextures/Eyes/IrisTextures/iris_001/T_Iris_A_M"]
+# Rayon de l'iris dans les UV du globe inZOI (0,125) / rayon de l'iris dans la texture (0,45)
+IRIS_UV_SCALE = 3.6
 
 
 def build_eye_master():
-    """M_InZOI_Eye : blanc de l'œil + iris (IrisColor) + pupille, dessinés d'après les UV du globe
-    (iris centré en 0,5 0,5 sur les têtes inZOI). La couleur des yeux du joueur passe par IrisColor."""
+    """M_InZOI_Eye : la vraie texture d'iris d'inZOI (T_Iris_A_M) posée sur les UV du globe (iris centré en 0,5 0,5),
+    teinte IrisColor (la couleur choisie ; la 2e couleur d'inZOI en est une version foncée), pupille, limbe, blanc de l'œil."""
     existing = load(EYE_MASTER)
     if existing and EAL.get_metadata_tag(existing, "InZOIVersion") == str(EYE_VERSION):
         return existing
@@ -678,35 +724,84 @@ def build_eye_master():
         MEL.delete_all_material_expressions(existing)
         material = existing
     else:
-        material = None
-    material = material or new_material(EYE_MASTER)
+        material = new_material(EYE_MASTER)
     EAL.set_metadata_tag(material, "InZOIVersion", str(EYE_VERSION))
-    uv = MEL.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate, -900, -200)
-    iris = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -900, 0)
+    iris_texture = None
+    for rel in IRIS_MASKS:
+        iris_texture = import_texture(rel, "mask")
+        if iris_texture:
+            break
+
+    def scalar(name, value, x, y):
+        node = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, x, y)
+        set_prop(node, "parameter_name", name)
+        set_prop(node, "default_value", value)
+        return node
+
+    def custom_node(code, output, names, x, y):
+        node = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, x, y)
+        set_prop(node, "output_type", output)
+        set_prop(node, "code", code)
+        entries = []
+        for input_name in names:
+            entry = unreal.CustomInput()
+            entry.set_editor_property("input_name", input_name)
+            entries.append(entry)
+        set_prop(node, "inputs", entries)
+        return node
+
+    COT = unreal.CustomMaterialOutputType
+    uv = MEL.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate, -1500, -200)
+    radius = scalar("IrisUVRadius", 1.0, -1500, 0)
+    pupil_scale = scalar("PupilScale", 1.1, -1500, 150)
+    iris_uv = custom_node("return 0.5 + (UV - 0.5) * %.3f / max(Radius, 0.1);" % IRIS_UV_SCALE, COT.CMOT_FLOAT2,
+                          ("UV", "Radius"), -1250, -100)
+    MEL.connect_material_expressions(uv, "", iris_uv, "UV")
+    MEL.connect_material_expressions(radius, "", iris_uv, "Radius")
+    pupil_uv = custom_node("return 0.5 + (IrisUV - 0.5) / max(Scale, 0.1);", COT.CMOT_FLOAT2, ("IrisUV", "Scale"), -1250, 100)
+    MEL.connect_material_expressions(iris_uv, "", pupil_uv, "IrisUV")
+    MEL.connect_material_expressions(pupil_scale, "", pupil_uv, "Scale")
+
+    samples = []
+    for index, uv_node in enumerate((iris_uv, pupil_uv)):
+        sample = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -1000, -150 + index * 300)
+        set_prop(sample, "parameter_name", "IrisMasks")
+        set_prop(sample, "texture", iris_texture or unreal.load_asset("/Engine/EngineResources/WhiteSquareTexture"))
+        set_prop(sample, "sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_MASKS if iris_texture
+                 else unreal.MaterialSamplerType.SAMPLERTYPE_COLOR)
+        MEL.connect_material_expressions(uv_node, "", sample, "UVs")
+        samples.append(sample)
+
+    iris = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -1000, 350)
     set_prop(iris, "parameter_name", "IrisColor")
-    set_prop(iris, "default_value", unreal.LinearColor(0.25, 0.15, 0.08, 1))
-    custom = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -500, -100)
-    set_prop(custom, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
-    set_prop(custom, "code", (
+    set_prop(iris, "default_value", unreal.LinearColor(0.189, 0.102, 0.026, 1))
+    balance = scalar("IrisColorBalance", 0.35, -1000, 500)
+    smooth = scalar("IrisColorBalanceSmoothness", 0.8, -1000, 600)
+    combine = custom_node((
         "float d = distance(UV, float2(0.5, 0.5));\n"
-        "float irisMask = 1.0 - smoothstep(0.115, 0.13, d);\n"
-        "float pupil = 1.0 - smoothstep(0.035, 0.045, d);\n"
-        "float ring = smoothstep(0.08, 0.125, d);\n"
-        "float3 sclera = float3(0.80, 0.78, 0.76) * (1.0 - 0.25 * smoothstep(0.2, 0.45, d));\n"
-        "float3 irisColor = Iris.rgb * lerp(1.0, 0.45, ring);\n"
+        "float dt = distance(IrisUV, float2(0.5, 0.5));\n"
+        "float dp = distance(PupilUV, float2(0.5, 0.5));\n"
+        "float irisMask = 1.0 - smoothstep(0.43, 0.47, dt);\n"
+        "float t = smoothstep(Balance - Smooth * 0.5, Balance + Smooth * 0.5, M.b);\n"
+        "float3 irisColor = lerp(Iris.rgb, Iris.rgb * 0.3, t);\n"
+        "irisColor *= lerp(0.45, 1.35, M.g);\n"
+        "irisColor *= 1.0 - 0.6 * smoothstep(0.34, 0.46, dt);\n"
+        "float pupil = max(1.0 - P, 1.0 - smoothstep(0.11, 0.13, dp));\n"
+        "float3 sclera = float3(0.80, 0.78, 0.76) * (1.0 - 0.3 * smoothstep(0.2, 0.45, d));\n"
         "float3 c = lerp(sclera, irisColor, irisMask);\n"
-        "return lerp(c, float3(0.01, 0.01, 0.01), pupil);"))
-    inputs = []
-    for input_name in ("UV", "Iris"):
-        entry = unreal.CustomInput()
-        entry.set_editor_property("input_name", input_name)
-        inputs.append(entry)
-    set_prop(custom, "inputs", inputs)
-    MEL.connect_material_expressions(uv, "", custom, "UV")
-    MEL.connect_material_expressions(iris, "", custom, "Iris")
-    MEL.connect_material_property(custom, "", unreal.MaterialProperty.MP_BASE_COLOR)
-    MEL.connect_material_property(constant(material, 0.08, -500, 150), "", unreal.MaterialProperty.MP_ROUGHNESS)
-    MEL.connect_material_property(constant(material, 0.5, -500, 250), "", unreal.MaterialProperty.MP_SPECULAR)
+        "return lerp(c, float3(0.004, 0.004, 0.004), pupil * irisMask);"),
+        COT.CMOT_FLOAT3, ("UV", "IrisUV", "PupilUV", "M", "P", "Iris", "Balance", "Smooth"), -600, 0)
+    MEL.connect_material_expressions(uv, "", combine, "UV")
+    MEL.connect_material_expressions(iris_uv, "", combine, "IrisUV")
+    MEL.connect_material_expressions(pupil_uv, "", combine, "PupilUV")
+    MEL.connect_material_expressions(samples[0], "RGBA", combine, "M")
+    MEL.connect_material_expressions(samples[1], "A", combine, "P")
+    MEL.connect_material_expressions(iris, "", combine, "Iris")
+    MEL.connect_material_expressions(balance, "", combine, "Balance")
+    MEL.connect_material_expressions(smooth, "", combine, "Smooth")
+    MEL.connect_material_property(combine, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    MEL.connect_material_property(constant(material, 0.12, -600, 250), "", unreal.MaterialProperty.MP_ROUGHNESS)
+    MEL.connect_material_property(constant(material, 0.5, -600, 350), "", unreal.MaterialProperty.MP_SPECULAR)
     return finish_material(material, EYE_MASTER)
 
 
