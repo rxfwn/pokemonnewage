@@ -1325,13 +1325,13 @@ def groom_colors(json_rel):
 
 
 def diro_texture(diro_rel, fallback):
-    """Texture DIRO (données, pas une couleur : sans sRGB). Si celle du JSON manque dans l'export, la carte par défaut :
-    sans opacité, les cartes de poils deviennent des plaques pleines (sourcils et cils tout noirs)."""
+    """Texture DIRO. Si celle du JSON manque dans l'export, la carte par défaut : sans opacité, les cartes de poils
+    deviennent des plaques pleines (sourcils et cils tout noirs). Gardée en sRGB : le matériau l'échantillonne en Color."""
     for rel in (diro_rel, fallback, DEFAULT_CARD):
         texture = import_texture(rel, "color") if rel else None
         if texture:
-            if texture.get_editor_property("srgb"):
-                set_prop(texture, "srgb", False)
+            if not texture.get_editor_property("srgb"):
+                set_prop(texture, "srgb", True)
                 EAL.save_loaded_asset(texture)
             return texture
     return None

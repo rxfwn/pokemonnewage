@@ -200,7 +200,13 @@ bool UTrainerAppearanceComponent::OpenEditor(ETrainerEditorMode Mode)
 	}
 
 	const APokemonPlayerState* State = Pawn->GetPlayerState<APokemonPlayerState>();
-	const FTrainerAppearance Current = GetCurrentAppearance();
+	FTrainerAppearance Current = GetCurrentAppearance();
+	if (Mode == ETrainerEditorMode::Creation && !Current.bCreated)
+	{
+		// Première création : tenue de départ de la base, pas les pièces d'un ancien essai ou d'un ancien catalogue
+		Current.Outfit.Reset();
+		Current.PartColors.Reset();
+	}
 	Studio->Init(Data, Current);
 
 	Editor = CreateWidget<UCharacterCreatorWidget>(PlayerController, UCharacterCreatorWidget::StaticClass());
