@@ -721,7 +721,7 @@ def constant(material, value, x, y):
     return node
 
 
-SKIN_VERSION = 3  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
+SKIN_VERSION = 4  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
 # Maquillage d'inZOI (table AppearanceMakeup) : catégorie, lettre du dossier de masques, emplacement du jeu (= nom du
 # paramètre texture de M_InZOI_Skin, couleurs dans <emplacement>_R/_G/_B), libellé, force du mélange (les reflets d'inZOI
 # mêlent un éclat blanc et une ombre de contour : à moitié pour rester naturels)
@@ -806,7 +806,8 @@ def build_skin_master():
                 set_prop(color, "parameter_name", "%s_%s" % (slot, channel))
                 set_prop(color, "default_value", unreal.LinearColor(0, 0, 0, 0))
                 links.append((color, "", "%s%d" % (channel, index)))
-                code.append("c = lerp(c, %s%d.rgb, saturate(M%d.%s * %s%d.a * %.2f));" % (
+                links.append((color, "A", "%s%da" % (channel, index)))  # alpha à part : la sortie principale n'a que RVB
+                code.append("c = lerp(c, %s%d.rgb, saturate(M%d.%s * %s%da * %.2f));" % (
                     channel, index, index, channel.lower(), channel, index, blend))
         shared = getattr(getattr(unreal, "SamplerSourceMode", None), "SSM_WRAP_WORLD_GROUP_SETTINGS", None)
         for index, (slot, _label, _table, kind) in enumerate(SKIN_FEATURES):
@@ -826,9 +827,10 @@ def build_skin_master():
                 default = unreal.LinearColor(1, 1, 1, 0) if kind == "scar" else unreal.LinearColor(0, 0, 0, 0)
                 set_prop(color, "default_value", default)
                 links.append((color, "", "%s%s" % (name, channel)))
+                links.append((color, "A", "%s%sa" % (name, channel)))
             if kind == "rgb":
                 for channel in "RGB":
-                    code.append("c = lerp(c, %s%s.rgb, saturate(%s.%s * %s%s.a));" % (
+                    code.append("c = lerp(c, %s%s.rgb, saturate(%s.%s * %s%sa));" % (
                         name, channel, name, channel.lower(), name, channel))
                 continue
             # Canaux du masque qui portent le dessin (trouvés à l'import, R par défaut)
@@ -837,8 +839,10 @@ def build_skin_master():
                 set_prop(weight, "parameter_name", "%s_W%s" % (slot, channel))
                 set_prop(weight, "default_value", 1.0 if channel == "R" else 0.0)
                 links.append((weight, "", "%sW%s" % (name, channel)))
-            code.append("float m%d = max(max(%s.r * %sWR, %s.g * %sWG), max(%s.b * %sWB, %s.a * %sWA));" % (
-                index, name, name, name, name, name, name, name, name))
+            # Poids > 0 : le dessin est clair sur fond noir ; < 0 : sombre sur fond blanc (masque inversé)
+            terms = ["saturate(%s.%s * %sW%s) + saturate((1.0 - %s.%s) * -%sW%s)" % (
+                name, c.lower(), name, c, name, c.lower(), name, c) for c in "RGBA"]
+            code.append("float m%d = max(max(%s, %s), max(%s, %s));" % (index, terms[0], terms[1], terms[2], terms[3]))
             if kind == "scar":
                 scar = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -1100, y + 250)
                 set_prop(scar, "parameter_name", SCAR_COLOR_PARAM)
@@ -847,9 +851,9 @@ def build_skin_master():
                     set_prop(scar, "sampler_source", shared)
                 links.append((scar, "RGB", "%sD" % name))
                 # Couleur de la cicatrice (texture _D d'inZOI) teintée dans le nuancier (blanc = telle quelle)
-                code.append("c = lerp(c, %sD.rgb * %sR.rgb, saturate(m%d * %sR.a));" % (name, name, index, name))
+                code.append("c = lerp(c, %sD.rgb * %sR.rgb, saturate(m%d * %sRa));" % (name, name, index, name))
             else:
-                code.append("c = lerp(c, %sR.rgb, saturate(m%d * %sR.a));" % (name, index, name))
+                code.append("c = lerp(c, %sR.rgb, saturate(m%d * %sRa));" % (name, index, name))
     else:
         log("Peau : aucune texture de masque trouvée, maquillage désactivé")
     code.append("return c;")
@@ -1395,7 +1399,7 @@ def build_parts(slow):
 # ---------------------------------------------------------------- Barbes (dossier Groom)
 
 HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
-HAIR_VERSION = 6  # à augmenter quand le graphe change : le matériau est refait au même endroit
+HAIR_VERSION = 7  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
 GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"), ("Mustache", "Moustache", "Hair", "Head"),
@@ -1477,11 +1481,11 @@ def build_hair_master():
         "float3 c = picked ? Tint.rgb * lerp(0.7, 1.0, g) : natural;\n"
         "if (any(C1.rgb < 0.999))\n"
         "{\n"
-        "    float t = smoothstep(C1.a - 0.15, C1.a + 0.15, g);\n"
+        "    float t = smoothstep(C1a - 0.15, C1a + 0.15, g);\n"
         "    c = lerp(c, C1.rgb * lerp(0.8, 1.0, g), t);\n"
         "}\n"
         "float h = frac(sin(ID * 91.345 + 0.123) * 43758.5453);\n"
-        "if (any(C2.rgb < 0.999) && h < C2.a)\n"
+        "if (any(C2.rgb < 0.999) && h < C2a)\n"
         "{\n"
         "    c = C2.rgb * lerp(0.75, 1.0, g);\n"
         "}\n"
@@ -1489,14 +1493,14 @@ def build_hair_master():
         "{\n"
         "    float ahead = smoothstep(Start, Start + 4.0, dot(Pos, normalize(Front.xyz + float3(0.0, 0.0, 0.0001))));\n"
         "    float h2 = frac(sin(ID * 47.853 + 0.71) * 24634.6345);\n"
-        "    if (h2 < C3.a * ahead)\n"
+        "    if (h2 < C3a * ahead)\n"
         "    {\n"
         "        c = C3.rgb * lerp(0.75, 1.0, g);\n"
         "    }\n"
         "}\n"
         "return c * lerp(0.65, 1.0, saturate(Depth));"))
     inputs = []
-    for input_name in ("Grad", "Root", "Tip", "Tint", "Depth", "ID", "C1", "C2", "C3", "Pos", "Front", "Start"):
+    for input_name in ("Grad", "Root", "Tip", "Tint", "Depth", "ID", "C1", "C2", "C3", "C1a", "C2a", "C3a", "Pos", "Front", "Start"):
         entry = unreal.CustomInput()
         entry.set_editor_property("input_name", input_name)
         inputs.append(entry)
@@ -1508,6 +1512,8 @@ def build_hair_master():
         MEL.connect_material_expressions(node, "", custom, input_name)
     for index, node in enumerate(zone_nodes):
         MEL.connect_material_expressions(node, "", custom, "C%d" % (index + 1))
+        # La sortie principale d'un paramètre de couleur n'a que RVB : l'alpha (réglage de la zone) passe à part
+        MEL.connect_material_expressions(node, "A", custom, "C%da" % (index + 1))
     MEL.connect_material_expressions(position, "", custom, "Pos")
     MEL.connect_material_expressions(front, "", custom, "Front")
     MEL.connect_material_expressions(front_start, "", custom, "Start")
@@ -1951,15 +1957,16 @@ def build_makeup():
 
 
 def mask_weights(rel):
-    """Canaux d'un masque qui portent le dessin : ceux qui varient sans être presque tout blancs (un canal plein sert
-    à autre chose chez inZOI). {"_WR": 1, "_WG": 0, ...} ; R seul si la texture ne se lit pas"""
+    """Canaux d'un masque qui portent le dessin. Un dessin est clairsemé : canal surtout noir avec des pixels clairs
+    (poids 1) ou surtout blanc avec des pixels sombres (poids -1 = inversé). Un canal à mi-gris (normale) ou plein
+    est ignoré. {"R": 1, "G": 0, ...} ; R seul si la texture ne se lit pas"""
     image = png_rgba(src(rel, ".png"))
     weights = {"R": 1.0, "G": 0.0, "B": 0.0, "A": 0.0}
     if not image:
         return weights, "non lu"
     width, height, rows = image
     step = max(1, width // 256)
-    sums, peaks, count = [0.0] * 4, [0] * 4, 0
+    sums, peaks, lows, count = [0.0] * 4, [0] * 4, [255] * 4, 0
     for y in range(0, height, step):
         line = rows[y]
         for x in range(0, width, step):
@@ -1969,11 +1976,19 @@ def mask_weights(rel):
                 sums[channel] += value
                 if value > peaks[channel]:
                     peaks[channel] = value
+                if value < lows[channel]:
+                    lows[channel] = value
     means = [total / (255.0 * max(1, count)) for total in sums]
-    useful = [channel for channel in range(4) if peaks[channel] > 60 and means[channel] < 0.6]
-    if useful:
-        weights = {name: (1.0 if index in useful else 0.0) for index, name in enumerate("RGBA")}
-    detail = "moyennes " + " ".join("%s %.2f" % (name, means[index]) for index, name in enumerate("RGBA"))
+    light = [channel for channel in range(4) if peaks[channel] > 60 and means[channel] < 0.3]
+    dark = [channel for channel in range(4) if lows[channel] < 195 and means[channel] > 0.7]
+    if light:
+        weights = {name: (1.0 if index in light else 0.0) for index, name in enumerate("RGBA")}
+    elif dark:
+        weights = {name: (-1.0 if index in dark[:1] else 0.0) for index, name in enumerate("RGBA")}
+    else:
+        weights = {name: 0.0 for name in "RGBA"}  # rien de reconnu : mieux vaut rien afficher que teinter tout le visage
+    detail = " ".join("%s moy %.2f min %d max %d" % (name, means[index], lows[index], peaks[index])
+                      for index, name in enumerate("RGBA"))
     return weights, detail
 
 
@@ -2018,7 +2033,7 @@ def build_skin_features():
                 if weights is None:
                     # Une analyse par sorte (pixels lus en Python : quelques secondes)
                     weights, detail = mask_weights(mask_rel)
-                    log("%s : canaux du masque %s (%s)" % (label, "".join(k for k, v in weights.items() if v) or "R", detail))
+                    log("%s : canaux du masque %s (%s)" % (label, " ".join("%s%s" % ("-" if v < 0 else "", k) for k, v in weights.items() if v) or "aucun", detail))
                 part.set_editor_property("mask_scalars", {"%s_W%s" % (slot, k): v for k, v in weights.items()})
                 if kind == "scar":
                     rgb = (1.0, 1.0, 1.0)
