@@ -176,7 +176,7 @@ namespace CharacterCreator
 		Brush.SetResourceObject(Texture);
 		Brush.ImageSize = FVector2D(Texture->GetSizeX(), Texture->GetSizeY());
 		Brush.DrawAs = ESlateBrushDrawType::RoundedBox;
-		Brush.OutlineSettings.RoundingType = ESlateBrushRoundingType::FullyRounded;
+		Brush.OutlineSettings.RoundingType = ESlateBrushRoundingType::HalfHeightRadius;
 		Brush.OutlineSettings.Width = 0.f;
 		Brush.TintColor = FSlateColor(FLinearColor::White);
 		Image->SetBrush(Brush);
