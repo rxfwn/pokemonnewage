@@ -735,28 +735,56 @@ void UCharacterCreatorWidget::AddPresetGrid(const TArray<FTrainerPresetDef>& Pre
 			const FTrainerAppearance& Look = List[Index].Look;
 			if (bFull)
 			{
-				// Tout le personnage, sauf les vêtements (achetés en boutique) ; la tête (onglet Visage) vient du modèle
+				// Tout le personnage sauf les vêtements (achetés en boutique) : tête, cheveux, sourcils, cils, barbe et leurs
+				// couleurs viennent du modèle ; un emplacement que le modèle ne précise pas garde le choix actuel
 				New = Look;
-				auto IsFacePart = [this](FName Id)
+				auto SlotOf = [this](FName Id)
 				{
-					FString Text = Id.ToString();
+					const FString Text = Id.ToString();
+					if (Text.StartsWith(TEXT("-")))
+					{
+						return FName(*Text.Mid(1));
+					}
 					const FTrainerPartDef* Part = Data->FindPart(Id);
-					const FTrainerPartSlotDef* Slot = Data->FindSlot(Part ? Part->Slot : FName(*Text.RightChop(1)));
-					return Slot && Slot->Tab == TEXT("Face");
+					return Part ? Part->Slot : FName();
 				};
+				TSet<FName> LookSlots;
+				for (const FName Id : Look.Outfit)
+				{
+					const FTrainerPartSlotDef* Slot = Data->FindSlot(SlotOf(Id));
+					if (Slot && Slot->Tab != TEXT("Outfit") && Slot->Tab != TEXT("Accessories"))
+					{
+						LookSlots.Add(Slot->Slot);
+					}
+				}
 				New.Outfit.Reset();
 				for (const FName Id : Current.Outfit)
 				{
-					if (!IsFacePart(Id))
+					if (!LookSlots.Contains(SlotOf(Id)))
 					{
 						New.Outfit.Add(Id);
 					}
 				}
 				for (const FName Id : Look.Outfit)
 				{
-					if (IsFacePart(Id))
+					if (LookSlots.Contains(SlotOf(Id)))
 					{
 						New.Outfit.Add(Id);
+					}
+				}
+				New.PartColors.Reset();
+				for (const FTrainerPartColor& Color : Current.PartColors)
+				{
+					if (!LookSlots.Contains(Color.Slot))
+					{
+						New.PartColors.Add(Color);
+					}
+				}
+				for (const FTrainerPartColor& Color : Look.PartColors)
+				{
+					if (LookSlots.Contains(Color.Slot))
+					{
+						New.PartColors.Add(Color);
 					}
 				}
 				New.bCreated = Current.bCreated;

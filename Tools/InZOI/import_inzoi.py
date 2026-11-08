@@ -82,8 +82,8 @@ SLOTS = [
 DEFAULT_SLOTS = ["Head", "Hair", "Eyebrows", "Eyelashes", "Top", "Bottom", "Shoes"]
 # Tenue de départ « normale » : la première pièce de la base (homme ou femme) dans ces catégories, dans l'ordre
 DEFAULT_CATEGORIES = {
-    "Top": ["T-shirts manches courtes", "T-shirts", "Chemises", "Pulls", "Sweats à capuche"],
-    "Bottom": ["Jeans", "Pantalons", "Pantalons de ville", "Joggings"],
+    "Top": ["T-shirts manches courtes", "T-shirts manches longues", "Chemises", "Pulls"],
+    "Bottom": ["Pantalons", "Jeans", "Jupes mi-longues", "Jupes longues"],
     "Shoes": ["Baskets", "Mocassins", "Bottes"],
 }
 
@@ -1005,14 +1005,25 @@ def face_sliders(gender, age):
 
 # ---------------------------------------------------------------- Catalogue
 
+# Longueurs (dossier sous la catégorie) : Pants/Short = shorts, Skirt/Long = jupes longues...
+LENGTH_LABELS = {
+    "TShirt": {"Short": "T-shirts manches courtes", "Long": "T-shirts manches longues", "Sleeveless": "Débardeurs"},
+    "Shirt": {"Short": "Chemises manches courtes", "Long": "Chemises", "Mid": "Chemises"},
+    "Pants": {"Short": "Shorts", "Mid": "Pantacourts", "Long": "Pantalons"},
+    "Skirt": {"Short": "Jupes courtes", "Mid": "Jupes mi-longues", "Long": "Jupes longues"},
+}
+
+
 def category_of(mesh_rel, slot):
     parts = mesh_rel.split("/")
-    # Characters/Costumes/Female/Top/TShirt/Long/TS_L001/Mesh/SKM_...
+    # Characters/Costumes/Female/Top/TShirt/Long/TS_L001/Mesh/SKM_... (ou .../Female/Custom/Top/Tshirt/...)
     if len(parts) > 5 and parts[1] == "Costumes":
-        key = parts[4]
+        if parts[3] == "Custom":
+            parts = parts[:3] + parts[4:]
+        key = "TShirt" if parts[4].lower() == "tshirt" else parts[4]
         label = CATEGORY_FR.get(key, key)
-        if key == "TShirt" and len(parts) > 6:
-            label = "T-shirts " + CATEGORY_FR.get(parts[5], parts[5]).lower()
+        if key in LENGTH_LABELS and len(parts) > 6:
+            label = LENGTH_LABELS[key].get(parts[5], label)
         return label
     return ""
 
@@ -1096,7 +1107,7 @@ def build_parts(slow):
 # ---------------------------------------------------------------- Barbes (dossier Groom)
 
 HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
-HAIR_VERSION = 2  # à augmenter quand le graphe change : le matériau est refait au même endroit
+HAIR_VERSION = 3  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
 GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"), ("Mustache", "Moustache", "Hair", "Head"),
@@ -1147,21 +1158,30 @@ def build_hair_master():
     set_prop(custom, "code", (
         "float3 natural = lerp(Root.rgb, Tip.rgb, saturate(Grad));\n"
         "bool picked = any(Tint.rgb < 0.999);\n"
-        "return picked ? Tint.rgb * lerp(0.55, 1.0, saturate(Grad)) : natural;"))
+        "float3 c = picked ? Tint.rgb * lerp(0.7, 1.0, saturate(Grad)) : natural;\n"
+        "return c * lerp(0.65, 1.0, saturate(Depth));"))
     inputs = []
-    for input_name in ("Grad", "Root", "Tip", "Tint"):
+    for input_name in ("Grad", "Root", "Tip", "Tint", "Depth"):
         entry = unreal.CustomInput()
         entry.set_editor_property("input_name", input_name)
         inputs.append(entry)
     set_prop(custom, "inputs", inputs)
     MEL.connect_material_expressions(diro, "B", custom, "Grad")
+    MEL.connect_material_expressions(diro, "R", custom, "Depth")
     for (name, node), input_name in zip(params, ("Root", "Tip", "Tint")):
         MEL.connect_material_expressions(node, "", custom, input_name)
     MEL.connect_material_property(custom, "", unreal.MaterialProperty.MP_BASE_COLOR)
-    MEL.connect_material_property(diro, "A", unreal.MaterialProperty.MP_OPACITY_MASK)
+    # Bords des mèches en tramage temporel (adouci par l'anti-crénelage) au lieu d'une coupure nette
+    dither = MEL.create_material_expression(material, unreal.MaterialExpressionDitherTemporalAA, -500, 450)
+    if (MEL.connect_material_expressions(diro, "A", dither, "AlphaThreshold")
+            or MEL.connect_material_expressions(diro, "A", dither, "Alpha Threshold")):
+        MEL.connect_material_property(dither, "", unreal.MaterialProperty.MP_OPACITY_MASK)
+    else:
+        MEL.delete_material_expression(material, dither)
+        MEL.connect_material_property(diro, "A", unreal.MaterialProperty.MP_OPACITY_MASK)
     roughness = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -500, 200)
     set_prop(roughness, "parameter_name", "Roughness")
-    set_prop(roughness, "default_value", 0.7)
+    set_prop(roughness, "default_value", 0.6)
     MEL.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)
     MEL.connect_material_property(constant(material, 0.25, -500, 300), "", unreal.MaterialProperty.MP_SPECULAR)
     return finish_material(material, HAIR_MASTER)
@@ -1209,14 +1229,28 @@ def groom_colors(json_rel):
     return root, tip
 
 
-def hair_instance(asset_path, diro_rel, colors):
-    existing = load(asset_path)
-    if existing:
-        return existing
-    folder, name = split(asset_path)
-    instance = asset_tools.create_asset(name, folder, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
+def diro_texture(diro_rel, fallback):
+    """Texture DIRO (données, pas une couleur : sans sRGB). Si celle du JSON manque dans l'export, la carte par défaut :
+    sans opacité, les cartes de poils deviennent des plaques pleines (sourcils et cils tout noirs)."""
+    for rel in (diro_rel, fallback, DEFAULT_CARD):
+        texture = import_texture(rel, "color") if rel else None
+        if texture:
+            if texture.get_editor_property("srgb"):
+                set_prop(texture, "srgb", False)
+                EAL.save_loaded_asset(texture)
+            return texture
+    return None
+
+
+def hair_instance(asset_path, diro_rel, colors, fallback=None):
+    """Matériau de poils ; refait à chaque import (texture et couleurs), pour corriger les anciens"""
+    instance = load(asset_path)
+    if not instance:
+        folder, name = split(asset_path)
+        instance = asset_tools.create_asset(name, folder, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
+        stats["materials"] += 1
     MEL.set_material_instance_parent(instance, build_hair_master())
-    texture = import_texture(diro_rel, "color")
+    texture = diro_texture(diro_rel, fallback)
     if texture:
         MEL.set_material_instance_texture_parameter_value(instance, "DIROMap", texture)
     root, tip = colors
@@ -1224,7 +1258,6 @@ def hair_instance(asset_path, diro_rel, colors):
     MEL.set_material_instance_vector_parameter_value(instance, "TipColor", unreal.LinearColor(tip[0], tip[1], tip[2], 1))
     MEL.update_material_instance(instance)
     EAL.save_loaded_asset(instance)
-    stats["materials"] += 1
     return instance
 
 
@@ -1267,7 +1300,7 @@ def groom_materials(mesh, folder, card_fallback, default_colors):
         if not diro and "scalp" in slot_name.lower():
             found = scan_folder_textures(folder, "Scalp_DIRO")
             diro = found or card_fallback
-        materials.append(hair_instance(dest(json_rel + "_Jeu"), diro or card_fallback, (root, tip)))
+        materials.append(hair_instance(dest(json_rel + "_Jeu"), diro or card_fallback, (root, tip), card_fallback))
     return materials
 
 
@@ -1389,7 +1422,7 @@ def build_hairs(slow, bases):
                     diro = DEFAULT_CARD
                 tip = colors.get("TipColor", BEARD_TIP)
                 root = colors.get("RootColor", tuple(v * 0.5 for v in tip))
-                materials.append(hair_instance(dest(json_rel + "_Jeu"), diro, (root, tip)))
+                materials.append(hair_instance(dest(json_rel + "_Jeu"), diro, (root, tip), DEFAULT_CARD))
             label = HAIR_CATEGORY_FR.get(category, category or "Cheveux")
             counters[label] = counters.get(label, 0) + 1
             part = unreal.TrainerPartDef()
@@ -1458,41 +1491,116 @@ def build_face_grooms(slow, bases, heads):
     return parts, defaults
 
 
-# Onglet Modèles : un personnage complet par tête importée (base + tête + teint + silhouette)
-PRESET_SKINS = [(0.98, 0.86, 0.76), (0.86, 0.68, 0.52), (0.64, 0.46, 0.33), (0.93, 0.78, 0.64),
-                (0.42, 0.28, 0.19), (1.0, 0.93, 0.88), (0.76, 0.57, 0.42), (0.52, 0.36, 0.25)]
-PRESET_SHAPES = [(0.0, 0.0), (0.4, 0.1), (-0.2, 0.3), (0.2, -0.3), (0.6, 0.2), (-0.1, -0.1)]
+# Onglet Modèles : les personnages tout faits d'inZOI (table AppearanceFacePreset) : tête, coupe et sa couleur,
+# couleur de peau, couleur des yeux, sourcils, cils, barbe et moustache. Les vêtements restent ceux du joueur.
+MAX_PRESETS_PER_BASE = 40
+# Teinte de peau d'inZOI qui correspond à la texture telle quelle (la plus claire, c101) : les autres la foncent
+SKIN_REFERENCE = "C19C8EFF"
+
+
+def srgb_to_linear(value):
+    return value / 12.92 if value <= 0.04045 else ((value + 0.055) / 1.055) ** 2.4
+
+
+def linear_hex(text):
+    """« A68570FF » (sRGB, comme dans les tables d'inZOI) -> (r, g, b) linéaires, ou None"""
+    color = hex_color(text)
+    if not color or (text or "").strip().lower() in ("none", ""):
+        return None
+    return tuple(srgb_to_linear(c) for c in (color.r, color.g, color.b))
+
+
+def skin_tint(tone_hex):
+    """SkinTint (multiplié à la texture de peau) pour une teinte d'inZOI"""
+    tone, reference = linear_hex(tone_hex), linear_hex(SKIN_REFERENCE)
+    if not tone:
+        return None
+    return tuple(max(0.05, min(1.0, t / r)) for t, r in zip(tone, reference))
+
+
+def hair_part_id(mesh_id):
+    """W_Hair_M_009_05 -> InZOI_SKM_Female_Hair_M_009 (le _05 final est une variante de couleur)"""
+    pieces = (mesh_id or "").split("_")
+    if len(pieces) < 4 or pieces[1] != "Hair":
+        return None
+    gender = {"W": "Female", "M": "Male"}.get(pieces[0])
+    if not gender:
+        return None
+    return "InZOI_SKM_%s_Hair_%s_%s" % (gender, pieces[2], pieces[3])
 
 
 def full_presets(bases, parts):
+    rows = read_csv(os.path.join(TABLES, "AppearanceFacePreset.csv"))
+    skin_tones = {r.get("ID"): r.get("SkinTone") for r in read_csv(os.path.join(TABLES, "AppearanceSkinColor.csv"))}
+    by_id = {str(p.get_editor_property("id")): p for p in parts}
+    groom_ids = {"Eyebrow": ("Eyebrows", ""), "Eyelash": ("Eyelashes", ""), "Beard": ("Beard", "InZOI_"), "Mustache": ("Mustache", "InZOI_")}
     presets = []
-    for base in bases:
-        base_id = str(base.get_editor_property("id"))
-        base_label = str(base.get_editor_property("label"))
-        heads = [p for p in parts if str(p.get_editor_property("slot")) == "Head"
-                 and base_id in [str(b) for b in p.get_editor_property("bases")]]
-        for index, head in enumerate(heads):
+    for (gender, age), (base_id, base_label, _male, _body) in BASES.items():
+        if not any(str(b.get_editor_property("id")) == base_id for b in bases):
+            continue
+        fits = lambda part_id: part_id in by_id and base_id in [str(b) for b in by_id[part_id].get_editor_property("bases")]
+        count, seen = 0, set()
+        candidates = [r for r in rows if r.get("GenderType") == gender and r.get("BodyAgeType") == age
+                      and r.get("HiddenFromUI") != "True" and fits(r.get("BaseHeadId"))]
+        # D'abord ceux dont la coupe est importée (sinon le modèle garderait la coupe actuelle)
+        candidates.sort(key=lambda r: 0 if fits(hair_part_id(r.get("Hair.MeshId")) or "") else 1)
+        for row in candidates:
+            if count >= MAX_PRESETS_PER_BASE:
+                break
+            head_id = row.get("BaseHeadId")
+            if row.get("Id") in seen:
+                continue
+            seen.add(row.get("Id"))
             look = unreal.TrainerAppearance()
             look.set_editor_property("base", base_id)
-            look.set_editor_property("outfit", [head.get_editor_property("id")])
-            r, g, b = PRESET_SKINS[index % len(PRESET_SKINS)]
-            look.set_editor_property("skin_color", unreal.LinearColor(r, g, b, 1.0))
-            muscle, mass = PRESET_SHAPES[index % len(PRESET_SHAPES)]
-            values = []
-            for slider_id, value in (("Muscle", muscle), ("Masse", mass)):
-                entry = unreal.TrainerSliderValue()
-                entry.set_editor_property("slider", slider_id)
-                entry.set_editor_property("value", value)
-                values.append(entry)
-            look.set_editor_property("sliders", values)
+            outfit, colors = [head_id], []
+
+            def add_color(slot, hex_text):
+                rgb = linear_hex(hex_text)
+                if rgb:
+                    entry = unreal.TrainerPartColor()
+                    entry.set_editor_property("slot", slot)
+                    entry.set_editor_property("zone", 0)
+                    entry.set_editor_property("color", unreal.LinearColor(rgb[0], rgb[1], rgb[2], 1.0))
+                    colors.append(entry)
+
+            hair_id = hair_part_id(row.get("Hair.MeshId"))
+            if hair_id and fits(hair_id):
+                outfit.append(hair_id)
+                add_color("Hair", row.get("Hair.VectorParameters.tipColor"))
+            try:
+                face_hairs = json.loads(row.get("FaceHairs") or "[]")
+            except ValueError:
+                face_hairs = []
+            for entry in face_hairs if isinstance(face_hairs, list) else []:
+                slot, prefix = groom_ids.get(entry.get("FaceHairType"), (None, ""))
+                if not slot:
+                    continue
+                groom_id = entry.get("FaceHairId") or "None"
+                if groom_id == "None":
+                    outfit.append("-" + slot)
+                    continue
+                if fits(prefix + groom_id):
+                    outfit.append(prefix + groom_id)
+                    add_color(slot, (entry.get("VectorParameters") or {}).get("tipColor"))
+            look.set_editor_property("outfit", outfit)
+            look.set_editor_property("part_colors", colors)
+            tone = skin_tones.get(row.get("FaceSkinColorId")) or row.get("SkinTone")
+            tint = skin_tint(tone)
+            if tint:
+                look.set_editor_property("skin_color", unreal.LinearColor(tint[0], tint[1], tint[2], 1.0))
+            eye = linear_hex(row.get("IrisVectorParameters.eyeColor1"))
+            if eye:
+                look.set_editor_property("eye_color", unreal.LinearColor(eye[0], eye[1], eye[2], 1.0))
+            count += 1
             preset = unreal.TrainerPresetDef()
-            preset.set_editor_property("label", "%s %d" % (base_label, index + 1))
-            thumbnail = head.get_editor_property("thumbnail")
+            preset.set_editor_property("label", "%s %d" % (base_label, count))
+            thumbnail = import_texture(game_rel(row.get("Thumbnail")), "ui") or by_id[head_id].get_editor_property("thumbnail")
             if thumbnail:
                 preset.set_editor_property("thumbnail", thumbnail)
             preset.set_editor_property("look", look)
             presets.append(preset)
-    log("Modèles complets : %d" % len(presets))
+        log("Modèles complets %s : %d (table AppearanceFacePreset)" % (base_id, count))
     return presets
 
 

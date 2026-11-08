@@ -168,3 +168,10 @@ Pour que le personnage inZOI marche dans Kanto :
 3. Animations de marche et de course retargetées (section 5) ; émotes et poses de la carte dresseur avec les animations importées.
 4. Taches de rousseur, grains de beauté, cicatrices, maquillage : chercher leurs textures dans l'export.
 5. Le style verre de L'amie sur l'éditeur, avec les icônes importées (`ImportedAssets/InZOI/UI/...`).
+
+### Modèles, tenues et poils (2026-11-08)
+
+- **Onglet Modèles** : les personnages tout faits d'inZOI (table `AppearanceFacePreset.csv`, 40 par base au plus). Chaque modèle donne la tête, la coupe et sa couleur, la couleur de peau (`AppearanceSkinColor.csv`, ramenée à un `SkinTint` par rapport à la teinte la plus claire), la couleur des yeux, les sourcils, les cils, la barbe et la moustache. Les vêtements ne bougent pas, et un emplacement que le modèle ne précise pas garde le choix actuel.
+- **Catégories de vêtements** : la longueur compte maintenant (`Pants/Short` = Shorts, `Skirt/Mid` = Jupes mi-longues, `Tshirt/Short` = T-shirts manches courtes, y compris le dossier `Tshirt` des femmes). Tenue de départ : T-shirt manches courtes et pantalon long, pour l'homme comme pour la femme.
+- **Poils** : si la texture DIRO indiquée par le JSON manque dans l'export, la carte par défaut la remplace (sans elle, les cartes de sourcils et de cils sortaient en plaques noires). Les DIRO sont lues sans sRGB. `M_InZOI_Hair` version 3 : bords en tramage temporel (`DitherTemporalAA`), ombre de profondeur (canal R). Les matériaux de poils sont refaits à chaque import.
+- **Yeux et couleurs des vêtements** : `copier_echantillons.bat` (à la racine de l'exercice) copie dans `Echantillons/` les matériaux des yeux (`Lens`), la texture d'iris `T_Iris_A_M` et deux vêtements, pour comprendre les vrais yeux d'inZOI et les couleurs de base perdues (les matériaux maîtres d'inZOI ne sont pas dans l'export).
