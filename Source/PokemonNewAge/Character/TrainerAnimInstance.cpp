@@ -67,6 +67,7 @@ namespace
 {
 	/** La taille de la tête doit agrandir tout le visage : ses enfants héritent de son échelle */
 	const FName HeadBoneName(TEXT("head"));
+	const FName PelvisBoneName(TEXT("pelvis"));
 }
 
 bool FTrainerAnimInstanceProxy::Evaluate(FPoseContext& Output)
@@ -85,6 +86,23 @@ bool FTrainerAnimInstanceProxy::Evaluate(FPoseContext& Output)
 		if (Output.Pose.IsValidIndex(RootIndex))
 		{
 			Output.Pose[RootIndex] = Output.Pose.GetRefPose(RootIndex);
+		}
+		// Le bassin aussi : les attentes « Crowd » d'inZOI le décalent de plusieurs dizaines de cm (le personnage sortait
+		// de l'écran). On garde sa hauteur et son balancement, mais il revient au-dessus de ses pieds (seul le déplacement vertical est gardé).
+		const int32 PelvisMesh = Output.Pose.GetBoneContainer().GetPoseBoneIndexForBoneName(PelvisBoneName);
+		if (PelvisMesh != INDEX_NONE)
+		{
+			const FCompactPoseBoneIndex PelvisIndex = Output.Pose.GetBoneContainer().MakeCompactPoseIndex(FMeshPoseBoneIndex(PelvisMesh));
+			if (PelvisIndex.IsValid())
+			{
+				// Verticale exprimée dans le repère du parent (la racine des glb d'inZOI peut être tournée)
+				const FCompactPoseBoneIndex Parent = Output.Pose.GetBoneContainer().GetParentBoneIndex(PelvisIndex);
+				const FQuat ParentRotation = Parent.IsValid() ? Output.Pose[Parent].GetRotation() : FQuat::Identity;
+				const FVector Up = ParentRotation.UnrotateVector(FVector::UpVector);
+				const FVector Ref = Output.Pose.GetRefPose(PelvisIndex).GetTranslation();
+				const FVector Current = Output.Pose[PelvisIndex].GetTranslation();
+				Output.Pose[PelvisIndex].SetTranslation(Ref + Up * FVector::DotProduct(Current - Ref, Up));
+			}
 		}
 	}
 	else

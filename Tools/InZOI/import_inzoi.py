@@ -1517,7 +1517,7 @@ def build_parts(slow):
 # ---------------------------------------------------------------- Barbes (dossier Groom)
 
 HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
-HAIR_VERSION = 10  # à augmenter quand le graphe change : le matériau est refait au même endroit
+HAIR_VERSION = 11  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
 GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"), ("Mustache", "Moustache", "Hair", "Head"),
@@ -1562,10 +1562,16 @@ def build_hair_master():
     set_prop(material, "opacity_mask_clip_value", 0.3333)
     diro = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -900, -200)
     set_prop(diro, "parameter_name", "DIROMap")
-    set_prop(diro, "texture", unreal.load_asset("/Engine/EngineResources/WhiteSquareTexture"))
+    # Texture par défaut en linéaire elle aussi : avec la texture blanche sRGB du moteur, le matériau ne compilait
+    # plus (« sampler type ») et tous les poils sortaient en damier gris
+    default_card = diro_texture(DEFAULT_CARD, None)
+    set_prop(diro, "texture", default_card or unreal.load_asset("/Engine/EngineResources/WhiteSquareTexture"))
     # Données (profondeur, id, dégradé, opacité), pas une couleur : lues telles quelles. En sRGB, l'opacité et le dégradé
     # étaient mis à la puissance 2,2 : poils clairsemés et dégradé repoussé au bout des mèches.
-    set_prop(diro, "sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_COLOR)
+    if default_card:
+        set_prop(diro, "sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_COLOR)
+    else:
+        log("Cheveux : carte DIRO par défaut introuvable, lecture en sRGB (poils plus fins)")
     params = []
     for index, (name, color) in enumerate((("RootColor", BEARD_ROOT), ("TipColor", BEARD_TIP), ("Tint", (1.0, 1.0, 1.0)))):
         node = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -900, 50 + index * 150)
