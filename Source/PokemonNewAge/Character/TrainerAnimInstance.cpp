@@ -81,6 +81,8 @@ namespace
 	const FName PelvisBoneName(TEXT("pelvis"));
 	/** Os du cou et de la tête adoucis dans l'attente du studio (IdleHeadMotion) */
 	const FName HeadMotionBones[] = { FName(TEXT("neck_01")), FName(TEXT("neck_02")), FName(TEXT("head")) };
+	/** Colonne : les attentes « Crowd » penchent tout le haut du corps ; on en garde un peu plus que pour la tête */
+	const FName SpineMotionBones[] = { FName(TEXT("spine_02")), FName(TEXT("spine_03")), FName(TEXT("spine_04")), FName(TEXT("spine_05")) };
 }
 
 bool FTrainerAnimInstanceProxy::Evaluate(FPoseContext& Output)
@@ -121,8 +123,18 @@ bool FTrainerAnimInstanceProxy::Evaluate(FPoseContext& Output)
 		// sans cesse. On n'en garde qu'une partie (rotation seulement, vers la pose de référence).
 		if (IdleHeadMotion < 1.f)
 		{
+			TArray<TPair<FName, float>> Damped;
 			for (const FName& BoneName : HeadMotionBones)
 			{
+				Damped.Emplace(BoneName, IdleHeadMotion);
+			}
+			for (const FName& BoneName : SpineMotionBones)
+			{
+				Damped.Emplace(BoneName, FMath::Lerp(IdleHeadMotion, 1.f, 0.3f));
+			}
+			for (const TPair<FName, float>& Pair : Damped)
+			{
+				const FName BoneName = Pair.Key;
 				const int32 MeshIndex = Output.Pose.GetBoneContainer().GetPoseBoneIndexForBoneName(BoneName);
 				if (MeshIndex == INDEX_NONE)
 				{
@@ -132,7 +144,7 @@ bool FTrainerAnimInstanceProxy::Evaluate(FPoseContext& Output)
 				if (BoneIndex.IsValid())
 				{
 					const FQuat Ref = Output.Pose.GetRefPose(BoneIndex).GetRotation();
-					Output.Pose[BoneIndex].SetRotation(FQuat::Slerp(Ref, Output.Pose[BoneIndex].GetRotation(), FMath::Max(0.f, IdleHeadMotion)).GetNormalized());
+					Output.Pose[BoneIndex].SetRotation(FQuat::Slerp(Ref, Output.Pose[BoneIndex].GetRotation(), FMath::Max(0.f, Pair.Value)).GetNormalized());
 				}
 			}
 		}

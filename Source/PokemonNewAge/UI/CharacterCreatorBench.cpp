@@ -38,7 +38,7 @@ public:
 		bool bUI = false;
 	};
 
-	static void Start(UWorld* World, const FString& Label)
+	static void Start(UWorld* World, const FString& Label, const FString& Filter)
 	{
 		APlayerController* PlayerController = World ? World->GetFirstPlayerController() : nullptr;
 		UTrainerAppearanceData* Data = TrainerAppearanceRender::LoadDefaultData();
@@ -67,6 +67,11 @@ public:
 		Bench->Editor = Editor;
 		Bench->Data = Data;
 		Bench->BuildSteps();
+		if (!Filter.IsEmpty())
+		{
+			// « BancPerso essai 3 » : seulement les captures dont le nom commence par 3 (le cou), pour aller vite
+			Bench->Steps.RemoveAll([&Filter](const FStep& Step) { return !Step.Name.StartsWith(Filter); });
+		}
 		Bench->bQuit = FParse::Param(FCommandLine::Get(), TEXT("BancQuit"));
 		UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] %d captures dans %s"), Bench->Steps.Num(), *Bench->OutDir);
 		FTSTicker::GetCoreTicker().AddTicker(FTickerDelegate::CreateLambda([Bench](float DeltaTime)
@@ -135,6 +140,27 @@ private:
 			if (Component->ComponentTags.Num() > 1 && Component->ComponentTags[1] == Slot)
 			{
 				Component->SetVisibility(bShow, false);
+			}
+		}
+	}
+
+	/** Ombre portée d'une pièce (emplacement), ou du corps seul (None) */
+	void SetShadow(FName Slot, bool bCast)
+	{
+		ACharacterStudio* S = Studio.Get();
+		if (!S)
+		{
+			return;
+		}
+		TArray<USkeletalMeshComponent*> Components;
+		S->GetComponents<USkeletalMeshComponent>(Components);
+		for (USkeletalMeshComponent* Component : Components)
+		{
+			const bool bMatch = Slot.IsNone() ? Component == S->GetPreview()
+				: (Component->ComponentTags.Num() > 1 && Component->ComponentTags[1] == Slot);
+			if (bMatch)
+			{
+				Component->SetCastShadow(bCast);
 			}
 		}
 	}
@@ -247,7 +273,37 @@ private:
 			Add(P + TEXT("3_cou_sans_corps"), [this]() { SetView(EStudioFocus::Face, 0.f, -3.f); ShowPart(NAME_None, false); }, 3.f);
 			Add(P + TEXT("4_cou_sans_tete"), [this]() { ShowPart(NAME_None, true); ShowPart(TEXT("Head"), false); }, 3.f);
 			Add(P + TEXT("5_cou_sans_haut"), [this]() { ShowPart(TEXT("Head"), true); ShowPart(TEXT("Top"), false); }, 3.f);
-			Add(P + TEXT("6_cou_remis"), [this]() { ShowPart(TEXT("Top"), true); }, 1.f);
+			Add(P + TEXT("6_cou_sans_maquillage"), [this]()
+			{
+				ShowPart(TEXT("Top"), true);
+				// Pièces portées (journal) puis tout l'onglet Maquillage (maquillage, taches, tatouages) retiré
+				FString Worn;
+				for (const FName Id : Editor->Current.Outfit)
+				{
+					Worn += Id.ToString() + TEXT(" ");
+				}
+				for (const FTrainerPartColor& Color : Editor->Current.PartColors)
+				{
+					Worn += FString::Printf(TEXT("[%s/%d %s] "), *Color.Slot.ToString(), Color.Zone, *Color.Color.ToString());
+				}
+				UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] Pièces : %s"), *Worn);
+				FTrainerAppearance New = Editor->Current;
+				for (const FTrainerPartSlotDef& SlotDef : Data->PartSlots)
+				{
+					if (SlotDef.Tab == TEXT("Makeup"))
+					{
+						New.Outfit.Add(FName(*(TEXT("-") + SlotDef.Slot.ToString())));
+					}
+				}
+				Editor->ChangeAppearance(New, TEXT("Bench"), false);
+			}, 3.f);
+			Add(P + TEXT("7_cou_sans_cheveux"), [this]() { ShowPart(TEXT("Hair"), false); }, 2.f);
+			Add(P + TEXT("8_cou_sans_poils"), [this]() { ShowPart(TEXT("Hair"), true); ShowPart(TEXT("Eyebrows"), false); ShowPart(TEXT("Eyelashes"), false); ShowPart(TEXT("Beard"), false); ShowPart(TEXT("Mustache"), false); }, 2.f);
+			Add(P + TEXT("A_cou_sans_corps_ni_haut"), [this]() { ShowPart(NAME_None, false); ShowPart(TEXT("Top"), false); }, 2.f);
+			Add(P + TEXT("B_cou_sans_ombre_corps_haut"), [this]() { ShowPart(NAME_None, true); ShowPart(TEXT("Top"), true); SetShadow(NAME_None, false); SetShadow(TEXT("Top"), false); }, 2.f);
+			Add(P + TEXT("C_cou_sans_ombre_tete"), [this]() { SetShadow(NAME_None, true); SetShadow(TEXT("Top"), true); SetShadow(TEXT("Head"), false); }, 2.f);
+			Add(P + TEXT("D_cou_ombres_remises"), [this]() { SetShadow(TEXT("Head"), true); }, 1.f);
+			Add(P + TEXT("9_cou_remis"), [this]() { for (const TCHAR* S : { TEXT("Eyebrows"), TEXT("Eyelashes"), TEXT("Beard"), TEXT("Mustache") }) { ShowPart(S, true); } }, 1.f);
 		}
 
 		// 5) Silhouettes du corps, pour un modèle de chaque base : face, profil, dos
@@ -274,6 +330,24 @@ private:
 				Add(Prefix + TEXT("_profil"), [this]() { SetView(EStudioFocus::Body, 90.f); });
 				Add(Prefix + TEXT("_dos"), [this]() { SetView(EStudioFocus::Body, 180.f); });
 			}
+		}
+		// 6) Poses du studio (bouton P) : candidates pour l'attente, le personnage doit rester sur place
+		const FTrainerBaseDef* PoseBase = Data->FindBase(Data->Bases[0].Id);
+		const int32 PoseCount = PoseBase ? PoseBase->StudioAnimations.Num() : 0;
+		for (int32 Pose = 0; Pose < PoseCount; ++Pose)
+		{
+			const FString Label = PoseBase->StudioAnimations[Pose].Label.ToString().Replace(TEXT(" "), TEXT("_"));
+			const FString Prefix = FString::Printf(TEXT("5%02d_pose_%s"), Pose, *Label);
+			Add(Prefix + TEXT("_t2"), [this, Pose]()
+			{
+				if (Pose == 0)
+				{
+					Editor->ApplyPreset(0, true, false);
+				}
+				Studio->NextAnimation();
+				SetView(EStudioFocus::Body, 0.f);
+			}, 2.f);
+			Add(Prefix + TEXT("_t9"), []() {}, 7.f);
 		}
 		Add(TEXT("99_fin"), [this]() { SetView(EStudioFocus::Body, 0.f); }, 1.f);
 	}
@@ -342,8 +416,8 @@ private:
 
 static FAutoConsoleCommandWithWorldAndArgs GBancPersoCommand(
 	TEXT("BancPerso"),
-	TEXT("Banc d'essai du créateur de personnage : captures fixes dans Saved/BancPerso/<étiquette>"),
+	TEXT("Banc d'essai du créateur de personnage : BancPerso <étiquette> [début des noms], captures dans Saved/BancPerso/<étiquette>"),
 	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
 	{
-		FCharacterCreatorBench::Start(World, Args.IsEmpty() ? FString(TEXT("essai")) : Args[0]);
+		FCharacterCreatorBench::Start(World, Args.IsEmpty() ? FString(TEXT("essai")) : Args[0], Args.Num() > 1 ? Args[1] : FString());
 	}));

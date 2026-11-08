@@ -141,6 +141,10 @@ TArray<FTrainerBoneOffset> UTrainerAppearanceData::ComputeBoneOffsets(const FTra
 			Sum.Rotation = FQuat::Slerp(FQuat::Identity, Bone.Rotation.GetNormalized(), FMath::Min(Weight, 1.f)) * Sum.Rotation;
 		}
 	}
+	for (FTrainerBoneOffset& Offset : Offsets)
+	{
+		Offset.Scale = Offset.Scale.BoundToCube(MaxBoneScaleOffset);
+	}
 	return Offsets;
 }
 

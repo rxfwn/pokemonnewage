@@ -444,6 +444,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones", meta=(ClampMin=0, ClampMax=2))
 	float BoneDeformationScale = 1.f;
 
+	/**
+	 *  Écart d'échelle maximal d'un os, toutes déformations cumulées (0,45 = de x0,55 à x1,45). Les tables d'inZOI
+	 *  grossissent certains os d'aide jusqu'à x2,5 (fessiers de « Musclé », ventre de « Rond ») : silhouette
+	 *  irréaliste et jean qui passait à travers le t-shirt.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones", meta=(ClampMin=0.1, ClampMax=3))
+	float MaxBoneScaleOffset = 0.45f;
+
 	/** Part de Muscles et Corpulence ajoutée à chaque groupe d'os du corps (coefficients delta_muscle / delta_masse) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Sliders", meta=(ClampMin=0, ClampMax=1))
 	float GlobalSliderShare = 0.35f;

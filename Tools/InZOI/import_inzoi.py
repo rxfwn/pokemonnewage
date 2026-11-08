@@ -81,7 +81,7 @@ SLOTS = [
 
 # Vêtements qui pendent loin du corps : échelle des os d'aide bornée à 1 ± valeur (sinon le bas du t-shirt
 # s'envolait derrière avec les fessiers agrandis de « Musclé »), voir FTrainerPartSlotDef::HelperScaleLimit
-LOOSE_SLOTS = {"Top": 0.5, "Outer": 0.5}
+LOOSE_SLOTS = {"Top": 0.35, "Outer": 0.35}
 
 # Pièces portées au départ (si la base n'a rien de choisi)
 DEFAULT_SLOTS = ["Head", "Hair", "Eyebrows", "Eyelashes", "Top", "Bottom", "Shoes"]
@@ -1542,6 +1542,8 @@ HAIR_SKIP_SUFFIXES = ("_Hat", "_Beanie", "_Fedora")
 HAIR_ZONE_LABELS = ["Principale", "Dégradé", "Mèches", "Mèches devant"]
 HAIR_ZONE_AMOUNT_LABELS = ["", "Début du dégradé", "Quantité de mèches", "Quantité devant"]
 HAIR_ZONE_AMOUNTS = [1.0, 0.5, 0.3, 0.6]
+# Position de la 2e couleur d'inZOI -> début du dégradé (voir full_presets)
+HAIR_SECOND_POSITION_SCALE = 0.35
 # Densité des cils (opacité tramée) : les cartes d'inZOI pleines donnaient des cils trop épais
 EYELASH_DENSITY = 0.55
 DEFAULT_CARD = GROOM_REL + "/Textures/Hair/HairCard_001/HairCard_001_DIRO"
@@ -2336,10 +2338,12 @@ def build_lenses():
 # Pour en voir d'autres : Index_Complet/Manifeste_Assets.csv, filtrer « .ueanim ».
 # Attente du créateur : un vrai idle du corps (debout, respiration, petits mouvements). Les « Portrait » d'inZOI
 # n'animent que le visage : le corps restait en T. Le premier trouvé sert ; les autres de la liste sont des secours.
+# NPC_Idle3 d'abord : comparée par le banc BancPerso, c'est la plus calme (debout de face, pieds fixes). Crowd_idle1,
+# l'ancienne, est une attente de foule qui fait des pas et tourne sur place : le personnage sortait de l'écran.
 IDLE_ANIMATIONS = [
-    "Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Crowd_idle1",
-    "Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Crowd_idle7",
     "Characters/Anims/Interaction/Female/ANIM_F_NPC_Idle3",
+    "Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Crowd_idle7",
+    "Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Crowd_idle1",
 ]
 IDLE_LABEL = "Attente"
 ANIMATIONS = [(rel, IDLE_LABEL) for rel in IDLE_ANIMATIONS] + [
@@ -2352,6 +2356,10 @@ ANIMATIONS = [(rel, IDLE_LABEL) for rel in IDLE_ANIMATIONS] + [
     ("Characters/Anims/Interaction/Female/ANIM_F_Craft_Proud", "Fier"),
     ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Bored_Idle1", "Ennui"),
     ("Characters/Anims/Interaction/Female/ANIM_F_NPC_Idle2", "Détente"),
+    # Cabine d'essayage d'inZOI (« Fit_Stand ») : on se regarde, on montre sa tenue
+    ("Characters/Anims/Interaction/Female/ANIM_F_Normal_Female1_Fit_Stand", "Essayage 1"),
+    ("Characters/Anims/Interaction/Female/ANIM_F_Normal_Female2_Fit_Stand", "Essayage 2"),
+    ("Characters/Anims/Interaction/Female/ANIM_F_Normal_Female3_Fit_Stand", "Essayage 3"),
 ]
 _ANIM_FILES = None
 
@@ -2552,10 +2560,13 @@ def full_presets(bases, parts):
                 outfit.append(hair_id)
                 tip = row.get("Hair.VectorParameters.tipColor")
                 add_color("Hair", tip)
-                # Coupe bicolore d'inZOI (2ndColor à partir de 2ndColorPosition) -> zone Dégradé, alpha = début
+                # Coupe bicolore d'inZOI (2ndColor à partir de 2ndColorPosition) -> zone Dégradé, alpha = début.
+                # Le dégradé des cartes d'inZOI (canal B) n'est pas réparti sur toute la longueur : à position égale,
+                # la 2e couleur commençait bien plus bas que sur la vignette (W_Head03_CT017 : rose dès le haut).
                 second = row.get("Hair.VectorParameters.2ndColor")
                 if second and linear_hex(second) and (second or "").upper() != (tip or "").upper():
-                    add_color("Hair", second, 1, max(0.0, min(1.0, float_of(row, "Hair.ScalarParameters.2ndColorPosition", 0.5))))
+                    position = max(0.0, min(1.0, float_of(row, "Hair.ScalarParameters.2ndColorPosition", 0.5)))
+                    add_color("Hair", second, 1, position * HAIR_SECOND_POSITION_SCALE)
             try:
                 face_hairs = json.loads(row.get("FaceHairs") or "[]")
             except ValueError:

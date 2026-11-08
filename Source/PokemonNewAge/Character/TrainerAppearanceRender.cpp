@@ -165,6 +165,10 @@ namespace
 					Anim->HelperScaleLimit = ScaleLimit;
 				}
 				Component->AddTickPrerequisiteComponent(Mesh);
+				// Tête inZOI : sa géométrie interne (couches cachées autour du cou) projetait des traits d'ombre sombres
+				// sur le bas du cou, au-dessus du col (vérifié par le banc BancPerso : ils disparaissent sans son ombre).
+				// Les cheveux, le corps et les vêtements gardent la leur.
+				Component->SetCastShadow(!bFace && Mesh->CastShadow);
 			}
 			else
 			{
