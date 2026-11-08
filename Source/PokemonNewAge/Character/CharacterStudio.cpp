@@ -36,6 +36,9 @@ namespace CharacterStudio
 	constexpr float ScreenShift = 0.25f;
 	/** Tête par défaut si l'os n'est pas trouvé */
 	constexpr float DefaultHeadHeight = 158.f;
+	/** Enchaînement des poses : secondes d'attente entre deux poses, durée maximale d'une pose */
+	constexpr float IdleBetweenPoses = 8.f;
+	constexpr float MaxPoseDuration = 7.f;
 	/** Part du mouvement du cou et de la tête gardée pendant l'attente */
 	constexpr float IdleHeadMotion = 0.3f;
 
@@ -214,6 +217,55 @@ void ACharacterStudio::SetFocus(EStudioFocus NewFocus)
 	ZoomFactor = 1.f;
 }
 
+void ACharacterStudio::SetAutoPoses(bool bEnable)
+{
+	bAutoPoses = bEnable;
+	AutoTimer = 0.f;
+}
+
+void ACharacterStudio::TickAutoPoses(float DeltaSeconds)
+{
+	const FTrainerBaseDef* Base = Data ? Data->FindBase(AppliedBase) : nullptr;
+	const int32 Count = Base ? Base->StudioAnimations.Num() : 0;
+	if (!bAutoPoses || Count == 0)
+	{
+		return;
+	}
+	// Gros plan sur le visage : on reste dans l'attente (les gestes cacheraient le visage)
+	if (Focus == EStudioFocus::Face)
+	{
+		if (AnimationIndex != 0)
+		{
+			AnimationIndex = 0;
+			ApplyStudioAnimation();
+		}
+		AutoTimer = 0.f;
+		return;
+	}
+	if (AnimationIndex == 0)
+	{
+		AutoTimer += DeltaSeconds;
+		if (AutoTimer < IdleBetweenPoses)
+		{
+			return;
+		}
+		NextAutoPose = NextAutoPose % Count;
+		AnimationIndex = NextAutoPose + 1;
+		++NextAutoPose;
+		ApplyStudioAnimation();
+		const UAnimSequenceBase* Pose = Base->StudioAnimations[AnimationIndex - 1].Animation.Get();
+		AutoTimer = FMath::Clamp(Pose ? Pose->GetPlayLength() : 4.f, 2.f, MaxPoseDuration);
+		return;
+	}
+	AutoTimer -= DeltaSeconds;
+	if (AutoTimer <= 0.f)
+	{
+		AnimationIndex = 0;
+		AutoTimer = 0.f;
+		ApplyStudioAnimation();
+	}
+}
+
 void ACharacterStudio::Turn(float DeltaYaw)
 {
 	TargetYaw += DeltaYaw;
@@ -283,6 +335,7 @@ FVector ACharacterStudio::GetFocusPoint() const
 void ACharacterStudio::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	TickAutoPoses(DeltaSeconds);
 
 	// Rotation du personnage, en douceur
 	// CurrentYaw garde les tours complets : la rotation lue sur le composant repasse à -180 après 180,

@@ -160,8 +160,6 @@ private:
 	void Redo();
 	void ToggleUI();
 
-	/** Touche P : pose suivante du studio (attente, puis les poses) */
-	void NextPose();
 	void Finish();
 	void Cancel();
 

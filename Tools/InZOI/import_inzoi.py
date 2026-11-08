@@ -736,7 +736,7 @@ def constant(material, value, x, y):
     return node
 
 
-SKIN_VERSION = 6  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
+SKIN_VERSION = 8  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
 # Maquillage d'inZOI (table AppearanceMakeup) : catégorie, lettre du dossier de masques, emplacement du jeu (= nom du
 # paramètre texture de M_InZOI_Skin, couleurs dans <emplacement>_R/_G/_B), libellé, force du mélange (les reflets d'inZOI
 # mêlent un éclat blanc et une ombre de contour : à moitié pour rester naturels)
@@ -769,7 +769,7 @@ FRECKLE_COLOR = "8A5A3C"  # pas de couleur dans la table d'inZOI : brun clair
 SKIN_TEXTURES = "Characters/Materials/DefaultTextures/Skin"
 HEAD_DETAIL_NORMAL = {"Female": SKIN_TEXTURES + "/Female_Head_Detail_Full_N", "Male": SKIN_TEXTURES + "/Male_Head_Detail_Full_N"}
 # Force du relief de la tête : à 1 les rides et plis (front, joues, cou) étaient bien trop marqués
-HEAD_DETAIL_AMOUNT = 0.22
+HEAD_DETAIL_AMOUNT = 0.3
 SKIN_MICRO_NORMAL = [SKIN_TEXTURES + "/T_SkinMicro_N", "MetaHumans/Common/Materials/Textures/T_SkinMicroNormal"]
 
 
@@ -895,7 +895,10 @@ def build_skin_master():
         MEL.connect_material_expressions(node, output, custom, input_name)
     MEL.connect_material_property(custom, "", unreal.MaterialProperty.MP_BASE_COLOR)
     build_skin_relief(material)
-    MEL.connect_material_property(constant(material, 0.38, -400, 350), "", unreal.MaterialProperty.MP_SPECULAR)
+    MEL.connect_material_property(constant(material, 0.3, -400, 350), "", unreal.MaterialProperty.MP_SPECULAR)
+    # Peau « Subsurface Profile » : la lumière diffuse sous la surface (oreilles, nez, lèvres) ; en éclairage normal la
+    # peau paraissait en plastique. Grain : micro-relief des pores plus fin (40 répétitions) et plus marqué (0,5).
+    set_prop(material, "shading_model", unreal.MaterialShadingModel.MSM_SUBSURFACE_PROFILE)
     EAL.set_metadata_tag(material, "InZOIVersion", str(SKIN_VERSION))
     return finish_material(material, SKIN_MASTER)
 
@@ -918,7 +921,7 @@ def build_skin_relief(material):
         return node
 
     uv = MEL.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate, -1700, 1800)
-    tiling = scalar("MicroTiling", 24.0, -1700, 1950)
+    tiling = scalar("MicroTiling", 40.0, -1700, 1950)
     tiled = MEL.create_material_expression(material, unreal.MaterialExpressionMultiply, -1450, 1850)
     MEL.connect_material_expressions(uv, "", tiled, "A")
     MEL.connect_material_expressions(tiling, "", tiled, "B")
@@ -933,7 +936,7 @@ def build_skin_relief(material):
         MEL.connect_material_expressions(uv_node, "", sample, "UVs")
         samples.append(sample)
     detail_amount = scalar("DetailNormalAmount", 0.0, -1100, 2100)
-    micro_amount = scalar("MicroNormalAmount", 0.18, -1100, 2200)
+    micro_amount = scalar("MicroNormalAmount", 0.5, -1100, 2200)
     rough_base = scalar("SkinRoughness", 0.66, -1100, 2300)
     normal = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -600, 1800)
     set_prop(normal, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
@@ -1096,6 +1099,28 @@ def build_teeth():
     return finish_material(material, TEETH_MATERIAL)
 
 
+EYE_SHADOW_MATERIAL = DEST + "/Materials/M_InZOI_EyeShadow"
+
+
+def build_eye_shadow():
+    """Couche « EyeAO » d'inZOI (coque autour de l'œil) : une ombre légère sur le blanc de l'œil, sous les paupières.
+    Cachée, elle laissait un blanc éclatant et un regard écarquillé."""
+    existing = load(EYE_SHADOW_MATERIAL)
+    if existing:
+        return existing
+    material = new_material(EYE_SHADOW_MATERIAL)
+    set_prop(material, "blend_mode", unreal.BlendMode.BLEND_TRANSLUCENT)
+    set_prop(material, "shading_model", unreal.MaterialShadingModel.MSM_UNLIT)
+    color = MEL.create_material_expression(material, unreal.MaterialExpressionConstant3Vector, -500, -100)
+    set_prop(color, "constant", unreal.LinearColor(0.02, 0.012, 0.01, 1))
+    MEL.connect_material_property(color, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    opacity = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -500, 100)
+    set_prop(opacity, "parameter_name", "ShadowOpacity")
+    set_prop(opacity, "default_value", 0.35)
+    MEL.connect_material_property(opacity, "", unreal.MaterialProperty.MP_OPACITY)
+    return finish_material(material, EYE_SHADOW_MATERIAL)
+
+
 def build_hidden():
     """Pour les couches d'effet d'inZOI (larmes, ombre des yeux, salive) qu'on ne sait pas reproduire : invisibles"""
     existing = load(HIDDEN_MATERIAL)
@@ -1184,7 +1209,9 @@ def apply_skin(mesh, rel_folder, age, only_skin_slots):
         if "eyeball" in lower:
             material = build_eye_master()
             EYE_SLOTS.add(slot_name)
-        elif any(key in lower for key in ("saliva", "eyeao", "eyetear", "eye_ao", "eye_tear", "lash", "cartilage")):
+        elif "eyeao" in lower or "eye_ao" in lower:
+            material = build_eye_shadow()
+        elif any(key in lower for key in ("saliva", "eyetear", "eye_tear", "lash", "cartilage")):
             material = build_hidden()
         elif "teeth" in lower or "tooth" in lower or "tongue" in lower:
             material = build_teeth()
@@ -1521,7 +1548,7 @@ def build_parts(slow):
 # ---------------------------------------------------------------- Barbes (dossier Groom)
 
 HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
-HAIR_VERSION = 11  # à augmenter quand le graphe change : le matériau est refait au même endroit
+HAIR_VERSION = 17  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
 GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"), ("Mustache", "Moustache", "Hair", "Head"),
@@ -1544,6 +1571,9 @@ HAIR_ZONE_AMOUNT_LABELS = ["", "Début du dégradé", "Quantité de mèches", "Q
 HAIR_ZONE_AMOUNTS = [1.0, 0.5, 0.3, 0.6]
 # Position de la 2e couleur d'inZOI -> début du dégradé (voir full_presets)
 HAIR_SECOND_POSITION_SCALE = 0.35
+# Rendu « Hair » : diffusion dans les mèches et courbe de couleur (réglés au banc BancPerso, planche de ressemblance)
+HAIR_SCATTER = 0.3
+HAIR_COLOR_GAMMA = 0.85
 # Densité des cils (opacité tramée) : les cartes d'inZOI pleines donnaient des cils trop épais
 EYELASH_DENSITY = 0.55
 DEFAULT_CARD = GROOM_REL + "/Textures/Hair/HairCard_001/HairCard_001_DIRO"
@@ -1634,9 +1664,12 @@ def build_hair_master():
         "        c = C3.rgb * lerp(0.75, 1.0, g);\n"
         "    }\n"
         "}\n"
+        # Comme les vignettes d'inZOI : couleurs éclaircies et adoucies (noir -> gris foncé, pêche -> platine,
+        # rose vif -> rose pastel). Le modèle « Hair » d'Unreal assombrit beaucoup les couleurs claires.
+        "c = pow(max(c, 0.0), Gamma);\n"
         "return c * lerp(0.65, 1.0, saturate(Depth));"))
     inputs = []
-    for input_name in ("Grad", "Root", "Tip", "Tint", "Depth", "ID", "C1", "C2", "C3", "C1a", "C2a", "C3a", "Pos", "Front", "Start", "Center"):
+    for input_name in ("Grad", "Root", "Tip", "Tint", "Depth", "ID", "C1", "C2", "C3", "C1a", "C2a", "C3a", "Pos", "Front", "Start", "Center", "Gamma"):
         entry = unreal.CustomInput()
         entry.set_editor_property("input_name", input_name)
         inputs.append(entry)
@@ -1654,6 +1687,10 @@ def build_hair_master():
     MEL.connect_material_expressions(front, "", custom, "Front")
     MEL.connect_material_expressions(front_start, "", custom, "Start")
     MEL.connect_material_expressions(head_center, "", custom, "Center")
+    gamma = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -1200, 950)
+    set_prop(gamma, "parameter_name", "ColorGamma")  # < 1 éclaircit et adoucit les couleurs (vignettes inZOI)
+    set_prop(gamma, "default_value", HAIR_COLOR_GAMMA)
+    MEL.connect_material_expressions(gamma, "", custom, "Gamma")
     MEL.connect_material_property(custom, "", unreal.MaterialProperty.MP_BASE_COLOR)
     # Opacité tramée comme dans inZOI (paramètre « Dither ») : chaque pixel est gardé avec la probabilité de l'alpha,
     # le bruit change à chaque image et l'anti-crénelage temporel le lisse. Sourcils et cils doux au lieu de plaques.
@@ -1684,12 +1721,12 @@ def build_hair_master():
     MEL.connect_material_property(dither, "", unreal.MaterialProperty.MP_OPACITY_MASK)
     roughness = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -500, 200)
     set_prop(roughness, "parameter_name", "Roughness")
-    set_prop(roughness, "default_value", 0.55)
+    set_prop(roughness, "default_value", 0.42)
     MEL.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)
     # Spéculaire faible (0,25 donnait un voile gris argenté sur les cheveux et barbes foncés), plus faible au creux des mèches
     specular = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -900, 750)
     set_prop(specular, "parameter_name", "Specular")
-    set_prop(specular, "default_value", 0.1)
+    set_prop(specular, "default_value", 0.45)
     spec_node = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -500, 300)
     set_prop(spec_node, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
     set_prop(spec_node, "code", "return Spec * lerp(0.35, 1.0, saturate(Depth));")
@@ -1702,6 +1739,19 @@ def build_hair_master():
     MEL.connect_material_expressions(specular, "", spec_node, "Spec")
     MEL.connect_material_expressions(diro, "R", spec_node, "Depth")
     MEL.connect_material_property(spec_node, "", unreal.MaterialProperty.MP_SPECULAR)
+    # Modèle d'éclairage « Hair » d'Unreal (comme inZOI) : reflets clairs et larges le long des mèches. En éclairage
+    # normal la couleur sortait brute et saturée (pêche au lieu de platine, roux au lieu de châtain cendré).
+    # Dans ce modèle, la broche Normal donne la direction des mèches : le long du V des cartes.
+    set_prop(material, "shading_model", unreal.MaterialShadingModel.MSM_HAIR)
+    tangent = MEL.create_material_expression(material, unreal.MaterialExpressionConstant3Vector, -500, 600)
+    set_prop(tangent, "constant", unreal.LinearColor(0, 1, 0, 0))
+    MEL.connect_material_property(tangent, "", unreal.MaterialProperty.MP_NORMAL)
+    # Modèle « Hair » : la broche Metallic devient Scatter (diffusion dans les mèches).
+    # Non branchée, Scatter vaut 0 et les cheveux clairs sortaient bruns (platine, rose pastel...).
+    scatter = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -500, 700)
+    set_prop(scatter, "parameter_name", "Scatter")
+    set_prop(scatter, "default_value", HAIR_SCATTER)
+    MEL.connect_material_property(scatter, "", unreal.MaterialProperty.MP_METALLIC)
     EAL.set_metadata_tag(material, "InZOIVersion", str(HAIR_VERSION))
     return finish_material(material, HAIR_MASTER)
 
@@ -2447,12 +2497,24 @@ def linear_hex(text):
     return tuple(srgb_to_linear(c) for c in (color.r, color.g, color.b))
 
 
-def skin_tint(tone_hex):
-    """SkinTint (multiplié à la texture de peau) pour une teinte d'inZOI"""
-    tone, reference = linear_hex(tone_hex), linear_hex(SKIN_REFERENCE)
+def skin_tint(tone_hex, palette_hex=None):
+    """SkinTint (multiplié à la texture de peau) pour une teinte d'inZOI. La teinte vient de SkinTone (neutre), la
+    luminosité de PalleteColor (celle de la vignette) : SkinTone seule assombrissait tous les visages, la palette
+    seule les rendait orange (couleurs de nuancier très saturées)."""
+    tone, reference, palette = linear_hex(tone_hex), linear_hex(SKIN_REFERENCE), linear_hex(palette_hex)
     if not tone:
         return None
-    return tuple(max(0.05, min(1.0, t / r)) for t, r in zip(tone, reference))
+    tint = [t / r for t, r in zip(tone, reference)]
+    if palette:
+        luminance = lambda c: 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+        target = luminance([p / r for p, r in zip(palette, reference)])
+        current = luminance(tint)
+        if current > 0.0:
+            tint = [t * target / current for t in tint]
+    # Un peu désaturée : les visages foncés viraient à l'orange sous la lumière du studio
+    gray = 0.2126 * tint[0] + 0.7152 * tint[1] + 0.0722 * tint[2]
+    tint = [gray + (t - gray) * 0.75 for t in tint]
+    return tuple(max(0.05, min(1.0, t)) for t in tint)
 
 
 def hair_part_id(mesh_id):
@@ -2521,7 +2583,9 @@ def body_presets(bases):
 
 def full_presets(bases, parts):
     rows = read_csv(os.path.join(TABLES, "AppearanceFacePreset.csv"))
-    skin_tones = {r.get("ID"): r.get("SkinTone") for r in read_csv(os.path.join(TABLES, "AppearanceSkinColor.csv"))}
+    # Couleur de la palette (PalleteColor) : celle qu'on voit sur la vignette. SkinTone, plus foncée, est une teinte de
+    # masque d'inZOI : multipliée à notre texture (déjà couleur peau), elle assombrissait tous les visages.
+    skin_tones = {r.get("ID"): (r.get("SkinTone"), r.get("PalleteColor")) for r in read_csv(os.path.join(TABLES, "AppearanceSkinColor.csv"))}
     by_id = {str(p.get_editor_property("id")): p for p in parts}
     groom_ids = {"Eyebrow": ("Eyebrows", ""), "Eyelash": ("Eyelashes", ""), "Beard": ("Beard", "InZOI_"), "Mustache": ("Mustache", "InZOI_")}
     presets, per_base = [], OrderedDict()
@@ -2563,10 +2627,15 @@ def full_presets(bases, parts):
                 # Coupe bicolore d'inZOI (2ndColor à partir de 2ndColorPosition) -> zone Dégradé, alpha = début.
                 # Le dégradé des cartes d'inZOI (canal B) n'est pas réparti sur toute la longueur : à position égale,
                 # la 2e couleur commençait bien plus bas que sur la vignette (W_Head03_CT017 : rose dès le haut).
+                # Position 0 = 2e couleur inutilisée (W_Head07_CT010 : brun sur la vignette, pas la 2e couleur claire).
+                # Sans 2e couleur, bridgeColor1 + sa position donnent les pointes (M_Head04_CT011 : pointes blondes).
                 second = row.get("Hair.VectorParameters.2ndColor")
-                if second and linear_hex(second) and (second or "").upper() != (tip or "").upper():
-                    position = max(0.0, min(1.0, float_of(row, "Hair.ScalarParameters.2ndColorPosition", 0.5)))
-                    add_color("Hair", second, 1, position * HAIR_SECOND_POSITION_SCALE)
+                position = float_of(row, "Hair.ScalarParameters.2ndColorPosition", 0.5)
+                if not (second and linear_hex(second) and second.upper() != (tip or "").upper() and position > 0.0):
+                    second = row.get("Hair.VectorParameters.bridgeColor1")
+                    position = float_of(row, "Hair.ScalarParameters.bridgeColor1Position", 1.0)
+                if second and linear_hex(second) and second.upper() != (tip or "").upper() and 0.0 < position < 1.0:
+                    add_color("Hair", second, 1, max(0.0, min(1.0, position)) * HAIR_SECOND_POSITION_SCALE)
             try:
                 face_hairs = json.loads(row.get("FaceHairs") or "[]")
             except ValueError:
@@ -2608,8 +2677,8 @@ def full_presets(bases, parts):
                     outfit.append("-" + slot)  # sinon le maquillage du modèle précédent restait
             look.set_editor_property("outfit", outfit)
             look.set_editor_property("part_colors", colors)
-            tone = skin_tones.get(row.get("FaceSkinColorId")) or row.get("SkinTone")
-            tint = skin_tint(tone)
+            tone, palette = skin_tones.get(row.get("FaceSkinColorId")) or (row.get("SkinTone"), None)
+            tint = skin_tint(tone, palette)
             if tint:
                 look.set_editor_property("skin_color", unreal.LinearColor(tint[0], tint[1], tint[2], 1.0))
             eye = linear_hex(row.get("IrisVectorParameters.eyeColor1"))

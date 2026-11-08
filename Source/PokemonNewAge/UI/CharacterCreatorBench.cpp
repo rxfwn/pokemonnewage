@@ -58,6 +58,7 @@ public:
 		FTrainerAppearance Start;
 		Start.Base = Data->Bases[0].Id;
 		Studio->Init(Data, Start);
+		Studio->SetAutoPoses(false); // captures reproductibles : pas de pose au hasard du temps
 		UCharacterCreatorWidget* Editor = CreateWidget<UCharacterCreatorWidget>(PlayerController, UCharacterCreatorWidget::StaticClass());
 		Editor->Init(nullptr, Studio, Data, ETrainerEditorMode::Creation, Start, TEXT("Banc"), FString());
 		Editor->AddToPlayerScreen(8);
@@ -348,6 +349,28 @@ private:
 				SetView(EStudioFocus::Body, 0.f);
 			}, 2.f);
 			Add(Prefix + TEXT("_t9"), []() {}, 7.f);
+		}
+		// 7) Ressemblance : visage de face cadré comme les vignettes d'inZOI (Tools/InZOI/planche_ressemblance.ps1
+		//    met chaque capture à côté de sa vignette, d'après la ligne « Vignette » du journal)
+		TArray<int32> Faces;
+		for (int32 Index = 0; Index < FMath::Min(10, Data->FullPresets.Num()); ++Index)
+		{
+			Faces.Add(Index);
+		}
+		if (Pink != INDEX_NONE && !Faces.Contains(Pink))
+		{
+			Faces.Add(Pink);
+		}
+		for (const int32 Index : Faces)
+		{
+			const FString Name = FString::Printf(TEXT("7%02d_ressemblance"), Index);
+			Add(Name, [this, Index, Name]()
+			{
+				ShowUI(false);
+				Editor->ApplyPreset(Index, true, false);
+				UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] Vignette %s = %s"), *Name, *Data->FullPresets[Index].Thumbnail.ToSoftObjectPath().ToString());
+				SetView(EStudioFocus::Face, 0.f, -1.5f);
+			}, 4.f);
 		}
 		Add(TEXT("99_fin"), [this]() { SetView(EStudioFocus::Body, 0.f); }, 1.f);
 	}

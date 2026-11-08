@@ -2,9 +2,16 @@
 #include "Animation/AnimNodeBase.h"
 #include "Animation/AnimSequenceBase.h"
 #include "Animation/AnimationPoseData.h"
+#include "Animation/AttributesRuntime.h"
 #include "BonePose.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
+
+namespace
+{
+	/** Durée du fondu entre deux animations du studio (secondes) */
+	constexpr float IdleBlendTime = 0.35f;
+}
 
 void FTrainerAnimInstanceProxy::PreUpdate(UAnimInstance* InAnimInstance, float DeltaSeconds)
 {
@@ -16,6 +23,10 @@ void FTrainerAnimInstanceProxy::PreUpdate(UAnimInstance* InAnimInstance, float D
 		IdleHeadMotion = Trainer->IdleHeadMotion;
 		if (Idle != Trainer->GetIdleAnimation())
 		{
+			// Fondu depuis l'animation d'avant (attente -> pose -> attente) au lieu d'un saut de pose
+			PreviousIdle = Idle;
+			PreviousTime = IdleTime;
+			BlendRemaining = PreviousIdle ? IdleBlendTime : 0.f;
 			Idle = Trainer->GetIdleAnimation();
 			IdleTime = 0.f;
 		}
@@ -72,6 +83,12 @@ void FTrainerAnimInstanceProxy::Update(float DeltaSeconds)
 		const float Length = Idle->GetPlayLength();
 		IdleTime = Length > 0.f ? FMath::Fmod(IdleTime + DeltaSeconds, Length) : 0.f;
 	}
+	if (PreviousIdle && BlendRemaining > 0.f)
+	{
+		const float Length = PreviousIdle->GetPlayLength();
+		PreviousTime = Length > 0.f ? FMath::Fmod(PreviousTime + DeltaSeconds, Length) : 0.f;
+		BlendRemaining = FMath::Max(0.f, BlendRemaining - DeltaSeconds);
+	}
 }
 
 namespace
@@ -96,6 +113,22 @@ bool FTrainerAnimInstanceProxy::Evaluate(FPoseContext& Output)
 	{
 		FAnimationPoseData PoseData(Output);
 		Idle->GetAnimationPose(PoseData, FAnimExtractContext(double(IdleTime), false, FDeltaTimeRecord(), true));
+		if (PreviousIdle && BlendRemaining > 0.f)
+		{
+			FCompactPose PreviousPose;
+			PreviousPose.SetBoneContainer(&Output.Pose.GetBoneContainer());
+			FBlendedCurve PreviousCurve;
+			UE::Anim::FStackAttributeContainer PreviousAttributes;
+			FAnimationPoseData PreviousData(PreviousPose, PreviousCurve, PreviousAttributes);
+			PreviousIdle->GetAnimationPose(PreviousData, FAnimExtractContext(double(PreviousTime), false, FDeltaTimeRecord(), true));
+			const float PreviousWeight = BlendRemaining / IdleBlendTime;
+			for (const FCompactPoseBoneIndex BoneIndex : Output.Pose.ForEachBoneIndex())
+			{
+				FTransform Blended;
+				Blended.Blend(Output.Pose[BoneIndex], PreviousPose[BoneIndex], PreviousWeight);
+				Output.Pose[BoneIndex] = Blended;
+			}
+		}
 		// Sur place : la racine reste à sa pose de référence (certaines attentes d'inZOI la déplacent)
 		const FCompactPoseBoneIndex RootIndex(0);
 		if (Output.Pose.IsValidIndex(RootIndex))

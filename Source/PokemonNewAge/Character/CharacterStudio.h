@@ -52,8 +52,11 @@ public:
 	FText NextLighting();
 	FText GetLightingName() const;
 
-	/** Bouton « Pose » : animation suivante (l'attente, puis les poses de la base) ; renvoie son nom */
+	/** Animation suivante (l'attente, puis les poses de la base) ; renvoie son nom. Sert au banc d'essai */
 	FText NextAnimation();
+
+	/** Enchaînement automatique attente -> pose -> attente (vrai par défaut ; le banc d'essai le coupe) */
+	void SetAutoPoses(bool bEnable);
 
 	USkeletalMeshComponent* GetPreview() const { return Preview; }
 
@@ -100,6 +103,15 @@ private:
 
 	/** Remet la pose choisie après un changement d'apparence (Apply remet l'attente de la base) */
 	void ApplyStudioAnimation();
+
+	/** Enchaînement automatique des poses (vue du corps seulement) */
+	void TickAutoPoses(float DeltaSeconds);
+
+	bool bAutoPoses = true;
+	/** Temps passé dans l'attente, ou temps restant de la pose en cours */
+	float AutoTimer = 0.f;
+	/** Prochaine pose jouée (index dans FTrainerBaseDef::StudioAnimations) */
+	int32 NextAutoPose = 0;
 
 	FName AppliedBase;
 	/** 0 = attente de la base, N = FTrainerBaseDef::StudioAnimations[N - 1] */

@@ -50,6 +50,11 @@ private:
 	/** Animation jouée en boucle quand il n'y a pas de graphe (studio de l'éditeur) */
 	UAnimSequenceBase* Idle = nullptr; // gardé en vie par UTrainerAnimInstance::IdleAnimation
 	float IdleTime = 0.f;
+
+	/** Animation d'avant, en fondu vers la nouvelle (attente <-> pose) */
+	UAnimSequenceBase* PreviousIdle = nullptr; // gardé en vie par UTrainerAnimInstance::PreviousIdleAnimation
+	float PreviousTime = 0.f;
+	float BlendRemaining = 0.f;
 };
 
 /**
@@ -71,7 +76,14 @@ public:
 	const TArray<FTrainerBoneOffset>& GetBoneOffsets() const { return BoneOffsets; }
 
 	/** Animation d'attente jouée en boucle s'il n'y a pas d'Animation Blueprint enfant (studio) ; nul = pose de référence */
-	void SetIdleAnimation(UAnimSequenceBase* InIdle) { IdleAnimation = InIdle; }
+	void SetIdleAnimation(UAnimSequenceBase* InIdle)
+	{
+		if (InIdle != IdleAnimation)
+		{
+			PreviousIdleAnimation = IdleAnimation;
+			IdleAnimation = InIdle;
+		}
+	}
 
 	UAnimSequenceBase* GetIdleAnimation() const { return IdleAnimation; }
 
@@ -107,4 +119,8 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequenceBase> IdleAnimation;
+
+	/** Animation précédente, gardée chargée pendant le fondu */
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequenceBase> PreviousIdleAnimation;
 };

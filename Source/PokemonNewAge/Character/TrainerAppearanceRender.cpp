@@ -273,6 +273,23 @@ namespace
 		}
 	}
 
+	/**
+	 *  Crâne d'une coupe (matériau « Scalp » d'inZOI) : il garde ses racines naturelles. Teint comme les cheveux, la raie
+	 *  et le dessus de la tête devenaient roses (capture de L'amie du 2026-11-08) alors que seuls les cheveux le sont.
+	 */
+	bool IsScalpMaterial(const USkeletalMeshComponent* Component, int32 Index)
+	{
+		const TArray<FName> SlotNames = Component->GetMaterialSlotNames();
+		if (SlotNames.IsValidIndex(Index) && SlotNames[Index].ToString().Contains(TEXT("Scalp")))
+		{
+			return true;
+		}
+		const UMaterialInterface* Material = Component->GetMaterial(Index);
+		const UMaterialInstanceDynamic* MID = Cast<UMaterialInstanceDynamic>(Material);
+		const UMaterialInterface* Source = MID && MID->Parent ? MID->Parent.Get() : Material;
+		return Source && Source->GetName().Contains(TEXT("Scalp"));
+	}
+
 	void ApplyPartColors(USkeletalMeshComponent* Component, const FTrainerAppearance& Appearance)
 	{
 		if (!Component->ComponentHasTag(PartTag) || Component->ComponentTags.Num() < 2)
@@ -290,9 +307,9 @@ namespace
 			}
 			for (int32 Zone = 0; Zone < 4; ++Zone)
 			{
-				if (Appearance.FindPartColor(Slot, Zone))
+				if (Appearance.FindPartColor(Slot, Zone) && !IsScalpMaterial(Component, Index))
 				{
-					continue;
+					continue; // crâne : toujours remis à sa couleur d'origine
 				}
 				const FName Parameter = TrainerPartColorParameter(Zone);
 				FLinearColor Original;
@@ -311,6 +328,10 @@ namespace
 			const FName Parameter = TrainerPartColorParameter(Choice.Zone);
 			for (int32 Index = 0; Index < Component->GetNumMaterials(); ++Index)
 			{
+				if (IsScalpMaterial(Component, Index))
+				{
+					continue;
+				}
 				UMaterialInstanceDynamic* MID = Cast<UMaterialInstanceDynamic>(Component->GetMaterial(Index));
 				if (!MID)
 				{

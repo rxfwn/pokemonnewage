@@ -444,8 +444,8 @@ void UCharacterCreatorWidget::BuildBottomLeft()
 		Place(Canvas, Cap, FVector2D(36.f, Y), FVector2D(34.f, 34.f));
 		Place(Canvas, MakeTextButton(WidgetTree, Label, 20.f, MoveTemp(Action)), FVector2D(78.f, Y - 2.f), FVector2D(240.f, 38.f));
 	};
-	AddKeyHint(TEXT("U"), LOCTEXT("HideUI", "Masquer l'interface"), 896.f, [this]() { ToggleUI(); });
-	AddKeyHint(TEXT("P"), LOCTEXT("NextPose", "Changer de pose"), 942.f, [this]() { NextPose(); });
+	// Plus de bouton « Changer de pose » : le studio enchaîne lui-même attente et poses (ACharacterStudio::Tick)
+	AddKeyHint(TEXT("U"), LOCTEXT("HideUI", "Masquer l'interface"), 942.f, [this]() { ToggleUI(); });
 
 	StudioText = MakeText(WidgetTree, LOCTEXT("Studio", "Studio"), 24.f);
 	UCreatorButton* StudioButton = MakeButton(WidgetTree, StudioText, ButtonFill, PillHeight * 0.5f, [this]()
@@ -1566,15 +1566,6 @@ void UCharacterCreatorWidget::Redo()
 	RefreshAll();
 }
 
-void UCharacterCreatorWidget::NextPose()
-{
-	// Pas de message « Pose : ... » : le personnage suffit
-	if (Studio.IsValid())
-	{
-		Studio->NextAnimation();
-	}
-}
-
 void UCharacterCreatorWidget::ToggleUI()
 {
 	bUIHidden = !bUIHidden;
@@ -1798,11 +1789,6 @@ FReply UCharacterCreatorWidget::NativeOnKeyDown(const FGeometry& InGeometry, con
 	if (Key == EKeys::U)
 	{
 		ToggleUI();
-		return FReply::Handled();
-	}
-	if (Key == EKeys::P)
-	{
-		NextPose();
 		return FReply::Handled();
 	}
 	if (Key == EKeys::Escape || Key == EKeys::Gamepad_FaceButton_Right)
