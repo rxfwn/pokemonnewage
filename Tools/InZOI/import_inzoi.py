@@ -1099,7 +1099,7 @@ HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
 HAIR_VERSION = 2  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
-GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"),
+GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"), ("Mustache", "Moustache", "Hair", "Head"),
                ("Eyebrows", "Sourcils", "Hair", "Head"), ("Eyelashes", "Cils", "Hair", "Head")]
 # Sourcils et cils : tables inZOI (Data/JsonResult), meshes dans Groom/Eyebrows et Groom/Eyelashes
 FACE_GROOMS = [
@@ -1113,8 +1113,6 @@ HAIR_CATEGORY_ORDER = ["Short", "Shaved", "Bob", "Medium", "Long", "Bald"]
 # Versions de la coupe sous un chapeau (pas encore utilisées)
 HAIR_SKIP_SUFFIXES = ("_Hat", "_Beanie", "_Fedora")
 DEFAULT_CARD = GROOM_REL + "/Textures/Hair/HairCard_001/HairCard_001_DIRO"
-# Barbes d'inZOI qui ont un modèle 3D (les 006 à 010 n'ont que des textures)
-BEARDS = ["Beard_001", "Beard_002", "Beard_003"]
 BEARD_CARD = GROOM_REL + "/Textures/Beard/BeardCard_002/BeardCard_002_DIRO"
 # Brun foncé d'inZOI (MI_Beard_Scalp_003) quand le dossier n'a pas de fichier de matériau
 BEARD_ROOT = (0.03434, 0.017642, 0.006049)
@@ -1230,52 +1228,107 @@ def hair_instance(asset_path, diro_rel, colors):
     return instance
 
 
+def head_names(parts):
+    """Noms des meshes de têtes importées (SKM_Male_Head_002...)"""
+    return sorted({p.get_editor_property("mesh").get_name() for p in parts
+                   if str(p.get_editor_property("slot")) == "Head" and p.get_editor_property("mesh")})
+
+
+def head_variants(mesh_rel, heads):
+    """inZOI ajuste barbes, moustaches et sourcils à chaque tête : SKM_X_For_Male_Head_002 à côté de SKM_X"""
+    variants = []
+    for head in heads:
+        variant_rel = "%s_For_%s" % (mesh_rel, head[4:] if head.startswith("SKM_") else head)
+        if not os.path.isfile(src(variant_rel, ".glb")):
+            continue
+        mesh = import_mesh(variant_rel)
+        if mesh:
+            variant = unreal.TrainerPartVariant()
+            variant.set_editor_property("head_mesh", head)
+            variant.set_editor_property("mesh", mesh)
+            variants.append(variant)
+    return variants
+
+
+def groom_materials(mesh, folder, card_fallback, default_colors):
+    """Un matériau M_InZOI_Hair par emplacement du mesh, d'après le JSON du même nom dans <dossier>/Materials.
+    Les JSON des cartes sont parfois vides : on prend alors la carte par défaut et les couleurs du cuir (Scalp)."""
+    infos = []
+    for slot_name in material_slot_names(mesh):
+        json_rel = folder + "/Materials/" + slot_name
+        colors, diro = groom_json(json_rel)
+        infos.append((slot_name, json_rel, colors, diro))
+    shared = next((c for _n, _j, c, _d in infos if "TipColor" in c), {})
+    materials = []
+    for slot_name, json_rel, colors, diro in infos:
+        colors = colors if "TipColor" in colors else shared
+        tip = colors.get("TipColor", default_colors[1])
+        root = colors.get("RootColor", tuple(v * 0.6 for v in tip) if "TipColor" in colors else default_colors[0])
+        if not diro and "scalp" in slot_name.lower():
+            found = scan_folder_textures(folder, "Scalp_DIRO")
+            diro = found or card_fallback
+        materials.append(hair_instance(dest(json_rel + "_Jeu"), diro or card_fallback, (root, tip)))
+    return materials
+
+
+def scan_folder_textures(folder, suffix):
+    for root in groom_roots():
+        textures = os.path.join(root, *folder[len(GROOM_REL) + 1:].split("/"), "Textures")
+        if os.path.isdir(textures):
+            for filename in sorted(os.listdir(textures)):
+                if filename.endswith(suffix + ".png"):
+                    return folder + "/Textures/" + filename[:-4]
+    return None
+
+
+def find_folder_grooms(subdir):
+    """Groom/<subdir>/<Nom>/Mesh/SKM_*.glb sans les versions « _For_<tête> » : [(dossier, mesh)]"""
+    found = OrderedDict()
+    for root in groom_roots():
+        base = os.path.join(root, subdir)
+        if not os.path.isdir(base):
+            continue
+        for name in sorted(os.listdir(base)):
+            mesh_dir = os.path.join(base, name, "Mesh")
+            if not os.path.isdir(mesh_dir):
+                continue
+            for filename in sorted(os.listdir(mesh_dir)):
+                stem, ext = os.path.splitext(filename)
+                if ext.lower() == ".glb" and stem.startswith("SKM_") and "_For_" not in stem:
+                    folder = "%s/%s/%s" % (GROOM_REL, subdir, name)
+                    found.setdefault(stem, (folder, folder + "/Mesh/" + stem))
+    return list(found.values())
+
+
 def build_beards(slow, bases, parts):
-    """Barbes 1 à 3 : un modèle par tête (SKM_Beard_00X_For_Male_Head_00Y), le modèle par défaut pour les autres têtes.
-    Elles suivent la tête (FollowSlot) : les curseurs du visage les déforment avec elle."""
+    """Barbes et moustaches (dossiers Groom/Beard et Groom/Mustache) : bases masculines, une variante par tête,
+    elles suivent la tête (FollowSlot) donc les curseurs du visage les déforment avec elle."""
     male_bases = [str(b.get_editor_property("id")) for b in bases if b.get_editor_property("male")]
     if not male_bases:
         return []
-    heads = set()
-    for part in parts:
-        mesh = part.get_editor_property("mesh")
-        if str(part.get_editor_property("slot")) == "Head" and mesh:
-            heads.add(mesh.get_name())
-    beards = []
-    for number, beard in enumerate(BEARDS, 1):
-        folder = GROOM_REL + "/Beard/" + beard
-        slow.enter_progress_frame(1, "Barbe %d" % number)
-        default = import_mesh(folder + "/Mesh/SKM_" + beard)
-        if not default:
-            continue
-        variants = []
-        for head in sorted(heads):
-            # SKM_Male_Head_002 -> SKM_Beard_001_For_Male_Head_002
-            mesh_rel = "%s/Mesh/SKM_%s_For_%s" % (folder, beard, head[4:] if head.startswith("SKM_") else head)
-            if not os.path.isfile(src(mesh_rel, ".glb")):
+    heads = head_names(parts)
+    result = []
+    for slot, label, subdir in (("Beard", "Barbe", "Beard"), ("Mustache", "Moustache", "Mustache")):
+        number = 0
+        for folder, mesh_rel in find_folder_grooms(subdir):
+            slow.enter_progress_frame(0, "%s : %s" % (label, mesh_rel.rsplit("/", 1)[-1]))
+            default = import_mesh(mesh_rel)
+            if not default:
                 continue
-            mesh = import_mesh(mesh_rel)
-            if mesh:
-                variant = unreal.TrainerPartVariant()
-                variant.set_editor_property("head_mesh", head)
-                variant.set_editor_property("mesh", mesh)
-                variants.append(variant)
-        colors = groom_colors(folder + "/Materials/MI_Beard_Scalp_" + beard[len("Beard_"):])
-        card = hair_instance(dest(folder + "/Materials/MI_" + beard + "_Card"), BEARD_CARD, colors)
-        scalp = hair_instance(dest(folder + "/Materials/MI_" + beard + "_Scalp"),
-                              "%s/Textures/%s_Scalp_DIRO" % (folder, beard), colors)
-        materials = [scalp if "scalp" in name.lower() else card for name in material_slot_names(default)] or [card, scalp]
-        part = unreal.TrainerPartDef()
-        part.set_editor_property("id", "InZOI_" + beard)
-        part.set_editor_property("label", "Barbe %d" % number)
-        part.set_editor_property("slot", "Beard")
-        part.set_editor_property("bases", male_bases)
-        part.set_editor_property("mesh", default)
-        part.set_editor_property("variants", variants)
-        part.set_editor_property("materials", materials)
-        beards.append(part)
-        log("Barbe %d : %d variantes par tête, matériaux %s" % (number, len(variants), ", ".join(m.get_name() for m in materials)))
-    return beards
+            number += 1
+            variants = head_variants(mesh_rel, heads)
+            materials = groom_materials(default, folder, BEARD_CARD, (BEARD_ROOT, BEARD_TIP))
+            part = unreal.TrainerPartDef()
+            part.set_editor_property("id", "InZOI_" + mesh_rel.rsplit("/", 1)[-1][4:])
+            part.set_editor_property("label", "%s %d" % (label, number))
+            part.set_editor_property("slot", slot)
+            part.set_editor_property("bases", male_bases)
+            part.set_editor_property("mesh", default)
+            part.set_editor_property("variants", variants)
+            part.set_editor_property("materials", materials)
+            result.append(part)
+        log("%s : %d modèles" % (label, number))
+    return result
 
 
 def groom_roots():
@@ -1354,7 +1407,7 @@ def build_hairs(slow, bases):
     return parts, defaults
 
 
-def build_face_grooms(slow, bases):
+def build_face_grooms(slow, bases, heads):
     """Sourcils et cils d'après les tables AppearanceEyebrow / AppearanceEyelash ; ils suivent la tête (FollowSlot)"""
     parts, defaults = [], {}
     for slot, label, table, fallback_diro, fallback_tip in FACE_GROOMS:
@@ -1384,13 +1437,7 @@ def build_face_grooms(slow, bases):
                 if not mesh:
                     continue
                 folder = mesh_rel.rsplit("/Mesh/", 1)[0]
-                materials = []
-                for slot_name in material_slot_names(mesh):
-                    json_rel = folder + "/Materials/" + slot_name
-                    colors, diro = groom_json(json_rel)
-                    tip = colors.get("TipColor", fallback_tip)
-                    root = colors.get("RootColor", tuple(v * 0.7 for v in tip))
-                    materials.append(hair_instance(dest(json_rel + "_Jeu"), diro or fallback_diro, (root, tip)))
+                materials = groom_materials(mesh, folder, fallback_diro, (tuple(v * 0.7 for v in fallback_tip), fallback_tip))
                 count += 1
                 part = unreal.TrainerPartDef()
                 part.set_editor_property("id", row["Id"])
@@ -1398,6 +1445,7 @@ def build_face_grooms(slow, bases):
                 part.set_editor_property("slot", slot)
                 part.set_editor_property("bases", [base_id])
                 part.set_editor_property("mesh", mesh)
+                part.set_editor_property("variants", head_variants(mesh_rel, heads))
                 part.set_editor_property("materials", materials)
                 thumbnail = import_texture(game_rel(row.get("Thumbnail")), "ui")
                 if thumbnail:
@@ -1458,7 +1506,7 @@ def count_work():
             meshes = {game_rel(r.get("Mesh")) for r in rows if r.get("GenderType") == gender and r.get("BodyAgeType") == age}
             total += min(len(meshes), MAX_MESHES_PER_SLOT) if MAX_MESHES_PER_SLOT else len(meshes)
     hairs = len(find_hairs("Male")) + len(find_hairs("Female"))
-    return total + 10 + len(BEARDS) + hairs
+    return total + 10 + hairs
 
 
 def main():
@@ -1503,7 +1551,7 @@ def main():
         for base_id, slots in hair_defaults.items():
             defaults.setdefault(base_id, {}).update(slots)
         parts += build_beards(slow, bases, parts)
-        face_parts, face_defaults = build_face_grooms(slow, bases)
+        face_parts, face_defaults = build_face_grooms(slow, bases, head_names(parts))
         parts += face_parts
         for base_id, slots in face_defaults.items():
             defaults.setdefault(base_id, {}).update(slots)
