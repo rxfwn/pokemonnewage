@@ -1202,7 +1202,7 @@ def build_parts(slow):
 # ---------------------------------------------------------------- Barbes (dossier Groom)
 
 HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
-HAIR_VERSION = 4  # à augmenter quand le graphe change : le matériau est refait au même endroit
+HAIR_VERSION = 5  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
 GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"), ("Mustache", "Moustache", "Hair", "Head"),
@@ -1265,24 +1265,26 @@ def build_hair_master():
     for (name, node), input_name in zip(params, ("Root", "Tip", "Tint")):
         MEL.connect_material_expressions(node, "", custom, input_name)
     MEL.connect_material_property(custom, "", unreal.MaterialProperty.MP_BASE_COLOR)
-    # Bords des mèches en tramage temporel (fonction DitherTemporalAA du moteur) ; sinon coupure nette de l'alpha
-    dither = None
-    function = load("/Engine/Functions/Engine_MaterialFunctions02/Utility/DitherTemporalAA")
-    if function:
-        try:
-            dither = MEL.create_material_expression(material, unreal.MaterialExpressionMaterialFunctionCall, -500, 450)
-            set_prop(dither, "material_function", function)
-            if not (MEL.connect_material_expressions(diro, "A", dither, "Alpha Threshold")
-                    or MEL.connect_material_expressions(diro, "A", dither, "AlphaThreshold")):
-                MEL.delete_material_expression(material, dither)
-                dither = None
-        except Exception as error:  # noqa: BLE001 - le tramage est un bonus
-            log("Tramage des cheveux ignoré : %s" % error)
-            dither = None
-    if dither:
-        MEL.connect_material_property(dither, "", unreal.MaterialProperty.MP_OPACITY_MASK)
-    else:
-        MEL.connect_material_property(diro, "A", unreal.MaterialProperty.MP_OPACITY_MASK)
+    # Opacité tramée comme dans inZOI (paramètre « Dither ») : chaque pixel est gardé avec la probabilité de l'alpha,
+    # le bruit change à chaque image et l'anti-crénelage temporel le lisse. Sourcils et cils doux au lieu de plaques.
+    density = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -900, 600)
+    set_prop(density, "parameter_name", "Density")
+    set_prop(density, "default_value", 1.0)
+    dither = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -500, 450)
+    set_prop(dither, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+    set_prop(dither, "code", (
+        "float2 p = Parameters.SvPosition.xy + float(View.StateFrameIndexMod8) * float2(32.665, 11.815);\n"
+        "float n = frac(52.9829189 * frac(dot(p, float2(0.06711056, 0.00583715))));\n"
+        "return saturate(Alpha * Density) - n + 0.3333;"))
+    entries = []
+    for input_name in ("Alpha", "Density"):
+        entry = unreal.CustomInput()
+        entry.set_editor_property("input_name", input_name)
+        entries.append(entry)
+    set_prop(dither, "inputs", entries)
+    MEL.connect_material_expressions(diro, "A", dither, "Alpha")
+    MEL.connect_material_expressions(density, "", dither, "Density")
+    MEL.connect_material_property(dither, "", unreal.MaterialProperty.MP_OPACITY_MASK)
     roughness = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -500, 200)
     set_prop(roughness, "parameter_name", "Roughness")
     set_prop(roughness, "default_value", 0.6)
@@ -1464,6 +1466,9 @@ def build_beards(slow, bases, parts):
             part.set_editor_property("mesh", default)
             part.set_editor_property("variants", variants)
             part.set_editor_property("materials", materials)
+            thumbnail = groom_thumbnail(mesh_rel)
+            if thumbnail:
+                part.set_editor_property("thumbnail", thumbnail)
             result.append(part)
         log("%s : %d modèles" % (label, number))
     return result
@@ -1499,6 +1504,30 @@ def find_hairs(gender):
                 kept.append((category, rel))
         items = kept
     return items
+
+
+_GROOM_THUMBS = None
+
+
+def groom_thumbnail(mesh_rel):
+    """Aperçu d'une coupe, barbe ou moustache d'après les tables d'inZOI (AppearanceHairMesh, AppearanceBeard,
+    AppearanceMustache) : la ligne dont le Mesh est ce modèle"""
+    global _GROOM_THUMBS
+    if _GROOM_THUMBS is None:
+        _GROOM_THUMBS = {}
+        for table in ("AppearanceHairMesh.json", "AppearanceBeard.json", "AppearanceMustache.json"):
+            try:
+                with open(os.path.join(JSON_TABLES, table), encoding="utf-8") as handle:
+                    rows = json.load(handle)
+            except (OSError, ValueError):
+                log("Aperçus : table %s introuvable" % table)
+                continue
+            for row in rows if isinstance(rows, list) else []:
+                mesh, thumb = game_rel(row.get("Mesh")), game_rel(row.get("Thumbnail"))
+                if mesh and thumb:
+                    _GROOM_THUMBS.setdefault(mesh.rsplit("/", 1)[-1], thumb)
+    rel = _GROOM_THUMBS.get(mesh_rel.rsplit("/", 1)[-1])
+    return import_texture(rel, "ui") if rel else None
 
 
 def build_hairs(slow, bases):
@@ -1538,6 +1567,9 @@ def build_hairs(slow, bases):
             part.set_editor_property("bases", fits)
             part.set_editor_property("mesh", mesh)
             part.set_editor_property("materials", materials)
+            thumbnail = groom_thumbnail(mesh_rel)
+            if thumbnail:
+                part.set_editor_property("thumbnail", thumbnail)
             parts.append(part)
             for base_id in fits:
                 defaults.setdefault(base_id, {}).setdefault("Hair", "InZOI_" + name)
