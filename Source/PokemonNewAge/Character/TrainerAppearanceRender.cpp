@@ -8,6 +8,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "Engine/Texture.h"
+#include "AnimationRuntime.h"
 
 namespace
 {
@@ -212,6 +213,58 @@ namespace
 	}
 
 	/** Couleurs choisies dans le nuancier pour la pièce de cet emplacement (Tint = couleur principale, Color1-3 = zones du masque) */
+	/**
+	 *  « Mèches devant » des cheveux : le matériau a besoin du centre de la tête et de l'axe avant dans le repère du
+	 *  mesh. Avant, il les devinait (axe +Y, origine du mesh) et presque toute la coupe prenait la couleur de devant.
+	 *  On les lit dans la pose de référence : os « head » et bout du nez du visage (même repère pour toutes les pièces).
+	 */
+	void ApplyHeadFrame(USkeletalMeshComponent* Component, UMaterialInstanceDynamic* MID)
+	{
+		static const FName HeadBone(TEXT("head"));
+		static const FName NoseBones[] = { FName(TEXT("FACIAL_C_NoseTip")), FName(TEXT("FACIAL_C_Nose")), FName(TEXT("FACIAL_C_Forehead")) };
+		TArray<USkeletalMeshComponent*> Candidates = { Component };
+		if (AActor* Owner = Component->GetOwner())
+		{
+			Owner->GetComponents<USkeletalMeshComponent>(Candidates);
+		}
+		for (USkeletalMeshComponent* Candidate : Candidates)
+		{
+			const USkeletalMesh* Asset = Candidate ? Cast<USkeletalMesh>(Candidate->GetSkeletalMeshAsset()) : nullptr;
+			if (!Asset)
+			{
+				continue;
+			}
+			const FReferenceSkeleton& Ref = Asset->GetRefSkeleton();
+			const int32 Head = Ref.FindBoneIndex(HeadBone);
+			int32 Nose = INDEX_NONE;
+			for (const FName& Name : NoseBones)
+			{
+				Nose = Ref.FindBoneIndex(Name);
+				if (Nose != INDEX_NONE)
+				{
+					break;
+				}
+			}
+			if (Head == INDEX_NONE || Nose == INDEX_NONE)
+			{
+				continue;
+			}
+			const FVector HeadPos = FAnimationRuntime::GetComponentSpaceTransformRefPose(Ref, Head).GetLocation();
+			const FVector NosePos = FAnimationRuntime::GetComponentSpaceTransformRefPose(Ref, Nose).GetLocation();
+			FVector Forward = NosePos - HeadPos;
+			Forward.Z = 0.0; // horizontal : le nez est plus haut que l'os de la tête
+			if (!Forward.Normalize())
+			{
+				continue;
+			}
+			// Centre de la tête : à la hauteur du nez, au-dessus de l'os « head » (qui est à la base du crâne)
+			const FVector Center(HeadPos.X, HeadPos.Y, NosePos.Z);
+			MID->SetVectorParameterValue(TEXT("FrontAxis"), FLinearColor(Forward.X, Forward.Y, Forward.Z, 0.f));
+			MID->SetVectorParameterValue(TEXT("HeadCenter"), FLinearColor(Center.X, Center.Y, Center.Z, 0.f));
+			return;
+		}
+	}
+
 	void ApplyPartColors(USkeletalMeshComponent* Component, const FTrainerAppearance& Appearance)
 	{
 		if (!Component->ComponentHasTag(PartTag) || Component->ComponentTags.Num() < 2)
@@ -258,6 +311,10 @@ namespace
 				if (MID)
 				{
 					MID->SetVectorParameterValue(Parameter, Choice.Color);
+					if (Choice.Zone == 3)
+					{
+						ApplyHeadFrame(Component, MID);
+					}
 				}
 			}
 		}

@@ -764,6 +764,8 @@ FRECKLE_COLOR = "8A5A3C"  # pas de couleur dans la table d'inZOI : brun clair
 # et micro-relief répété partout (sinon la peau a l'air en plastique)
 SKIN_TEXTURES = "Characters/Materials/DefaultTextures/Skin"
 HEAD_DETAIL_NORMAL = {"Female": SKIN_TEXTURES + "/Female_Head_Detail_Full_N", "Male": SKIN_TEXTURES + "/Male_Head_Detail_Full_N"}
+# Force du relief de la tête : à 1 les rides et plis (front, joues, cou) étaient bien trop marqués
+HEAD_DETAIL_AMOUNT = 0.35
 SKIN_MICRO_NORMAL = [SKIN_TEXTURES + "/T_SkinMicro_N", "MetaHumans/Common/Materials/Textures/T_SkinMicroNormal"]
 
 
@@ -928,7 +930,7 @@ def build_skin_relief(material):
         samples.append(sample)
     detail_amount = scalar("DetailNormalAmount", 0.0, -1100, 2100)
     micro_amount = scalar("MicroNormalAmount", 0.35, -1100, 2200)
-    rough_base = scalar("SkinRoughness", 0.5, -1100, 2300)
+    rough_base = scalar("SkinRoughness", 0.6, -1100, 2300)
     normal = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -600, 1800)
     set_prop(normal, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
     set_prop(normal, "code", "float2 xy = D.xy * DA + M.xy * MA;\nreturn normalize(float3(xy, 1.0));")
@@ -952,7 +954,7 @@ def build_skin_relief(material):
     MEL.connect_material_property(rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
 
 
-EYE_VERSION = 5  # à augmenter quand le dessin de l'œil change : le matériau est alors refait
+EYE_VERSION = 6  # à augmenter quand le dessin de l'œil change : le matériau est alors refait
 # Masque d'iris d'inZOI (celui de MetaHuman) : R = relief, V = fibres de l'iris, B = mélange des 2 couleurs, A = pupille
 IRIS_MASKS = ["MetaHumans/Common/Face/Textures/IrisTextures/iris_001/T_Iris_A_M",
               "Characters/Materials/DefaultTextures/Eyes/IrisTextures/iris_001/T_Iris_A_M"]
@@ -1048,7 +1050,7 @@ def build_eye_master():
         "irisColor *= 1.0 - Limbus * smoothstep(0.33, 0.45, dt);\n"
         "float pupil = max(1.0 - P, 1.0 - smoothstep(0.11, 0.13, dp));\n"
         "float rim = smoothstep(0.18, 0.42, d);\n"
-        "float3 sclera = lerp(float3(0.76, 0.73, 0.70), float3(0.68, 0.56, 0.53), rim * 0.6) * (1.0 - 0.3 * rim);\n"
+        "float3 sclera = lerp(float3(0.66, 0.63, 0.60), float3(0.60, 0.48, 0.45), rim * 0.7) * (1.0 - 0.45 * rim);\n"
         "sclera *= 1.0 - 0.25 * Limbus * (1.0 - smoothstep(0.45, 0.6, dt));\n"
         "float3 c = lerp(sclera, irisColor, irisMask);\n"
         "return lerp(c, float3(0.004, 0.004, 0.004), pupil * irisMask);") % IRIS_EDGE_REFERENCE,
@@ -1064,19 +1066,16 @@ def build_eye_master():
     MEL.connect_material_expressions(smooth, "", combine, "Smooth")
     MEL.connect_material_expressions(limbus, "", combine, "Limbus")
     MEL.connect_material_property(combine, "", unreal.MaterialProperty.MP_BASE_COLOR)
-    # Œil mouillé : vernis (Clear Coat) très lisse par-dessus, iris un peu mat dessous
+    # Œil mouillé : très lisse (reflet net de la lumière), l'iris un peu moins. Le vernis (Clear Coat) d'avant
+    # restait mat chez L'amie : on passe en éclairage normal.
     rough = custom_node("float dt = distance(IrisUV, float2(0.5, 0.5)) * %.3f / max(Edge, 0.05);\n"
-                        "return lerp(0.35, 0.45, 1.0 - smoothstep(0.43, 0.47, dt));" % IRIS_EDGE_REFERENCE,
+                        "return lerp(0.06, 0.12, 1.0 - smoothstep(0.43, 0.47, dt));" % IRIS_EDGE_REFERENCE,
                         COT.CMOT_FLOAT1, ("IrisUV", "Edge"), -600, 250)
     MEL.connect_material_expressions(iris_uv, "", rough, "IrisUV")
     MEL.connect_material_expressions(edge, "", rough, "Edge")
     MEL.connect_material_property(rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
-    MEL.connect_material_property(constant(material, 0.5, -600, 350), "", unreal.MaterialProperty.MP_SPECULAR)
-    clear_coat = getattr(getattr(unreal, "MaterialShadingModel", None), "MSM_CLEAR_COAT", None)
-    coat_pins = [getattr(unreal.MaterialProperty, name, None) for name in ("MP_CUSTOM_DATA0", "MP_CUSTOM_DATA1")]
-    if clear_coat is not None and None not in coat_pins and set_prop(material, "shading_model", clear_coat):
-        MEL.connect_material_property(constant(material, 1.0, -600, 450), "", coat_pins[0])
-        MEL.connect_material_property(constant(material, 0.03, -600, 550), "", coat_pins[1])
+    MEL.connect_material_property(constant(material, 0.6, -600, 350), "", unreal.MaterialProperty.MP_SPECULAR)
+    set_prop(material, "shading_model", unreal.MaterialShadingModel.MSM_DEFAULT_LIT)
     EAL.set_metadata_tag(material, "InZOIVersion", str(EYE_VERSION))
     return finish_material(material, EYE_MASTER)
 
@@ -1148,14 +1147,14 @@ def skin_instance(asset_path, color_rel):
 
 def set_head_relief(instance, gender):
     """Normale de détail d'inZOI sur la peau d'une tête (le corps garde DetailNormalAmount à 0)"""
-    if MEL.get_material_instance_scalar_parameter_value(instance, "DetailNormalAmount") > 0.5:
+    if abs(MEL.get_material_instance_scalar_parameter_value(instance, "DetailNormalAmount") - HEAD_DETAIL_AMOUNT) < 0.01:
         return
     texture = import_texture(HEAD_DETAIL_NORMAL[gender], "normal")
     if not texture:
         log("Peau : pas de normale de détail pour %s" % gender)
         return
     MEL.set_material_instance_texture_parameter_value(instance, "DetailNormal", texture)
-    MEL.set_material_instance_scalar_parameter_value(instance, "DetailNormalAmount", 1.0)
+    MEL.set_material_instance_scalar_parameter_value(instance, "DetailNormalAmount", HEAD_DETAIL_AMOUNT)
     MEL.update_material_instance(instance)
     EAL.save_loaded_asset(instance)
 
@@ -1518,7 +1517,7 @@ def build_parts(slow):
 # ---------------------------------------------------------------- Barbes (dossier Groom)
 
 HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
-HAIR_VERSION = 9  # à augmenter quand le graphe change : le matériau est refait au même endroit
+HAIR_VERSION = 10  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
 GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"), ("Mustache", "Moustache", "Hair", "Head"),
@@ -1564,6 +1563,9 @@ def build_hair_master():
     diro = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -900, -200)
     set_prop(diro, "parameter_name", "DIROMap")
     set_prop(diro, "texture", unreal.load_asset("/Engine/EngineResources/WhiteSquareTexture"))
+    # Données (profondeur, id, dégradé, opacité), pas une couleur : lues telles quelles. En sRGB, l'opacité et le dégradé
+    # étaient mis à la puissance 2,2 : poils clairsemés et dégradé repoussé au bout des mèches.
+    set_prop(diro, "sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_LINEAR_COLOR)
     params = []
     for index, (name, color) in enumerate((("RootColor", BEARD_ROOT), ("TipColor", BEARD_TIP), ("Tint", (1.0, 1.0, 1.0)))):
         node = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -900, 50 + index * 150)
@@ -1583,9 +1585,12 @@ def build_hair_master():
     set_prop(front, "default_value", unreal.LinearColor(0, 1, 0, 0))
     front_start = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -1200, 650)
     set_prop(front_start, "parameter_name", "FrontStart")  # cm devant le centre de la tête où commencent les mèches devant
-    set_prop(front_start, "default_value", 2.0)
+    set_prop(front_start, "default_value", 5.0)
     # Position dans le repère du mesh (cm) ; si ce nœud n'existe pas dans cette version d'Unreal : pas de mèches devant
-    local_class = getattr(unreal, "MaterialExpressionLocalPosition", None)
+    local_class = getattr(unreal, "MaterialExpressionPreSkinnedLocalPosition", None) or getattr(unreal, "MaterialExpressionLocalPosition", None)
+    head_center = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -1200, 800)
+    set_prop(head_center, "parameter_name", "HeadCenter")  # centre de la tête dans le repère du mesh (posé par le jeu)
+    set_prop(head_center, "default_value", unreal.LinearColor(0, 0, 0, 0))
     if local_class:
         position = MEL.create_material_expression(material, local_class, -1500, 800)
     else:
@@ -1600,7 +1605,7 @@ def build_hair_master():
         "float3 c = picked ? Tint.rgb * lerp(0.7, 1.0, g) : natural;\n"
         "if (any(C1.rgb < 0.999))\n"
         "{\n"
-        "    float t = smoothstep(C1a - 0.15, C1a + 0.15, g);\n"
+        "    float t = smoothstep(C1a - 0.2, C1a + 0.2, g);\n"
         "    c = lerp(c, C1.rgb * lerp(0.8, 1.0, g), t);\n"
         "}\n"
         "float h = frac(sin(ID * 91.345 + 0.123) * 43758.5453);\n"
@@ -1610,7 +1615,7 @@ def build_hair_master():
         "}\n"
         "if (any(C3.rgb < 0.999))\n"
         "{\n"
-        "    float ahead = smoothstep(Start, Start + 4.0, dot(Pos, normalize(Front.xyz + float3(0.0, 0.0, 0.0001))));\n"
+        "    float ahead = smoothstep(Start, Start + 3.0, dot(Pos - Center.xyz, normalize(Front.xyz + float3(0.0, 0.0, 0.0001))));\n"
         "    float h2 = frac(sin(ID * 47.853 + 0.71) * 24634.6345);\n"
         "    if (h2 < C3a * ahead)\n"
         "    {\n"
@@ -1619,7 +1624,7 @@ def build_hair_master():
         "}\n"
         "return c * lerp(0.65, 1.0, saturate(Depth));"))
     inputs = []
-    for input_name in ("Grad", "Root", "Tip", "Tint", "Depth", "ID", "C1", "C2", "C3", "C1a", "C2a", "C3a", "Pos", "Front", "Start"):
+    for input_name in ("Grad", "Root", "Tip", "Tint", "Depth", "ID", "C1", "C2", "C3", "C1a", "C2a", "C3a", "Pos", "Front", "Start", "Center"):
         entry = unreal.CustomInput()
         entry.set_editor_property("input_name", input_name)
         inputs.append(entry)
@@ -1636,6 +1641,7 @@ def build_hair_master():
     MEL.connect_material_expressions(position, "", custom, "Pos")
     MEL.connect_material_expressions(front, "", custom, "Front")
     MEL.connect_material_expressions(front_start, "", custom, "Start")
+    MEL.connect_material_expressions(head_center, "", custom, "Center")
     MEL.connect_material_property(custom, "", unreal.MaterialProperty.MP_BASE_COLOR)
     # Opacité tramée comme dans inZOI (paramètre « Dither ») : chaque pixel est gardé avec la probabilité de l'alpha,
     # le bruit change à chaque image et l'anti-crénelage temporel le lisse. Sourcils et cils doux au lieu de plaques.
@@ -1647,7 +1653,7 @@ def build_hair_master():
     set_prop(dither, "code", (
         "float2 p = Parameters.SvPosition.xy + float(View.StateFrameIndexMod8) * float2(32.665, 11.815);\n"
         "float n = frac(52.9829189 * frac(dot(p, float2(0.06711056, 0.00583715))));\n"
-        "float threshold = 0.38 + (n - 0.5) * Spread;\n"
+        "float threshold = 0.5 + (n - 0.5) * Spread;\n"
         "return saturate(Alpha * Density) - threshold + 0.3333;"))
     entries = []
     for input_name in ("Alpha", "Density", "Spread"):
@@ -1732,12 +1738,12 @@ def groom_colors(json_rel):
 
 def diro_texture(diro_rel, fallback):
     """Texture DIRO. Si celle du JSON manque dans l'export, la carte par défaut : sans opacité, les cartes de poils
-    deviennent des plaques pleines (sourcils et cils tout noirs). Gardée en sRGB : le matériau l'échantillonne en Color."""
+    deviennent des plaques pleines (sourcils et cils tout noirs). En linéaire (pas sRGB) : ce sont des données."""
     for rel in (diro_rel, fallback, DEFAULT_CARD):
         texture = import_texture(rel, "color") if rel else None
         if texture:
-            if not texture.get_editor_property("srgb"):
-                set_prop(texture, "srgb", True)
+            if texture.get_editor_property("srgb"):
+                set_prop(texture, "srgb", False)
                 EAL.save_loaded_asset(texture)
             return texture
     return None
@@ -2382,6 +2388,10 @@ def build_animations(bases):
                     imported += 1
                 else:
                     failed.append(name if filename else name + " (fichier absent)")
+            if animation and not animation.get_editor_property("force_root_lock"):
+                # Sur place : certaines attentes d'inZOI déplacent la racine (le personnage partait sur le côté)
+                set_prop(animation, "force_root_lock", True)
+                EAL.save_loaded_asset(animation)
             if animation and label == IDLE_LABEL:
                 idle = animation
             elif animation:
@@ -2497,6 +2507,7 @@ def full_presets(bases, parts):
     by_id = {str(p.get_editor_property("id")): p for p in parts}
     groom_ids = {"Eyebrow": ("Eyebrows", ""), "Eyelash": ("Eyelashes", ""), "Beard": ("Beard", "InZOI_"), "Mustache": ("Mustache", "InZOI_")}
     presets, per_base = [], OrderedDict()
+    makeup_slots = {category.lower(): slot for category, _letter, slot, _label, _blend in MAKEUP_PARTS}
     for (gender, age), (base_id, base_label, _male, _body) in BASES.items():
         if not any(str(b.get_editor_property("id")) == base_id for b in bases):
             continue
@@ -2551,6 +2562,29 @@ def full_presets(bases, parts):
                     outfit.append(prefix + groom_id)
                     if slot != "Eyelashes":  # les cils gardent leur noir naturel
                         add_color(slot, (entry.get("VectorParameters") or {}).get("tipColor"))
+            # Maquillage du modèle (lèvres, fard, blush...) : pièce + couleurs de chaque canal (alpha = intensité)
+            try:
+                makeups = json.loads(row.get("Makeup") or "[]")
+            except ValueError:
+                makeups = []
+            used = set()
+            for entry in makeups if isinstance(makeups, list) else []:
+                slot = makeup_slots.get((entry.get("MakeupType") or "").lower())
+                part_id = "InZOI_Makeup_%s" % entry.get("MakeupId")
+                if not slot or part_id not in by_id:
+                    continue
+                outfit.append(part_id)
+                used.add(slot)
+                zones = {"R": 1, "G": 2, "B": 3}
+                for mask in entry.get("MaskData") or []:
+                    zone = zones.get(mask.get("MakeupChannel"))
+                    hexes = [v for v in (mask.get("ColorValues") or {}).values() if v]
+                    amounts = [v for k, v in (mask.get("ScalarValues") or {}).items() if k.lower().endswith("intensity")]
+                    if zone and hexes:
+                        add_color(slot, hexes[0], zone, max(0.0, min(1.0, float(amounts[0]) if amounts else 1.0)))
+            for _category, _letter, slot, _label, _blend in MAKEUP_PARTS:
+                if slot not in used:
+                    outfit.append("-" + slot)  # sinon le maquillage du modèle précédent restait
             look.set_editor_property("outfit", outfit)
             look.set_editor_property("part_colors", colors)
             tone = skin_tones.get(row.get("FaceSkinColorId")) or row.get("SkinTone")

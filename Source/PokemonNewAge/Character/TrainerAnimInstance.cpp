@@ -80,6 +80,12 @@ bool FTrainerAnimInstanceProxy::Evaluate(FPoseContext& Output)
 	{
 		FAnimationPoseData PoseData(Output);
 		Idle->GetAnimationPose(PoseData, FAnimExtractContext(double(IdleTime), false, FDeltaTimeRecord(), true));
+		// Sur place : la racine reste à sa pose de référence (certaines attentes d'inZOI la déplacent)
+		const FCompactPoseBoneIndex RootIndex(0);
+		if (Output.Pose.IsValidIndex(RootIndex))
+		{
+			Output.Pose[RootIndex] = Output.Pose.GetRefPose(RootIndex);
+		}
 	}
 	else
 	{

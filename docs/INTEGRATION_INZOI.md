@@ -261,3 +261,16 @@ et Poilu s'affichent en haut de l'onglet Corps (`BodyPresets`).
   Aléatoire, Annuler, Refaire ; cases de touches **U** (masquer l'interface) et **P** (changer de pose) ; onglets
   Cheveux, Barbe, Moustache… en une colonne collée, sans colonne de catégories.
 - Le « 0 textures » du journal veut dire « aucune nouvelle texture importée cette fois » (elles l'étaient déjà).
+
+## Retouches du 2026-11-08 soir (2)
+
+- **Poils** (`M_InZOI_Hair` version 10) : la texture DIRO est lue en linéaire (avant en sRGB : opacité et dégradé à la
+  puissance 2,2, d'où des poils clairsemés et un dégradé repoussé au bout des mèches, ex. modèle aux cheveux roses).
+- **Mèches devant** : le jeu donne au matériau le centre de la tête (`HeadCenter`) et l'axe avant (`FrontAxis`), lus
+  sur les os `head` et `FACIAL_C_NoseTip` ; avant, presque toute la coupe prenait la couleur de devant.
+- **Modèles** : leur maquillage (colonne `Makeup` d'AppearanceFacePreset) est posé, avec couleurs et intensités.
+- **Attente sur place** : racine verrouillée (`force_root_lock` + racine en pose de référence dans TrainerAnimInstance).
+- **Yeux** (`M_InZOI_Eye` version 6) : éclairage normal très lisse (le vernis restait mat), blanc de l'œil plus doux.
+- **Peau** : relief de la tête à 0,35 (`HEAD_DETAIL_AMOUNT`, rides trop marquées), rugosité 0,6 (moins brillante).
+- Corpulences : `DA_BodyShapeCustomize.json` confirme la méthode (déplacements et échelles d'os ajoutés par groupe,
+  côté + ou −) ; `Morphologie_Corps_Os.csv` en est l'extraction.
