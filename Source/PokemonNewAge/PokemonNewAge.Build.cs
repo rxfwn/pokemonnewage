@@ -1,5 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+using System.IO;
 using UnrealBuildTool;
 
 public class PokemonNewAge : ModuleRules
@@ -28,6 +29,15 @@ public class PokemonNewAge : ModuleRules
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "Landscape" });
+
+		// Import des animations inZOI (.ueanim) par Tools/InZOI/import_inzoi.py, sans fenêtre (InZOIImportLibrary) :
+		// seulement dans l'éditeur, et seulement si le plugin UEFormat est dans Plugins/UEFormat (il n'est pas dans Git).
+		bool bUEFormat = Target.bBuildEditor && Directory.Exists(Path.Combine(ModuleDirectory, "..", "..", "Plugins", "UEFormat"));
+		if (bUEFormat)
+		{
+			PrivateDependencyModuleNames.AddRange(new string[] { "UEFormat", "AssetRegistry" });
+		}
+		PublicDefinitions.Add("WITH_UEFORMAT=" + (bUEFormat ? "1" : "0"));
 
 		PublicIncludePaths.AddRange(new string[] {
 			"PokemonNewAge",

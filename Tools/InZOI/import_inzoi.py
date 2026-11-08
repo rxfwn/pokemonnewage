@@ -12,6 +12,7 @@ les ressources du jeu étudié ne doivent jamais partir sur GitHub. Le jeu march
 """
 import csv
 import json
+import math
 import os
 import re
 from collections import OrderedDict
@@ -683,34 +684,108 @@ def constant(material, value, x, y):
     return node
 
 
+SKIN_VERSION = 2  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
+# Maquillage d'inZOI (table AppearanceMakeup) : catégorie, lettre du dossier de masques, emplacement du jeu (= nom du
+# paramètre texture de M_InZOI_Skin, couleurs dans <emplacement>_R/_G/_B), libellé, force du mélange (les reflets d'inZOI
+# mêlent un éclat blanc et une ombre de contour : à moitié pour rester naturels)
+MAKEUP_PARTS = [
+    ("Highlight", "A", "MakeupHighlight", "Reflets", 0.5),
+    ("BlusherNoseFreckle", "B", "MakeupBlush", "Blush et taches", 1.0),
+    ("Eyeshadow", "C", "MakeupEyeshadow", "Fard à paupières", 1.0),
+    ("Eyeline", "D", "MakeupEyeliner", "Eye-liner", 1.0),
+    ("Lip", "E", "MakeupLips", "Lèvres", 1.0),
+    ("Eyebrow", "F", "MakeupBrows", "Sourcils dessinés", 1.0),
+]
+MAKEUP_MASKS = "Characters/Materials/DefaultTextures/Skin/MakeupMasks"
+
+
+def default_mask_texture():
+    """Une texture en réglage « masque » pour les échantillonneurs vides (sinon le matériau ne compile pas)"""
+    candidates = ["Characters/Materials/DefaultTextures/T_Default_Black_M"]
+    candidates += ["%s/Makeup_Part_%s/Makeup_Part_%s_001_M" % (MAKEUP_MASKS, letter, letter) for _c, letter, _s, _l, _b in MAKEUP_PARTS]
+    candidates += IRIS_MASKS
+    for rel in candidates:
+        texture = import_texture(rel, "mask")
+        if texture:
+            return texture
+    return None
+
+
 def build_skin_master():
-    """M_InZOI_Skin : la couleur _Main_D d'inZOI (déjà une vraie couleur de peau) x SkinTint, rien d'autre.
+    """M_InZOI_Skin : la couleur _Main_D d'inZOI (déjà une vraie couleur de peau) x SkinTint, puis le maquillage :
+    pour chaque catégorie (MAKEUP_PARTS), un masque dont les canaux R, V, B prennent chacun une couleur (alpha = intensité).
+    Les couleurs sont à alpha 0 par défaut : le corps (même matériau, autres UV) ne reçoit jamais de maquillage.
     Les _Main_M d'inZOI sont des normales de détail encodées à leur façon : on ne s'en sert pas pour l'instant."""
     existing = load(SKIN_MASTER)
-    if existing:
+    if existing and EAL.get_metadata_tag(existing, "InZOIVersion") == str(SKIN_VERSION):
         return existing
-    material = new_material(SKIN_MASTER)
-    base = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -700, -200)
+    if existing:
+        MEL.delete_all_material_expressions(existing)
+        material = existing
+    else:
+        material = new_material(SKIN_MASTER)
+    base = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -1400, -400)
     set_prop(base, "parameter_name", "BaseColorMap")
     set_prop(base, "texture", unreal.load_asset("/Engine/EngineResources/WhiteSquareTexture"))
-    tint = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -700, 50)
+    tint = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -1400, -150)
     set_prop(tint, "parameter_name", "SkinTint")
     set_prop(tint, "default_value", unreal.LinearColor(1, 1, 1, 1))
-    mul = MEL.create_material_expression(material, unreal.MaterialExpressionMultiply, -400, -100)
-    MEL.connect_material_expressions(base, "RGB", mul, "A")
-    MEL.connect_material_expressions(tint, "", mul, "B")
-    MEL.connect_material_property(mul, "", unreal.MaterialProperty.MP_BASE_COLOR)
-    MEL.connect_material_property(constant(material, 0.55, -400, 150), "", unreal.MaterialProperty.MP_ROUGHNESS)
-    MEL.connect_material_property(constant(material, 0.35, -400, 250), "", unreal.MaterialProperty.MP_SPECULAR)
+
+    custom = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -400, -100)
+    set_prop(custom, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+    links = [(base, "RGB", "D"), (tint, "", "Tint")]
+    code = ["float3 c = D.rgb * Tint.rgb;"]
+    mask_texture = default_mask_texture()
+    if mask_texture:
+        for index, (_category, _letter, slot, _label, blend) in enumerate(MAKEUP_PARTS):
+            y = index * 450
+            sample = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -1100, y)
+            set_prop(sample, "parameter_name", slot)
+            set_prop(sample, "texture", mask_texture)
+            set_prop(sample, "sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_MASKS)
+            # Échantillonneur partagé : 7 textures dans un seul matériau sans dépasser la limite de 16
+            shared = getattr(getattr(unreal, "SamplerSourceMode", None), "SSM_WRAP_WORLD_GROUP_SETTINGS", None)
+            if shared is not None:
+                set_prop(sample, "sampler_source", shared)
+            links.append((sample, "RGBA", "M%d" % index))
+            for offset, channel in enumerate("RGB"):
+                color = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -800, y + offset * 130)
+                set_prop(color, "parameter_name", "%s_%s" % (slot, channel))
+                set_prop(color, "default_value", unreal.LinearColor(0, 0, 0, 0))
+                links.append((color, "", "%s%d" % (channel, index)))
+                code.append("c = lerp(c, %s%d.rgb, saturate(M%d.%s * %s%d.a * %.2f));" % (
+                    channel, index, index, channel.lower(), channel, index, blend))
+    else:
+        log("Peau : aucune texture de masque trouvée, maquillage désactivé")
+    code.append("return c;")
+    set_prop(custom, "code", "\n".join(code))
+    entries = []
+    for _node, _output, input_name in links:
+        entry = unreal.CustomInput()
+        entry.set_editor_property("input_name", input_name)
+        entries.append(entry)
+    set_prop(custom, "inputs", entries)
+    for node, output, input_name in links:
+        MEL.connect_material_expressions(node, output, custom, input_name)
+    MEL.connect_material_property(custom, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    MEL.connect_material_property(constant(material, 0.55, -400, 250), "", unreal.MaterialProperty.MP_ROUGHNESS)
+    MEL.connect_material_property(constant(material, 0.35, -400, 350), "", unreal.MaterialProperty.MP_SPECULAR)
+    EAL.set_metadata_tag(material, "InZOIVersion", str(SKIN_VERSION))
     return finish_material(material, SKIN_MASTER)
 
 
-EYE_VERSION = 3  # à augmenter quand le dessin de l'œil change : le matériau est alors refait
+EYE_VERSION = 4  # à augmenter quand le dessin de l'œil change : le matériau est alors refait
 # Masque d'iris d'inZOI (celui de MetaHuman) : R = relief, V = fibres de l'iris, B = mélange des 2 couleurs, A = pupille
 IRIS_MASKS = ["MetaHumans/Common/Face/Textures/IrisTextures/iris_001/T_Iris_A_M",
               "Characters/Materials/DefaultTextures/Eyes/IrisTextures/iris_001/T_Iris_A_M"]
 # Rayon de l'iris dans les UV du globe inZOI (0,125) / rayon de l'iris dans la texture (0,45)
 IRIS_UV_SCALE = 3.6
+# Bord de l'iris dans T_Iris_A_M (là où son canal B, le fondu des 2 couleurs, arrive à 1)
+IRIS_EDGE_REFERENCE = 0.45
+IRIS_EDGE_PARAM = "IrisTexEdge"
+# Motifs d'iris d'inZOI (lentilles « Custom ») et leurs vignettes
+LENS_TEXTURES = "Characters/AvatarParts/Lens/Textures"
+LENS_ICONS = "UI/Icon/CharacterCustomize/Face/Makeup/Lens"
 
 
 def build_eye_master():
@@ -753,10 +828,13 @@ def build_eye_master():
     uv = MEL.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate, -1500, -200)
     radius = scalar("IrisUVRadius", 1.0, -1500, 0)
     pupil_scale = scalar("PupilScale", 1.1, -1500, 150)
-    iris_uv = custom_node("return 0.5 + (UV - 0.5) * %.3f / max(Radius, 0.1);" % IRIS_UV_SCALE, COT.CMOT_FLOAT2,
-                          ("UV", "Radius"), -1250, -100)
+    # Rayon du bord de l'iris dans la texture (0,45 pour T_Iris_A_M ; mesuré pour chaque motif de lentille, voir iris_edge)
+    edge = scalar(IRIS_EDGE_PARAM, IRIS_EDGE_REFERENCE, -1500, 300)
+    iris_uv = custom_node("return 0.5 + (UV - 0.5) * %.3f / max(Radius, 0.1) * (Edge / %.3f);" % (IRIS_UV_SCALE, IRIS_EDGE_REFERENCE),
+                          COT.CMOT_FLOAT2, ("UV", "Radius", "Edge"), -1250, -100)
     MEL.connect_material_expressions(uv, "", iris_uv, "UV")
     MEL.connect_material_expressions(radius, "", iris_uv, "Radius")
+    MEL.connect_material_expressions(edge, "", iris_uv, "Edge")
     pupil_uv = custom_node("return 0.5 + (IrisUV - 0.5) / max(Scale, 0.1);", COT.CMOT_FLOAT2, ("IrisUV", "Scale"), -1250, 100)
     MEL.connect_material_expressions(iris_uv, "", pupil_uv, "IrisUV")
     MEL.connect_material_expressions(pupil_scale, "", pupil_uv, "Scale")
@@ -776,20 +854,28 @@ def build_eye_master():
     set_prop(iris, "default_value", unreal.LinearColor(0.189, 0.102, 0.026, 1))
     balance = scalar("IrisColorBalance", 0.35, -1000, 500)
     smooth = scalar("IrisColorBalanceSmoothness", 0.8, -1000, 600)
+    limbus = scalar("LimbusDarkAmount", 0.55, -1000, 700)
     combine = custom_node((
         "float d = distance(UV, float2(0.5, 0.5));\n"
-        "float dt = distance(IrisUV, float2(0.5, 0.5));\n"
-        "float dp = distance(PupilUV, float2(0.5, 0.5));\n"
+        "float k = %.3f / max(Edge, 0.05);\n"
+        "float dt = distance(IrisUV, float2(0.5, 0.5)) * k;\n"
+        "float dp = distance(PupilUV, float2(0.5, 0.5)) * k;\n"
         "float irisMask = 1.0 - smoothstep(0.43, 0.47, dt);\n"
         "float t = smoothstep(Balance - Smooth * 0.5, Balance + Smooth * 0.5, M.b);\n"
         "float3 irisColor = lerp(Iris.rgb, Iris.rgb * 0.3, t);\n"
         "irisColor *= lerp(0.45, 1.35, M.g);\n"
-        "irisColor *= 1.0 - 0.6 * smoothstep(0.34, 0.46, dt);\n"
+        "irisColor *= lerp(0.8, 1.1, M.r);\n"
+        "float collar = 1.0 - smoothstep(0.16, 0.26, dt);\n"
+        "irisColor = lerp(irisColor, irisColor * float3(1.25, 1.1, 0.85), collar * 0.5);\n"
+        "irisColor *= 1.0 - Limbus * smoothstep(0.33, 0.45, dt);\n"
         "float pupil = max(1.0 - P, 1.0 - smoothstep(0.11, 0.13, dp));\n"
-        "float3 sclera = float3(0.80, 0.78, 0.76) * (1.0 - 0.3 * smoothstep(0.2, 0.45, d));\n"
+        "float rim = smoothstep(0.18, 0.42, d);\n"
+        "float3 sclera = lerp(float3(0.83, 0.80, 0.77), float3(0.70, 0.57, 0.54), rim * 0.6) * (1.0 - 0.35 * rim);\n"
+        "sclera *= 1.0 - 0.25 * Limbus * (1.0 - smoothstep(0.45, 0.6, dt));\n"
         "float3 c = lerp(sclera, irisColor, irisMask);\n"
-        "return lerp(c, float3(0.004, 0.004, 0.004), pupil * irisMask);"),
-        COT.CMOT_FLOAT3, ("UV", "IrisUV", "PupilUV", "M", "P", "Iris", "Balance", "Smooth"), -600, 0)
+        "return lerp(c, float3(0.004, 0.004, 0.004), pupil * irisMask);") % IRIS_EDGE_REFERENCE,
+        COT.CMOT_FLOAT3, ("UV", "IrisUV", "PupilUV", "M", "P", "Iris", "Balance", "Smooth", "Limbus", "Edge"), -600, 0)
+    MEL.connect_material_expressions(edge, "", combine, "Edge")
     MEL.connect_material_expressions(uv, "", combine, "UV")
     MEL.connect_material_expressions(iris_uv, "", combine, "IrisUV")
     MEL.connect_material_expressions(pupil_uv, "", combine, "PupilUV")
@@ -798,9 +884,21 @@ def build_eye_master():
     MEL.connect_material_expressions(iris, "", combine, "Iris")
     MEL.connect_material_expressions(balance, "", combine, "Balance")
     MEL.connect_material_expressions(smooth, "", combine, "Smooth")
+    MEL.connect_material_expressions(limbus, "", combine, "Limbus")
     MEL.connect_material_property(combine, "", unreal.MaterialProperty.MP_BASE_COLOR)
-    MEL.connect_material_property(constant(material, 0.12, -600, 250), "", unreal.MaterialProperty.MP_ROUGHNESS)
+    # Œil mouillé : vernis (Clear Coat) très lisse par-dessus, iris un peu mat dessous
+    rough = custom_node("float dt = distance(IrisUV, float2(0.5, 0.5)) * %.3f / max(Edge, 0.05);\n"
+                        "return lerp(0.35, 0.45, 1.0 - smoothstep(0.43, 0.47, dt));" % IRIS_EDGE_REFERENCE,
+                        COT.CMOT_FLOAT1, ("IrisUV", "Edge"), -600, 250)
+    MEL.connect_material_expressions(iris_uv, "", rough, "IrisUV")
+    MEL.connect_material_expressions(edge, "", rough, "Edge")
+    MEL.connect_material_property(rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
     MEL.connect_material_property(constant(material, 0.5, -600, 350), "", unreal.MaterialProperty.MP_SPECULAR)
+    clear_coat = getattr(getattr(unreal, "MaterialShadingModel", None), "MSM_CLEAR_COAT", None)
+    coat_pins = [getattr(unreal.MaterialProperty, name, None) for name in ("MP_CUSTOM_DATA0", "MP_CUSTOM_DATA1")]
+    if clear_coat is not None and None not in coat_pins and set_prop(material, "shading_model", clear_coat):
+        MEL.connect_material_property(constant(material, 1.0, -600, 450), "", coat_pins[0])
+        MEL.connect_material_property(constant(material, 0.03, -600, 550), "", coat_pins[1])
     EAL.set_metadata_tag(material, "InZOIVersion", str(EYE_VERSION))
     return finish_material(material, EYE_MASTER)
 
@@ -1202,7 +1300,7 @@ def build_parts(slow):
 # ---------------------------------------------------------------- Barbes (dossier Groom)
 
 HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
-HAIR_VERSION = 5  # à augmenter quand le graphe change : le matériau est refait au même endroit
+HAIR_VERSION = 6  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
 GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"), ("Mustache", "Moustache", "Hair", "Head"),
@@ -1218,6 +1316,13 @@ HAIR_CATEGORY_FR = {"Short": "Courts", "Shaved": "Rasés", "Medium": "Mi-longs",
 HAIR_CATEGORY_ORDER = ["Short", "Shaved", "Bob", "Medium", "Long", "Bald"]
 # Versions de la coupe sous un chapeau (pas encore utilisées)
 HAIR_SKIP_SUFFIXES = ("_Hat", "_Beanie", "_Fedora")
+# Zones de couleur des coupes (nuancier) : principale, dégradé vers les pointes, mèches, mèches devant ; l'alpha règle
+# le début du dégradé (0 = racines, 1 = pointes) ou la part de mèches colorées
+HAIR_ZONE_LABELS = ["Principale", "Dégradé", "Mèches", "Mèches devant"]
+HAIR_ZONE_AMOUNT_LABELS = ["", "Début du dégradé", "Quantité de mèches", "Quantité devant"]
+HAIR_ZONE_AMOUNTS = [1.0, 0.5, 0.3, 0.6]
+# Densité des cils (opacité tramée) : les cartes d'inZOI pleines donnaient des cils trop épais
+EYELASH_DENSITY = 0.55
 DEFAULT_CARD = GROOM_REL + "/Textures/Hair/HairCard_001/HairCard_001_DIRO"
 BEARD_CARD = GROOM_REL + "/Textures/Beard/BeardCard_002/BeardCard_002_DIRO"
 # Brun foncé d'inZOI (MI_Beard_Scalp_003) quand le dossier n'a pas de fichier de matériau
@@ -1247,23 +1352,70 @@ def build_hair_master():
         set_prop(node, "parameter_name", name)
         set_prop(node, "default_value", unreal.LinearColor(color[0], color[1], color[2], 1))
         params.append((name, node))
+    # Dégradé (Color1, alpha = début), mèches au hasard (Color2, alpha = quantité), mèches devant (Color3, alpha = quantité).
+    # Une zone reste blanche (= pas choisie) tant que le joueur ne lui a pas donné de couleur.
+    zone_nodes = []
+    for index in range(3):
+        node = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -1200, 50 + index * 150)
+        set_prop(node, "parameter_name", "Color%d" % (index + 1))
+        set_prop(node, "default_value", unreal.LinearColor(1, 1, 1, HAIR_ZONE_AMOUNTS[index + 1]))
+        zone_nodes.append(node)
+    front = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -1200, 500)
+    set_prop(front, "parameter_name", "FrontAxis")  # devant du personnage dans le repère du mesh (+Y chez Unreal)
+    set_prop(front, "default_value", unreal.LinearColor(0, 1, 0, 0))
+    front_start = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -1200, 650)
+    set_prop(front_start, "parameter_name", "FrontStart")  # cm devant le centre de la tête où commencent les mèches devant
+    set_prop(front_start, "default_value", 2.0)
+    # Position dans le repère du mesh (cm) ; si ce nœud n'existe pas dans cette version d'Unreal : pas de mèches devant
+    local_class = getattr(unreal, "MaterialExpressionLocalPosition", None)
+    if local_class:
+        position = MEL.create_material_expression(material, local_class, -1500, 800)
+    else:
+        position = MEL.create_material_expression(material, unreal.MaterialExpressionConstant3Vector, -1500, 800)
+        log("Cheveux : nœud LocalPosition absent, mèches devant désactivées")
     custom = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -500, -50)
     set_prop(custom, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
     set_prop(custom, "code", (
-        "float3 natural = lerp(Root.rgb, Tip.rgb, saturate(Grad));\n"
+        "float g = saturate(Grad);\n"
+        "float3 natural = lerp(Root.rgb, Tip.rgb, g);\n"
         "bool picked = any(Tint.rgb < 0.999);\n"
-        "float3 c = picked ? Tint.rgb * lerp(0.7, 1.0, saturate(Grad)) : natural;\n"
+        "float3 c = picked ? Tint.rgb * lerp(0.7, 1.0, g) : natural;\n"
+        "if (any(C1.rgb < 0.999))\n"
+        "{\n"
+        "    float t = smoothstep(C1.a - 0.15, C1.a + 0.15, g);\n"
+        "    c = lerp(c, C1.rgb * lerp(0.8, 1.0, g), t);\n"
+        "}\n"
+        "float h = frac(sin(ID * 91.345 + 0.123) * 43758.5453);\n"
+        "if (any(C2.rgb < 0.999) && h < C2.a)\n"
+        "{\n"
+        "    c = C2.rgb * lerp(0.75, 1.0, g);\n"
+        "}\n"
+        "if (any(C3.rgb < 0.999))\n"
+        "{\n"
+        "    float ahead = smoothstep(Start, Start + 4.0, dot(Pos, normalize(Front.xyz + float3(0.0, 0.0, 0.0001))));\n"
+        "    float h2 = frac(sin(ID * 47.853 + 0.71) * 24634.6345);\n"
+        "    if (h2 < C3.a * ahead)\n"
+        "    {\n"
+        "        c = C3.rgb * lerp(0.75, 1.0, g);\n"
+        "    }\n"
+        "}\n"
         "return c * lerp(0.65, 1.0, saturate(Depth));"))
     inputs = []
-    for input_name in ("Grad", "Root", "Tip", "Tint", "Depth"):
+    for input_name in ("Grad", "Root", "Tip", "Tint", "Depth", "ID", "C1", "C2", "C3", "Pos", "Front", "Start"):
         entry = unreal.CustomInput()
         entry.set_editor_property("input_name", input_name)
         inputs.append(entry)
     set_prop(custom, "inputs", inputs)
     MEL.connect_material_expressions(diro, "B", custom, "Grad")
     MEL.connect_material_expressions(diro, "R", custom, "Depth")
+    MEL.connect_material_expressions(diro, "G", custom, "ID")
     for (name, node), input_name in zip(params, ("Root", "Tip", "Tint")):
         MEL.connect_material_expressions(node, "", custom, input_name)
+    for index, node in enumerate(zone_nodes):
+        MEL.connect_material_expressions(node, "", custom, "C%d" % (index + 1))
+    MEL.connect_material_expressions(position, "", custom, "Pos")
+    MEL.connect_material_expressions(front, "", custom, "Front")
+    MEL.connect_material_expressions(front_start, "", custom, "Start")
     MEL.connect_material_property(custom, "", unreal.MaterialProperty.MP_BASE_COLOR)
     # Opacité tramée comme dans inZOI (paramètre « Dither ») : chaque pixel est gardé avec la probabilité de l'alpha,
     # le bruit change à chaque image et l'anti-crénelage temporel le lisse. Sourcils et cils doux au lieu de plaques.
@@ -1287,9 +1439,24 @@ def build_hair_master():
     MEL.connect_material_property(dither, "", unreal.MaterialProperty.MP_OPACITY_MASK)
     roughness = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -500, 200)
     set_prop(roughness, "parameter_name", "Roughness")
-    set_prop(roughness, "default_value", 0.6)
+    set_prop(roughness, "default_value", 0.55)
     MEL.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)
-    MEL.connect_material_property(constant(material, 0.25, -500, 300), "", unreal.MaterialProperty.MP_SPECULAR)
+    # Spéculaire faible (0,25 donnait un voile gris argenté sur les cheveux et barbes foncés), plus faible au creux des mèches
+    specular = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -900, 750)
+    set_prop(specular, "parameter_name", "Specular")
+    set_prop(specular, "default_value", 0.1)
+    spec_node = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -500, 300)
+    set_prop(spec_node, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+    set_prop(spec_node, "code", "return Spec * lerp(0.35, 1.0, saturate(Depth));")
+    spec_inputs = []
+    for input_name in ("Spec", "Depth"):
+        entry = unreal.CustomInput()
+        entry.set_editor_property("input_name", input_name)
+        spec_inputs.append(entry)
+    set_prop(spec_node, "inputs", spec_inputs)
+    MEL.connect_material_expressions(specular, "", spec_node, "Spec")
+    MEL.connect_material_expressions(diro, "R", spec_node, "Depth")
+    MEL.connect_material_property(spec_node, "", unreal.MaterialProperty.MP_SPECULAR)
     EAL.set_metadata_tag(material, "InZOIVersion", str(HAIR_VERSION))
     return finish_material(material, HAIR_MASTER)
 
@@ -1349,8 +1516,9 @@ def diro_texture(diro_rel, fallback):
     return None
 
 
-def hair_instance(asset_path, diro_rel, colors, fallback=None):
-    """Matériau de poils ; refait à chaque import (texture et couleurs), pour corriger les anciens"""
+def hair_instance(asset_path, diro_rel, colors, fallback=None, zones=False, density=None):
+    """Matériau de poils ; refait à chaque import (texture et couleurs), pour corriger les anciens.
+    zones : expose Color1-3 (dégradé, mèches) pour que le nuancier les montre ; density : < 1 éclaircit (cils)"""
     instance = load(asset_path)
     if not instance:
         folder, name = split(asset_path)
@@ -1363,6 +1531,10 @@ def hair_instance(asset_path, diro_rel, colors, fallback=None):
     root, tip = colors
     MEL.set_material_instance_vector_parameter_value(instance, "RootColor", unreal.LinearColor(root[0], root[1], root[2], 1))
     MEL.set_material_instance_vector_parameter_value(instance, "TipColor", unreal.LinearColor(tip[0], tip[1], tip[2], 1))
+    if zones:
+        for zone in (1, 2, 3):
+            MEL.set_material_instance_vector_parameter_value(instance, "Color%d" % zone, unreal.LinearColor(1, 1, 1, HAIR_ZONE_AMOUNTS[zone]))
+    MEL.set_material_instance_scalar_parameter_value(instance, "Density", density if density is not None else 1.0)
     MEL.update_material_instance(instance)
     EAL.save_loaded_asset(instance)
     return instance
@@ -1390,7 +1562,7 @@ def head_variants(mesh_rel, heads):
     return variants
 
 
-def groom_materials(mesh, folder, card_fallback, default_colors):
+def groom_materials(mesh, folder, card_fallback, default_colors, density=None):
     """Un matériau M_InZOI_Hair par emplacement du mesh, d'après le JSON du même nom dans <dossier>/Materials.
     Les JSON des cartes sont parfois vides : on prend alors la carte par défaut et les couleurs du cuir (Scalp)."""
     infos = []
@@ -1407,7 +1579,7 @@ def groom_materials(mesh, folder, card_fallback, default_colors):
         if not diro and "scalp" in slot_name.lower():
             found = scan_folder_textures(folder, "Scalp_DIRO")
             diro = found or card_fallback
-        materials.append(hair_instance(dest(json_rel + "_Jeu"), diro or card_fallback, (root, tip), card_fallback))
+        materials.append(hair_instance(dest(json_rel + "_Jeu"), diro or card_fallback, (root, tip), card_fallback, density=density))
     return materials
 
 
@@ -1556,7 +1728,7 @@ def build_hairs(slow, bases):
                     diro = DEFAULT_CARD
                 tip = colors.get("TipColor", BEARD_TIP)
                 root = colors.get("RootColor", tuple(v * 0.5 for v in tip))
-                materials.append(hair_instance(dest(json_rel + "_Jeu"), diro, (root, tip), DEFAULT_CARD))
+                materials.append(hair_instance(dest(json_rel + "_Jeu"), diro, (root, tip), DEFAULT_CARD, zones=True))
             label = HAIR_CATEGORY_FR.get(category, category or "Cheveux")
             counters[label] = counters.get(label, 0) + 1
             part = unreal.TrainerPartDef()
@@ -1607,7 +1779,8 @@ def build_face_grooms(slow, bases, heads):
                 if not mesh:
                     continue
                 folder = mesh_rel.rsplit("/Mesh/", 1)[0]
-                materials = groom_materials(mesh, folder, fallback_diro, (tuple(v * 0.7 for v in fallback_tip), fallback_tip))
+                materials = groom_materials(mesh, folder, fallback_diro, (tuple(v * 0.7 for v in fallback_tip), fallback_tip),
+                                            EYELASH_DENSITY if slot == "Eyelashes" else None)
                 count += 1
                 part = unreal.TrainerPartDef()
                 part.set_editor_property("id", row["Id"])
@@ -1626,6 +1799,275 @@ def build_face_grooms(slow, bases, heads):
         if missing:
             log("%s : %d modèles absents (exporter Groom/%s avec FModel, puis copier_coiffures.bat)" % (label, missing, slot))
     return parts, defaults
+
+
+# ---------------------------------------------------------------- Maquillage, motifs d'iris, animations
+
+MAKEUP_ZONE_LABELS = ["", "Couleur 1", "Couleur 2", "Couleur 3"]
+MAKEUP_AMOUNT_LABELS = ["", "Intensité", "Intensité", "Intensité"]
+
+
+def build_makeup():
+    """Maquillage d'inZOI (table AppearanceMakeup) : une pièce sans modèle par ligne dont le masque est dans l'export.
+    Chaque canal R, V, B du masque garde la couleur et l'intensité d'inZOI (modifiables dans le nuancier)."""
+    filename = os.path.join(JSON_TABLES, "AppearanceMakeup.json")
+    try:
+        with open(filename, encoding="utf-8") as handle:
+            rows = json.load(handle)
+    except (OSError, ValueError):
+        log("Maquillage : table %s introuvable" % filename)
+        return []
+    by_category = {category: (slot, label) for category, _letter, slot, label, _blend in MAKEUP_PARTS}
+    parts, counts, missing = [], {}, []
+    for row in rows if isinstance(rows, list) else []:
+        info = by_category.get(row.get("MakeupPartsId"))
+        if not info or row.get("HiddenFromUI"):
+            continue
+        mask_rel = game_rel(row.get("MaskTexture"))
+        mask = import_texture(mask_rel, "mask") if mask_rel and os.path.isfile(src(mask_rel, ".png")) else None
+        if not mask:
+            missing.append(row.get("Id", "?"))
+            continue
+        slot, label = info
+        disabled = set(row.get("DisabledChannels") or [])
+        values = {entry.get("MaskChannel"): entry for entry in row.get("DefaultValues") or [] if isinstance(entry, dict)}
+        colors = []
+        for channel in "RGB":
+            entry = values.get(channel) or {}
+            hexes = entry.get("ColorValues") or []
+            scalars = entry.get("ScalarValues") or []
+            rgb = linear_hex(hexes[0]) if hexes else None
+            amount = float(scalars[0]) if scalars else 1.0
+            if not rgb or channel in disabled or amount <= 0:
+                colors.append(unreal.LinearColor(0, 0, 0, 0))  # canal inutilisé (souvent la brillance chez inZOI)
+            else:
+                colors.append(unreal.LinearColor(rgb[0], rgb[1], rgb[2], min(1.0, amount)))
+        counts[slot] = counts.get(slot, 0) + 1
+        part = unreal.TrainerPartDef()
+        part.set_editor_property("id", "InZOI_Makeup_" + row["Id"])
+        part.set_editor_property("label", "%s %d" % (label, counts[slot]))
+        part.set_editor_property("slot", slot)
+        part.set_editor_property("mask_texture", mask)
+        part.set_editor_property("mask_colors", colors)
+        thumbnail = import_texture(game_rel(row.get("Thumbnail")), "ui")
+        if thumbnail:
+            part.set_editor_property("thumbnail", thumbnail)
+        parts.append(part)
+    log("Maquillage : %d styles (%s)" % (len(parts), ", ".join("%s %d" % (k, v) for k, v in sorted(counts.items())) or "aucun"))
+    if missing:
+        log("Maquillage : %d masques absents de l'export (ex. %s) : exporter le dossier %s avec FModel" % (
+            len(missing), ", ".join(missing[:4]), MAKEUP_MASKS))
+    return parts
+
+
+def png_rgba(filename):
+    """Lit un PNG 8 bits non entrelacé (gris, RVB, RVBA) : (largeur, hauteur, lignes de pixels RVBA). None sinon"""
+    import struct
+    import zlib
+    try:
+        with open(filename, "rb") as handle:
+            data = handle.read()
+    except OSError:
+        return None
+    if data[:8] != b"\x89PNG\r\n\x1a\n":
+        return None
+    pos, idat, header = 8, [], None
+    while pos + 8 <= len(data):
+        length, kind = struct.unpack(">I4s", data[pos:pos + 8])
+        chunk = data[pos + 8:pos + 8 + length]
+        if kind == b"IHDR":
+            header = struct.unpack(">IIBBBBB", chunk)
+        elif kind == b"IDAT":
+            idat.append(chunk)
+        elif kind == b"IEND":
+            break
+        pos += 12 + length
+    if not header:
+        return None
+    width, height, depth, color_type, _compression, _filter, interlace = header
+    channels = {0: 1, 2: 3, 4: 2, 6: 4}.get(color_type)
+    if depth != 8 or interlace or not channels:
+        return None
+    raw = zlib.decompress(b"".join(idat))
+    stride = width * channels
+    rows, previous, offset = [], bytearray(stride), 0
+    for _y in range(height):
+        kind = raw[offset]
+        line = bytearray(raw[offset + 1:offset + 1 + stride])
+        offset += 1 + stride
+        for i in range(stride):
+            left = line[i - channels] if i >= channels else 0
+            up = previous[i]
+            if kind == 1:
+                line[i] = (line[i] + left) & 255
+            elif kind == 2:
+                line[i] = (line[i] + up) & 255
+            elif kind == 3:
+                line[i] = (line[i] + ((left + up) >> 1)) & 255
+            elif kind == 4:
+                corner = previous[i - channels] if i >= channels else 0
+                p = left + up - corner
+                pa, pb, pc = abs(p - left), abs(p - up), abs(p - corner)
+                line[i] = (line[i] + (left if pa <= pb and pa <= pc else up if pb <= pc else corner)) & 255
+        rows.append(line)
+        previous = line
+    expanded = []
+    for line in rows:
+        if channels == 4:
+            expanded.append(line)
+            continue
+        out = bytearray(width * 4)
+        for x in range(width):
+            px = line[x * channels:(x + 1) * channels]
+            if channels == 1:
+                out[x * 4:x * 4 + 4] = bytes((px[0], px[0], px[0], 255))
+            elif channels == 2:
+                out[x * 4:x * 4 + 4] = bytes((px[0], px[0], px[0], px[1]))
+            else:
+                out[x * 4:x * 4 + 4] = bytes((px[0], px[1], px[2], 255))
+        expanded.append(out)
+    return width, height, expanded
+
+
+def iris_edge(rel):
+    """Rayon (dans la texture) du bord de l'iris d'un motif : premier anneau où le canal B (fondu des couleurs) arrive
+    à 0,95 en moyenne, comme dans T_Iris_A_M (0,45). None si la texture ne se lit pas."""
+    image = png_rgba(src(rel, ".png"))
+    if not image:
+        return None
+    width, height, rows = image
+    bins = 25
+    sums, counts = [0.0] * bins, [0] * bins
+    for y in range(height):
+        line = rows[y]
+        dy = (y + 0.5) / height - 0.5
+        for x in range(width):
+            radius = math.hypot((x + 0.5) / width - 0.5, dy)
+            index = int(radius / 0.02)
+            if index < bins:
+                sums[index] += line[x * 4 + 2] / 255.0
+                counts[index] += 1
+    for index in range(3, bins):
+        if counts[index] and sums[index] / counts[index] >= 0.95:
+            return round(index * 0.02, 3)
+    return None
+
+
+def build_lenses():
+    """Motifs d'iris d'inZOI (lentilles Lens_Custom_NNN_M, même format que T_Iris_A_M) : onglet Visage > Yeux.
+    Le motif remplace la texture d'iris de l'œil ; la couleur reste celle choisie dans le nuancier des yeux."""
+    folder = os.path.join(EXPORTS, *LENS_TEXTURES.split("/"))
+    if not os.path.isdir(folder):
+        log("Motifs d'iris : dossier %s absent de l'export" % LENS_TEXTURES)
+        return []
+    reference = None
+    for rel in IRIS_MASKS:
+        reference = iris_edge(rel)
+        if reference:
+            break
+    reference = reference or IRIS_EDGE_REFERENCE
+    parts = []
+    for filename in sorted(os.listdir(folder)):
+        match = re.match(r"Lens_Custom_(\d+)_M\.png$", filename)
+        if not match or match.group(1) == "000":  # 000 = lentille vide
+            continue
+        rel = LENS_TEXTURES + "/" + filename[:-4]
+        texture = import_texture(rel, "mask")
+        if not texture:
+            continue
+        number = int(match.group(1))
+        edge = iris_edge(rel)
+        part = unreal.TrainerPartDef()
+        part.set_editor_property("id", "InZOI_Lens_%03d" % number)
+        part.set_editor_property("label", "Motif %d" % number)
+        part.set_editor_property("slot", "Lens")
+        part.set_editor_property("mask_texture", texture)
+        # Bord de l'iris du motif, à l'échelle de notre référence (0,45 dans T_Iris_A_M)
+        scaled = IRIS_EDGE_REFERENCE * (edge / reference) if edge else IRIS_EDGE_REFERENCE
+        part.set_editor_property("mask_scalars", {IRIS_EDGE_PARAM: round(max(0.2, min(0.7, scaled)), 3)})
+        thumbnail = import_texture("%s/Icon_Lens_CT%03d" % (LENS_ICONS, number), "ui")
+        if thumbnail:
+            part.set_editor_property("thumbnail", thumbnail)
+        parts.append(part)
+        log("Motif d'iris %d : bord %s" % (number, edge if edge else "non mesuré"))
+    log("Motifs d'iris : %d (référence T_Iris_A_M : bord %.2f)" % (len(parts), reference))
+    return parts
+
+
+# Animations .ueanim importées (sans extension). Les « ANIM_F_ » d'inZOI vont aussi sur le corps d'homme (même
+# squelette). La première est l'attente du studio ; les autres sont les poses du bouton « Pose » de l'éditeur.
+# Pour en voir d'autres : Index_Complet/Manifeste_Assets.csv, filtrer « .ueanim ».
+ANIMATIONS = [
+    ("Characters/Anims/Interaction/Female/ANIM_F_NPC_Idle1", "Attente"),
+    ("Characters/Anims/Interaction/Female/ANIM_F_NPC_Idle2", "Attente 2"),
+    ("Characters/Anims/Interaction/Female/ANIM_F_NPC_Idle3", "Attente 3"),
+    ("Characters/Anims/Interaction/Female/ANIM_F_Clerk_Idle_Short_01", "Mains jointes"),
+    ("Characters/Anims/Interaction/Female/ANIM_F_HappyGreet", "Salut"),
+    ("Characters/Anims/Interaction/Female/ANIM_F_Clap_Stand_2", "Applaudir"),
+    ("Characters/Anims/Interaction/Female/ANIM_F_Selfie_Pose", "Selfie"),
+    ("Characters/Anims/Interaction/Female/ANIM_F_MusclePose_2", "Muscles"),
+    ("Characters/Anims/Interaction/Female/ANIM_F_Pose_CatHeart", "Cœur"),
+    ("Characters/Anims/Interaction/Female/ANIM_F_Craft_Proud", "Fierté"),
+    ("Characters/Anims/Interaction/Female/Emotion/ANIM_F_Angry", "Colère"),
+    ("Characters/Anims/Interaction/Female/Emotion/ANIM_F_Afraid_1", "Peur"),
+    ("Characters/Anims/Interaction/Female/Emotion/ANIM_F_apologize", "Excuses"),
+]
+_ANIM_FILES = None
+
+
+def find_anim_file(rel):
+    """Le .ueanim ; s'il n'est pas au chemin prévu (sous-dossier Emotion/Body...), on le cherche par son nom"""
+    global _ANIM_FILES
+    direct = src(rel, ".ueanim")
+    if os.path.isfile(direct):
+        return direct
+    if _ANIM_FILES is None:
+        _ANIM_FILES = {}
+        for current, _dirs, files in os.walk(os.path.join(EXPORTS, "Characters", "Anims")):
+            for filename in files:
+                if filename.endswith(".ueanim"):
+                    _ANIM_FILES.setdefault(filename, os.path.join(current, filename))
+    return _ANIM_FILES.get(rel.rsplit("/", 1)[-1] + ".ueanim")
+
+
+def build_animations(bases):
+    """Attente et poses du studio. Les animations manquantes sont importées sans la fenêtre du plugin UEFormat
+    (UInZOIImportLibrary, C++) ; celles déjà importées (même par l'ancien script) sont reprises telles quelles."""
+    library = getattr(unreal, "InZOIImportLibrary", None)
+    can_import = bool(library and library.can_import_ue_anim())
+    if not can_import:
+        log("Animations : plugin UEFormat absent (Plugins/UEFormat) ou projet pas recompilé : seules celles déjà importées servent")
+    for base in bases:
+        base_id = str(base.get_editor_property("id"))
+        mesh = base.get_editor_property("mesh")
+        skeleton = mesh.get_editor_property("skeleton") if mesh else None
+        ready, imported, failed = [], 0, []
+        for rel, label in ANIMATIONS:
+            name = rel.rsplit("/", 1)[-1]
+            asset_path = "%s/Anims/%s/%s" % (DEST, base_id, name)
+            animation = load(asset_path)
+            if not animation and can_import and skeleton:
+                filename = find_anim_file(rel)
+                animation = library.import_ue_anim(filename, skeleton, asset_path) if filename else None
+                if animation:
+                    EAL.save_loaded_asset(animation)
+                    imported += 1
+                else:
+                    failed.append(name if filename else name + " (fichier absent)")
+            if animation:
+                ready.append((label, animation))
+        if ready and ready[0][0] == ANIMATIONS[0][1]:
+            base.set_editor_property("idle_animation", ready.pop(0)[1])
+        poses = []
+        for label, animation in ready:
+            entry = unreal.TrainerStudioAnimation()
+            entry.set_editor_property("label", label)
+            entry.set_editor_property("animation", animation)
+            poses.append(entry)
+        base.set_editor_property("studio_animations", poses)
+        log("Animations %s : attente %s, %d poses (%d importées maintenant)%s" % (
+            base_id, "oui" if base.get_editor_property("idle_animation") else "non", len(poses), imported,
+            " ; échecs : " + ", ".join(failed) if failed else ""))
 
 
 # Onglet Modèles : les personnages tout faits d'inZOI (table AppearanceFacePreset) : tête, coupe et sa couleur,
@@ -1692,19 +2134,24 @@ def full_presets(bases, parts):
             look.set_editor_property("base", base_id)
             outfit, colors = [head_id], []
 
-            def add_color(slot, hex_text):
+            def add_color(slot, hex_text, zone=0, amount=1.0):
                 rgb = linear_hex(hex_text)
                 if rgb:
                     entry = unreal.TrainerPartColor()
                     entry.set_editor_property("slot", slot)
-                    entry.set_editor_property("zone", 0)
-                    entry.set_editor_property("color", unreal.LinearColor(rgb[0], rgb[1], rgb[2], 1.0))
+                    entry.set_editor_property("zone", zone)
+                    entry.set_editor_property("color", unreal.LinearColor(rgb[0], rgb[1], rgb[2], amount))
                     colors.append(entry)
 
             hair_id = hair_part_id(row.get("Hair.MeshId"))
             if hair_id and fits(hair_id):
                 outfit.append(hair_id)
-                add_color("Hair", row.get("Hair.VectorParameters.tipColor"))
+                tip = row.get("Hair.VectorParameters.tipColor")
+                add_color("Hair", tip)
+                # Coupe bicolore d'inZOI (2ndColor à partir de 2ndColorPosition) -> zone Dégradé, alpha = début
+                second = row.get("Hair.VectorParameters.2ndColor")
+                if second and linear_hex(second) and (second or "").upper() != (tip or "").upper():
+                    add_color("Hair", second, 1, max(0.0, min(1.0, float_of(row, "Hair.ScalarParameters.2ndColorPosition", 0.5))))
             try:
                 face_hairs = json.loads(row.get("FaceHairs") or "[]")
             except ValueError:
@@ -1752,7 +2199,7 @@ def count_work():
             meshes = {game_rel(r.get("Mesh")) for r in rows if r.get("GenderType") == gender and r.get("BodyAgeType") == age}
             total += min(len(meshes), MAX_MESHES_PER_SLOT) if MAX_MESHES_PER_SLOT else len(meshes)
     hairs = len(find_hairs("Male")) + len(find_hairs("Female"))
-    return total + 10 + hairs
+    return total + 12 + hairs
 
 
 def main():
@@ -1801,6 +2248,11 @@ def main():
         parts += face_parts
         for base_id, slots in face_defaults.items():
             defaults.setdefault(base_id, {}).update(slots)
+        slow.enter_progress_frame(1, "Maquillage et motifs d'iris")
+        parts += build_makeup()
+        parts += build_lenses()
+        slow.enter_progress_frame(1, "Animations")
+        build_animations(bases)
 
         # Peau de la tête teintée aussi
         for part in parts:
@@ -1843,7 +2295,29 @@ def main():
             definition.set_editor_property("tab", tab)
             if follow:
                 definition.set_editor_property("follow_slot", follow)
+            if slot == "Hair":
+                definition.set_editor_property("zone_labels", [unreal.Text(t) for t in HAIR_ZONE_LABELS])
+                definition.set_editor_property("zone_amount_labels", [unreal.Text(t) for t in HAIR_ZONE_AMOUNT_LABELS])
+                definition.set_editor_property("zone_default_amounts", HAIR_ZONE_AMOUNTS)
             slot_defs.append(definition)
+        # Pièces sans modèle posées sur la tête : maquillage (onglet Visage > Maquillage), motif d'iris (Visage > Yeux)
+        for _category, _letter, slot, slot_label, _blend in MAKEUP_PARTS:
+            definition = unreal.TrainerPartSlotDef()
+            definition.set_editor_property("slot", slot)
+            definition.set_editor_property("label", slot_label)
+            definition.set_editor_property("tab", "Makeup")
+            definition.set_editor_property("follow_slot", "Head")
+            definition.set_editor_property("mask_parameter", slot)
+            definition.set_editor_property("zone_labels", [unreal.Text(t) for t in MAKEUP_ZONE_LABELS])
+            definition.set_editor_property("zone_amount_labels", [unreal.Text(t) for t in MAKEUP_AMOUNT_LABELS])
+            slot_defs.append(definition)
+        definition = unreal.TrainerPartSlotDef()
+        definition.set_editor_property("slot", "Lens")
+        definition.set_editor_property("label", "Motif de l'iris")
+        definition.set_editor_property("tab", "Eyes")
+        definition.set_editor_property("follow_slot", "Head")
+        definition.set_editor_property("mask_parameter", "IrisMasks")
+        slot_defs.append(definition)
 
         presets = full_presets(bases, parts)
 

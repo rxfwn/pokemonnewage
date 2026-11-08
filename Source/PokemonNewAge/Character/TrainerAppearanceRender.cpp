@@ -7,6 +7,7 @@
 #include "GameFramework/Actor.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "Engine/Texture.h"
 
 namespace
 {
@@ -217,6 +218,118 @@ namespace
 			}
 		}
 	}
+
+	/**
+	 *  Pièces sans modèle (maquillage, motif d'iris) : leur texture et leurs couleurs vont dans les matériaux de la
+	 *  pièce suivie (la tête). Un emplacement vide remet la texture du matériau et coupe les couleurs (alpha 0).
+	 */
+	void ApplyMasks(const UTrainerAppearanceData* Data, const FTrainerBaseDef& Base, const FTrainerAppearance& Appearance, AActor* Owner)
+	{
+		TArray<const FTrainerPartSlotDef*> MaskSlots;
+		TSet<FName> Followed;
+		for (const FTrainerPartSlotDef& SlotDef : Data->PartSlots)
+		{
+			if (!SlotDef.MaskParameter.IsNone() && !SlotDef.FollowSlot.IsNone())
+			{
+				MaskSlots.Add(&SlotDef);
+				Followed.Add(SlotDef.FollowSlot);
+			}
+		}
+		if (MaskSlots.IsEmpty() || !Owner)
+		{
+			return;
+		}
+		const TMap<FName, const FTrainerPartDef*> Worn = Data->ResolveParts(Base, Appearance);
+		const TCHAR* Channels[] = { TEXT("_R"), TEXT("_G"), TEXT("_B") };
+
+		TArray<USkeletalMeshComponent*> Components;
+		Owner->GetComponents<USkeletalMeshComponent>(Components);
+		for (USkeletalMeshComponent* Component : Components)
+		{
+			if (!Component->ComponentHasTag(PartTag) || Component->ComponentTags.Num() < 2 || !Component->GetSkeletalMeshAsset()
+				|| !Followed.Contains(Component->ComponentTags[1]))
+			{
+				continue;
+			}
+			const FName FollowedSlot = Component->ComponentTags[1];
+			for (int32 Index = 0; Index < Component->GetNumMaterials(); ++Index)
+			{
+				UMaterialInstanceDynamic* MID = Cast<UMaterialInstanceDynamic>(Component->GetMaterial(Index));
+				if (!MID)
+				{
+					MID = Component->CreateDynamicMaterialInstance(Index);
+				}
+				if (!MID)
+				{
+					continue;
+				}
+				for (const FTrainerPartSlotDef* SlotDef : MaskSlots)
+				{
+					if (SlotDef->FollowSlot != FollowedSlot)
+					{
+						continue;
+					}
+					const FTrainerPartDef* const* Found = Worn.Find(SlotDef->Slot);
+					const FTrainerPartDef* Part = Found ? *Found : nullptr;
+					const FString Prefix = SlotDef->MaskParameter.ToString();
+
+					if (!Part)
+					{
+						// Rien dans cet emplacement : texture d'origine (iris naturel), couleurs du maquillage coupées
+						UTexture* Original = nullptr;
+						if (MID->Parent && MID->Parent->GetTextureParameterValue(FHashedMaterialParameterInfo(SlotDef->MaskParameter), Original) && Original)
+						{
+							MID->SetTextureParameterValue(SlotDef->MaskParameter, Original);
+						}
+						for (int32 Channel = 0; Channel < 3; ++Channel)
+						{
+							MID->SetVectorParameterValue(FName(*(Prefix + Channels[Channel])), FLinearColor(0.f, 0.f, 0.f, 0.f));
+						}
+						// Réglages des pièces de cet emplacement remis à la valeur du matériau
+						TSet<FName> Scalars;
+						for (const FTrainerPartDef& Other : Data->Parts)
+						{
+							if (Other.Slot == SlotDef->Slot)
+							{
+								for (const TPair<FName, float>& Scalar : Other.MaskScalars)
+								{
+									Scalars.Add(Scalar.Key);
+								}
+							}
+						}
+						for (const FName Scalar : Scalars)
+						{
+							float Value = 0.f;
+							if (MID->Parent && MID->Parent->GetScalarParameterValue(FHashedMaterialParameterInfo(Scalar), Value))
+							{
+								MID->SetScalarParameterValue(Scalar, Value);
+							}
+						}
+						continue;
+					}
+					if (UTexture* Texture = Part->MaskTexture.LoadSynchronous())
+					{
+						MID->SetTextureParameterValue(SlotDef->MaskParameter, Texture);
+					}
+					for (const TPair<FName, float>& Scalar : Part->MaskScalars)
+					{
+						MID->SetScalarParameterValue(Scalar.Key, Scalar.Value);
+					}
+					// Couleurs des canaux R, V, B : choix du nuancier (zones 1 à 3), sinon celles de l'export inZOI
+					for (int32 Channel = 0; Channel < 3 && Channel < Part->MaskColors.Num(); ++Channel)
+					{
+						const FTrainerPartColor* Choice = Appearance.FindPartColor(SlotDef->Slot, Channel + 1);
+						FLinearColor Color = Choice ? Choice->Color : Part->MaskColors[Channel];
+						if (Part->MaskColors[Channel].A <= 0.f)
+						{
+							Color.A = 0.f; // canal désactivé dans inZOI
+						}
+						MID->SetVectorParameterValue(FName(*(Prefix + Channels[Channel])), Color);
+					}
+				}
+			}
+		}
+	}
 }
 
 UTrainerAppearanceData* TrainerAppearanceRender::LoadDefaultData()
@@ -278,7 +391,9 @@ FTrainerAppearance TrainerAppearanceRender::Sanitize(const UTrainerAppearanceDat
 		{
 			continue;
 		}
-		Clean.SetPartColor(Choice.Slot, Choice.Zone, ClampColor(Choice.Color));
+		// L'alpha sert de réglage (début du dégradé, quantité de mèches, intensité du maquillage) : gardé entre 0 et 1
+		const FLinearColor C = Choice.Color;
+		Clean.SetPartColor(Choice.Slot, Choice.Zone, FLinearColor(FMath::Clamp(C.R, 0.f, 1.f), FMath::Clamp(C.G, 0.f, 1.f), FMath::Clamp(C.B, 0.f, 1.f), FMath::Clamp(C.A, 0.f, 1.f)));
 	}
 	return Clean;
 }
@@ -334,6 +449,9 @@ bool TrainerAppearanceRender::Apply(const UTrainerAppearanceData* Data, AActor* 
 		Anim->SetBoneOffsets(Offsets);
 		Anim->SetIdleAnimation(Base->IdleAnimation.LoadSynchronous());
 	}
+
+	// Maquillage et motif d'iris sur la tête (avant les couleurs : les MID sont créés ici s'il le faut)
+	ApplyMasks(Data, *Base, Appearance, Owner);
 
 	// Le corps et ses pièces (vêtements en Leader Pose, tête qui copie la pose) reçoivent les mêmes morphs et couleurs
 	TArray<USkeletalMeshComponent*> Targets = { Mesh };

@@ -52,6 +52,9 @@ public:
 	FText NextLighting();
 	FText GetLightingName() const;
 
+	/** Bouton « Pose » : animation suivante (l'attente, puis les poses de la base) ; renvoie son nom */
+	FText NextAnimation();
+
 	USkeletalMeshComponent* GetPreview() const { return Preview; }
 
 	/** Position d'un os (ou socket) de l'aperçu, plus un décalage dans le repère du personnage. Faux si l'os n'existe pas */
@@ -95,7 +98,12 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UTrainerAppearanceData> Data;
 
+	/** Remet la pose choisie après un changement d'apparence (Apply remet l'attente de la base) */
+	void ApplyStudioAnimation();
+
 	FName AppliedBase;
+	/** 0 = attente de la base, N = FTrainerBaseDef::StudioAnimations[N - 1] */
+	int32 AnimationIndex = 0;
 	EStudioFocus Focus = EStudioFocus::Body;
 	float ZoomFactor = 1.f;
 	float TargetYaw = 0.f;

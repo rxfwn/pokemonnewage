@@ -140,3 +140,12 @@ TArray<FTrainerBoneOffset> UTrainerAppearanceData::ComputeBoneOffsets(const FTra
 	}
 	return Offsets;
 }
+
+FText FTrainerPartSlotDef::GetZoneLabel(int32 Zone) const
+{
+	if (ZoneLabels.IsValidIndex(Zone) && !ZoneLabels[Zone].IsEmpty())
+	{
+		return ZoneLabels[Zone];
+	}
+	return Zone == 0 ? NSLOCTEXT("TrainerAppearance", "ZoneMain", "Principale") : FText::Format(NSLOCTEXT("TrainerAppearance", "ZoneN", "Zone {0}"), Zone);
+}

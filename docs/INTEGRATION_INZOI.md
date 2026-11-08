@@ -20,8 +20,7 @@ Le prof de jeu vidéo de L'amie a fait extraire le menu de création de personna
   `.ueanim`, mais **ni marche ni course** (seulement un jogging sur tapis de course). Elles s'importent avec le
   plugin UEFormat (étape « Animations »). Pour marcher dans Kanto, il faudra retargeter nos animations sur le
   squelette inZOI (section 5).
-- Le visage détaillé (91 points, squelette de visage MetaHuman), les cheveux (poils « Groom », non exportés en .glb)
-  et le maquillage viendront plus tard.
+- Le visage détaillé (91 points, squelette de visage MetaHuman) viendra plus tard.
 
 ## Ce que le code sait faire maintenant (PR #46)
 
@@ -100,12 +99,12 @@ Ce qui peut coincer, et quoi m'envoyer :
    Ce dossier est exclu de Git (le plugin n'a pas de licence qui permette de le mettre dans notre dépôt).
 2. Supprimer `Plugins/UEFormat/Binaries` (compilé pour une autre version d'Unreal), fermer Unreal, recompiler
    (« PokemonNewAgeEditor Win64 Development Build ») : le plugin se compile avec le projet.
-3. Unreal : **Outils > Exécuter un script Python** > `Tools/InZOI/import_inzoi_anims.py`. Pour chaque base, un
-   message indique quel squelette choisir ; la fenêtre « Animation Import Options » s'ouvre : choisir ce squelette,
-   puis **Import All**.
-4. Résultat : `ImportedAssets/InZOI/Anims/Homme/...` et `.../Femme/...`, et l'attente `ANIM_F_NPC_Idle1` jouée en
-   boucle dans le studio de l'éditeur. La liste des animations est en haut du script (`ANIMATIONS`), on peut en
-   ajouter (noms dans `Index_Complet/Manifeste_Assets.csv`).
+3. Lancer `Tools/InZOI/import_inzoi.bat` comme d'habitude : avec le plugin présent, le projet compile
+   `UInZOIImportLibrary` (C++, éditeur seulement) qui importe les `.ueanim` **sans la fenêtre** « Animation Import
+   Options » (le squelette de chaque base est donné directement). L'ancien script `import_inzoi_anims.py` n'existe plus.
+4. Résultat : `ImportedAssets/InZOI/Anims/Homme/...` et `.../Femme/...`, l'attente `ANIM_F_NPC_Idle1` jouée en
+   boucle dans le studio de l'éditeur, et les autres (salut, applaudir, selfie, émotions…) au bouton **Pose** de la
+   barre du haut. La liste est `ANIMATIONS` dans `import_inzoi.py` (noms dans `Index_Complet/Manifeste_Assets.csv`).
 
 Si le plugin ne compile pas avec Unreal 5.8, m'envoyer les erreurs : on passera par Blender (extension UEFormat
 pour Blender, puis export FBX).
@@ -166,7 +165,7 @@ Pour que le personnage inZOI marche dans Kanto :
   `RootColor`/`TipColor` lus dans `MI_Beard_Scalp_00X.json`. Le nuancier règle `Tint` (blanc = couleur d'origine).
 - Le script cherche aussi les fichiers dans la copie `Groom/` à la racine de l'exercice.
 3. Animations de marche et de course retargetées (section 5) ; émotes et poses de la carte dresseur avec les animations importées.
-4. Taches de rousseur, grains de beauté, cicatrices, maquillage : chercher leurs textures dans l'export.
+4. Maquillage : seuls 4 masques sont dans l'export (voir plus bas). Grains de beauté, cicatrices, tatouages : à chercher.
 5. Le style verre de L'amie sur l'éditeur, avec les icônes importées (`ImportedAssets/InZOI/UI/...`).
 
 ### Modèles, tenues et poils (2026-11-08)
@@ -179,3 +178,27 @@ Pour que le personnage inZOI marche dans Kanto :
 - **Yeux** : inZOI utilise le masque d'iris de MetaHuman `T_Iris_A_M` (R relief, V fibres, B mélange des 2 couleurs, A pupille) avec `EyeColor1/2`, `PupilScale`, `IrisUVRadius`. `M_InZOI_Eye` version 3 pose cette texture sur le globe ; la couleur choisie (`IrisColor`) donne la couleur principale, la seconde en est une version foncée.
 - **Poils, rendu (2026-11-08 soir)** : inZOI trame l'opacité de ses cartes (paramètre `Dither`). `M_InZOI_Hair` version 5 fait pareil avec un bruit par pixel qui change à chaque image (lissé par l'anti-crénelage temporel) : les sourcils (atlas à alpha doux) et les cils ne sortent plus en plaques pleines. Paramètre `Density` pour éclaircir.
 - **Aperçus des coupes, barbes et moustaches** : pris dans `AppearanceHairMesh.json`, `AppearanceBeard.json` et `AppearanceMustache.json` (colonne `Thumbnail` de la ligne dont le `Mesh` est ce modèle).
+
+### Maquillage, motifs d'iris, coupes bicolores, poses (2026-11-08 nuit)
+
+- **Maquillage** (Visage > Maquillage) : table `AppearanceMakeup.json`, 6 catégories (Reflets, Blush et taches, Fard à
+  paupières, Eye-liner, Lèvres, Sourcils dessinés). Chaque style est une pièce **sans modèle** (`FTrainerPartSlotDef::MaskParameter`) :
+  son masque `Makeup_Part_X_NNN_M` est posé sur la peau de la tête (`M_InZOI_Skin` version 2, un masque par catégorie,
+  couleurs `<Emplacement>_R/_G/_B` avec l'intensité en alpha). Les couleurs et intensités d'inZOI sont reprises, et le
+  nuancier les change (une zone par canal du masque, curseur **Intensité**). Le corps, même matériau, n'en reçoit jamais.
+  **Seuls 4 masques sont dans l'export** (`Makeup_Part_A/C/D/E_001_M`) : pour avoir les 81 styles, exporter avec FModel
+  le dossier `Characters/Materials/DefaultTextures/Skin/MakeupMasks` dans `Output/Exports/BlueClient/Content/...`,
+  puis relancer l'import.
+- **Motifs d'iris** (Visage > Yeux) : les 14 lentilles d'inZOI `Lens_Custom_001` à `014` (même format que `T_Iris_A_M`)
+  remplacent la texture d'iris ; la couleur reste celle du nuancier des yeux. Le script mesure le bord de l'iris de chaque
+  motif (canal B, `iris_edge`) et le donne au matériau (`IrisTexEdge`).
+- **Yeux** : `M_InZOI_Eye` version 4 : vernis (Clear Coat) pour l'œil mouillé, relief de l'iris (canal R), collerette
+  plus chaude autour de la pupille, anneau sombre au bord (`LimbusDarkAmount`), blanc légèrement rosé et ombré vers les coins.
+- **Coupes bicolores** (Visage > Cheveux, nuancier) : zones **Dégradé** (vers les pointes, curseur « Début du dégradé »),
+  **Mèches** (mèches au hasard d'après l'identifiant de mèche, canal V de la DIRO, curseur « Quantité ») et **Mèches devant**
+  (seulement les mèches à l'avant de la tête : position dans le repère du mesh, `FrontAxis` = +Y). `M_InZOI_Hair`
+  version 6. Les modèles d'inZOI bicolores (`2ndColor` / `2ndColorPosition`) remplissent la zone Dégradé.
+- **Reflets gris** sur cheveux et barbes : spéculaire 0,1 (au lieu de 0,25), plus faible au creux des mèches.
+  **Cils** : densité 0,55 (moins épais).
+- **Poses** : bouton **Pose** de la barre du haut de l'éditeur (attente, salut, applaudir, selfie, muscles, cœur, fierté,
+  colère, peur, excuses).

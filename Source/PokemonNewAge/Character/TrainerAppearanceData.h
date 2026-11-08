@@ -9,6 +9,7 @@ class USkeletalMesh;
 class UAnimInstance;
 class UAnimSequenceBase;
 class UMaterialInterface;
+class UTexture;
 class UTexture2D;
 
 /** Onglet de l'éditeur où apparaît un curseur */
@@ -198,6 +199,29 @@ struct FTrainerPartSlotDef
 	 *  et le modèle de la variante faite pour cette tête, voir FTrainerPartDef::Variants). Vide = le corps */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	FName FollowSlot;
+
+	/**
+	 *  Emplacement sans modèle 3D (maquillage, motif d'iris) : la pièce pose sa texture (FTrainerPartDef::MaskTexture)
+	 *  dans ce paramètre des matériaux de la pièce suivie (FollowSlot, la tête). Pour le maquillage, les couleurs des
+	 *  canaux R, V, B vont dans <MaskParameter>_R, _G, _B (alpha = intensité). Vide = pièce normale.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FName MaskParameter;
+
+	/** Noms des zones de couleur dans le nuancier (index = zone : 0 = principale, 1 à 3) ; vide = « Principale », « Zone N » */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<FText> ZoneLabels;
+
+	/** Curseur sous le nuancier qui règle l'alpha de la zone (début du dégradé, quantité de mèches, intensité) ; vide = pas de curseur */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<FText> ZoneAmountLabels;
+
+	/** Alpha donné à une zone quand on lui choisit une couleur pour la première fois (1 si absent) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<float> ZoneDefaultAmounts;
+
+	FText GetZoneLabel(int32 Zone) const;
+	float GetZoneDefaultAmount(int32 Zone) const { return ZoneDefaultAmounts.IsValidIndex(Zone) ? ZoneDefaultAmounts[Zone] : 1.f; }
 };
 
 /** Modèle d'une pièce ajusté à une tête précise (inZOI fait une barbe par tête) */
@@ -252,11 +276,36 @@ struct FTrainerPartDef
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	TSoftObjectPtr<UTexture2D> Thumbnail;
 
+	/** Pièce sans modèle (emplacement avec MaskParameter) : masque de maquillage ou motif d'iris */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TSoftObjectPtr<UTexture> MaskTexture;
+
+	/** Maquillage : couleur de départ des canaux R, V, B du masque (alpha = intensité, 0 = canal inutilisé) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<FLinearColor> MaskColors;
+
+	/** Réglages posés avec la texture (ex. IrisTexEdge : bord de l'iris dans le motif) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TMap<FName, float> MaskScalars;
+
 	/** Faux = à acheter en boutique (pas encore branché : tout est disponible pour l'instant) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	bool bStartOwned = true;
 
 	bool FitsBase(FName Base) const { return Bases.IsEmpty() || Bases.Contains(Base); }
+};
+
+/** Animation proposée dans le studio de l'éditeur (bouton « Pose ») */
+USTRUCT(BlueprintType)
+struct FTrainerStudioAnimation
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FText Label;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TSoftObjectPtr<UAnimSequenceBase> Animation;
 };
 
 /** Une base de personnage (Homme, Femme), exportée de Character Creator avec Auto Setup */
@@ -288,6 +337,10 @@ struct FTrainerBaseDef
 	/** Animation d'attente du studio quand Anim Class n'a pas de graphe (TrainerAnimInstance seul) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	TSoftObjectPtr<UAnimSequenceBase> IdleAnimation;
+
+	/** Poses et gestes du studio (bouton « Pose » de l'éditeur), après l'attente */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<FTrainerStudioAnimation> StudioAnimations;
 
 	/** Bouton de l'éditeur (♂ ou ♀) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")

@@ -125,6 +125,9 @@ private:
 	void RefreshColorPanel(FName SlotName, const FTrainerPartDef* Part);
 	void SetPartColor(FName SlotName, int32 Zone, const FLinearColor& Color);
 
+	/** Alpha de départ d'une zone : intensité inZOI du maquillage, sinon FTrainerPartSlotDef::ZoneDefaultAmounts */
+	float DefaultZoneAmount(FName SlotName, const FTrainerPartDef* Part, int32 Zone) const;
+
 	/** Remplit le panneau de droite selon l'onglet, la partie du visage et le mode */
 	void RefreshRightPanel();
 	void AddSection(const FText& Title);

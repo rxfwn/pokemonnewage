@@ -383,6 +383,7 @@ void UCharacterCreatorWidget::BuildToolbar()
 		{ LOCTEXT("Photo", "Photo"), [this]() { TakePhoto(); } },
 		{ LOCTEXT("ZoomFace", "Visage"), [this]() { if (Studio.IsValid()) { Studio->SetFocus(EStudioFocus::Face); } } },
 		{ LOCTEXT("ZoomBody", "Corps"), [this]() { if (Studio.IsValid()) { Studio->SetFocus(EStudioFocus::Body); } } },
+		{ LOCTEXT("Pose", "Pose"), [this]() { if (Studio.IsValid()) { SetStatus(Studio->NextAnimation()); } } },
 		{ LOCTEXT("Undo", "Annuler"), [this]() { Undo(); } },
 		{ LOCTEXT("Redo", "Refaire"), [this]() { Redo(); } },
 	};
@@ -394,7 +395,7 @@ void UCharacterCreatorWidget::BuildToolbar()
 	}
 	PokemonGlass::FGlassLook Look;
 	Look.CornerRadius = 26.f;
-	Place(Canvas, PokemonGlass::Make(WidgetTree, Row, FMargin(8.f, 0.f), Look, TEXT("Toolbar")), FVector2D(640.f, 16.f), FVector2D(640.f, PillHeight));
+	Place(Canvas, PokemonGlass::Make(WidgetTree, Row, FMargin(8.f, 0.f), Look, TEXT("Toolbar")), FVector2D(600.f, 16.f), FVector2D(720.f, PillHeight));
 }
 
 void UCharacterCreatorWidget::BuildTabs()
@@ -569,12 +570,17 @@ void UCharacterCreatorWidget::RefreshRightPanel()
 			break;
 		case EFacePart::Eyes:
 			PanelTitle->SetText(LOCTEXT("PanelEyes", "Yeux"));
+			// Motifs d'iris d'inZOI (lentilles), puis la couleur
+			AddPartGrid(TEXT("Eyes"));
 			AddSection(LOCTEXT("EyeColor", "Couleur des yeux"));
 			AddSwatches(Data->EyePalette, false);
 			break;
 		case EFacePart::Makeup:
 			PanelTitle->SetText(LOCTEXT("PanelMakeup", "Maquillage"));
-			AddNote(LOCTEXT("MakeupSoon", "Bientôt : maquillage, taches de rousseur, grains de beauté, tatouages…"));
+			if (!AddPartGrid(TEXT("Makeup")))
+			{
+				AddNote(LOCTEXT("MakeupSoon", "Le maquillage d'inZOI se rangera ici dès que ses masques seront importés (Tools/InZOI/import_inzoi.bat)."));
+			}
 			break;
 		}
 		break;
@@ -994,8 +1000,8 @@ bool UCharacterCreatorWidget::AddPartGrid(FName TabName)
 		AddTile(Inside, Id == WornId, [Wear, Id]() { Wear(Id); });
 	}
 
-	// Nuancier de la pièce portée (pas pour les têtes : leur couleur, c'est la peau)
-	if (WornDef && TabName != TEXT("Face"))
+	// Nuancier de la pièce portée (pas pour les têtes : leur couleur, c'est la peau ; ni pour les motifs d'iris : couleur des yeux)
+	if (WornDef && TabName != TEXT("Face") && (Shown->MaskParameter.IsNone() || !WornDef->MaskColors.IsEmpty()))
 	{
 		RefreshColorPanel(SlotName, WornDef);
 	}
@@ -1007,8 +1013,27 @@ void UCharacterCreatorWidget::RefreshColorPanel(FName SlotName, const FTrainerPa
 	ColorBox->ClearChildren();
 	ColorBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
-	// Zones : couleur principale, plus les zones du masque que le matériau de la pièce utilise vraiment
-	TArray<int32> Zones = { 0 };
+	const FTrainerPartSlotDef* SlotDef = Data->FindSlot(SlotName);
+
+	// Zones : couleur principale, plus les zones du masque que le matériau de la pièce utilise vraiment.
+	// Maquillage : une zone par canal utilisé du masque (pas de couleur principale).
+	TArray<int32> Zones;
+	if (Part->MaskColors.IsEmpty())
+	{
+		Zones.Add(0);
+	}
+	for (int32 Channel = 0; Channel < Part->MaskColors.Num() && Channel < 3; ++Channel)
+	{
+		if (Part->MaskColors[Channel].A > 0.f)
+		{
+			Zones.Add(Channel + 1);
+		}
+	}
+	if (Zones.IsEmpty())
+	{
+		ColorBox->SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
 	for (const TSoftObjectPtr<UMaterialInterface>& Soft : Part->Materials)
 	{
 		if (const UMaterialInstance* Instance = Cast<UMaterialInstance>(Soft.LoadSynchronous()))
@@ -1028,13 +1053,17 @@ void UCharacterCreatorWidget::RefreshColorPanel(FName SlotName, const FTrainerPa
 	Zones.Sort();
 	if (!Zones.Contains(ColorZone))
 	{
-		ColorZone = 0;
+		ColorZone = Zones[0];
 	}
 
-	auto ZoneColor = [this, SlotName](int32 Zone)
+	auto ZoneColor = [this, SlotName, Part](int32 Zone)
 	{
 		const FTrainerPartColor* Found = Current.FindPartColor(SlotName, Zone);
-		return Found ? Found->Color : FLinearColor::White;
+		if (Found)
+		{
+			return Found->Color;
+		}
+		return Part->MaskColors.IsValidIndex(Zone - 1) ? Part->MaskColors[Zone - 1] : FLinearColor::White;
 	};
 
 	// En-tête : « Couleur » et Réinitialiser
@@ -1063,7 +1092,9 @@ void UCharacterCreatorWidget::RefreshColorPanel(FName SlotName, const FTrainerPa
 			UHorizontalBoxSlot* DotSlot = Inside->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(18.f, 18.f), MakeRounded(WidgetTree, ZoneColor(Zone), 9.f, FLinearColor::White, 1.f)));
 			DotSlot->SetVerticalAlignment(VAlign_Center);
 			DotSlot->SetPadding(FMargin(8.f, 0.f, 6.f, 0.f));
-			UTextBlock* Label = MakeText(WidgetTree, Zone == 0 ? LOCTEXT("ZoneMain", "Principale") : FText::Format(LOCTEXT("ZoneN", "Zone {0}"), Zone), 18.f,
+			const FText ZoneName = SlotDef ? SlotDef->GetZoneLabel(Zone)
+				: (Zone == 0 ? LOCTEXT("ZoneMain", "Principale") : FText::Format(LOCTEXT("ZoneN", "Zone {0}"), Zone));
+			UTextBlock* Label = MakeText(WidgetTree, ZoneName, 18.f,
 				PokemonFonts::EStyle::Regular, bSelected ? DarkText : TextColor);
 			if (bSelected)
 			{
@@ -1118,6 +1149,56 @@ void UCharacterCreatorWidget::RefreshColorPanel(FName SlotName, const FTrainerPa
 	HexRow->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(140.f, 32.f), Field));
 	ColorBox->AddChildToVerticalBox(HexRow);
 	ColorSlot = SlotName;
+
+	// Réglage de la zone (alpha de sa couleur) : début du dégradé, quantité de mèches, intensité du maquillage
+	if (SlotDef && SlotDef->ZoneAmountLabels.IsValidIndex(ColorZone) && !SlotDef->ZoneAmountLabels[ColorZone].IsEmpty())
+	{
+		const int32 Zone = ColorZone;
+		const float Amount = Current.FindPartColor(SlotName, Zone) ? Selected.A : DefaultZoneAmount(SlotName, Part, Zone);
+		UHorizontalBox* Row = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+		UTextBlock* Label = MakeText(WidgetTree, SlotDef->ZoneAmountLabels[Zone], 20.f);
+		UHorizontalBoxSlot* LabelSlot = Row->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(190.f, 0.f), Label));
+		LabelSlot->SetVerticalAlignment(VAlign_Center);
+		UCreatorSlider* Slider = WidgetTree->ConstructWidget<UCreatorSlider>(UCreatorSlider::StaticClass());
+		Slider->SetMinValue(0.f);
+		Slider->SetMaxValue(1.f);
+		Slider->SetStepSize(0.01f);
+		Slider->SetIndentHandle(false);
+		Slider->SetSliderBarColor(FLinearColor(1.f, 1.f, 1.f, 0.45f));
+		Slider->SetSliderHandleColor(FLinearColor::White);
+		Slider->SetValue(Amount);
+		Slider->ValueText = MakeText(WidgetTree, FText::AsPercent(Amount), 18.f, PokemonFonts::EStyle::Regular, DimColor);
+		Slider->ValueText->SetJustification(ETextJustify::Right);
+		TWeakObjectPtr<UTextBlock> ValueText = Slider->ValueText.Get();
+		Slider->Setup([this, SlotName, Zone, ValueText, ZoneColor](float Value)
+		{
+			// Pas de RefreshRightPanel ici : il referait le curseur pendant qu'on le glisse
+			FTrainerAppearance New = Current;
+			FLinearColor Color = ZoneColor(Zone);
+			Color.A = Value;
+			New.SetPartColor(SlotName, Zone, Color);
+			ChangeAppearance(New, TEXT("ColorAmount"));
+			if (ValueText.IsValid())
+			{
+				ValueText->SetText(FText::AsPercent(Value));
+			}
+		});
+		UHorizontalBoxSlot* SliderSlot = Row->AddChildToHorizontalBox(Slider);
+		SliderSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+		SliderSlot->SetVerticalAlignment(VAlign_Center);
+		Row->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(64.f, 0.f), Slider->ValueText))->SetVerticalAlignment(VAlign_Center);
+		ColorBox->AddChildToVerticalBox(MakeBox(WidgetTree, FVector2D(0.f, 40.f), Row))->SetPadding(FMargin(0.f, 8.f, 0.f, 0.f));
+	}
+}
+
+float UCharacterCreatorWidget::DefaultZoneAmount(FName SlotName, const FTrainerPartDef* Part, int32 Zone) const
+{
+	if (Part && Part->MaskColors.IsValidIndex(Zone - 1))
+	{
+		return Part->MaskColors[Zone - 1].A;
+	}
+	const FTrainerPartSlotDef* SlotDef = Data ? Data->FindSlot(SlotName) : nullptr;
+	return SlotDef ? SlotDef->GetZoneDefaultAmount(Zone) : 1.f;
 }
 
 void UCharacterCreatorWidget::HandleHexCommitted(const FText& Text, ETextCommit::Type CommitType)
@@ -1140,8 +1221,21 @@ void UCharacterCreatorWidget::HandleHexCommitted(const FText& Text, ETextCommit:
 
 void UCharacterCreatorWidget::SetPartColor(FName SlotName, int32 Zone, const FLinearColor& Color)
 {
+	// L'alpha est le réglage de la zone (début du dégradé, quantité de mèches, intensité) : on garde celui déjà choisi
+	float Amount = 1.f;
+	if (const FTrainerPartColor* Existing = Current.FindPartColor(SlotName, Zone))
+	{
+		Amount = Existing->Color.A;
+	}
+	else
+	{
+		const FTrainerBaseDef* Base = Data ? Data->FindBase(Current.Base) : nullptr;
+		const TMap<FName, const FTrainerPartDef*> Worn = Base ? Data->ResolveParts(*Base, Current) : TMap<FName, const FTrainerPartDef*>();
+		const FTrainerPartDef* const* Part = Worn.Find(SlotName);
+		Amount = DefaultZoneAmount(SlotName, Part ? *Part : nullptr, Zone);
+	}
 	FTrainerAppearance New = Current;
-	New.SetPartColor(SlotName, Zone, FLinearColor(Color.R, Color.G, Color.B, 1.f));
+	New.SetPartColor(SlotName, Zone, FLinearColor(Color.R, Color.G, Color.B, Amount));
 	ChangeAppearance(New, TEXT("Color"), false);
 	RefreshRightPanel();
 }
@@ -1202,9 +1296,9 @@ void UCharacterCreatorWidget::RefreshWornColumn()
 				FacePart = EFacePart::Presets;
 				SelectTab(ETab::Face);
 			}
-			else if (SlotTab == TEXT("Hair"))
+			else if (SlotTab == TEXT("Hair") || SlotTab == TEXT("Makeup") || SlotTab == TEXT("Eyes"))
 			{
-				FacePart = EFacePart::Hair;
+				FacePart = SlotTab == TEXT("Hair") ? EFacePart::Hair : (SlotTab == TEXT("Makeup") ? EFacePart::Makeup : EFacePart::Eyes);
 				SelectTab(ETab::Face);
 			}
 			else

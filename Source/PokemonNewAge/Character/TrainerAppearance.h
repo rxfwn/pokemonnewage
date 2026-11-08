@@ -31,6 +31,7 @@ struct FTrainerPartColor
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
 	int32 Zone = 0;
 
+	/** Alpha = réglage de la zone : début du dégradé ou quantité de mèches (cheveux), intensité (maquillage) ; 1 ailleurs */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
 	FLinearColor Color = FLinearColor::White;
 };

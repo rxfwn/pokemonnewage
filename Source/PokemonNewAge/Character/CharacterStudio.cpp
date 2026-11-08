@@ -1,6 +1,8 @@
 #include "Character/CharacterStudio.h"
 #include "Character/TrainerAppearanceData.h"
 #include "Character/TrainerAppearanceRender.h"
+#include "Character/TrainerAnimInstance.h"
+#include "Animation/AnimSequenceBase.h"
 #include "Camera/CameraComponent.h"
 #include "Components/RectLightComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -159,7 +161,47 @@ void ACharacterStudio::Init(UTrainerAppearanceData* InData, const FTrainerAppear
 
 void ACharacterStudio::ShowAppearance(const FTrainerAppearance& Appearance)
 {
+	const FName PreviousBase = AppliedBase;
 	TrainerAppearanceRender::Apply(Data, this, Preview, Appearance, AppliedBase);
+	if (PreviousBase != AppliedBase)
+	{
+		AnimationIndex = 0;
+	}
+	ApplyStudioAnimation();
+}
+
+void ACharacterStudio::ApplyStudioAnimation()
+{
+	const FTrainerBaseDef* Base = Data ? Data->FindBase(AppliedBase) : nullptr;
+	UTrainerAnimInstance* Anim = Preview ? Cast<UTrainerAnimInstance>(Preview->GetAnimInstance()) : nullptr;
+	if (!Base || !Anim)
+	{
+		return;
+	}
+	UAnimSequenceBase* Sequence = nullptr;
+	if (AnimationIndex > 0 && Base->StudioAnimations.IsValidIndex(AnimationIndex - 1))
+	{
+		Sequence = Base->StudioAnimations[AnimationIndex - 1].Animation.LoadSynchronous();
+	}
+	Anim->SetIdleAnimation(Sequence ? Sequence : Base->IdleAnimation.LoadSynchronous());
+}
+
+FText ACharacterStudio::NextAnimation()
+{
+	const FTrainerBaseDef* Base = Data ? Data->FindBase(AppliedBase) : nullptr;
+	const int32 Count = Base ? Base->StudioAnimations.Num() : 0;
+	if (Count == 0)
+	{
+		AnimationIndex = 0;
+		return NSLOCTEXT("CharacterStudio", "NoPoses", "Pas encore d'animation : relance Tools/InZOI/import_inzoi.bat (plugin UEFormat installé).");
+	}
+	AnimationIndex = (AnimationIndex + 1) % (Count + 1);
+	ApplyStudioAnimation();
+	if (AnimationIndex == 0)
+	{
+		return NSLOCTEXT("CharacterStudio", "IdlePose", "Pose : attente");
+	}
+	return FText::Format(NSLOCTEXT("CharacterStudio", "PoseN", "Pose : {0}"), Base->StudioAnimations[AnimationIndex - 1].Label);
 }
 
 void ACharacterStudio::SetFocus(EStudioFocus NewFocus)
