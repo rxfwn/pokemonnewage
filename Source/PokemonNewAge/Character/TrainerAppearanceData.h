@@ -405,6 +405,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Editor")
 	TArray<FTrainerPresetDef> FacePresets;
 
+	/** Corps > Silhouettes : seulement les curseurs du corps, pour la base de Look.Base (toutes si vide) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Editor")
+	TArray<FTrainerPresetDef> BodyPresets;
+
 	/** Teintes de peau proposées (Visage > Peau) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Editor")
 	TArray<FLinearColor> SkinPalette;
@@ -432,6 +436,10 @@ public:
 	/** Multiplie toutes les déformations par os (pour adoucir si c'est trop fort) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones", meta=(ClampMin=0, ClampMax=2))
 	float BoneDeformationScale = 1.f;
+
+	/** Part de Muscles et Corpulence ajoutée à chaque groupe d'os du corps (coefficients delta_muscle / delta_masse) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Sliders", meta=(ClampMin=0, ClampMax=1))
+	float GlobalSliderShare = 0.35f;
 
 	/** Essai : échange les axes Y et Z des déplacements et échelles d'os (si l'import .glb a tourné les repères des os) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones")

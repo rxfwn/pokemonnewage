@@ -132,7 +132,7 @@ private:
 	void RefreshRightPanel();
 	void AddSection(const FText& Title);
 	void AddSliders(ETrainerSliderGroup Group);
-	void AddPresetGrid(const TArray<FTrainerPresetDef>& Presets, bool bFull);
+	void AddPresetGrid(const TArray<FTrainerPresetDef>& Presets, bool bFull, bool bBody = false);
 	void AddSwatches(const TArray<FLinearColor>& Colors, bool bSkin);
 	void AddNote(const FText& Text);
 

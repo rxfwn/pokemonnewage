@@ -230,3 +230,14 @@ canaux portent le dessin (ligne « canaux du masque … » dans le journal ; un 
   au travers.
 - Icônes : une ligne sans icône prend celle de sa variante de couleur (`_CT001`…).
 - Créateur plus rapide : le MID d'un emplacement est gardé d'un clic à l'autre s'il vient du même matériau.
+
+## Curseurs du corps (2026-11-08 soir)
+
+Les bornes viennent des silhouettes d'inZOI (`Data/JsonResult/AppearanceBodyShape.json`) :
+- **Muscles** (`MuscleDefinition`) va de 0 à 1 ;
+- **Corpulence** (`BodyMassRatio`) va de -1 à +1 ;
+- chacun des curseurs du corps (`BodyModifierParameters`, un par `index_groupe` de `Morphologie_Corps_Os.csv`) va de -1 à +1.
+
+Muscles et Corpulence n'ajoutent plus que 35 % de leurs coefficients (`GlobalSliderShare` du catalogue) à chaque
+groupe d'os : avant, ils s'ajoutaient en entier et tout partait au maximum. Les silhouettes Moyen, Mince, Rond, Musclé
+et Poilu s'affichent en haut de l'onglet Corps (`BodyPresets`).

@@ -587,6 +587,11 @@ void UCharacterCreatorWidget::RefreshRightPanel()
 
 	case ETab::Body:
 		PanelTitle->SetText(LOCTEXT("PanelBody", "Corps"));
+		if (Data->BodyPresets.ContainsByPredicate([this](const FTrainerPresetDef& P) { return P.Look.Base.IsNone() || P.Look.Base == Current.Base; }))
+		{
+			AddNote(LOCTEXT("BodyShapes", "Silhouettes d'inZOI : choisis un point de départ, puis affine avec les curseurs."));
+			AddPresetGrid(Data->BodyPresets, false, true);
+		}
 		AddSliders(ETrainerSliderGroup::Body);
 		break;
 
@@ -694,7 +699,7 @@ void UCharacterCreatorWidget::AddSliders(ETrainerSliderGroup Group)
 	}
 }
 
-void UCharacterCreatorWidget::AddPresetGrid(const TArray<FTrainerPresetDef>& Presets, bool bFull)
+void UCharacterCreatorWidget::AddPresetGrid(const TArray<FTrainerPresetDef>& Presets, bool bFull, bool bBody)
 {
 	if (Presets.IsEmpty())
 	{
@@ -703,9 +708,15 @@ void UCharacterCreatorWidget::AddPresetGrid(const TArray<FTrainerPresetDef>& Pre
 		return;
 	}
 	UHorizontalBox* Row = nullptr;
+	int32 Shown = 0;
 	for (int32 Index = 0; Index < Presets.Num(); ++Index)
 	{
-		if (Index % GridColumns == 0)
+		// Silhouettes : seulement celles de la base portée (corps d'homme ou de femme)
+		if (bBody && !Presets[Index].Look.Base.IsNone() && Presets[Index].Look.Base != Current.Base)
+		{
+			continue;
+		}
+		if (Shown++ % GridColumns == 0)
 		{
 			Row = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
 			PanelList->AddChild(Row);
@@ -730,9 +741,9 @@ void UCharacterCreatorWidget::AddPresetGrid(const TArray<FTrainerPresetDef>& Pre
 			Initial->SetAutoWrapText(true);
 			Inside = Initial;
 		}
-		UCreatorButton* Button = MakeButton(WidgetTree, Inside, ButtonFill, 56.f, [this, Index, bFull]()
+		UCreatorButton* Button = MakeButton(WidgetTree, Inside, ButtonFill, 56.f, [this, Index, bFull, bBody]()
 		{
-			const TArray<FTrainerPresetDef>& List = bFull ? Data->FullPresets : Data->FacePresets;
+			const TArray<FTrainerPresetDef>& List = bBody ? Data->BodyPresets : bFull ? Data->FullPresets : Data->FacePresets;
 			if (!List.IsValidIndex(Index))
 			{
 				return;

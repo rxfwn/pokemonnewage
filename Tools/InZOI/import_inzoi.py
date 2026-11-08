@@ -1178,7 +1178,7 @@ def body_sliders(gender, age):
         definition.set_editor_property("signed", signed)
         return definition
 
-    sliders.append(slider("Muscle", "Muscles", "Silhouette", True))
+    sliders.append(slider("Muscle", "Muscles", "Silhouette", False))  # 0 à 1 dans inZOI (MuscleDefinition)
     sliders.append(slider("Masse", "Corpulence", "Silhouette", True))
     ordered = [name for name in GROUP_FR if name in groups] + [name for name in groups if name not in GROUP_FR]
     for name in ordered:
@@ -2346,6 +2346,59 @@ def hair_part_id(mesh_id):
     return "InZOI_SKM_%s_Hair_%s_%s" % (gender, pieces[2], pieces[3])
 
 
+BODY_SHAPE_FR = {"Average": "Moyen", "Slim": "Mince", "Overweight": "Rond", "Muscular": "Musclé", "Bodyhair": "Poilu"}
+
+
+def body_presets(bases):
+    """Silhouettes d'inZOI (AppearanceBodyShape.json) : Muscles (MuscleDefinition, 0 à 1), Corpulence (BodyMassRatio,
+    -1 à 1) et les curseurs du corps (BodyModifierParameters, -1 à 1, rangés par index_groupe de Morphologie_Corps_Os)"""
+    rows = read_table("AppearanceBodyShape")
+    morpho = read_csv(MORPHO_BODY)
+    presets = []
+    for (gender, age), (base_id, _label, _male, _body) in BASES.items():
+        if not any(str(b.get_editor_property("id")) == base_id for b in bases):
+            continue
+        groups = {}
+        for row in morpho:
+            if row.get("genre") == gender and row.get("age") == age:
+                try:
+                    groups.setdefault(int(row.get("index_groupe")), row["groupe"])
+                except (TypeError, ValueError):
+                    pass
+        counts = {}
+        for row in rows:
+            if row.get("GenderType") != gender or row.get("BodyAgeType") != age or row.get("HiddenFromUI"):
+                continue
+            try:
+                values = [float(v) for v in (row.get("BodyModifierParameters") or "").strip("()").split(",") if v.strip()]
+            except ValueError:
+                continue
+            if len(values) <= max(groups or [0]):
+                continue  # anciennes silhouettes à 21 valeurs, cachées dans inZOI
+            sliders = []
+            for slider_id, value in [("Muscle", row.get("MuscleDefinition", 0.0)), ("Masse", row.get("BodyMassRatio", 0.0))] + [
+                    ("Corps_" + groups[i], v) for i, v in enumerate(values) if i in groups]:
+                entry = unreal.TrainerSliderValue()
+                entry.set_editor_property("slider", slider_id)
+                entry.set_editor_property("value", max(-1.0, min(1.0, float(value or 0.0))))
+                sliders.append(entry)
+            look = unreal.TrainerAppearance()
+            look.set_editor_property("base", base_id)
+            look.set_editor_property("sliders", sliders)
+            match = re.match(r"[MF]_([A-Za-z]+?)(\d*)$", row.get("Id", ""))
+            kind = BODY_SHAPE_FR.get(match.group(1), match.group(1)) if match else row.get("Id", "")
+            counts[kind] = counts.get(kind, 0) + 1
+            preset = unreal.TrainerPresetDef()
+            preset.set_editor_property("label", "%s %d" % (kind, counts[kind]))
+            thumbnail = import_texture(game_rel(row.get("Thumbnail")), "ui")
+            if thumbnail:
+                preset.set_editor_property("thumbnail", thumbnail)
+            preset.set_editor_property("look", look)
+            presets.append(preset)
+        log("Silhouettes %s : %d" % (base_id, sum(counts.values())))
+    return presets
+
+
 def full_presets(bases, parts):
     rows = read_csv(os.path.join(TABLES, "AppearanceFacePreset.csv"))
     skin_tones = {r.get("ID"): r.get("SkinTone") for r in read_csv(os.path.join(TABLES, "AppearanceSkinColor.csv"))}
@@ -2585,6 +2638,7 @@ def main():
         data.set_editor_property("common_sliders", [])
         data.set_editor_property("part_slots", slot_defs)
         data.set_editor_property("full_presets", presets)
+        data.set_editor_property("body_presets", body_presets(bases))
         data.set_editor_property("parts", parts)
         log("Emplacements teintés par la couleur de peau : " + ", ".join(sorted(skin_slots)))
         data.set_editor_property("skin_material_slots", sorted(skin_slots))

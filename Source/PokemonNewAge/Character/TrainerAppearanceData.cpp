@@ -114,8 +114,11 @@ TArray<FTrainerBoneOffset> UTrainerAppearanceData::ComputeBoneOffsets(const FTra
 		{
 			continue;
 		}
-		// Comme inZOI : chaque groupe = son curseur + une part des curseurs globaux Muscles et Corpulence
-		const float Value = FMath::Clamp(Appearance.GetSlider(Def.Id) + Muscle * Def.MuscleCoef + Mass * Def.MassCoef, -1.f, 1.f);
+		// Chaque groupe = son curseur (-1 à 1, comme les silhouettes d'inZOI) + une petite part de Muscles et Corpulence.
+		// Avant, les deux s'ajoutaient en entier et poussaient presque tout au maximum à +1 (corps déformé).
+		const float Own = FMath::Clamp(Appearance.GetSlider(Def.Id), -1.f, 1.f);
+		const float Global = GlobalSliderShare * (FMath::Clamp(Muscle, 0.f, 1.f) * Def.MuscleCoef + FMath::Clamp(Mass, -1.f, 1.f) * Def.MassCoef);
+		const float Value = FMath::Clamp(Own + Global, -1.f, 1.f);
 		if (FMath::IsNearlyZero(Value))
 		{
 			continue;
