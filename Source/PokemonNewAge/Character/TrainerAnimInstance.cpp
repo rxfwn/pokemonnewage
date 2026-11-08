@@ -143,8 +143,11 @@ bool FTrainerAnimInstanceProxy::Evaluate(FPoseContext& Output)
 			const FCompactPoseBoneIndex Index(Raw);
 			if (const FVector* Ratio = ScaleRatio.Find(Bones.GetParentBoneIndex(Index).GetInt()))
 			{
+				// L'échelle du parent agrandit aussi la position locale de l'enfant : sans ça, élargir les épaules ou
+				// le torse décollait le bras et ouvrait le ventre (silhouettes « Rond »). On l'annule pour les deux.
 				FTransform& Child = Output.Pose[Index];
 				Child.SetScale3D(Child.GetScale3D() / *Ratio);
+				Child.SetTranslation(Child.GetTranslation() / *Ratio);
 			}
 		}
 	}

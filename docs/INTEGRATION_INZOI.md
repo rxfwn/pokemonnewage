@@ -241,3 +241,23 @@ Les bornes viennent des silhouettes d'inZOI (`Data/JsonResult/AppearanceBodyShap
 Muscles et Corpulence n'ajoutent plus que 35 % de leurs coefficients (`GlobalSliderShare` du catalogue) à chaque
 groupe d'os : avant, ils s'ajoutaient en entier et tout partait au maximum. Les silhouettes Moyen, Mince, Rond, Musclé
 et Poilu s'affichent en haut de l'onglet Corps (`BodyPresets`).
+
+## Retouches du 2026-11-08 (14 points)
+
+- **Attente** : un vrai idle du corps, `ANIM_F_Crowd_idle1` (secours : `Crowd_idle7`, `NPC_Idle3`). Les animations
+  « Portrait » n'animaient que le visage (corps en T). Poses à la touche **P** : Mains jointes, Salut, Bravo, Selfie,
+  Muscles, Cœur, Fier, Ennui, Détente. Plus de message « Pose : … ».
+- **Modèles** : hommes et femmes mélangés, sans libellé sous les vignettes.
+- **Peau** (`M_InZOI_Skin` version 5) : normale de détail de la tête d'inZOI (`Male/Female_Head_Detail_Full_N`, pores,
+  rides, lèvres ; `DetailNormalAmount` à 1 sur les têtes, 0 sur le corps) et micro-relief répété (`T_SkinMicro_N`,
+  `MicroTiling` 24, `MicroNormalAmount` 0,35), rugosité un peu variée. Le maquillage et les détails de peau se mêlent
+  en « lumière douce » : la couleur garde le grain de la peau au lieu d'un aplat.
+- **Yeux** (`M_InZOI_Eye` version 5) : réglages du `MI_Eyeball_Base` d'inZOI (pupille 1,25, mélange des couleurs 0,19,
+  limbe 0,35), fibres de l'iris plus claires, blanc de l'œil moins éclatant.
+- **Poils** (`M_InZOI_Hair` version 9) : seuil du tramage abaissé, barbes, sourcils et cils plus fournis.
+- **Corps** : quand un os grossit, la position de ses enfants n'est plus agrandie (bras décollé, ventre ouvert avec
+  les silhouettes « Rond »). Si un défaut reste, essayer la case `Swap Bone YZ` du catalogue.
+- **Interface** : titre blanc et plus grand, aligné avec la question ; plus de sous-titre ; barre du haut réduite à
+  Aléatoire, Annuler, Refaire ; cases de touches **U** (masquer l'interface) et **P** (changer de pose) ; onglets
+  Cheveux, Barbe, Moustache… en une colonne collée, sans colonne de catégories.
+- Le « 0 textures » du journal veut dire « aucune nouvelle texture importée cette fois » (elles l'étaient déjà).

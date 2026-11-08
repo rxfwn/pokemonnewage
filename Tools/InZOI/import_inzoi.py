@@ -732,7 +732,7 @@ def constant(material, value, x, y):
     return node
 
 
-SKIN_VERSION = 4  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
+SKIN_VERSION = 5  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
 # Maquillage d'inZOI (table AppearanceMakeup) : catégorie, lettre du dossier de masques, emplacement du jeu (= nom du
 # paramètre texture de M_InZOI_Skin, couleurs dans <emplacement>_R/_G/_B), libellé, force du mélange (les reflets d'inZOI
 # mêlent un éclat blanc et une ombre de contour : à moitié pour rester naturels)
@@ -760,6 +760,16 @@ SKIN_FEATURE_SINGULAR = {"SkinFreckles": "Taches", "SkinMoles": "Grain de beaut�
                          "SkinTattoo": "Tatouage", "SkinFacePaint": "Peinture"}
 SCAR_COLOR_PARAM = "SkinScarColor"
 FRECKLE_COLOR = "8A5A3C"  # pas de couleur dans la table d'inZOI : brun clair
+# Relief de la peau d'inZOI (dossier Skin de MakeupV2) : normale de détail de la tête (rides, pores, lèvres) par genre,
+# et micro-relief répété partout (sinon la peau a l'air en plastique)
+SKIN_TEXTURES = "Characters/Materials/DefaultTextures/Skin"
+HEAD_DETAIL_NORMAL = {"Female": SKIN_TEXTURES + "/Female_Head_Detail_Full_N", "Male": SKIN_TEXTURES + "/Male_Head_Detail_Full_N"}
+SKIN_MICRO_NORMAL = [SKIN_TEXTURES + "/T_SkinMicro_N", "MetaHumans/Common/Materials/Textures/T_SkinMicroNormal"]
+
+
+def makeup_blend(base, color):
+    """Mélange du maquillage qui garde le grain de la peau : moitié couleur pure, moitié « lumière douce » sur la peau"""
+    return "lerp(%s, (1.0 - 2.0 * %s) * %s * %s + 2.0 * %s * %s, 0.5)" % (color, color, base, base, color, base)
 
 
 def default_mask_texture():
@@ -818,8 +828,8 @@ def build_skin_master():
                 set_prop(color, "default_value", unreal.LinearColor(0, 0, 0, 0))
                 links.append((color, "", "%s%d" % (channel, index)))
                 links.append((color, "A", "%s%da" % (channel, index)))  # alpha à part : la sortie principale n'a que RVB
-                code.append("c = lerp(c, %s%d.rgb, saturate(M%d.%s * %s%da * %.2f));" % (
-                    channel, index, index, channel.lower(), channel, index, blend))
+                code.append("c = lerp(c, %s, saturate(M%d.%s * %s%da * %.2f));" % (
+                    makeup_blend("c", "%s%d.rgb" % (channel, index)), index, channel.lower(), channel, index, blend))
         shared = getattr(getattr(unreal, "SamplerSourceMode", None), "SSM_WRAP_WORLD_GROUP_SETTINGS", None)
         for index, (slot, _label, _table, kind) in enumerate(SKIN_FEATURES):
             y = (len(MAKEUP_PARTS) + index) * 450
@@ -841,8 +851,8 @@ def build_skin_master():
                 links.append((color, "A", "%s%sa" % (name, channel)))
             if kind == "rgb":
                 for channel in "RGB":
-                    code.append("c = lerp(c, %s%s.rgb, saturate(%s.%s * %s%sa));" % (
-                        name, channel, name, channel.lower(), name, channel))
+                    code.append("c = lerp(c, %s, saturate(%s.%s * %s%sa));" % (
+                        makeup_blend("c", "%s%s.rgb" % (name, channel)), name, channel.lower(), name, channel))
                 continue
             # Canaux du masque qui portent le dessin (trouvés à l'import, R par défaut)
             for offset, channel in enumerate("RGBA"):
@@ -864,7 +874,7 @@ def build_skin_master():
                 # Couleur de la cicatrice (texture _D d'inZOI) teintée dans le nuancier (blanc = telle quelle)
                 code.append("c = lerp(c, %sD.rgb * %sR.rgb, saturate(m%d * %sRa));" % (name, name, index, name))
             else:
-                code.append("c = lerp(c, %sR.rgb, saturate(m%d * %sRa));" % (name, index, name))
+                code.append("c = lerp(c, %s, saturate(m%d * %sRa));" % (makeup_blend("c", "%sR.rgb" % name), index, name))
     else:
         log("Peau : aucune texture de masque trouvée, maquillage désactivé")
     code.append("return c;")
@@ -878,13 +888,71 @@ def build_skin_master():
     for node, output, input_name in links:
         MEL.connect_material_expressions(node, output, custom, input_name)
     MEL.connect_material_property(custom, "", unreal.MaterialProperty.MP_BASE_COLOR)
-    MEL.connect_material_property(constant(material, 0.55, -400, 250), "", unreal.MaterialProperty.MP_ROUGHNESS)
-    MEL.connect_material_property(constant(material, 0.35, -400, 350), "", unreal.MaterialProperty.MP_SPECULAR)
+    build_skin_relief(material)
+    MEL.connect_material_property(constant(material, 0.38, -400, 350), "", unreal.MaterialProperty.MP_SPECULAR)
     EAL.set_metadata_tag(material, "InZOIVersion", str(SKIN_VERSION))
     return finish_material(material, SKIN_MASTER)
 
 
-EYE_VERSION = 4  # à augmenter quand le dessin de l'œil change : le matériau est alors refait
+def build_skin_relief(material):
+    """Normale et rugosité de la peau : normale de détail de la tête (DetailNormal, force DetailNormalAmount, 0 sur le
+    corps qui a d'autres UV) + micro-relief répété (SkinMicroNormal, MicroTiling fois), rugosité un peu variée"""
+    shared = getattr(getattr(unreal, "SamplerSourceMode", None), "SSM_WRAP_WORLD_GROUP_SETTINGS", None)
+    flat = unreal.load_asset("/Engine/EngineMaterials/FlatNormal")
+    micro_texture = None
+    for rel in SKIN_MICRO_NORMAL:
+        micro_texture = import_texture(rel, "normal")
+        if micro_texture:
+            break
+
+    def scalar(name, value, x, y):
+        node = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, x, y)
+        set_prop(node, "parameter_name", name)
+        set_prop(node, "default_value", value)
+        return node
+
+    uv = MEL.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate, -1700, 1800)
+    tiling = scalar("MicroTiling", 24.0, -1700, 1950)
+    tiled = MEL.create_material_expression(material, unreal.MaterialExpressionMultiply, -1450, 1850)
+    MEL.connect_material_expressions(uv, "", tiled, "A")
+    MEL.connect_material_expressions(tiling, "", tiled, "B")
+    samples = []
+    for name, texture, uv_node, y in (("DetailNormal", flat, uv, 1600), ("SkinMicroNormal", micro_texture or flat, tiled, 1850)):
+        sample = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -1100, y)
+        set_prop(sample, "parameter_name", name)
+        set_prop(sample, "texture", texture)
+        set_prop(sample, "sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_NORMAL)
+        if shared is not None:
+            set_prop(sample, "sampler_source", shared)
+        MEL.connect_material_expressions(uv_node, "", sample, "UVs")
+        samples.append(sample)
+    detail_amount = scalar("DetailNormalAmount", 0.0, -1100, 2100)
+    micro_amount = scalar("MicroNormalAmount", 0.35, -1100, 2200)
+    rough_base = scalar("SkinRoughness", 0.5, -1100, 2300)
+    normal = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -600, 1800)
+    set_prop(normal, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+    set_prop(normal, "code", "float2 xy = D.xy * DA + M.xy * MA;\nreturn normalize(float3(xy, 1.0));")
+    rough = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -600, 2050)
+    set_prop(rough, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+    # Les creux du micro-relief (pores) un peu plus mats que les bosses
+    set_prop(rough, "code", "return saturate(R + (1.0 - M.z) * 0.6 * MA - length(D.xy) * 0.1 * DA);")
+    for node, names in ((normal, ("D", "M", "DA", "MA")), (rough, ("D", "M", "DA", "MA", "R"))):
+        entries = []
+        for input_name in names:
+            entry = unreal.CustomInput()
+            entry.set_editor_property("input_name", input_name)
+            entries.append(entry)
+        set_prop(node, "inputs", entries)
+        MEL.connect_material_expressions(samples[0], "RGB", node, "D")
+        MEL.connect_material_expressions(samples[1], "RGB", node, "M")
+        MEL.connect_material_expressions(detail_amount, "", node, "DA")
+        MEL.connect_material_expressions(micro_amount, "", node, "MA")
+    MEL.connect_material_expressions(rough_base, "", rough, "R")
+    MEL.connect_material_property(normal, "", unreal.MaterialProperty.MP_NORMAL)
+    MEL.connect_material_property(rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
+
+
+EYE_VERSION = 5  # à augmenter quand le dessin de l'œil change : le matériau est alors refait
 # Masque d'iris d'inZOI (celui de MetaHuman) : R = relief, V = fibres de l'iris, B = mélange des 2 couleurs, A = pupille
 IRIS_MASKS = ["MetaHumans/Common/Face/Textures/IrisTextures/iris_001/T_Iris_A_M",
               "Characters/Materials/DefaultTextures/Eyes/IrisTextures/iris_001/T_Iris_A_M"]
@@ -937,7 +1005,7 @@ def build_eye_master():
     COT = unreal.CustomMaterialOutputType
     uv = MEL.create_material_expression(material, unreal.MaterialExpressionTextureCoordinate, -1500, -200)
     radius = scalar("IrisUVRadius", 1.0, -1500, 0)
-    pupil_scale = scalar("PupilScale", 1.1, -1500, 150)
+    pupil_scale = scalar("PupilScale", 1.25, -1500, 150)
     # Rayon du bord de l'iris dans la texture (0,45 pour T_Iris_A_M ; mesuré pour chaque motif de lentille, voir iris_edge)
     edge = scalar(IRIS_EDGE_PARAM, IRIS_EDGE_REFERENCE, -1500, 300)
     iris_uv = custom_node("return 0.5 + (UV - 0.5) * %.3f / max(Radius, 0.1) * (Edge / %.3f);" % (IRIS_UV_SCALE, IRIS_EDGE_REFERENCE),
@@ -962,9 +1030,9 @@ def build_eye_master():
     iris = MEL.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -1000, 350)
     set_prop(iris, "parameter_name", "IrisColor")
     set_prop(iris, "default_value", unreal.LinearColor(0.189, 0.102, 0.026, 1))
-    balance = scalar("IrisColorBalance", 0.35, -1000, 500)
-    smooth = scalar("IrisColorBalanceSmoothness", 0.8, -1000, 600)
-    limbus = scalar("LimbusDarkAmount", 0.55, -1000, 700)
+    balance = scalar("IrisColorBalance", 0.19, -1000, 500)
+    smooth = scalar("IrisColorBalanceSmoothness", 0.79, -1000, 600)
+    limbus = scalar("LimbusDarkAmount", 0.35, -1000, 700)
     combine = custom_node((
         "float d = distance(UV, float2(0.5, 0.5));\n"
         "float k = %.3f / max(Edge, 0.05);\n"
@@ -973,14 +1041,14 @@ def build_eye_master():
         "float irisMask = 1.0 - smoothstep(0.43, 0.47, dt);\n"
         "float t = smoothstep(Balance - Smooth * 0.5, Balance + Smooth * 0.5, M.b);\n"
         "float3 irisColor = lerp(Iris.rgb, Iris.rgb * 0.3, t);\n"
-        "irisColor *= lerp(0.45, 1.35, M.g);\n"
+        "irisColor *= lerp(0.6, 1.6, M.g);\n"
         "irisColor *= lerp(0.8, 1.1, M.r);\n"
         "float collar = 1.0 - smoothstep(0.16, 0.26, dt);\n"
         "irisColor = lerp(irisColor, irisColor * float3(1.25, 1.1, 0.85), collar * 0.5);\n"
         "irisColor *= 1.0 - Limbus * smoothstep(0.33, 0.45, dt);\n"
         "float pupil = max(1.0 - P, 1.0 - smoothstep(0.11, 0.13, dp));\n"
         "float rim = smoothstep(0.18, 0.42, d);\n"
-        "float3 sclera = lerp(float3(0.83, 0.80, 0.77), float3(0.70, 0.57, 0.54), rim * 0.6) * (1.0 - 0.35 * rim);\n"
+        "float3 sclera = lerp(float3(0.76, 0.73, 0.70), float3(0.68, 0.56, 0.53), rim * 0.6) * (1.0 - 0.3 * rim);\n"
         "sclera *= 1.0 - 0.25 * Limbus * (1.0 - smoothstep(0.45, 0.6, dt));\n"
         "float3 c = lerp(sclera, irisColor, irisMask);\n"
         "return lerp(c, float3(0.004, 0.004, 0.004), pupil * irisMask);") % IRIS_EDGE_REFERENCE,
@@ -1078,6 +1146,20 @@ def skin_instance(asset_path, color_rel):
     return instance
 
 
+def set_head_relief(instance, gender):
+    """Normale de détail d'inZOI sur la peau d'une tête (le corps garde DetailNormalAmount à 0)"""
+    if MEL.get_material_instance_scalar_parameter_value(instance, "DetailNormalAmount") > 0.5:
+        return
+    texture = import_texture(HEAD_DETAIL_NORMAL[gender], "normal")
+    if not texture:
+        log("Peau : pas de normale de détail pour %s" % gender)
+        return
+    MEL.set_material_instance_texture_parameter_value(instance, "DetailNormal", texture)
+    MEL.set_material_instance_scalar_parameter_value(instance, "DetailNormalAmount", 1.0)
+    MEL.update_material_instance(instance)
+    EAL.save_loaded_asset(instance)
+
+
 def apply_skin(mesh, rel_folder, age, only_skin_slots):
     """Peau sur le corps ou la tête, plus yeux et dents des têtes ; renvoie les emplacements teintés par la couleur de peau"""
     prefer = ("Youth_D", "Main_D", "_D") if age == "Youth" else ("Main_D", "_D")
@@ -1085,6 +1167,8 @@ def apply_skin(mesh, rel_folder, age, only_skin_slots):
     mi_folder = dest(rel_folder + "/Materials")
     # Nouveau nom (MI_SkinV2_) : les anciennes instances mélangeaient d'autres textures
     instance = skin_instance(mi_folder + "/MI_SkinV2_" + mesh.get_name(), textures.get("color"))
+    if only_skin_slots:
+        set_head_relief(instance, "Female" if "female" in rel_folder.lower() else "Male")
     # Le matériau voulu pour chaque emplacement. On ne compte plus sur l'asset : Unreal ignorait les changements
     # faits depuis Python sur les emplacements du Skeletal Mesh. Le jeu les pose lui-même (Materials de la base
     # ou de la pièce, appliqués par TrainerAppearanceRender).
@@ -1434,7 +1518,7 @@ def build_parts(slow):
 # ---------------------------------------------------------------- Barbes (dossier Groom)
 
 HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
-HAIR_VERSION = 8  # à augmenter quand le graphe change : le matériau est refait au même endroit
+HAIR_VERSION = 9  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
 GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"), ("Mustache", "Moustache", "Hair", "Head"),
@@ -1563,7 +1647,7 @@ def build_hair_master():
     set_prop(dither, "code", (
         "float2 p = Parameters.SvPosition.xy + float(View.StateFrameIndexMod8) * float2(32.665, 11.815);\n"
         "float n = frac(52.9829189 * frac(dot(p, float2(0.06711056, 0.00583715))));\n"
-        "float threshold = 0.5 + (n - 0.5) * Spread;\n"
+        "float threshold = 0.38 + (n - 0.5) * Spread;\n"
         "return saturate(Alpha * Density) - threshold + 0.3333;"))
     entries = []
     for input_name in ("Alpha", "Density", "Spread"):
@@ -2234,21 +2318,24 @@ def build_lenses():
 # Animations .ueanim importées (sans extension). Les « ANIM_F_ » d'inZOI vont aussi sur le corps d'homme (même
 # squelette). La première est l'attente du studio ; les autres sont les poses du bouton « Pose » de l'éditeur.
 # Pour en voir d'autres : Index_Complet/Manifeste_Assets.csv, filtrer « .ueanim ».
-ANIMATIONS = [
-    # Attente du créateur : la pose de portrait d'inZOI (respiration seulement, comme dans son créateur)
-    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_IdleBase", "Attente"),
-    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Calm", "Calme"),
-    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Confident", "Confiance"),
-    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Joyful", "Joie"),
-    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Delighted", "Ravi"),
-    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Curious", "Curieux"),
-    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Excited", "Impatient"),
-    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Embarassed", "Gêné"),
-    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Surprised", "Surpris"),
-    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Angry", "Colère"),
+# Attente du créateur : un vrai idle du corps (debout, respiration, petits mouvements). Les « Portrait » d'inZOI
+# n'animent que le visage : le corps restait en T. Le premier trouvé sert ; les autres de la liste sont des secours.
+IDLE_ANIMATIONS = [
+    "Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Crowd_idle1",
+    "Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Crowd_idle7",
+    "Characters/Anims/Interaction/Female/ANIM_F_NPC_Idle3",
+]
+IDLE_LABEL = "Attente"
+ANIMATIONS = [(rel, IDLE_LABEL) for rel in IDLE_ANIMATIONS] + [
     ("Characters/Anims/Interaction/Female/ANIM_F_Clerk_Idle_Short_01", "Mains jointes"),
     ("Characters/Anims/Interaction/Female/ANIM_F_HappyGreet", "Salut"),
+    ("Characters/Anims/Interaction/Female/ANIM_F_Clap_Stand_2", "Bravo"),
+    ("Characters/Anims/Interaction/Female/ANIM_F_Selfie_Pose", "Selfie"),
+    ("Characters/Anims/Interaction/Female/ANIM_F_MusclePose_2", "Muscles"),
     ("Characters/Anims/Interaction/Female/ANIM_F_Pose_CatHeart", "Cœur"),
+    ("Characters/Anims/Interaction/Female/ANIM_F_Craft_Proud", "Fier"),
+    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Bored_Idle1", "Ennui"),
+    ("Characters/Anims/Interaction/Female/ANIM_F_NPC_Idle2", "Détente"),
 ]
 _ANIM_FILES = None
 
@@ -2280,7 +2367,10 @@ def build_animations(bases):
         mesh = base.get_editor_property("mesh")
         skeleton = mesh.get_editor_property("skeleton") if mesh else None
         ready, imported, failed = [], 0, []
+        idle = None
         for rel, label in ANIMATIONS:
+            if label == IDLE_LABEL and idle:
+                continue  # attente déjà trouvée : les secours ne sont pas importés
             name = rel.rsplit("/", 1)[-1]
             asset_path = "%s/Anims/%s/%s" % (DEST, base_id, name)
             animation = load(asset_path)
@@ -2292,10 +2382,12 @@ def build_animations(bases):
                     imported += 1
                 else:
                     failed.append(name if filename else name + " (fichier absent)")
-            if animation:
+            if animation and label == IDLE_LABEL:
+                idle = animation
+            elif animation:
                 ready.append((label, animation))
-        if ready and ready[0][0] == ANIMATIONS[0][1]:
-            base.set_editor_property("idle_animation", ready.pop(0)[1])
+        # Toujours remplacée : l'ancienne attente (portrait, corps en T) ne doit pas rester
+        base.set_editor_property("idle_animation", idle)
         poses = []
         for label, animation in ready:
             entry = unreal.TrainerStudioAnimation()
@@ -2404,7 +2496,7 @@ def full_presets(bases, parts):
     skin_tones = {r.get("ID"): r.get("SkinTone") for r in read_csv(os.path.join(TABLES, "AppearanceSkinColor.csv"))}
     by_id = {str(p.get_editor_property("id")): p for p in parts}
     groom_ids = {"Eyebrow": ("Eyebrows", ""), "Eyelash": ("Eyelashes", ""), "Beard": ("Beard", "InZOI_"), "Mustache": ("Mustache", "InZOI_")}
-    presets = []
+    presets, per_base = [], OrderedDict()
     for (gender, age), (base_id, base_label, _male, _body) in BASES.items():
         if not any(str(b.get_editor_property("id")) == base_id for b in bases):
             continue
@@ -2470,13 +2562,19 @@ def full_presets(bases, parts):
                 look.set_editor_property("eye_color", unreal.LinearColor(eye[0], eye[1], eye[2], 1.0))
             count += 1
             preset = unreal.TrainerPresetDef()
-            preset.set_editor_property("label", "%s %d" % (base_label, count))
+            preset.set_editor_property("label", "")  # pas de « Homme 3 » : la vignette suffit (demandé)
             thumbnail = import_texture(game_rel(row.get("Thumbnail")), "ui") or by_id[head_id].get_editor_property("thumbnail")
             if thumbnail:
                 preset.set_editor_property("thumbnail", thumbnail)
             preset.set_editor_property("look", look)
-            presets.append(preset)
+            per_base.setdefault(base_id, []).append(preset)
         log("Modèles complets %s : %d (table AppearanceFacePreset)" % (base_id, count))
+    # Hommes et femmes mélangés dans la grille (une vignette de chaque à tour de rôle)
+    lists = list(per_base.values())
+    while any(lists):
+        for items in lists:
+            if items:
+                presets.append(items.pop(0))
     return presets
 
 

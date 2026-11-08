@@ -77,8 +77,7 @@ namespace CharacterCreator
 	const FVector2D PanelSize(630.f, 830.f);
 	constexpr float HotspotX = 1010.f;
 	const float HotspotTops[] = { 300.f, 390.f, 480.f, 570.f, 660.f, 750.f };
-	constexpr float SlotColumnWidth = 104.f;
-	constexpr float CategoryColumnWidth = 128.f;
+	constexpr float SlotColumnWidth = 140.f;
 	constexpr float TileSize = 98.f;
 	/** Couleurs toutes faites du nuancier (rangée « Modèles » d'inZOI) puis le nuancier complet */
 	const FLinearColor ClothTemplates[] = {
@@ -329,7 +328,7 @@ void UCharacterCreatorWidget::NativeConstruct()
 void UCharacterCreatorWidget::BuildLeftColumn()
 {
 	// Haut gauche : ‹ Retour | titre (pas de retour à la création : on doit finir son personnage)
-	float TitleX = 30.f;
+	float TitleX = LeftX;
 	if (Mode != ETrainerEditorMode::Creation)
 	{
 		UCreatorButton* Back = MakeTextButton(WidgetTree, LOCTEXT("Back", "‹  Retour"), 28.f, [this]() { Cancel(); });
@@ -339,13 +338,13 @@ void UCharacterCreatorWidget::BuildLeftColumn()
 	}
 	const FText Title = Mode == ETrainerEditorMode::Creation ? LOCTEXT("TitleCreate", "Créer ton dresseur")
 		: (Mode == ETrainerEditorMode::Wardrobe ? LOCTEXT("TitleWardrobe", "Armoire") : LOCTEXT("TitleAppearance", "Apparence"));
-	Place(Canvas, MakeText(WidgetTree, Title, 28.f, PokemonFonts::EStyle::Regular, FLinearColor(0.75f, 0.88f, 1.f, 1.f)), FVector2D(TitleX, 20.f), FVector2D(500.f, 40.f));
+	// Blanc, plus grand que « À quoi ressemble ton dresseur ? », aligné à gauche avec elle
+	Place(Canvas, MakeText(WidgetTree, Title, 46.f, PokemonFonts::EStyle::Bold), FVector2D(TitleX, 16.f), FVector2D(700.f, 60.f));
 
 	// Profil (onglet Modèles seulement ; ailleurs la colonne des pièces portées prend sa place, comme inZOI)
 	UCanvasPanel* Group = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("Profile"));
 	Group->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-	Place(Group, MakeText(WidgetTree, LOCTEXT("Question", "À quoi ressemble ton dresseur ?"), 34.f, PokemonFonts::EStyle::Bold), FVector2D(66.f, 86.f), FVector2D(700.f, 46.f));
-	Place(Group, MakeText(WidgetTree, LOCTEXT("Subtitle", "Donne vie au dresseur que tu imagines."), 22.f, PokemonFonts::EStyle::Regular, DimColor), FVector2D(LeftX, 130.f), FVector2D(700.f, 30.f));
+	Place(Group, MakeText(WidgetTree, LOCTEXT("Question", "À quoi ressemble ton dresseur ?"), 34.f, PokemonFonts::EStyle::Bold), FVector2D(LeftX, 96.f), FVector2D(700.f, 46.f));
 
 	// Profil : prénom et base
 	Place(Group, MakeText(WidgetTree, LOCTEXT("Profile", "Profil"), 28.f, PokemonFonts::EStyle::Bold), FVector2D(LeftX, 200.f), FVector2D(LeftWidth, 40.f));
@@ -353,6 +352,7 @@ void UCharacterCreatorWidget::BuildLeftColumn()
 
 	Place(Group, MakeText(WidgetTree, LOCTEXT("Name", "Prénom"), 24.f), FVector2D(LeftX, 268.f), FVector2D(150.f, 34.f));
 	NameBox = MakeField(WidgetTree, Group, FVector2D(230.f, 262.f), FVector2D(230.f, 44.f), LOCTEXT("NameHint", "Ton prénom"), 24.f);
+	NameBox->SetJustification(ETextJustify::Center);
 	NameBox->SetText(FText::FromString(Name));
 	NameBox->OnTextChanged.AddUniqueDynamic(this, &UCharacterCreatorWidget::HandleNameChanged);
 
@@ -367,6 +367,7 @@ void UCharacterCreatorWidget::BuildLeftColumn()
 	Place(Group, MakeText(WidgetTree, LOCTEXT("Catchphrase", "Phrase d'accroche"), 28.f, PokemonFonts::EStyle::Bold), FVector2D(LeftX, 418.f), FVector2D(LeftWidth, 40.f));
 	Place(Group, MakeLine(WidgetTree), FVector2D(LeftX, 462.f), FVector2D(LeftWidth, 1.f));
 	CatchBox = MakeField(WidgetTree, Group, FVector2D(LeftX, 482.f), FVector2D(LeftWidth, 48.f), LOCTEXT("CatchHint", "« Je serai le meilleur dresseur ! »"), 22.f);
+	CatchBox->SetJustification(ETextJustify::Center);
 	CatchBox->SetText(FText::FromString(Catch));
 	CatchBox->OnTextChanged.AddUniqueDynamic(this, &UCharacterCreatorWidget::HandleCatchphraseChanged);
 	Place(Group, MakeText(WidgetTree, LOCTEXT("CatchNote", "Elle s'affiche sur ta carte dresseur."), 20.f, PokemonFonts::EStyle::Regular, DimColor), FVector2D(LeftX + 6.f, 540.f), FVector2D(LeftWidth, 30.f));
@@ -380,10 +381,6 @@ void UCharacterCreatorWidget::BuildToolbar()
 	UHorizontalBox* Row = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
 	const struct { FText Label; TFunction<void()> Action; } Tools[] = {
 		{ LOCTEXT("Random", "Aléatoire"), [this]() { Randomize(); } },
-		{ LOCTEXT("Photo", "Photo"), [this]() { TakePhoto(); } },
-		{ LOCTEXT("ZoomFace", "Visage"), [this]() { if (Studio.IsValid()) { Studio->SetFocus(EStudioFocus::Face); } } },
-		{ LOCTEXT("ZoomBody", "Corps"), [this]() { if (Studio.IsValid()) { Studio->SetFocus(EStudioFocus::Body); } } },
-		{ LOCTEXT("Pose", "Pose"), [this]() { if (Studio.IsValid()) { SetStatus(Studio->NextAnimation()); } } },
 		{ LOCTEXT("Undo", "Annuler"), [this]() { Undo(); } },
 		{ LOCTEXT("Redo", "Refaire"), [this]() { Redo(); } },
 	};
@@ -395,7 +392,7 @@ void UCharacterCreatorWidget::BuildToolbar()
 	}
 	PokemonGlass::FGlassLook Look;
 	Look.CornerRadius = 26.f;
-	Place(Canvas, PokemonGlass::Make(WidgetTree, Row, FMargin(8.f, 0.f), Look, TEXT("Toolbar")), FVector2D(600.f, 16.f), FVector2D(720.f, PillHeight));
+	Place(Canvas, PokemonGlass::Make(WidgetTree, Row, FMargin(8.f, 0.f), Look, TEXT("Toolbar")), FVector2D(780.f, 16.f), FVector2D(360.f, PillHeight));
 }
 
 void UCharacterCreatorWidget::BuildTabs()
@@ -435,8 +432,20 @@ void UCharacterCreatorWidget::BuildTabs()
 
 void UCharacterCreatorWidget::BuildBottomLeft()
 {
-	Place(Canvas, MakeTextButton(WidgetTree, LOCTEXT("HideUI", "Masquer l'interface (U)"), 20.f, [this]() { ToggleUI(); }),
-		FVector2D(36.f, 944.f), FVector2D(300.f, 36.f));
+	// Touches du clavier : une case avec la lettre, puis ce qu'elle fait (cliquable aussi)
+	auto AddKeyHint = [this](const TCHAR* Letter, const FText& Label, float Y, TFunction<void()> Action)
+	{
+		UTextBlock* KeyText = MakeText(WidgetTree, FText::FromString(Letter), 20.f, PokemonFonts::EStyle::Bold);
+		KeyText->SetJustification(ETextJustify::Center);
+		UBorder* Cap = MakeRounded(WidgetTree, FLinearColor(1.f, 1.f, 1.f, 0.12f), 6.f, FLinearColor(1.f, 1.f, 1.f, 0.7f), 1.5f);
+		Cap->SetHorizontalAlignment(HAlign_Center);
+		Cap->SetVerticalAlignment(VAlign_Center);
+		Cap->SetContent(KeyText);
+		Place(Canvas, Cap, FVector2D(36.f, Y), FVector2D(34.f, 34.f));
+		Place(Canvas, MakeTextButton(WidgetTree, Label, 20.f, MoveTemp(Action)), FVector2D(78.f, Y - 2.f), FVector2D(240.f, 38.f));
+	};
+	AddKeyHint(TEXT("U"), LOCTEXT("HideUI", "Masquer l'interface"), 896.f, [this]() { ToggleUI(); });
+	AddKeyHint(TEXT("P"), LOCTEXT("NextPose", "Changer de pose"), 942.f, [this]() { NextPose(); });
 
 	StudioText = MakeText(WidgetTree, LOCTEXT("Studio", "Studio"), 24.f);
 	UCreatorButton* StudioButton = MakeButton(WidgetTree, StudioText, ButtonFill, PillHeight * 0.5f, [this]()
@@ -824,7 +833,7 @@ void UCharacterCreatorWidget::AddPresetGrid(const TArray<FTrainerPresetDef>& Pre
 		UVerticalBox* Cell = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
 		UVerticalBoxSlot* ButtonSlot = Cell->AddChildToVerticalBox(MakeBox(WidgetTree, FVector2D(112.f, 112.f), Button));
 		ButtonSlot->SetHorizontalAlignment(HAlign_Center);
-		if (Preset.Thumbnail.IsNull() == false)
+		if (!Preset.Thumbnail.IsNull() && !Preset.Label.IsEmpty())
 		{
 			UTextBlock* Caption = MakeText(WidgetTree, Preset.Label, 18.f, PokemonFonts::EStyle::Regular, DimColor);
 			Caption->SetJustification(ETextJustify::Center);
@@ -892,53 +901,40 @@ bool UCharacterCreatorWidget::AddPartGrid(FName TabName)
 	UHorizontalBox* Columns = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
 	PanelList->AddChild(Columns);
 
-	auto AddListEntry = [this](UVerticalBox* Box, const FText& Label, bool bSelected, TFunction<void()> OnClick)
-	{
-		UTextBlock* Text = nullptr;
-		UCreatorButton* Button = MakeTextButton(WidgetTree, Label, 19.f, MoveTemp(OnClick), &Text, bSelected ? SelectedFill : FLinearColor(1.f, 1.f, 1.f, 0.f), 14.f);
-		if (Text)
-		{
-			Text->SetAutoWrapText(true);
-			if (bSelected)
-			{
-				Text->SetColorAndOpacity(FSlateColor(DarkText));
-				Text->SetShadowColorAndOpacity(FLinearColor::Transparent);
-			}
-			else
-			{
-				Text->SetColorAndOpacity(FSlateColor(DimColor));
-			}
-		}
-		Box->AddChildToVerticalBox(MakeBox(WidgetTree, FVector2D(0.f, 56.f), Button))->SetPadding(FMargin(0.f, 0.f, 0.f, 6.f));
-	};
-
+	// Maquette de L'amie (Cheveux) : une colonne d'onglets collés (Cheveux, Barbe, Moustache...) séparés par un trait,
+	// l'onglet choisi plus clair, puis directement la grille. Plus de colonne de catégories.
+	PartCategoryFilter.Reset();
 	if (Slots.Num() > 1)
 	{
 		UVerticalBox* SlotColumn = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
-		for (const FTrainerPartSlotDef* SlotDef : Slots)
+		for (int32 SlotIndex = 0; SlotIndex < Slots.Num(); ++SlotIndex)
 		{
+			const FTrainerPartSlotDef* SlotDef = Slots[SlotIndex];
 			const FName EntrySlot = SlotDef->Slot;
-			AddListEntry(SlotColumn, SlotDef->Label.IsEmpty() ? FText::FromName(EntrySlot) : SlotDef->Label, SlotDef == Shown,
-				[this, EntrySlot]() { PartSlotFilter = EntrySlot; PartCategoryFilter.Reset(); ColorZone = 0; RefreshRightPanel(); });
+			const bool bSelected = SlotDef == Shown;
+			UTextBlock* Text = nullptr;
+			UCreatorButton* Button = MakeTextButton(WidgetTree, SlotDef->Label.IsEmpty() ? FText::FromName(EntrySlot) : SlotDef->Label, 22.f,
+				[this, EntrySlot]() { PartSlotFilter = EntrySlot; PartCategoryFilter.Reset(); ColorZone = 0; RefreshRightPanel(); },
+				&Text, bSelected ? FLinearColor(1.f, 1.f, 1.f, 0.22f) : FLinearColor(1.f, 1.f, 1.f, 0.f), 0.f);
+			if (Text)
+			{
+				Text->SetAutoWrapText(true);
+				Text->SetJustification(ETextJustify::Center);
+				Text->SetColorAndOpacity(FSlateColor(bSelected ? FLinearColor::White : DimColor));
+			}
+			SlotColumn->AddChildToVerticalBox(MakeBox(WidgetTree, FVector2D(0.f, 84.f), Button));
+			if (SlotIndex + 1 < Slots.Num())
+			{
+				SlotColumn->AddChildToVerticalBox(MakeLine(WidgetTree))->SetPadding(FMargin(12.f, 0.f));
+			}
 		}
-		Columns->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(SlotColumnWidth, 0.f), SlotColumn))->SetPadding(FMargin(0.f, 0.f, 10.f, 0.f));
-	}
-	if (Categories.Num() > 1)
-	{
-		UVerticalBox* CategoryColumn = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
-		AddListEntry(CategoryColumn, LOCTEXT("CategoryAll", "Tout"), PartCategoryFilter.IsEmpty(), [this]() { PartCategoryFilter.Reset(); RefreshRightPanel(); });
-		for (const FString& Category : Categories)
-		{
-			AddListEntry(CategoryColumn, FText::FromString(Category), Category == PartCategoryFilter,
-				[this, Category]() { PartCategoryFilter = Category; RefreshRightPanel(); });
-		}
-		UBorder* Back = MakeRounded(WidgetTree, FLinearColor(1.f, 1.f, 1.f, 0.08f), 14.f);
-		Back->SetPadding(FMargin(6.f));
-		Back->SetContent(CategoryColumn);
-		Back->SetVerticalAlignment(VAlign_Top);
-		UHorizontalBoxSlot* CategorySlot = Columns->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(CategoryColumnWidth, 0.f), Back));
-		CategorySlot->SetPadding(FMargin(0.f, 0.f, 10.f, 0.f));
-		CategorySlot->SetVerticalAlignment(VAlign_Top);
+		UBorder* ColumnBack = MakeRounded(WidgetTree, FLinearColor(0.f, 0.f, 0.f, 0.16f), 14.f, FLinearColor(1.f, 1.f, 1.f, 0.25f), 1.f);
+		ColumnBack->SetPadding(FMargin(0.f));
+		ColumnBack->SetVerticalAlignment(VAlign_Top);
+		ColumnBack->SetContent(SlotColumn);
+		UHorizontalBoxSlot* ColumnSlot = Columns->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(SlotColumnWidth, 0.f), ColumnBack));
+		ColumnSlot->SetPadding(FMargin(0.f, 0.f, 14.f, 0.f));
+		ColumnSlot->SetVerticalAlignment(VAlign_Fill);
 	}
 
 	UVerticalBox* Grid = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
@@ -1562,6 +1558,15 @@ void UCharacterCreatorWidget::Redo()
 	RefreshAll();
 }
 
+void UCharacterCreatorWidget::NextPose()
+{
+	// Pas de message « Pose : ... » : le personnage suffit
+	if (Studio.IsValid())
+	{
+		Studio->NextAnimation();
+	}
+}
+
 void UCharacterCreatorWidget::ToggleUI()
 {
 	bUIHidden = !bUIHidden;
@@ -1785,6 +1790,11 @@ FReply UCharacterCreatorWidget::NativeOnKeyDown(const FGeometry& InGeometry, con
 	if (Key == EKeys::U)
 	{
 		ToggleUI();
+		return FReply::Handled();
+	}
+	if (Key == EKeys::P)
+	{
+		NextPose();
 		return FReply::Handled();
 	}
 	if (Key == EKeys::Escape || Key == EKeys::Gamepad_FaceButton_Right)
