@@ -216,8 +216,28 @@ def split(asset_path):
 GROOM_REL = "Characters/AvatarParts/Groom"
 
 
+# Exports FModel faits à part et rangés à la racine de l'exercice (ex. le dossier « makeup » des masques de maquillage) :
+# chaque <dossier>/BlueClient/Content ou <dossier>/Output/Exports/BlueClient/Content est aussi fouillé
+EXTRA_EXPORT_DIRS = ["makeup"]
+
+
+def extra_exports():
+    roots = []
+    for name in EXTRA_EXPORT_DIRS:
+        for tail in (("BlueClient", "Content"), ("Output", "Exports", "BlueClient", "Content")):
+            root = os.path.join(SOURCE, name, *tail)
+            if os.path.isdir(root):
+                roots.append(root)
+    return roots
+
+
 def src(rel, ext):
     path = os.path.join(EXPORTS, *rel.split("/")) + ext
+    if not os.path.isfile(path):
+        for root in extra_exports():
+            other = os.path.join(root, *rel.split("/")) + ext
+            if os.path.isfile(other):
+                return other
     # Poils (barbes) : aussi cherchés dans la copie Groom/ à la racine de l'exercice
     if not os.path.isfile(path) and rel.startswith(GROOM_REL + "/"):
         copy = os.path.join(SOURCE, "Groom", *rel[len(GROOM_REL) + 1:].split("/")) + ext
@@ -1855,8 +1875,9 @@ def build_makeup():
         parts.append(part)
     log("Maquillage : %d styles (%s)" % (len(parts), ", ".join("%s %d" % (k, v) for k, v in sorted(counts.items())) or "aucun"))
     if missing:
-        log("Maquillage : %d masques absents de l'export (ex. %s) : exporter le dossier %s avec FModel" % (
-            len(missing), ", ".join(missing[:4]), MAKEUP_MASKS))
+        log("Maquillage : %d masques absents (ex. %s) : dans FModel, clic droit sur %s > Save Folder's Packages "
+            "Textures (.png), vers Exercice Compilation\\makeup (les .json seuls ne suffisent pas)" % (
+                len(missing), ", ".join(missing[:4]), MAKEUP_MASKS))
     return parts
 
 
