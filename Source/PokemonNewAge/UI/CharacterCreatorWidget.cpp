@@ -921,6 +921,7 @@ bool UCharacterCreatorWidget::AddPartGrid(FName TabName)
 				Text->SetAutoWrapText(true);
 				Text->SetJustification(ETextJustify::Center);
 				Text->SetColorAndOpacity(FSlateColor(bSelected ? FLinearColor::White : DimColor));
+				Text->SetShadowColorAndOpacity(FLinearColor::Transparent); // l'ombre floue faisait un 2e mot fantôme
 			}
 			SlotColumn->AddChildToVerticalBox(MakeBox(WidgetTree, FVector2D(0.f, 84.f), Button));
 			if (SlotIndex + 1 < Slots.Num())
@@ -1107,7 +1108,9 @@ void UCharacterCreatorWidget::RefreshColorPanel(FName SlotName, const FTrainerPa
 			{
 				Label->SetShadowColorAndOpacity(FLinearColor::Transparent);
 			}
-			Inside->AddChildToHorizontalBox(Label)->SetVerticalAlignment(VAlign_Center);
+			UHorizontalBoxSlot* LabelSlot = Inside->AddChildToHorizontalBox(Label);
+			LabelSlot->SetVerticalAlignment(VAlign_Center);
+			LabelSlot->SetPadding(FMargin(0.f, 0.f, 16.f, 0.f)); // le mot ne touche plus le bord de la pastille
 			UCreatorButton* Button = MakeButton(WidgetTree, Inside, bSelected ? SelectedFill : ButtonFill, 16.f, [this, Zone]() { ColorZone = Zone; RefreshRightPanel(); });
 			ZoneRow->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(0.f, 34.f), Button))->SetPadding(FMargin(0.f, 0.f, 8.f, 0.f));
 		}
