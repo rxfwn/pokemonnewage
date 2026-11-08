@@ -146,8 +146,11 @@ namespace
 
 			// Tête (onglet Visage) : elle a ses propres os du visage, que la Leader Pose ne laisse pas bouger.
 			// Elle suit donc le corps par copie de pose et reçoit les curseurs du visage (UTrainerAnimInstance).
+			// Vêtements du haut (HelperScaleLimit) : même copie de pose, avec l'échelle des os d'aide bornée
 			const FTrainerPartSlotDef* SlotDef = Data->FindSlot(Pair.Key);
-			if (SlotDef && SlotDef->Tab == TEXT("Face"))
+			const bool bFace = SlotDef && SlotDef->Tab == TEXT("Face");
+			const float ScaleLimit = (SlotDef && !bFace && Leader == Mesh) ? SlotDef->HelperScaleLimit : 0.f;
+			if (bFace || ScaleLimit > 0.f)
 			{
 				Component->SetLeaderPoseComponent(nullptr);
 				Component->bUseBoundsFromLeaderPoseComponent = false;
@@ -159,6 +162,7 @@ namespace
 				if (UTrainerAnimInstance* Anim = Cast<UTrainerAnimInstance>(Component->GetAnimInstance()))
 				{
 					Anim->SetPoseSource(Mesh);
+					Anim->HelperScaleLimit = ScaleLimit;
 				}
 				Component->AddTickPrerequisiteComponent(Mesh);
 			}

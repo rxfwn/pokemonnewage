@@ -133,6 +133,12 @@ private:
 	void AddSection(const FText& Title);
 	void AddSliders(ETrainerSliderGroup Group);
 	void AddPresetGrid(const TArray<FTrainerPresetDef>& Presets, bool bFull, bool bBody = false);
+
+	/** Clic sur une vignette : modèle complet (bFull), silhouette (bBody) ou modèle de visage */
+	void ApplyPreset(int32 Index, bool bFull, bool bBody);
+
+	/** Banc d'essai automatique (commande BancPerso, UI/CharacterCreatorBench.cpp) */
+	friend class FCharacterCreatorBench;
 	void AddSwatches(const TArray<FLinearColor>& Colors, bool bSkin);
 	void AddNote(const FText& Text);
 

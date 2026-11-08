@@ -79,6 +79,10 @@ SLOTS = [
     ("Acc", "Bijoux et sacs", "Accessories", False, [], "SkinnedAccessoryMesh.csv"),
 ]
 
+# Vêtements qui pendent loin du corps : échelle des os d'aide bornée à 1 ± valeur (sinon le bas du t-shirt
+# s'envolait derrière avec les fessiers agrandis de « Musclé »), voir FTrainerPartSlotDef::HelperScaleLimit
+LOOSE_SLOTS = {"Top": 0.5, "Outer": 0.5}
+
 # Pièces portées au départ (si la base n'a rien de choisi)
 DEFAULT_SLOTS = ["Head", "Hair", "Eyebrows", "Eyelashes", "Top", "Bottom", "Shoes"]
 # Tenue de départ « normale » : la première pièce de la base (homme ou femme) dans ces catégories, dans l'ordre
@@ -732,7 +736,7 @@ def constant(material, value, x, y):
     return node
 
 
-SKIN_VERSION = 5  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
+SKIN_VERSION = 6  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
 # Maquillage d'inZOI (table AppearanceMakeup) : catégorie, lettre du dossier de masques, emplacement du jeu (= nom du
 # paramètre texture de M_InZOI_Skin, couleurs dans <emplacement>_R/_G/_B), libellé, force du mélange (les reflets d'inZOI
 # mêlent un éclat blanc et une ombre de contour : à moitié pour rester naturels)
@@ -765,7 +769,7 @@ FRECKLE_COLOR = "8A5A3C"  # pas de couleur dans la table d'inZOI : brun clair
 SKIN_TEXTURES = "Characters/Materials/DefaultTextures/Skin"
 HEAD_DETAIL_NORMAL = {"Female": SKIN_TEXTURES + "/Female_Head_Detail_Full_N", "Male": SKIN_TEXTURES + "/Male_Head_Detail_Full_N"}
 # Force du relief de la tête : à 1 les rides et plis (front, joues, cou) étaient bien trop marqués
-HEAD_DETAIL_AMOUNT = 0.35
+HEAD_DETAIL_AMOUNT = 0.22
 SKIN_MICRO_NORMAL = [SKIN_TEXTURES + "/T_SkinMicro_N", "MetaHumans/Common/Materials/Textures/T_SkinMicroNormal"]
 
 
@@ -929,8 +933,8 @@ def build_skin_relief(material):
         MEL.connect_material_expressions(uv_node, "", sample, "UVs")
         samples.append(sample)
     detail_amount = scalar("DetailNormalAmount", 0.0, -1100, 2100)
-    micro_amount = scalar("MicroNormalAmount", 0.35, -1100, 2200)
-    rough_base = scalar("SkinRoughness", 0.6, -1100, 2300)
+    micro_amount = scalar("MicroNormalAmount", 0.18, -1100, 2200)
+    rough_base = scalar("SkinRoughness", 0.66, -1100, 2300)
     normal = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -600, 1800)
     set_prop(normal, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
     set_prop(normal, "code", "float2 xy = D.xy * DA + M.xy * MA;\nreturn normalize(float3(xy, 1.0));")
@@ -954,7 +958,7 @@ def build_skin_relief(material):
     MEL.connect_material_property(rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
 
 
-EYE_VERSION = 6  # à augmenter quand le dessin de l'œil change : le matériau est alors refait
+EYE_VERSION = 7  # à augmenter quand le dessin de l'œil change : le matériau est alors refait
 # Masque d'iris d'inZOI (celui de MetaHuman) : R = relief, V = fibres de l'iris, B = mélange des 2 couleurs, A = pupille
 IRIS_MASKS = ["MetaHumans/Common/Face/Textures/IrisTextures/iris_001/T_Iris_A_M",
               "Characters/Materials/DefaultTextures/Eyes/IrisTextures/iris_001/T_Iris_A_M"]
@@ -1050,7 +1054,7 @@ def build_eye_master():
         "irisColor *= 1.0 - Limbus * smoothstep(0.33, 0.45, dt);\n"
         "float pupil = max(1.0 - P, 1.0 - smoothstep(0.11, 0.13, dp));\n"
         "float rim = smoothstep(0.18, 0.42, d);\n"
-        "float3 sclera = lerp(float3(0.66, 0.63, 0.60), float3(0.60, 0.48, 0.45), rim * 0.7) * (1.0 - 0.45 * rim);\n"
+        "float3 sclera = lerp(float3(0.56, 0.53, 0.50), float3(0.52, 0.42, 0.39), rim * 0.7) * (1.0 - 0.5 * rim);\n"
         "sclera *= 1.0 - 0.25 * Limbus * (1.0 - smoothstep(0.45, 0.6, dt));\n"
         "float3 c = lerp(sclera, irisColor, irisMask);\n"
         "return lerp(c, float3(0.004, 0.004, 0.004), pupil * irisMask);") % IRIS_EDGE_REFERENCE,
@@ -1069,12 +1073,12 @@ def build_eye_master():
     # Œil mouillé : très lisse (reflet net de la lumière), l'iris un peu moins. Le vernis (Clear Coat) d'avant
     # restait mat chez L'amie : on passe en éclairage normal.
     rough = custom_node("float dt = distance(IrisUV, float2(0.5, 0.5)) * %.3f / max(Edge, 0.05);\n"
-                        "return lerp(0.06, 0.12, 1.0 - smoothstep(0.43, 0.47, dt));" % IRIS_EDGE_REFERENCE,
+                        "return lerp(0.03, 0.08, 1.0 - smoothstep(0.43, 0.47, dt));" % IRIS_EDGE_REFERENCE,
                         COT.CMOT_FLOAT1, ("IrisUV", "Edge"), -600, 250)
     MEL.connect_material_expressions(iris_uv, "", rough, "IrisUV")
     MEL.connect_material_expressions(edge, "", rough, "Edge")
     MEL.connect_material_property(rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
-    MEL.connect_material_property(constant(material, 0.6, -600, 350), "", unreal.MaterialProperty.MP_SPECULAR)
+    MEL.connect_material_property(constant(material, 1.0, -600, 350), "", unreal.MaterialProperty.MP_SPECULAR)
     set_prop(material, "shading_model", unreal.MaterialShadingModel.MSM_DEFAULT_LIT)
     EAL.set_metadata_tag(material, "InZOIVersion", str(EYE_VERSION))
     return finish_material(material, EYE_MASTER)
@@ -2721,6 +2725,8 @@ def main():
             definition.set_editor_property("tab", tab)
             definition.set_editor_property("required", required)
             definition.set_editor_property("replaces", replaces)
+            if slot in LOOSE_SLOTS:
+                definition.set_editor_property("helper_scale_limit", LOOSE_SLOTS[slot])
             slot_defs.append(definition)
         for slot, slot_label, tab, follow in GROOM_SLOTS:
             definition = unreal.TrainerPartSlotDef()

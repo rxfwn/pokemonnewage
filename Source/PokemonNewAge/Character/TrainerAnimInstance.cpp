@@ -12,6 +12,8 @@ void FTrainerAnimInstanceProxy::PreUpdate(UAnimInstance* InAnimInstance, float D
 	if (const UTrainerAnimInstance* Trainer = Cast<UTrainerAnimInstance>(InAnimInstance))
 	{
 		Offsets = Trainer->GetBoneOffsets();
+		HelperScaleLimit = Trainer->HelperScaleLimit;
+		IdleHeadMotion = Trainer->IdleHeadMotion;
 		if (Idle != Trainer->GetIdleAnimation())
 		{
 			Idle = Trainer->GetIdleAnimation();
@@ -35,6 +37,15 @@ void FTrainerAnimInstanceProxy::PreUpdate(UAnimInstance* InAnimInstance, float D
 				for (int32 Index = 0; Index < OwnRef.GetNum(); ++Index)
 				{
 					SourceMap[Index] = SourceRef.FindBoneIndex(OwnRef.GetBoneName(Index));
+				}
+				LeafBones.Init(true, OwnRef.GetNum());
+				for (int32 Index = 0; Index < OwnRef.GetNum(); ++Index)
+				{
+					const int32 Parent = OwnRef.GetParentIndex(Index);
+					if (Parent != INDEX_NONE)
+					{
+						LeafBones[Parent] = false;
+					}
 				}
 				MappedOwnMesh = OwnMesh;
 				MappedSourceMesh = SourceMesh;
@@ -68,6 +79,8 @@ namespace
 	/** La taille de la tête doit agrandir tout le visage : ses enfants héritent de son échelle */
 	const FName HeadBoneName(TEXT("head"));
 	const FName PelvisBoneName(TEXT("pelvis"));
+	/** Os du cou et de la tête adoucis dans l'attente du studio (IdleHeadMotion) */
+	const FName HeadMotionBones[] = { FName(TEXT("neck_01")), FName(TEXT("neck_02")), FName(TEXT("head")) };
 }
 
 bool FTrainerAnimInstanceProxy::Evaluate(FPoseContext& Output)
@@ -104,6 +117,25 @@ bool FTrainerAnimInstanceProxy::Evaluate(FPoseContext& Output)
 				Output.Pose[PelvisIndex].SetTranslation(Ref + Up * FVector::DotProduct(Current - Ref, Up));
 			}
 		}
+		// Cou et tête : les attentes « Crowd » regardent en l'air et penchent la tête ; en gros plan le visage bougeait
+		// sans cesse. On n'en garde qu'une partie (rotation seulement, vers la pose de référence).
+		if (IdleHeadMotion < 1.f)
+		{
+			for (const FName& BoneName : HeadMotionBones)
+			{
+				const int32 MeshIndex = Output.Pose.GetBoneContainer().GetPoseBoneIndexForBoneName(BoneName);
+				if (MeshIndex == INDEX_NONE)
+				{
+					continue;
+				}
+				const FCompactPoseBoneIndex BoneIndex = Output.Pose.GetBoneContainer().MakeCompactPoseIndex(FMeshPoseBoneIndex(MeshIndex));
+				if (BoneIndex.IsValid())
+				{
+					const FQuat Ref = Output.Pose.GetRefPose(BoneIndex).GetRotation();
+					Output.Pose[BoneIndex].SetRotation(FQuat::Slerp(Ref, Output.Pose[BoneIndex].GetRotation(), FMath::Max(0.f, IdleHeadMotion)).GetNormalized());
+				}
+			}
+		}
 	}
 	else
 	{
@@ -118,6 +150,14 @@ bool FTrainerAnimInstanceProxy::Evaluate(FPoseContext& Output)
 		if (PoseIndex.IsValid())
 		{
 			Output.Pose[PoseIndex] = Copied.Value;
+			if (HelperScaleLimit > 0.f && LeafBones.IsValidIndex(Copied.Key) && LeafBones[Copied.Key])
+			{
+				const FVector Scale = Copied.Value.GetScale3D();
+				const FVector Limited(FMath::Clamp(Scale.X, 1.f - HelperScaleLimit, 1.f + HelperScaleLimit),
+					FMath::Clamp(Scale.Y, 1.f - HelperScaleLimit, 1.f + HelperScaleLimit),
+					FMath::Clamp(Scale.Z, 1.f - HelperScaleLimit, 1.f + HelperScaleLimit));
+				Output.Pose[PoseIndex].SetScale3D(Limited);
+			}
 		}
 	}
 

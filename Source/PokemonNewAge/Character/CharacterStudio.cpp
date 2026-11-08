@@ -36,6 +36,8 @@ namespace CharacterStudio
 	constexpr float ScreenShift = 0.25f;
 	/** Tête par défaut si l'os n'est pas trouvé */
 	constexpr float DefaultHeadHeight = 158.f;
+	/** Part du mouvement du cou et de la tête gardée pendant l'attente */
+	constexpr float IdleHeadMotion = 0.3f;
 
 	struct FLighting
 	{
@@ -184,6 +186,8 @@ void ACharacterStudio::ApplyStudioAnimation()
 		Sequence = Base->StudioAnimations[AnimationIndex - 1].Animation.LoadSynchronous();
 	}
 	Anim->SetIdleAnimation(Sequence ? Sequence : Base->IdleAnimation.LoadSynchronous());
+	// Attente : la tête reste presque droite (visage stable en gros plan) ; les poses gardent tout leur mouvement
+	Anim->IdleHeadMotion = Sequence ? 1.f : IdleHeadMotion;
 }
 
 FText ACharacterStudio::NextAnimation()

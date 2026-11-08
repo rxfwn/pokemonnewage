@@ -752,82 +752,7 @@ void UCharacterCreatorWidget::AddPresetGrid(const TArray<FTrainerPresetDef>& Pre
 		}
 		UCreatorButton* Button = MakeButton(WidgetTree, Inside, ButtonFill, 56.f, [this, Index, bFull, bBody]()
 		{
-			const TArray<FTrainerPresetDef>& List = bBody ? Data->BodyPresets : bFull ? Data->FullPresets : Data->FacePresets;
-			if (!List.IsValidIndex(Index))
-			{
-				return;
-			}
-			FTrainerAppearance New = Current;
-			const FTrainerAppearance& Look = List[Index].Look;
-			if (bFull)
-			{
-				// Tout le personnage sauf les vêtements (achetés en boutique) : tête, cheveux, sourcils, cils, barbe et leurs
-				// couleurs viennent du modèle ; un emplacement que le modèle ne précise pas garde le choix actuel
-				New = Look;
-				auto SlotOf = [this](FName Id)
-				{
-					const FString Text = Id.ToString();
-					if (Text.StartsWith(TEXT("-")))
-					{
-						return FName(*Text.Mid(1));
-					}
-					const FTrainerPartDef* Part = Data->FindPart(Id);
-					return Part ? Part->Slot : FName();
-				};
-				TSet<FName> LookSlots;
-				for (const FName Id : Look.Outfit)
-				{
-					const FTrainerPartSlotDef* Slot = Data->FindSlot(SlotOf(Id));
-					if (Slot && Slot->Tab != TEXT("Outfit") && Slot->Tab != TEXT("Accessories"))
-					{
-						LookSlots.Add(Slot->Slot);
-					}
-				}
-				New.Outfit.Reset();
-				for (const FName Id : Current.Outfit)
-				{
-					if (!LookSlots.Contains(SlotOf(Id)))
-					{
-						New.Outfit.Add(Id);
-					}
-				}
-				for (const FName Id : Look.Outfit)
-				{
-					if (LookSlots.Contains(SlotOf(Id)))
-					{
-						New.Outfit.Add(Id);
-					}
-				}
-				New.PartColors.Reset();
-				for (const FTrainerPartColor& Color : Current.PartColors)
-				{
-					if (!LookSlots.Contains(Color.Slot))
-					{
-						New.PartColors.Add(Color);
-					}
-				}
-				for (const FTrainerPartColor& Color : Look.PartColors)
-				{
-					if (LookSlots.Contains(Color.Slot))
-					{
-						New.PartColors.Add(Color);
-					}
-				}
-				New.bCreated = Current.bCreated;
-				if (Look.Base.IsNone())
-				{
-					New.Base = Current.Base;
-				}
-			}
-			else
-			{
-				for (const FTrainerSliderValue& Value : Look.Sliders)
-				{
-					New.SetSlider(Value.Slider, Value.Value);
-				}
-			}
-			ChangeAppearance(New, TEXT("Preset"), false);
-			RefreshAll();
+			ApplyPreset(Index, bFull, bBody);
 		}, ButtonOutline, 1.5f);
 
 		UVerticalBox* Cell = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
@@ -842,6 +767,86 @@ void UCharacterCreatorWidget::AddPresetGrid(const TArray<FTrainerPresetDef>& Pre
 		UHorizontalBoxSlot* CellSlot = Row->AddChildToHorizontalBox(Cell);
 		CellSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	}
+}
+
+void UCharacterCreatorWidget::ApplyPreset(int32 Index, bool bFull, bool bBody)
+{
+	const TArray<FTrainerPresetDef>& List = bBody ? Data->BodyPresets : bFull ? Data->FullPresets : Data->FacePresets;
+	if (!List.IsValidIndex(Index))
+	{
+		return;
+	}
+	FTrainerAppearance New = Current;
+	const FTrainerAppearance& Look = List[Index].Look;
+	if (bFull)
+	{
+		// Tout le personnage sauf les vêtements (achetés en boutique) : tête, cheveux, sourcils, cils, barbe et leurs
+		// couleurs viennent du modèle ; un emplacement que le modèle ne précise pas garde le choix actuel
+		New = Look;
+		auto SlotOf = [this](FName Id)
+		{
+			const FString Text = Id.ToString();
+			if (Text.StartsWith(TEXT("-")))
+			{
+				return FName(*Text.Mid(1));
+			}
+			const FTrainerPartDef* Part = Data->FindPart(Id);
+			return Part ? Part->Slot : FName();
+		};
+		TSet<FName> LookSlots;
+		for (const FName Id : Look.Outfit)
+		{
+			const FTrainerPartSlotDef* SlotDef = Data->FindSlot(SlotOf(Id));
+			if (SlotDef && SlotDef->Tab != TEXT("Outfit") && SlotDef->Tab != TEXT("Accessories"))
+			{
+				LookSlots.Add(SlotDef->Slot);
+			}
+		}
+		New.Outfit.Reset();
+		for (const FName Id : Current.Outfit)
+		{
+			if (!LookSlots.Contains(SlotOf(Id)))
+			{
+				New.Outfit.Add(Id);
+			}
+		}
+		for (const FName Id : Look.Outfit)
+		{
+			if (LookSlots.Contains(SlotOf(Id)))
+			{
+				New.Outfit.Add(Id);
+			}
+		}
+		New.PartColors.Reset();
+		for (const FTrainerPartColor& Color : Current.PartColors)
+		{
+			if (!LookSlots.Contains(Color.Slot))
+			{
+				New.PartColors.Add(Color);
+			}
+		}
+		for (const FTrainerPartColor& Color : Look.PartColors)
+		{
+			if (LookSlots.Contains(Color.Slot))
+			{
+				New.PartColors.Add(Color);
+			}
+		}
+		New.bCreated = Current.bCreated;
+		if (Look.Base.IsNone())
+		{
+			New.Base = Current.Base;
+		}
+	}
+	else
+	{
+		for (const FTrainerSliderValue& Value : Look.Sliders)
+		{
+			New.SetSlider(Value.Slider, Value.Value);
+		}
+	}
+	ChangeAppearance(New, TEXT("Preset"), false);
+	RefreshAll();
 }
 
 bool UCharacterCreatorWidget::AddPartGrid(FName TabName)

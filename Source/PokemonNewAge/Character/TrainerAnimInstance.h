@@ -38,6 +38,15 @@ private:
 	TWeakObjectPtr<const USkeletalMesh> MappedOwnMesh;
 	TWeakObjectPtr<const USkeletalMesh> MappedSourceMesh;
 
+	/** Os de ce mesh sans enfant (os d'aide : fessiers, pectoraux...), pour HelperScaleLimit */
+	TArray<bool> LeafBones;
+
+	/** Copie de UTrainerAnimInstance::HelperScaleLimit */
+	float HelperScaleLimit = 0.f;
+
+	/** Copie de UTrainerAnimInstance::IdleHeadMotion */
+	float IdleHeadMotion = 1.f;
+
 	/** Animation jouée en boucle quand il n'y a pas de graphe (studio de l'éditeur) */
 	UAnimSequenceBase* Idle = nullptr; // gardé en vie par UTrainerAnimInstance::IdleAnimation
 	float IdleTime = 0.f;
@@ -74,6 +83,16 @@ public:
 	void SetPoseSource(USkeletalMeshComponent* InSource) { PoseSource = InSource; }
 
 	USkeletalMeshComponent* GetPoseSource() const { return PoseSource.Get(); }
+
+	/**
+	 *  Vêtements en mode « suit le corps » : écart d'échelle maximal des os d'aide copiés (os sans enfant, 0 = aucune
+	 *  limite). Les silhouettes d'inZOI grossissent ces os jusqu'à x2,5 (fessiers de « Musclé ») : la peau, collée à
+	 *  l'os, suit bien, mais le bas d'un t-shirt, loin de l'os, était projeté loin derrière (dos qui gonfle).
+	 */
+	float HelperScaleLimit = 0.f;
+
+	/** Part du mouvement du cou et de la tête gardée dans l'attente (1 = tout ; le studio la réduit : visage stable) */
+	float IdleHeadMotion = 1.f;
 
 protected:
 

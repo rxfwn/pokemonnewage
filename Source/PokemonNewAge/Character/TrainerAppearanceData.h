@@ -220,6 +220,13 @@ struct FTrainerPartSlotDef
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	TArray<float> ZoneDefaultAmounts;
 
+	/**
+	 *  Vêtement qui pend loin du corps (haut, veste) : au lieu de la Leader Pose, il copie la pose du corps en bornant
+	 *  l'échelle des os d'aide à 1 ± cette valeur (voir UTrainerAnimInstance::HelperScaleLimit). 0 = Leader Pose.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance", meta=(ClampMin=0, ClampMax=2))
+	float HelperScaleLimit = 0.f;
+
 	FText GetZoneLabel(int32 Zone) const;
 	float GetZoneDefaultAmount(int32 Zone) const { return ZoneDefaultAmounts.IsValidIndex(Zone) ? ZoneDefaultAmounts[Zone] : 1.f; }
 };
