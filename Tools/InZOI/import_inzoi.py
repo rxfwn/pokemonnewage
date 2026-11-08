@@ -348,7 +348,6 @@ def build_master():
         material = existing
     else:
         material = new_material(MASTER)
-    EAL.set_metadata_tag(material, "InZOIVersion", str(PART_VERSION))
 
     default_arm = import_texture("Characters/Materials/DefaultTextures/T_Default_ARM", "arm")
     default_mask = import_texture("Characters/Materials/DefaultTextures/T_Default_Black_M", "mask")
@@ -408,6 +407,7 @@ def build_master():
     MEL.connect_material_property(arm, "R", unreal.MaterialProperty.MP_AMBIENT_OCCLUSION)
     MEL.connect_material_property(arm, "G", unreal.MaterialProperty.MP_ROUGHNESS)
     MEL.connect_material_property(arm, "B", unreal.MaterialProperty.MP_METALLIC)
+    EAL.set_metadata_tag(material, "InZOIVersion", str(PART_VERSION))
     return finish_material(material, MASTER)
 
 
@@ -725,7 +725,6 @@ def build_eye_master():
         material = existing
     else:
         material = new_material(EYE_MASTER)
-    EAL.set_metadata_tag(material, "InZOIVersion", str(EYE_VERSION))
     iris_texture = None
     for rel in IRIS_MASKS:
         iris_texture = import_texture(rel, "mask")
@@ -802,6 +801,7 @@ def build_eye_master():
     MEL.connect_material_property(combine, "", unreal.MaterialProperty.MP_BASE_COLOR)
     MEL.connect_material_property(constant(material, 0.12, -600, 250), "", unreal.MaterialProperty.MP_ROUGHNESS)
     MEL.connect_material_property(constant(material, 0.5, -600, 350), "", unreal.MaterialProperty.MP_SPECULAR)
+    EAL.set_metadata_tag(material, "InZOIVersion", str(EYE_VERSION))
     return finish_material(material, EYE_MASTER)
 
 
@@ -1202,7 +1202,7 @@ def build_parts(slow):
 # ---------------------------------------------------------------- Barbes (dossier Groom)
 
 HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
-HAIR_VERSION = 3  # à augmenter quand le graphe change : le matériau est refait au même endroit
+HAIR_VERSION = 4  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
 GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"), ("Mustache", "Moustache", "Hair", "Head"),
@@ -1235,7 +1235,6 @@ def build_hair_master():
     if existing:
         MEL.delete_all_material_expressions(existing)
     material = existing or new_material(HAIR_MASTER)
-    EAL.set_metadata_tag(material, "InZOIVersion", str(HAIR_VERSION))
     set_prop(material, "blend_mode", unreal.BlendMode.BLEND_MASKED)
     set_prop(material, "two_sided", True)
     set_prop(material, "opacity_mask_clip_value", 0.3333)
@@ -1266,19 +1265,30 @@ def build_hair_master():
     for (name, node), input_name in zip(params, ("Root", "Tip", "Tint")):
         MEL.connect_material_expressions(node, "", custom, input_name)
     MEL.connect_material_property(custom, "", unreal.MaterialProperty.MP_BASE_COLOR)
-    # Bords des mèches en tramage temporel (adouci par l'anti-crénelage) au lieu d'une coupure nette
-    dither = MEL.create_material_expression(material, unreal.MaterialExpressionDitherTemporalAA, -500, 450)
-    if (MEL.connect_material_expressions(diro, "A", dither, "AlphaThreshold")
-            or MEL.connect_material_expressions(diro, "A", dither, "Alpha Threshold")):
+    # Bords des mèches en tramage temporel (fonction DitherTemporalAA du moteur) ; sinon coupure nette de l'alpha
+    dither = None
+    function = load("/Engine/Functions/Engine_MaterialFunctions02/Utility/DitherTemporalAA")
+    if function:
+        try:
+            dither = MEL.create_material_expression(material, unreal.MaterialExpressionMaterialFunctionCall, -500, 450)
+            set_prop(dither, "material_function", function)
+            if not (MEL.connect_material_expressions(diro, "A", dither, "Alpha Threshold")
+                    or MEL.connect_material_expressions(diro, "A", dither, "AlphaThreshold")):
+                MEL.delete_material_expression(material, dither)
+                dither = None
+        except Exception as error:  # noqa: BLE001 - le tramage est un bonus
+            log("Tramage des cheveux ignoré : %s" % error)
+            dither = None
+    if dither:
         MEL.connect_material_property(dither, "", unreal.MaterialProperty.MP_OPACITY_MASK)
     else:
-        MEL.delete_material_expression(material, dither)
         MEL.connect_material_property(diro, "A", unreal.MaterialProperty.MP_OPACITY_MASK)
     roughness = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -500, 200)
     set_prop(roughness, "parameter_name", "Roughness")
     set_prop(roughness, "default_value", 0.6)
     MEL.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)
     MEL.connect_material_property(constant(material, 0.25, -500, 300), "", unreal.MaterialProperty.MP_SPECULAR)
+    EAL.set_metadata_tag(material, "InZOIVersion", str(HAIR_VERSION))
     return finish_material(material, HAIR_MASTER)
 
 
@@ -1677,7 +1687,8 @@ def full_presets(bases, parts):
                     continue
                 if fits(prefix + groom_id):
                     outfit.append(prefix + groom_id)
-                    add_color(slot, (entry.get("VectorParameters") or {}).get("tipColor"))
+                    if slot != "Eyelashes":  # les cils gardent leur noir naturel
+                        add_color(slot, (entry.get("VectorParameters") or {}).get("tipColor"))
             look.set_editor_property("outfit", outfit)
             look.set_editor_property("part_colors", colors)
             tone = skin_tones.get(row.get("FaceSkinColorId")) or row.get("SkinTone")
