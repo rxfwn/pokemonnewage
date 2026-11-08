@@ -371,7 +371,8 @@ def texture_role(rel):
 
 # ---------------------------------------------------------------- Matériaux
 
-PART_VERSION = 2  # à augmenter quand le graphe de M_InZOI_Part change : refait au même endroit
+CLOTH_INFLATE = 0.35  # cm : poussée des vêtements vers l'extérieur (réglable par vêtement : paramètre Inflate)
+PART_VERSION = 3  # à augmenter quand le graphe de M_InZOI_Part change : refait au même endroit
 
 
 def build_master():
@@ -445,6 +446,16 @@ def build_master():
     MEL.connect_material_property(arm, "R", unreal.MaterialProperty.MP_AMBIENT_OCCLUSION)
     MEL.connect_material_property(arm, "G", unreal.MaterialProperty.MP_ROUGHNESS)
     MEL.connect_material_property(arm, "B", unreal.MaterialProperty.MP_METALLIC)
+    # Vêtement poussé de quelques millimètres le long de sa normale : la peau ne passe plus au travers là où le
+    # vêtement colle au corps (inZOI déforme ses vêtements sur le corps, nous non)
+    inflate = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -800, 1000)
+    set_prop(inflate, "parameter_name", "Inflate")
+    set_prop(inflate, "default_value", CLOTH_INFLATE)
+    normal_ws = MEL.create_material_expression(material, unreal.MaterialExpressionVertexNormalWS, -800, 1100)
+    push = MEL.create_material_expression(material, unreal.MaterialExpressionMultiply, -500, 1050)
+    MEL.connect_material_expressions(normal_ws, "", push, "A")
+    MEL.connect_material_expressions(inflate, "", push, "B")
+    MEL.connect_material_property(push, "", unreal.MaterialProperty.MP_WORLD_POSITION_OFFSET)
     EAL.set_metadata_tag(material, "InZOIVersion", str(PART_VERSION))
     return finish_material(material, MASTER)
 
@@ -1328,6 +1339,23 @@ def parse_list(text):
     return [v for v in value if isinstance(v, str)]
 
 
+def thumbnail_fallbacks(row, same_mesh_rows):
+    """Icônes à essayer pour une ligne sans « Thumbnail » : celle d'une variante de couleur (Id_CT001...) sans le
+    suffixe _CTnnn, puis celles des variantes elles-mêmes, puis n'importe quelle ligne du même modèle"""
+    own_id = row.get("Id", "")
+    ordered = sorted(same_mesh_rows, key=lambda other: (not other.get("Id", "").startswith(own_id + "_CT"), other.get("Id", "")))
+    candidates = []
+    for other in ordered:
+        rel = game_rel(other.get("Thumbnail"))
+        if not rel:
+            continue
+        plain = re.sub(r"_CT\d+$", "", rel)
+        for candidate in (plain, rel):
+            if candidate not in candidates and os.path.isfile(src(candidate, ".png")):
+                candidates.append(candidate)
+    return candidates
+
+
 def build_parts(slow):
     parts = []
     defaults = {}  # base id -> {slot: part id}
@@ -1346,6 +1374,7 @@ def build_parts(slow):
                 if not mesh_rel:
                     continue
                 meshes.setdefault(mesh_rel, []).append(row)
+            rows_by_mesh = {mesh_rel: list(mesh_rows) for mesh_rel, mesh_rows in meshes.items()}
             mesh_items = list(meshes.items())
             if MAX_MESHES_PER_SLOT:
                 # Une pièce de chaque catégorie à tour de rôle : l'essai a des T-shirts ET des chemises, pas 15 blouses
@@ -1388,6 +1417,12 @@ def build_parts(slow):
                         materials = [part_material(rel) for rel in (game_rel(p) for p in parse_list(row.get("OverrideMaterial"))) if rel]
                     part.set_editor_property("materials", [m for m in materials if m])
                     thumbnail = import_texture(game_rel(row.get("Thumbnail")), "ui")
+                    if not thumbnail:
+                        # Ligne sans icône (souvent la version de base) : icône d'une variante de couleur du même modèle
+                        for other in thumbnail_fallbacks(row, rows_by_mesh.get(mesh_rel, [])):
+                            thumbnail = import_texture(other, "ui")
+                            if thumbnail:
+                                break
                     if thumbnail:
                         part.set_editor_property("thumbnail", thumbnail)
                     parts.append(part)
@@ -1399,7 +1434,7 @@ def build_parts(slow):
 # ---------------------------------------------------------------- Barbes (dossier Groom)
 
 HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
-HAIR_VERSION = 7  # à augmenter quand le graphe change : le matériau est refait au même endroit
+HAIR_VERSION = 8  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
 GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"), ("Mustache", "Moustache", "Hair", "Head"),
@@ -1528,15 +1563,22 @@ def build_hair_master():
     set_prop(dither, "code", (
         "float2 p = Parameters.SvPosition.xy + float(View.StateFrameIndexMod8) * float2(32.665, 11.815);\n"
         "float n = frac(52.9829189 * frac(dot(p, float2(0.06711056, 0.00583715))));\n"
-        "return saturate(Alpha * Density) - n + 0.3333;"))
+        "float threshold = 0.5 + (n - 0.5) * Spread;\n"
+        "return saturate(Alpha * Density) - threshold + 0.3333;"))
     entries = []
-    for input_name in ("Alpha", "Density"):
+    for input_name in ("Alpha", "Density", "Spread"):
         entry = unreal.CustomInput()
         entry.set_editor_property("input_name", input_name)
         entries.append(entry)
     set_prop(dither, "inputs", entries)
     MEL.connect_material_expressions(diro, "A", dither, "Alpha")
     MEL.connect_material_expressions(density, "", dither, "Density")
+    # Tramage seulement entre 30 et 70 % d'opacité (avant : de 0 à 100 %, d'où le grain et les mèches grisées
+    # où l'on voyait le fond à travers)
+    spread = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -900, 680)
+    set_prop(spread, "parameter_name", "DitherSpread")
+    set_prop(spread, "default_value", 0.4)
+    MEL.connect_material_expressions(spread, "", dither, "Spread")
     MEL.connect_material_property(dither, "", unreal.MaterialProperty.MP_OPACITY_MASK)
     roughness = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -500, 200)
     set_prop(roughness, "parameter_name", "Roughness")
@@ -2193,19 +2235,20 @@ def build_lenses():
 # squelette). La première est l'attente du studio ; les autres sont les poses du bouton « Pose » de l'éditeur.
 # Pour en voir d'autres : Index_Complet/Manifeste_Assets.csv, filtrer « .ueanim ».
 ANIMATIONS = [
-    ("Characters/Anims/Interaction/Female/ANIM_F_NPC_Idle1", "Attente"),
-    ("Characters/Anims/Interaction/Female/ANIM_F_NPC_Idle2", "Attente 2"),
-    ("Characters/Anims/Interaction/Female/ANIM_F_NPC_Idle3", "Attente 3"),
+    # Attente du créateur : la pose de portrait d'inZOI (respiration seulement, comme dans son créateur)
+    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_IdleBase", "Attente"),
+    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Calm", "Calme"),
+    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Confident", "Confiance"),
+    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Joyful", "Joie"),
+    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Delighted", "Ravi"),
+    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Curious", "Curieux"),
+    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Excited", "Impatient"),
+    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Embarassed", "Gêné"),
+    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Surprised", "Surpris"),
+    ("Characters/Anims/Interaction/Female/Emotion/Body/ANIM_F_Portrait_Angry", "Colère"),
     ("Characters/Anims/Interaction/Female/ANIM_F_Clerk_Idle_Short_01", "Mains jointes"),
     ("Characters/Anims/Interaction/Female/ANIM_F_HappyGreet", "Salut"),
-    ("Characters/Anims/Interaction/Female/ANIM_F_Clap_Stand_2", "Applaudir"),
-    ("Characters/Anims/Interaction/Female/ANIM_F_Selfie_Pose", "Selfie"),
-    ("Characters/Anims/Interaction/Female/ANIM_F_MusclePose_2", "Muscles"),
     ("Characters/Anims/Interaction/Female/ANIM_F_Pose_CatHeart", "Cœur"),
-    ("Characters/Anims/Interaction/Female/ANIM_F_Craft_Proud", "Fierté"),
-    ("Characters/Anims/Interaction/Female/Emotion/ANIM_F_Angry", "Colère"),
-    ("Characters/Anims/Interaction/Female/Emotion/ANIM_F_Afraid_1", "Peur"),
-    ("Characters/Anims/Interaction/Female/Emotion/ANIM_F_apologize", "Excuses"),
 ]
 _ANIM_FILES = None
 
@@ -2402,6 +2445,10 @@ def main():
         unreal.log_error("[InZOI] Dossier introuvable : %s (corrige SOURCE en haut du script)" % EXPORTS)
         return
 
+    # Matériaux maîtres refaits tout de suite s'ils ont changé de version : avant, ils ne l'étaient qu'à la création
+    # d'une tête ou d'une coupe, et les têtes déjà importées gardaient l'ancienne peau (maquillage sans effet)
+    for builder in (build_master, build_skin_master, build_eye_master, build_hair_master):
+        builder()
     already = len(EAL.list_assets(DEST, recursive=True, include_folder=False)) if EAL.does_directory_exist(DEST) else 0
     log("Déjà importé : %d assets (ils sont sautés, la barre repart de 0 mais passe vite dessus)" % already)
 

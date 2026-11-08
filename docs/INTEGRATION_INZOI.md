@@ -219,3 +219,14 @@ Les lignes homme/femme et adulte/enfant d'inZOI partagent le même masque : une 
 Pour les taches, grains de beauté et cicatrices, le script lit le premier masque de chaque sorte pour savoir quels
 canaux portent le dessin (ligne « canaux du masque … » dans le journal ; un canal presque tout blanc est ignoré).
 `M_InZOI_Skin` passe en version 3 : il est refait au même endroit au prochain import.
+
+## Corrections du 2026-11-08 soir
+
+- Les matériaux maîtres (vêtements, peau, yeux, poils) sont refaits au début de chaque import quand leur version
+  change. Avant, la peau n'était refaite qu'à l'import d'une nouvelle tête : le maquillage n'avait aucun effet.
+- Poils : tramage limité aux opacités entre 30 et 70 % (paramètre `DitherSpread` de `M_InZOI_Hair`), moins de grain.
+- Attente du créateur : `ANIM_F_Portrait_IdleBase` (la pose de portrait d'inZOI) ; poses « Portrait » au bouton Pose.
+- Vêtements poussés de 0,35 cm le long de leur normale (`Inflate` de `M_InZOI_Part`) pour que la peau ne passe plus
+  au travers.
+- Icônes : une ligne sans icône prend celle de sa variante de couleur (`_CT001`…).
+- Créateur plus rapide : le MID d'un emplacement est gardé d'un clic à l'autre s'il vient du même matériau.

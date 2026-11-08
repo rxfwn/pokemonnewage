@@ -19,6 +19,28 @@ namespace
 	/** Étiquette des Skeletal Mesh de pièces créés par Apply (un par emplacement) */
 	const FName PartTag(TEXT("TrainerPart"));
 
+	/**
+	 *  Pose le matériau, sauf si l'emplacement porte déjà un MID fait à partir de lui : recréer les MID à chaque
+	 *  clic du créateur relançait les paramètres et le chargement des textures (menu lent). Les paramètres du MID
+	 *  gardé sont tous reposés juste après (couleurs, maquillage).
+	 */
+	void SetMaterialKeepingMID(USkeletalMeshComponent* Component, int32 Index, UMaterialInterface* Material)
+	{
+		UMaterialInterface* Current = Component->GetMaterial(Index);
+		if (Current == Material)
+		{
+			return;
+		}
+		if (const UMaterialInstanceDynamic* MID = Cast<UMaterialInstanceDynamic>(Current))
+		{
+			if (MID->Parent == Material)
+			{
+				return;
+			}
+		}
+		Component->SetMaterial(Index, Material);
+	}
+
 	/** Met à jour les pièces (tête, vêtements...) : un Skeletal Mesh par emplacement, en Leader Pose sur le corps */
 	void ApplyParts(const UTrainerAppearanceData* Data, const FTrainerBaseDef& Base, const FTrainerAppearance& Appearance, AActor* Owner, USkeletalMeshComponent* Mesh)
 	{
@@ -116,7 +138,7 @@ namespace
 			{
 				if (UMaterialInterface* Material = Pair.Value->Materials[Index].LoadSynchronous())
 				{
-					Component->SetMaterial(Index, Material);
+					SetMaterialKeepingMID(Component, Index, Material);
 				}
 			}
 			Component->SetVisibility(true);
@@ -197,6 +219,28 @@ namespace
 			return;
 		}
 		const FName Slot = Component->ComponentTags[1];
+		// MID gardé d'un clic à l'autre : les zones sans choix reprennent d'abord la couleur du matériau
+		for (int32 Index = 0; Index < Component->GetNumMaterials(); ++Index)
+		{
+			UMaterialInstanceDynamic* MID = Cast<UMaterialInstanceDynamic>(Component->GetMaterial(Index));
+			if (!MID || !MID->Parent)
+			{
+				continue;
+			}
+			for (int32 Zone = 0; Zone < 4; ++Zone)
+			{
+				if (Appearance.FindPartColor(Slot, Zone))
+				{
+					continue;
+				}
+				const FName Parameter = TrainerPartColorParameter(Zone);
+				FLinearColor Original;
+				if (MID->Parent->GetVectorParameterValue(FHashedMaterialParameterInfo(Parameter), Original))
+				{
+					MID->SetVectorParameterValue(Parameter, Original);
+				}
+			}
+		}
 		for (const FTrainerPartColor& Choice : Appearance.PartColors)
 		{
 			if (Choice.Slot != Slot)
@@ -450,12 +494,12 @@ bool TrainerAppearanceRender::Apply(const UTrainerAppearanceData* Data, AActor* 
 		InOutAppliedBase = Base->Id;
 	}
 
-	// Matériaux du corps (peau) : posés à chaque fois, les MID de couleur sont recréés juste après
+	// Matériaux du corps (peau) : le MID déjà posé est gardé s'il vient du même matériau (plus rapide)
 	for (int32 Index = 0; Index < Base->Materials.Num(); ++Index)
 	{
 		if (UMaterialInterface* Material = Base->Materials[Index].LoadSynchronous())
 		{
-			Mesh->SetMaterial(Index, Material);
+			SetMaterialKeepingMID(Mesh, Index, Material);
 		}
 	}
 
