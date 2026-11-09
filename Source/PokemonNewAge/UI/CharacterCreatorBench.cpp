@@ -280,10 +280,23 @@ private:
 		{
 			Editor->ApplyPreset(HairPreset, true, false);
 			FTrainerAppearance New = Editor->Current;
-			New.SetPartColor(TEXT("Hair"), 3, FLinearColor(0.05f, 0.45f, 1.f, 1.f));
+			// 60 % : quantité par défaut du jeu (HAIR_ZONE_AMOUNTS) ; 20b à 100 %
+			New.SetPartColor(TEXT("Hair"), 3, FLinearColor(0.05f, 0.45f, 1.f, 0.6f));
 			Editor->ChangeAppearance(New, TEXT("Bench"), false);
 			SetView(EStudioFocus::Face, 0.f);
 		}, 4.f);
+		Add(TEXT("20b_meches_face_100"), [this]()
+		{
+			FTrainerAppearance New = Editor->Current;
+			New.SetPartColor(TEXT("Hair"), 3, FLinearColor(0.05f, 0.45f, 1.f, 1.f));
+			Editor->ChangeAppearance(New, TEXT("Bench"), false);
+		}, 2.f);
+		Add(TEXT("20c_meches_retour_60"), [this]()
+		{
+			FTrainerAppearance New = Editor->Current;
+			New.SetPartColor(TEXT("Hair"), 3, FLinearColor(0.05f, 0.45f, 1.f, 0.6f));
+			Editor->ChangeAppearance(New, TEXT("Bench"), false);
+		}, 2.f);
 		Add(TEXT("21_meches_34"), [this]() { SetView(EStudioFocus::Face, 35.f); LogHairParameters(); });
 		Add(TEXT("22_meches_profil"), [this]() { SetView(EStudioFocus::Face, 90.f); });
 		// Mèches devant sur une coupe courte d'homme (modèle 0)

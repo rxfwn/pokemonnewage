@@ -1711,7 +1711,7 @@ def build_parts(slow):
 # ---------------------------------------------------------------- Barbes (dossier Groom)
 
 HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
-HAIR_VERSION = 20  # à augmenter quand le graphe change : le matériau est refait au même endroit
+HAIR_VERSION = 23  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
 GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"), ("Mustache", "Moustache", "Hair", "Head"),
@@ -1822,7 +1822,8 @@ def build_hair_master():
         "    float t = smoothstep(C1a - 0.2, C1a + 0.2, g);\n"
         "    c = lerp(c, C1.rgb * lerp(0.8, 1.0, g), t);\n"
         "}\n"
-        "float h = frac(sin(ID * 91.345 + 0.123) * 43758.5453);\n"
+        "bool baked = VC.b < 0.5;\n"
+        "float h = baked ? VC.g : frac(sin(ID * 91.345 + 0.123) * 43758.5453);\n"
         "if (any(C2.rgb < 0.999) && h < C2a)\n"
         "{\n"
         "    c = C2.rgb * lerp(0.75, 1.0, g);\n"
@@ -1830,7 +1831,11 @@ def build_hair_master():
         "if (any(C3.rgb < 0.999))\n"
         "{\n"
         "    float ahead = smoothstep(Start, Start + 3.0, dot(Pos - Center.xyz, normalize(Front.xyz + float3(0.0, 0.0, 0.0001))));\n"
-        "    float h2 = frac(sin(ID * 47.853 + 0.71) * 24634.6345);\n"
+        # Hauteur du visage seulement (Center.z = hauteur du nez) : la frange et les mèches qui encadrent le visage,
+        # pas les longueurs qui tombent devant les épaules (de face, toute la coupe longue devenait de la couleur)
+        "    ahead *= smoothstep(Center.z - 9.0, Center.z - 3.0, Pos.z);\n"
+        "    float h2 = baked ? frac(VC.g * 13.713 + 0.37) : frac(sin(ID * 47.853 + 0.71) * 24634.6345);\n"
+        "    if (baked) { ahead = VC.r; }\n"
         "    if (h2 < C3a * ahead)\n"
         "    {\n"
         "        c = C3.rgb * lerp(0.75, 1.0, g);\n"
@@ -1843,7 +1848,7 @@ def build_hair_master():
         "c = pow(max(c, 0.0), Gamma);\n"
         "return c * lerp(0.65, 1.0, saturate(Depth));"))
     inputs = []
-    for input_name in ("Grad", "Root", "Tip", "Tint", "Depth", "ID", "C1", "C2", "C3", "C1a", "C2a", "C3a", "Pos", "Front", "Start", "Center", "Gamma", "RootDark", "RootArea"):
+    for input_name in ("Grad", "Root", "Tip", "Tint", "Depth", "ID", "C1", "C2", "C3", "C1a", "C2a", "C3a", "Pos", "Front", "Start", "Center", "Gamma", "RootDark", "RootArea", "VC"):
         entry = unreal.CustomInput()
         entry.set_editor_property("input_name", input_name)
         inputs.append(entry)
@@ -1865,6 +1870,9 @@ def build_hair_master():
     set_prop(gamma, "parameter_name", "ColorGamma")  # < 1 éclaircit et adoucit les couleurs (vignettes inZOI)
     set_prop(gamma, "default_value", HAIR_COLOR_GAMMA)
     MEL.connect_material_expressions(gamma, "", custom, "Gamma")
+    # Couleurs de sommet des coupes préparées (bake_hair_strands) : R = devant, G = numéro de mèche, B = 0
+    vertex_color = MEL.create_material_expression(material, unreal.MaterialExpressionVertexColor, -1200, 1300)
+    MEL.connect_material_expressions(vertex_color, "", custom, "VC")
     # Racine assombrie comme le matériau d'inZOI (Root_Area 0,15, Root_Darkness 0,5) ; 0 pour sourcils et cils
     # (leur canal B ne dépasse pas 0,09 : tout le poil serait « racine »)
     for name, value, y, pin in (("RootDarkness", 0.5, 1100, "RootDark"), ("RootArea", 0.15, 1200, "RootArea")):
@@ -2182,6 +2190,25 @@ def groom_thumbnail(mesh_rel):
     return import_texture(rel, "ui") if rel else None
 
 
+# Préparation des cartes de cheveux (couleurs de sommet lues par M_InZOI_Hair) ; à augmenter si le calcul change
+STRANDS_VERSION = 3
+
+
+def bake_hair_strands(mesh):
+    """Pour « Mèches » et « Mèches devant » : chaque carte reçoit en couleur de sommet R = devant (racine sur la frange
+    ou les côtés du visage), G = numéro de mèche, B = 0. Fait une fois par coupe (étiquette InZOIStrands)."""
+    library = getattr(unreal, "InZOIImportLibrary", None)
+    if not library or not hasattr(library, "bake_hair_strands"):
+        return
+    if EAL.get_metadata_tag(mesh, "InZOIStrands") == str(STRANDS_VERSION):
+        return
+    result = library.bake_hair_strands(mesh, unreal.Vector(0.0, 1.0, 0.0), 70.0, -6.0, 5.0)
+    if result:
+        EAL.set_metadata_tag(mesh, "InZOIStrands", str(STRANDS_VERSION))
+        EAL.save_loaded_asset(mesh)
+        log("Mèches de %s : %s cartes devant" % (mesh.get_name(), result))
+
+
 def build_hairs(slow, bases):
     """Coiffures d'inZOI (export « hairs » de L'amie, copié dans Exercice Compilation/Groom) : mèches en cartes,
     skinnées sur les os du corps. Matériaux M_InZOI_Hair d'après leurs JSON (carte DIRO, couleurs racine / pointe)."""
@@ -2199,6 +2226,7 @@ def build_hairs(slow, bases):
             mesh = import_mesh(mesh_rel)
             if not mesh:
                 continue
+            bake_hair_strands(mesh)
             folder = mesh_rel.rsplit("/Mesh/", 1)[0] if "/Mesh/" in mesh_rel else mesh_rel.rsplit("/", 1)[0]
             materials = []
             for slot_name in material_slot_names(mesh):

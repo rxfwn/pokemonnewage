@@ -30,6 +30,12 @@ public class PokemonNewAge : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "Landscape" });
 
+		// Préparation des coupes de cheveux à l'import (InZOIImportLibrary::BakeHairStrands) : éditeur seulement
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.AddRange(new string[] { "MeshDescription", "StaticMeshDescription", "SkeletalMeshDescription" });
+		}
+
 		// Import des animations inZOI (.ueanim) par Tools/InZOI/import_inzoi.py, sans fenêtre (InZOIImportLibrary) :
 		// seulement dans l'éditeur, et seulement si le plugin UEFormat est dans Plugins/UEFormat (il n'est pas dans Git).
 		bool bUEFormat = Target.bBuildEditor && Directory.Exists(Path.Combine(ModuleDirectory, "..", "..", "Plugins", "UEFormat"));

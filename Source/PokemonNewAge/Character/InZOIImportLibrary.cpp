@@ -1,6 +1,12 @@
 #include "Character/InZOIImportLibrary.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/Skeleton.h"
+#include "Engine/SkeletalMesh.h"
+
+#if WITH_EDITOR
+#include "MeshDescription.h"
+#include "SkeletalMeshAttributes.h"
+#endif
 
 #if WITH_UEFORMAT
 #include "Readers/UEFAnimReader.h"
@@ -105,5 +111,131 @@ UAnimSequence* UInZOIImportLibrary::ImportUEAnim(const FString& Filename, USkele
 	return AnimSequence;
 #else
 	return nullptr;
+#endif
+}
+
+FString UInZOIImportLibrary::BakeHairStrands(USkeletalMesh* Mesh, FVector FrontAxis, float FrontAngleDegrees, float MinHeightAboveCenter, float MinForward)
+{
+#if WITH_EDITOR
+	if (!Mesh || !Mesh->HasMeshDescription(0))
+	{
+		return FString();
+	}
+	FMeshDescription* Description = Mesh->GetMeshDescription(0);
+	if (!Description)
+	{
+		return FString();
+	}
+	FSkeletalMeshAttributes Attributes(*Description);
+	Attributes.Register();
+	TVertexAttributesConstRef<FVector3f> Positions = Attributes.GetVertexPositions();
+	TVertexInstanceAttributesRef<FVector4f> Colors = Attributes.GetVertexInstanceColors();
+
+	// Îlots : sommets reliés par des triangles (union-find)
+	const int32 NumVertices = Description->Vertices().GetArraySize();
+	TArray<int32> Parent;
+	Parent.SetNumUninitialized(NumVertices);
+	for (int32 Index = 0; Index < NumVertices; ++Index)
+	{
+		Parent[Index] = Index;
+	}
+	auto Find = [&Parent](int32 X)
+	{
+		while (Parent[X] != X)
+		{
+			Parent[X] = Parent[Parent[X]];
+			X = Parent[X];
+		}
+		return X;
+	};
+	for (const FTriangleID Triangle : Description->Triangles().GetElementIDs())
+	{
+		TArrayView<const FVertexID> Corners = Description->GetTriangleVertices(Triangle);
+		for (int32 Corner = 1; Corner < Corners.Num(); ++Corner)
+		{
+			const int32 A = Find(Corners[0].GetValue());
+			const int32 B = Find(Corners[Corner].GetValue());
+			if (A != B)
+			{
+				Parent[B] = A;
+			}
+		}
+	}
+
+	// Centre du crâne : milieu de la boîte de la coupe à l'horizontale, os « head » + 9 cm en hauteur
+	FBox Bounds(ForceInit);
+	for (const FVertexID Vertex : Description->Vertices().GetElementIDs())
+	{
+		Bounds += FVector(Positions[Vertex]);
+	}
+	FVector Center = Bounds.GetCenter();
+	const int32 HeadBone = Mesh->GetRefSkeleton().FindBoneIndex(TEXT("head"));
+	if (HeadBone != INDEX_NONE)
+	{
+		FTransform HeadTransform = Mesh->GetRefSkeleton().GetRefBonePose()[HeadBone];
+		for (int32 Bone = Mesh->GetRefSkeleton().GetParentIndex(HeadBone); Bone != INDEX_NONE; Bone = Mesh->GetRefSkeleton().GetParentIndex(Bone))
+		{
+			HeadTransform = HeadTransform * Mesh->GetRefSkeleton().GetRefBonePose()[Bone];
+		}
+		Center.Z = HeadTransform.GetLocation().Z + 9.f;
+	}
+	FVector Front = FrontAxis;
+	Front.Z = 0.f;
+	if (!Front.Normalize())
+	{
+		Front = FVector(0.f, 1.f, 0.f);
+	}
+
+	// Racine de chaque îlot : son point le plus haut (les mèches tombent du crâne). Le plus proche du centre du crâne
+	// tombait souvent au niveau de l'oreille pour les coupes longues : les mèches qui encadrent le visage étaient ratées.
+	TMap<int32, FVertexID> Roots;
+	TMap<int32, float> RootHeights;
+	for (const FVertexID Vertex : Description->Vertices().GetElementIDs())
+	{
+		const int32 Island = Find(Vertex.GetValue());
+		const float Height = Positions[Vertex].Z;
+		float* Best = RootHeights.Find(Island);
+		if (!Best || Height > *Best)
+		{
+			RootHeights.Add(Island, Height);
+			Roots.Add(Island, Vertex);
+		}
+	}
+	const float CosLimit = FMath::Cos(FMath::DegreesToRadians(FrontAngleDegrees));
+	TMap<int32, FVector4f> IslandColors;
+	int32 FrontCount = 0;
+	for (const TPair<int32, FVertexID>& Pair : Roots)
+	{
+		const FVector Root(Positions[Pair.Value]);
+		FVector Flat = Root - Center;
+		const float Height = Flat.Z;
+		Flat.Z = 0.f;
+		// Devant : dans l'angle, pas trop bas, et assez en avant (racine à la lisière du front ou aux tempes) ; sans la
+		// distance, toutes les mèches parties de la raie au sommet du crâne passaient (422 cartes sur 642, coupe longue)
+		const float Forward = FVector::DotProduct(Root - Center, Front);
+		const bool bFront = Flat.Normalize() && FVector::DotProduct(Flat, Front) >= CosLimit && Height >= MinHeightAboveCenter
+			&& Forward >= MinForward;
+		FrontCount += bFront ? 1 : 0;
+		// Numéro de mèche : hachage de l'îlot (stable d'un import à l'autre tant que le mesh ne change pas)
+		const float Random = float(FCrc::MemCrc32(&Pair.Key, sizeof(int32)) & 0xFFFF) / 65535.f;
+		IslandColors.Add(Pair.Key, FVector4f(bFront ? 1.f : 0.f, Random, 0.f, 1.f));
+	}
+	for (const FVertexInstanceID Instance : Description->VertexInstances().GetElementIDs())
+	{
+		const int32 Island = Find(Description->GetVertexInstanceVertex(Instance).GetValue());
+		if (const FVector4f* Color = IslandColors.Find(Island))
+		{
+			Colors[Instance] = *Color;
+		}
+	}
+	USkeletalMesh::FCommitMeshDescriptionParams Params;
+	Params.bMarkPackageDirty = true;
+	Mesh->CommitMeshDescription(0, Params);
+	Mesh->SetHasVertexColors(true);
+	Mesh->Build();
+	Mesh->PostEditChange();
+	return FString::Printf(TEXT("%d/%d"), FrontCount, Roots.Num());
+#else
+	return FString();
 #endif
 }
