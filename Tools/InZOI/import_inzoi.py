@@ -1793,7 +1793,7 @@ def build_parts(slow):
 # ---------------------------------------------------------------- Barbes (dossier Groom)
 
 HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
-HAIR_VERSION = 25  # à augmenter quand le graphe change : le matériau est refait au même endroit
+HAIR_VERSION = 26  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
 GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"), ("Mustache", "Moustache", "Hair", "Head"),
@@ -2025,7 +2025,20 @@ def build_hair_master():
     scatter = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -500, 700)
     set_prop(scatter, "parameter_name", "Scatter")
     set_prop(scatter, "default_value", HAIR_SCATTER)
-    MEL.connect_material_property(scatter, "", unreal.MaterialProperty.MP_METALLIC)
+    # Diffusion selon la clarté de la couleur : utile aux cheveux clairs (platine, rose pastel, sinon bruns), mais elle
+    # éclaircissait les foncés en kaki (W_Head07_CT022 : brun 402909 rendu kaki ; sans diffusion, brun comme inZOI)
+    scatter_mix = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -300, 700)
+    set_prop(scatter_mix, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+    set_prop(scatter_mix, "code", "return S * smoothstep(0.03, 0.25, dot(C, float3(0.2126, 0.7152, 0.0722)));")
+    entries = []
+    for input_name in ("S", "C"):
+        entry = unreal.CustomInput()
+        entry.set_editor_property("input_name", input_name)
+        entries.append(entry)
+    set_prop(scatter_mix, "inputs", entries)
+    MEL.connect_material_expressions(scatter, "", scatter_mix, "S")
+    MEL.connect_material_expressions(custom, "", scatter_mix, "C")
+    MEL.connect_material_property(scatter_mix, "", unreal.MaterialProperty.MP_METALLIC)
     EAL.set_metadata_tag(material, "InZOIVersion", str(HAIR_VERSION))
     return finish_material(material, HAIR_MASTER)
 

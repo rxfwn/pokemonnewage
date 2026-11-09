@@ -639,6 +639,53 @@ private:
 				Add(P + TEXT("5_dos_") + L, [this]() { SetView(EStudioFocus::Body, 180.f); });
 			}
 		}
+		// DR) Dreadlocks trop claires (W_Head07_CT022, couleur du jeu 402909) : couleur appliquée ? reflets ? diffusion ?
+		const int32 DreadPreset = FindFullPreset(TEXT("Female_Head_007_CT022"));
+		if (DreadPreset != INDEX_NONE)
+		{
+			Add(TEXT("DR0_base"), [this, DreadPreset]()
+			{
+				ShowUI(false);
+				Editor->ApplyPreset(DreadPreset, true, false);
+				SetView(EStudioFocus::Face, 0.f);
+				LogHairParameters();
+				for (USkeletalMeshComponent* Component : PartComponents(TEXT("Hair")))
+				{
+					for (int32 Index = 0; Index < Component->GetNumMaterials(); ++Index)
+					{
+						const UMaterialInterface* Material = Component->GetMaterial(Index);
+						FLinearColor Tint;
+						float Spec = -1.f, Rough = -1.f, Scatter = -1.f;
+						Material->GetVectorParameterValue(FHashedMaterialParameterInfo(TEXT("Tint")), Tint);
+						Material->GetScalarParameterValue(FHashedMaterialParameterInfo(TEXT("Specular")), Spec);
+						Material->GetScalarParameterValue(FHashedMaterialParameterInfo(TEXT("Roughness")), Rough);
+						Material->GetScalarParameterValue(FHashedMaterialParameterInfo(TEXT("Scatter")), Scatter);
+						UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] Dreads %s [%d] Tint %s Spec %.2f Rough %.2f Scatter %.2f"),
+							*GetNameSafe(Material), Index, *Tint.ToString(), Spec, Rough, Scatter);
+					}
+				}
+			}, 4.f);
+			Add(TEXT("DR1_noir"), [this]()
+			{
+				for (USkeletalMeshComponent* Component : PartComponents(TEXT("Hair")))
+				{
+					Component->SetVectorParameterValueOnMaterials(TEXT("Tint"), FVector(0.f, 0.f, 0.f));
+				}
+			});
+			Add(TEXT("DR2_reglages_jeu"), [this]()
+			{
+				for (USkeletalMeshComponent* Component : PartComponents(TEXT("Hair")))
+				{
+					Component->SetVectorParameterValueOnMaterials(TEXT("Tint"), FVector(0.0513f, 0.0176f, 0.0030f));
+				}
+				SetScalar(TEXT("Hair"), TEXT("Specular"), 0.25f);
+				SetScalar(TEXT("Hair"), TEXT("Roughness"), 0.55f);
+				SetScalar(TEXT("Hair"), TEXT("Scatter"), 0.35f);
+			});
+			Add(TEXT("DR3_sans_diffusion"), [this]() { SetScalar(TEXT("Hair"), TEXT("Scatter"), 0.f); });
+			Add(TEXT("DR4_gamma1"), [this]() { SetScalar(TEXT("Hair"), TEXT("ColorGamma"), 1.f); });
+			Add(TEXT("DR5_gros_plan"), [this]() { SetView(EStudioFocus::Face, 0.f, 6.f); });
+		}
 		// AD) Grain des cheveux de loin : tramage de l'opacité (DitherSpread 0,4 actuel, 0,15, 0), corps puis visage
 		const int32 GrainPreset = FMath::Max(0, FindFullPreset(TEXT("Female_Head_007_CT010")));
 		for (const float Spread : { 0.4f, 0.15f, 0.f })
