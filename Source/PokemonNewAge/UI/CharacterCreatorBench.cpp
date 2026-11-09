@@ -421,6 +421,27 @@ private:
 				SetView(EStudioFocus::Face, 0.f, -1.5f);
 			}, 4.f);
 		}
+		// 7b) Modèles de contrôle (notes du 9 novembre) : visage, puis gros plan (yeux, cils, barbe, peau)
+		const TCHAR* ControlKeys[] = { TEXT("Female_Head_007_CT010"), TEXT("Female_Head_007_CT022"), TEXT("Male_Head_007_CT011"),
+			TEXT("Male_Head_010_CT015"), TEXT("Female_Head_006_CT004") };
+		for (int32 K = 0; K < UE_ARRAY_COUNT(ControlKeys); ++K)
+		{
+			const int32 Index = FindFullPreset(ControlKeys[K]);
+			UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] Modèle de contrôle %s : %d"), ControlKeys[K], Index);
+			if (Index == INDEX_NONE)
+			{
+				continue;
+			}
+			const FString Name = FString::Printf(TEXT("75%d_controle"), K);
+			Add(Name, [this, Index, Name]()
+			{
+				ShowUI(false);
+				Editor->ApplyPreset(Index, true, false);
+				UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] Vignette %s = %s"), *Name, *Data->FullPresets[Index].Thumbnail.ToSoftObjectPath().ToString());
+				SetView(EStudioFocus::Face, 0.f, -1.5f);
+			}, 4.f);
+			Add(FString::Printf(TEXT("76%d_gros_plan"), K), [this]() { SetView(EStudioFocus::Face, 20.f, 6.f); }, 2.5f);
+		}
 		// 8) Silhouettes à côté de leur vignette inZOI (torse nu, comme les vignettes) : homme puis femme
 		const int32 BodyBases[] = { HairPreset == 0 ? 1 : 0, HairPreset };
 		for (int32 B = 0; B < 2; ++B)

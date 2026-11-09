@@ -737,7 +737,7 @@ def constant(material, value, x, y):
     return node
 
 
-SKIN_VERSION = 13  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
+SKIN_VERSION = 15  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
 # Maquillage d'inZOI (table AppearanceMakeup) : catégorie, lettre du dossier de masques, emplacement du jeu (= nom du
 # paramètre texture de M_InZOI_Skin, couleurs dans <emplacement>_R/_G/_B), libellé, force du mélange (les reflets d'inZOI
 # mêlent un éclat blanc et une ombre de contour : à moitié pour rester naturels)
@@ -770,7 +770,7 @@ FRECKLE_COLOR = "8A5A3C"  # pas de couleur dans la table d'inZOI : brun clair
 SKIN_TEXTURES = "Characters/Materials/DefaultTextures/Skin"
 HEAD_DETAIL_NORMAL = {"Female": SKIN_TEXTURES + "/Female_Head_Detail_Full_N", "Male": SKIN_TEXTURES + "/Male_Head_Detail_Full_N"}
 # Force du relief de la tête : à 1 les rides et plis (front, joues, cou) étaient bien trop marqués
-HEAD_DETAIL_AMOUNT = 0.3
+HEAD_DETAIL_AMOUNT = 0.4
 # Rugosité + AO cuite des têtes : les têtes sans _Main_RS propre partagent celle de Female_Head_001 (comme le jeu)
 SKIN_RS_SHARED = "Characters/AvatarParts/Heads/Female/Female_Head_001/Textures/Female_Head_001_Main_RS"
 # Relief et couleur du corps d'inZOI : (relief fin _Main_M, relief des muscles _Physique_M, couleur musclée _Muscle_D)
@@ -855,6 +855,7 @@ def build_skin_master():
     links = [(base, "RGB", "D"), (tint, "", "Tint"), (muscle_color, "RGB", "MD"), (muscle, "", "Mus"), (muscle_amount, "", "MusA"),
              (fat_color, "RGB", "FD"), (fat, "", "Fat"), (fat_amount, "", "FatA")]
     gloss_inputs = None
+    lip_inputs = None
     code = ["float3 d = lerp(D.rgb, MD.rgb, saturate(Mus * MusA));",
             "d = lerp(d, FD.rgb, saturate(Fat * FatA));",
             "float3 c = d * Tint.rgb;"]
@@ -877,6 +878,8 @@ def build_skin_master():
                 set_prop(color, "default_value", unreal.LinearColor(0, 0, 0, 0))
                 links.append((color, "", "%s%d" % (channel, index)))
                 links.append((color, "A", "%s%da" % (channel, index)))  # alpha à part : la sortie principale n'a que RVB
+                if slot == "MakeupLips" and channel == "R":
+                    lip_inputs = (sample, color)
                 if slot == "MakeupHighlight" and channel == "G":
                     # Canal G de Makeup_Part_A = BRILLANCE du highlight (pas une couleur) : l'afficher en couleur
                     # faisait des plaques claires sur les joues, le nez et le menton (peaux foncées 702, 706)
@@ -955,7 +958,53 @@ def build_skin_master():
         set_prop(gloss, "inputs", entries)
         MEL.connect_material_expressions(gloss_inputs[0], "RGBA", gloss, "M")
         MEL.connect_material_expressions(gloss_inputs[1], "A", gloss, "A")
-    build_skin_relief(material, gloss)
+    lips = None
+    if lip_inputs:
+        # Rugosité propre au rouge à lèvres (lipstick_Spec_Roughness d'inZOI) : mélange selon masque x intensité
+        lips = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -800, 3500)
+        set_prop(lips, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+        set_prop(lips, "code", "return saturate(M.r * A);")
+        entries = []
+        for input_name in ("M", "A"):
+            entry = unreal.CustomInput()
+            entry.set_editor_property("input_name", input_name)
+            entries.append(entry)
+        set_prop(lips, "inputs", entries)
+        MEL.connect_material_expressions(lip_inputs[0], "RGBA", lips, "M")
+        MEL.connect_material_expressions(lip_inputs[1], "A", lips, "A")
+    build_skin_relief(material, gloss, lips)
+    # 7) Fausse lumière d'inZOI (T_Head_FakeLightMask_M, R = dégradé du centre du visage) : un peu d'émissif de la
+    # couleur de peau ; FakeLightAmount à 0 par défaut (corps), posé par set_head_relief sur les têtes
+    fake_texture = import_texture(FAKE_LIGHT_MASK, "mask")
+    if fake_texture:
+        fake_sample = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -1100, 3900)
+        set_prop(fake_sample, "parameter_name", "FakeLightMask")
+        set_prop(fake_sample, "texture", fake_texture)
+        set_prop(fake_sample, "sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_MASKS)
+        if shared_source is not None:
+            set_prop(fake_sample, "sampler_source", shared_source)
+        fake_amount = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -1100, 4100)
+        set_prop(fake_amount, "parameter_name", "FakeLightAmount")
+        set_prop(fake_amount, "default_value", 0.0)
+        fake = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -400, 4000)
+        set_prop(fake, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
+        set_prop(fake, "code", "return C * F.r * FA;")
+        entries = []
+        for input_name in ("C", "F", "FA"):
+            entry = unreal.CustomInput()
+            entry.set_editor_property("input_name", input_name)
+            entries.append(entry)
+        set_prop(fake, "inputs", entries)
+        MEL.connect_material_expressions(custom, "", fake, "C")
+        MEL.connect_material_expressions(fake_sample, "RGBA", fake, "F")
+        MEL.connect_material_expressions(fake_amount, "", fake, "FA")
+        MEL.connect_material_property(fake, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+    # 4) Peaux foncées : profil de diffusion sous la peau d'inZOI (SSP_Head : rayon 0,425 / 0,052 / 0,018), plus
+    # court que celui par défaut du moteur : moins d'orange vif sur le nez, les joues, les oreilles et les lèvres
+    # Profil SSP_Head testé au banc (9 nov.) : taches orange vif près des oreilles et du cou ; profil par défaut gardé
+    profile = skin_subsurface_profile() if USE_SKIN_PROFILE else None
+    # Le matériau est refait au même endroit : sans profil, on retire celui d'un import précédent
+    set_prop(material, "subsurface_profile", profile)
     MEL.connect_material_property(constant(material, 0.3, -400, 350), "", unreal.MaterialProperty.MP_SPECULAR)
     # Peau « Subsurface Profile » : la lumière diffuse sous la surface (oreilles, nez, lèvres) ; en éclairage normal la
     # peau paraissait en plastique. Grain : micro-relief des pores plus fin (40 répétitions) et plus marqué (0,5).
@@ -964,7 +1013,31 @@ def build_skin_master():
     return finish_material(material, SKIN_MASTER)
 
 
-def build_skin_relief(material, gloss=None):
+SKIN_PROFILE = DEST + "/Materials/SSP_InZOI_Skin"
+USE_SKIN_PROFILE = False
+FAKE_LIGHT_MASK = "Characters/Materials/DefaultTextures/Skin/T_Head_FakeLightMask_M"
+FAKE_LIGHT_AMOUNT = 0.0  # 0,15 testé au banc (9 nov.) : visages pâles, délavés ; gardé disponible mais coupé
+
+
+def skin_subsurface_profile():
+    """Profil de diffusion de la peau d'après SSP_Head d'inZOI ; nul si l'API Python ne le permet pas"""
+    profile = load(SKIN_PROFILE)
+    try:
+        if not profile:
+            folder, name = split(SKIN_PROFILE)
+            profile = asset_tools.create_asset(name, folder, unreal.SubsurfaceProfile, unreal.SubsurfaceProfileFactory())
+        settings = profile.get_editor_property("settings")
+        settings.set_editor_property("mean_free_path_color", unreal.LinearColor(1.0, 0.122, 0.042, 1.0))
+        settings.set_editor_property("mean_free_path_distance", 6.0)
+        profile.set_editor_property("settings", settings)
+        EAL.save_loaded_asset(profile)
+        return profile
+    except Exception as error:
+        log("Peau : profil de diffusion non créé (%s)" % error)
+        return None
+
+
+def build_skin_relief(material, gloss=None, lips=None):
     """Normale et rugosité de la peau : normale de détail de la tête (DetailNormal, force DetailNormalAmount, 0 sur le
     corps qui a d'autres UV) + micro-relief répété (SkinMicroNormal, MicroTiling fois), rugosité un peu variée"""
     shared = getattr(getattr(unreal, "SamplerSourceMode", None), "SSM_WRAP_WORLD_GROUP_SETTINGS", None)
@@ -1016,7 +1089,7 @@ def build_skin_relief(material, gloss=None):
     physique_amount = scalar("PhysiqueStrength", 0.0, -1100, 3000)
     muscle_relief = scalar("MuscleDefinition", 0.0, -1100, 3100)
     detail_amount = scalar("DetailNormalAmount", 0.0, -1100, 2100)
-    micro_amount = scalar("MicroNormalAmount", 0.5, -1100, 2200)
+    micro_amount = scalar("MicroNormalAmount", 0.75, -1100, 2200)
     rough_base = scalar("SkinRoughness", 0.66, -1100, 2300)
     # <Tête>_Main_RS d'inZOI : R = rugosité (0,399 à 0,95 dans le jeu), A = occlusion cuite (orbites, narines, bouche,
     # oreilles). Force SkinRSAmount à 0 par défaut, posée à 1 par set_skin_rs (texture propre ou partagée)
@@ -1031,7 +1104,7 @@ def build_skin_relief(material, gloss=None):
     rs_amount = scalar("SkinRSAmount", 0.0, -1100, 3700)
     ao_node = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -600, 2300)
     set_prop(ao_node, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
-    set_prop(ao_node, "code", "return lerp(1.0, RS.a, RSA);")
+    set_prop(ao_node, "code", "return lerp(1.0, RS.a * RS.a, RSA);")  # alpha au carré : AO cuite plus marquée
     ao_entries = []
     for input_name in ("RS", "RSA"):
         entry = unreal.CustomInput()
@@ -1048,8 +1121,8 @@ def build_skin_relief(material, gloss=None):
     set_prop(rough, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
     # Les creux du micro-relief (pores) un peu plus mats que les bosses
     # G = brillance du highlight du maquillage (canal G de Makeup_Part_A) : peau plus lisse à ces endroits
-    set_prop(rough, "code", "float r = lerp(R, lerp(0.399, 0.95, RS.r), RSA);\nreturn saturate(r + (1.0 - M.z) * 0.6 * MA - length(D.xy) * 0.1 * DA - G * 0.35);")
-    for node, names in ((normal, ("D", "M", "DA", "MA", "B", "P", "BA", "PA", "Mus")), (rough, ("D", "M", "DA", "MA", "R", "G", "RS", "RSA"))):
+    set_prop(rough, "code", "float r = lerp(R, lerp(0.399, 0.95, RS.r), RSA);\nr = lerp(r, 0.3, L * 0.8);\nreturn saturate(r + (1.0 - M.z) * 0.6 * MA - length(D.xy) * 0.1 * DA - G * 0.35);")
+    for node, names in ((normal, ("D", "M", "DA", "MA", "B", "P", "BA", "PA", "Mus")), (rough, ("D", "M", "DA", "MA", "R", "G", "RS", "RSA", "L"))):
         entries = []
         for input_name in names:
             entry = unreal.CustomInput()
@@ -1063,6 +1136,10 @@ def build_skin_relief(material, gloss=None):
     MEL.connect_material_expressions(rough_base, "", rough, "R")
     MEL.connect_material_expressions(rs_sample, "RGBA", rough, "RS")
     MEL.connect_material_expressions(rs_amount, "", rough, "RSA")
+    if lips is not None:
+        MEL.connect_material_expressions(lips, "", rough, "L")
+    else:
+        MEL.connect_material_expressions(scalar("NoLips", 0.0, -800, 3600), "", rough, "L")
     if gloss is not None:
         MEL.connect_material_expressions(gloss, "", rough, "G")
     else:
@@ -1290,7 +1367,11 @@ def skin_instance(asset_path, color_rel):
 
 
 def set_head_relief(instance, gender):
-    """Normale de détail d'inZOI sur la peau d'une tête (le corps garde DetailNormalAmount à 0)"""
+    """Normale de détail d'inZOI sur la peau d'une tête (le corps garde DetailNormalAmount à 0), fausse lumière"""
+    if abs(MEL.get_material_instance_scalar_parameter_value(instance, "FakeLightAmount") - FAKE_LIGHT_AMOUNT) > 0.001:
+        MEL.set_material_instance_scalar_parameter_value(instance, "FakeLightAmount", FAKE_LIGHT_AMOUNT)
+        MEL.update_material_instance(instance)
+        EAL.save_loaded_asset(instance)
     if abs(MEL.get_material_instance_scalar_parameter_value(instance, "DetailNormalAmount") - HEAD_DETAIL_AMOUNT) < 0.01:
         return
     texture = import_texture(HEAD_DETAIL_NORMAL[gender], "normal")
@@ -1738,7 +1819,7 @@ HAIR_SECOND_POSITION_SCALE = 0.35
 HAIR_SCATTER = 0.3
 HAIR_COLOR_GAMMA = 0.85
 # Densité des cils (opacité tramée) : les cartes d'inZOI pleines donnaient des cils trop épais
-EYELASH_DENSITY = 0.55
+EYELASH_DENSITY = 0.9
 DEFAULT_CARD = GROOM_REL + "/Textures/Hair/HairCard_001/HairCard_001_DIRO"
 BEARD_CARD = GROOM_REL + "/Textures/Beard/BeardCard_002/BeardCard_002_DIRO"
 # Brun foncé d'inZOI (MI_Beard_Scalp_003) quand le dossier n'a pas de fichier de matériau
@@ -2000,7 +2081,7 @@ def diro_texture(diro_rel, fallback):
     return None
 
 
-def hair_instance(asset_path, diro_rel, colors, fallback=None, zones=False, density=None, root_darkness=0.5):
+def hair_instance(asset_path, diro_rel, colors, fallback=None, zones=False, density=None, root_darkness=0.5, specular=None):
     """Matériau de poils ; refait à chaque import (texture et couleurs), pour corriger les anciens.
     zones : expose Color1-3 (dégradé, mèches) pour que le nuancier les montre ; density : < 1 éclaircit (cils)"""
     instance = load(asset_path)
@@ -2020,6 +2101,7 @@ def hair_instance(asset_path, diro_rel, colors, fallback=None, zones=False, dens
             MEL.set_material_instance_vector_parameter_value(instance, "Color%d" % zone, unreal.LinearColor(1, 1, 1, HAIR_ZONE_AMOUNTS[zone]))
     MEL.set_material_instance_scalar_parameter_value(instance, "Density", density if density is not None else 1.0)
     MEL.set_material_instance_scalar_parameter_value(instance, "RootDarkness", root_darkness)
+    MEL.set_material_instance_scalar_parameter_value(instance, "Specular", specular if specular is not None else 0.45)
     MEL.update_material_instance(instance)
     EAL.save_loaded_asset(instance)
     return instance
@@ -2066,8 +2148,10 @@ def groom_materials(mesh, folder, card_fallback, default_colors, density=None):
             diro = found or card_fallback
         # Sourcils et cils : pas de dégradé de racine (canal B quasi nul)
         no_root = any(key in folder for key in ("Eyebrow", "Eyelash"))
+        # Barbe et moustache : spéculaire faible (0,12 : reflets blancs sinon)
+        beard = any(key in folder for key in ("Beard", "Mustache"))
         materials.append(hair_instance(dest(json_rel + "_Jeu"), diro or card_fallback, (root, tip), card_fallback, density=density,
-                                       root_darkness=0.0 if no_root else 0.5))
+                                       root_darkness=0.0 if no_root else 0.5, specular=0.12 if beard else None))
     return materials
 
 
@@ -2726,7 +2810,7 @@ def skin_tint(tone_hex, palette_hex=None):
             tint = [t * target / current for t in tint]
     # Un peu désaturée : les visages foncés viraient à l'orange sous la lumière du studio
     gray = 0.2126 * tint[0] + 0.7152 * tint[1] + 0.0722 * tint[2]
-    tint = [gray + (t - gray) * 0.75 for t in tint]
+    tint = [gray + (t - gray) * 0.6 for t in tint]
     return tuple(max(0.05, min(1.0, t)) for t in tint)
 
 
