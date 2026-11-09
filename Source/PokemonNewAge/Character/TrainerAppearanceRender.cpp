@@ -492,9 +492,9 @@ namespace
 					{
 						const FTrainerPartColor* Choice = Appearance.FindPartColor(SlotDef->Slot, Channel + 1);
 						FLinearColor Color = Choice ? Choice->Color : Part->MaskColors[Channel];
-						if (Part->MaskColors[Channel].A <= 0.f)
+						if (!Choice && Part->MaskColors[Channel].A <= 0.f)
 						{
-							Color.A = 0.f; // canal désactivé dans inZOI
+							Color.A = 0.f; // canal désactivé dans inZOI (sauf si le modèle ou le joueur l'a réglé : brillance du highlight)
 						}
 						MID->SetVectorParameterValue(FName(*(Prefix + Channels[Channel])), Color);
 					}

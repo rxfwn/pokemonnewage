@@ -223,13 +223,14 @@ GROOM_REL = "Characters/AvatarParts/Groom"
 # Exports FModel faits à part et rangés à la racine de l'exercice (ex. « MakeupV2 » : masques de maquillage, taches de
 # rousseur, grains de beauté, cicatrices, tatouages + leurs tables) : chaque <dossier>/BlueClient/Content ou
 # <dossier>/Output/Exports/BlueClient/Content est aussi fouillé
-EXTRA_EXPORT_DIRS = ["MakeupV2", "makeup"]
+EXTRA_EXPORT_DIRS = ["MakeupV2", "makeup", os.path.join("V2", "Exports_depuis_23h")]
 
 
 def extra_exports():
     roots = []
     for name in EXTRA_EXPORT_DIRS:
-        for tail in (("BlueClient", "Content"), ("Output", "Exports", "BlueClient", "Content")):
+        # V2/Exports_depuis_23h (exports du 2026-11-08) : masques de maquillage A-F complets, textures d'yeux, corps .uemodel
+        for tail in (("BlueClient", "Content"), ("Output", "Exports", "BlueClient", "Content"), ("Exports", "BlueClient", "Content")):
             root = os.path.join(SOURCE, name, *tail)
             if os.path.isdir(root):
                 roots.append(root)
@@ -736,7 +737,7 @@ def constant(material, value, x, y):
     return node
 
 
-SKIN_VERSION = 11  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
+SKIN_VERSION = 12  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
 # Maquillage d'inZOI (table AppearanceMakeup) : catégorie, lettre du dossier de masques, emplacement du jeu (= nom du
 # paramètre texture de M_InZOI_Skin, couleurs dans <emplacement>_R/_G/_B), libellé, force du mélange (les reflets d'inZOI
 # mêlent un éclat blanc et une ombre de contour : à moitié pour rester naturels)
@@ -851,6 +852,7 @@ def build_skin_master():
     set_prop(fat_amount, "default_value", 0.0)
     links = [(base, "RGB", "D"), (tint, "", "Tint"), (muscle_color, "RGB", "MD"), (muscle, "", "Mus"), (muscle_amount, "", "MusA"),
              (fat_color, "RGB", "FD"), (fat, "", "Fat"), (fat_amount, "", "FatA")]
+    gloss_inputs = None
     code = ["float3 d = lerp(D.rgb, MD.rgb, saturate(Mus * MusA));",
             "d = lerp(d, FD.rgb, saturate(Fat * FatA));",
             "float3 c = d * Tint.rgb;"]
@@ -873,6 +875,11 @@ def build_skin_master():
                 set_prop(color, "default_value", unreal.LinearColor(0, 0, 0, 0))
                 links.append((color, "", "%s%d" % (channel, index)))
                 links.append((color, "A", "%s%da" % (channel, index)))  # alpha à part : la sortie principale n'a que RVB
+                if slot == "MakeupHighlight" and channel == "G":
+                    # Canal G de Makeup_Part_A = BRILLANCE du highlight (pas une couleur) : l'afficher en couleur
+                    # faisait des plaques claires sur les joues, le nez et le menton (peaux foncées 702, 706)
+                    gloss_inputs = (sample, color)
+                    continue
                 code.append("c = lerp(c, %s, saturate(M%d.%s * %s%da * %.2f));" % (
                     makeup_blend("c", "%s%d.rgb" % (channel, index)), index, channel.lower(), channel, index, blend))
         shared = getattr(getattr(unreal, "SamplerSourceMode", None), "SSM_WRAP_WORLD_GROUP_SETTINGS", None)
@@ -933,7 +940,20 @@ def build_skin_master():
     for node, output, input_name in links:
         MEL.connect_material_expressions(node, output, custom, input_name)
     MEL.connect_material_property(custom, "", unreal.MaterialProperty.MP_BASE_COLOR)
-    build_skin_relief(material)
+    gloss = None
+    if gloss_inputs:
+        gloss = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -800, 3300)
+        set_prop(gloss, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
+        set_prop(gloss, "code", "return saturate(M.g * A);")
+        entries = []
+        for input_name in ("M", "A"):
+            entry = unreal.CustomInput()
+            entry.set_editor_property("input_name", input_name)
+            entries.append(entry)
+        set_prop(gloss, "inputs", entries)
+        MEL.connect_material_expressions(gloss_inputs[0], "RGBA", gloss, "M")
+        MEL.connect_material_expressions(gloss_inputs[1], "A", gloss, "A")
+    build_skin_relief(material, gloss)
     MEL.connect_material_property(constant(material, 0.3, -400, 350), "", unreal.MaterialProperty.MP_SPECULAR)
     # Peau « Subsurface Profile » : la lumière diffuse sous la surface (oreilles, nez, lèvres) ; en éclairage normal la
     # peau paraissait en plastique. Grain : micro-relief des pores plus fin (40 répétitions) et plus marqué (0,5).
@@ -942,7 +962,7 @@ def build_skin_master():
     return finish_material(material, SKIN_MASTER)
 
 
-def build_skin_relief(material):
+def build_skin_relief(material, gloss=None):
     """Normale et rugosité de la peau : normale de détail de la tête (DetailNormal, force DetailNormalAmount, 0 sur le
     corps qui a d'autres UV) + micro-relief répété (SkinMicroNormal, MicroTiling fois), rugosité un peu variée"""
     shared = getattr(getattr(unreal, "SamplerSourceMode", None), "SSM_WRAP_WORLD_GROUP_SETTINGS", None)
@@ -1002,8 +1022,9 @@ def build_skin_relief(material):
     rough = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -600, 2050)
     set_prop(rough, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
     # Les creux du micro-relief (pores) un peu plus mats que les bosses
-    set_prop(rough, "code", "return saturate(R + (1.0 - M.z) * 0.6 * MA - length(D.xy) * 0.1 * DA);")
-    for node, names in ((normal, ("D", "M", "DA", "MA", "B", "P", "BA", "PA", "Mus")), (rough, ("D", "M", "DA", "MA", "R"))):
+    # G = brillance du highlight du maquillage (canal G de Makeup_Part_A) : peau plus lisse à ces endroits
+    set_prop(rough, "code", "return saturate(R + (1.0 - M.z) * 0.6 * MA - length(D.xy) * 0.1 * DA - G * 0.35);")
+    for node, names in ((normal, ("D", "M", "DA", "MA", "B", "P", "BA", "PA", "Mus")), (rough, ("D", "M", "DA", "MA", "R", "G"))):
         entries = []
         for input_name in names:
             entry = unreal.CustomInput()
@@ -1015,6 +1036,10 @@ def build_skin_relief(material):
         MEL.connect_material_expressions(detail_amount, "", node, "DA")
         MEL.connect_material_expressions(micro_amount, "", node, "MA")
     MEL.connect_material_expressions(rough_base, "", rough, "R")
+    if gloss is not None:
+        MEL.connect_material_expressions(gloss, "", rough, "G")
+    else:
+        MEL.connect_material_expressions(scalar("NoGloss", 0.0, -800, 3400), "", rough, "G")
     MEL.connect_material_expressions(samples[2], "RGB", normal, "B")
     MEL.connect_material_expressions(samples[3], "RGB", normal, "P")
     MEL.connect_material_expressions(body_amount, "", normal, "BA")
@@ -1024,12 +1049,12 @@ def build_skin_relief(material):
     MEL.connect_material_property(rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
 
 
-EYE_VERSION = 7  # à augmenter quand le dessin de l'œil change : le matériau est alors refait
+EYE_VERSION = 8  # à augmenter quand le dessin de l'œil change : le matériau est alors refait
 # Masque d'iris d'inZOI (celui de MetaHuman) : R = relief, V = fibres de l'iris, B = mélange des 2 couleurs, A = pupille
 IRIS_MASKS = ["MetaHumans/Common/Face/Textures/IrisTextures/iris_001/T_Iris_A_M",
               "Characters/Materials/DefaultTextures/Eyes/IrisTextures/iris_001/T_Iris_A_M"]
 # Rayon de l'iris dans les UV du globe inZOI (0,125) / rayon de l'iris dans la texture (0,45)
-IRIS_UV_SCALE = 3.6
+IRIS_UV_SCALE = 3.0  # 3,6 avant : iris trop petit face aux vignettes (beaucoup de blanc, regard écarquillé)
 # Bord de l'iris dans T_Iris_A_M (là où son canal B, le fondu des 2 couleurs, arrive à 1)
 IRIS_EDGE_REFERENCE = 0.45
 IRIS_EDGE_PARAM = "IrisTexEdge"
@@ -2671,6 +2696,36 @@ def body_presets(bases):
     return presets
 
 
+def face_shape_sliders(row, groups):
+    """FaceShapeParameters d'un modèle -> valeurs des curseurs du visage (TrainerSliderValue)"""
+    try:
+        values = json.loads(row.get("FaceShapeParameters") or "[]")
+    except ValueError:
+        values = []
+    sums = OrderedDict()
+    for index, value in enumerate(values if isinstance(values, list) else []):
+        group = groups.get(index)
+        if not group:
+            continue
+        feature, axis = face_group_key(group)
+        slider_id = "Visage_" + feature + ("_" + axis if axis else "")
+        sums.setdefault(slider_id, []).append(float(value or 0.0))
+    sliders = []
+    for slider_id, items in sums.items():
+        value = max(-1.0, min(1.0, sum(items) / len(items)))
+        if abs(value) < 0.001:
+            continue
+        entry = unreal.TrainerSliderValue()
+        entry.set_editor_property("slider", slider_id)
+        entry.set_editor_property("value", value * FACE_SHAPE_GAIN)
+        sliders.append(entry)
+    return sliders
+
+
+# Force des formes du visage des modèles (1 = valeurs d'inZOI)
+FACE_SHAPE_GAIN = 1.0
+
+
 def full_presets(bases, parts):
     rows = read_csv(os.path.join(TABLES, "AppearanceFacePreset.csv"))
     # Couleur de la palette (PalleteColor) : celle qu'on voit sur la vignette. SkinTone, plus foncée, est une teinte de
@@ -2680,6 +2735,13 @@ def full_presets(bases, parts):
     groom_ids = {"Eyebrow": ("Eyebrows", ""), "Eyelash": ("Eyelashes", ""), "Beard": ("Beard", "InZOI_"), "Mustache": ("Mustache", "InZOI_")}
     presets, per_base = [], OrderedDict()
     makeup_slots = {category.lower(): slot for category, _letter, slot, _label, _blend in MAKEUP_PARTS}
+    face_groups = {}
+    for morpho in read_csv(MORPHO_FACE) if os.path.isfile(MORPHO_FACE) else []:
+        if morpho.get("age") == "Adult":
+            try:
+                face_groups.setdefault(morpho.get("genre"), {})[int(morpho.get("index_groupe"))] = morpho["groupe"]
+            except (TypeError, ValueError):
+                pass
     for (gender, age), (base_id, base_label, _male, _body) in BASES.items():
         if not any(str(b.get_editor_property("id")) == base_id for b in bases):
             continue
@@ -2762,11 +2824,20 @@ def full_presets(bases, parts):
                     amounts = [v for k, v in (mask.get("ScalarValues") or {}).items() if k.lower().endswith("intensity")]
                     if zone and hexes:
                         add_color(slot, hexes[0], zone, max(0.0, min(1.0, float(amounts[0]) if amounts else 1.0)))
+                    elif zone and slot == "MakeupHighlight":
+                        # Canal sans couleur du highlight = brillance (HighlightSpec_Intensity) : alpha = intensité
+                        spec = [v for k, v in (mask.get("ScalarValues") or {}).items() if k.lower().endswith("spec_intensity")]
+                        if spec:
+                            add_color(slot, "FFFFFFFF", zone, max(0.0, min(1.0, float(spec[0]))))
             for _category, _letter, slot, _label, _blend in MAKEUP_PARTS:
                 if slot not in used:
                     outfit.append("-" + slot)  # sinon le maquillage du modèle précédent restait
             look.set_editor_property("outfit", outfit)
             look.set_editor_property("part_colors", colors)
+            # Formes du visage du modèle (FaceShapeParameters : une valeur par groupe C_* de Morphologie_Visage_Os,
+            # rangé par index_groupe) -> curseurs « Visage_<partie>_<axe> » du jeu (gauche et droite : moyenne).
+            # Sans elles, chaque modèle gardait le visage de base de sa tête (yeux trop ouverts, air renfrogné).
+            look.set_editor_property("sliders", face_shape_sliders(row, face_groups.get(gender, {})))
             tone, palette = skin_tones.get(row.get("FaceSkinColorId")) or (row.get("SkinTone"), None)
             tint = skin_tint(tone, palette)
             if tint:
