@@ -59,7 +59,7 @@ namespace CharacterStudio
 		const FLinearColor White(1.f, 1.f, 1.f);
 		return {
 			// Doux en premier : lumière de face presque sans ombre dure, comme le studio d'inZOI
-			{ LOCTEXT("LightSoft", "Doux"), 20.f, 17.f, 8.f, 12.f, FLinearColor(1.f, 0.97f, 0.94f), FLinearColor(0.97f, 0.98f, 1.f), White },
+			{ LOCTEXT("LightSoft", "Doux"), 22.f, 16.f, 10.f, 12.f, FLinearColor(1.f, 0.97f, 0.94f), FLinearColor(0.97f, 0.98f, 1.f), White },
 			{ LOCTEXT("LightStudio", "Studio"), 30.f, 11.f, 22.f, 8.f, White, White, White },
 			{ LOCTEXT("LightEvening", "Soirée"), 32.f, 6.f, 28.f, 3.f, FLinearColor(1.f, 0.78f, 0.55f), FLinearColor(0.75f, 0.8f, 1.f), FLinearColor(0.55f, 0.7f, 1.f) },
 		};
@@ -147,8 +147,9 @@ ACharacterStudio::ACharacterStudio()
 	BackdropLight->LightingChannels.bChannel1 = true;
 
 	// Éclairage en trois points + douche du plafond, tous dirigés vers le personnage
-	KeyLight = MakeLight(TEXT("KeyLight"), FVector(320.f, -260.f, 230.f), 140.f);
-	FillLight = MakeLight(TEXT("FillLight"), FVector(320.f, 300.f, 150.f), 180.f);
+	// Principale presque de face, un peu à gauche et en hauteur (captures d'inZOI : très peu d'ombre sous le nez et le menton)
+	KeyLight = MakeLight(TEXT("KeyLight"), FVector(380.f, -170.f, 250.f), 160.f);
+	FillLight = MakeLight(TEXT("FillLight"), FVector(380.f, 260.f, 170.f), 200.f);
 	RimLight = MakeLight(TEXT("RimLight"), FVector(-260.f, 180.f, 260.f), 100.f);
 	TopLight = MakeLight(TEXT("TopLight"), FVector(30.f, 0.f, 520.f), 240.f);
 }

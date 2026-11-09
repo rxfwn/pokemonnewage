@@ -150,7 +150,7 @@ public:
 
 	/** Couleur du fond du studio du créateur de personnage (nuancier de la section Studio) ; gris clair par défaut */
 	UPROPERTY()
-	FLinearColor StudioBackdrop = FLinearColor(0.62f, 0.63f, 0.65f);
+	FLinearColor StudioBackdrop = FLinearColor(0.55f, 0.58f, 0.64f);
 
 	UPROPERTY()
 	bool bInvertCameraY = false;

@@ -738,7 +738,7 @@ def constant(material, value, x, y):
     return node
 
 
-SKIN_VERSION = 15  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
+SKIN_VERSION = 16  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
 # Maquillage d'inZOI (table AppearanceMakeup) : catégorie, lettre du dossier de masques, emplacement du jeu (= nom du
 # paramètre texture de M_InZOI_Skin, couleurs dans <emplacement>_R/_G/_B), libellé, force du mélange (les reflets d'inZOI
 # mêlent un éclat blanc et une ombre de contour : à moitié pour rester naturels)
@@ -1122,7 +1122,7 @@ def build_skin_relief(material, gloss=None, lips=None):
     set_prop(rough, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
     # Les creux du micro-relief (pores) un peu plus mats que les bosses
     # G = brillance du highlight du maquillage (canal G de Makeup_Part_A) : peau plus lisse à ces endroits
-    set_prop(rough, "code", "float r = lerp(R, lerp(0.399, 0.95, RS.r), RSA);\nr = lerp(r, 0.3, L * 0.8);\nreturn saturate(r + (1.0 - M.z) * 0.6 * MA - length(D.xy) * 0.1 * DA - G * 0.35);")
+    set_prop(rough, "code", "float r = lerp(R, lerp(0.399, 0.95, RS.r), RSA);\nr = lerp(r, 0.12, L);\nreturn saturate(r + (1.0 - M.z) * 0.6 * MA - length(D.xy) * 0.1 * DA - G * 0.35);")
     for node, names in ((normal, ("D", "M", "DA", "MA", "B", "P", "BA", "PA", "Mus")), (rough, ("D", "M", "DA", "MA", "R", "G", "RS", "RSA", "L"))):
         entries = []
         for input_name in names:
@@ -1793,7 +1793,7 @@ def build_parts(slow):
 # ---------------------------------------------------------------- Barbes (dossier Groom)
 
 HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
-HAIR_VERSION = 24  # à augmenter quand le graphe change : le matériau est refait au même endroit
+HAIR_VERSION = 25  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
 GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"), ("Mustache", "Moustache", "Hair", "Head"),
@@ -1820,7 +1820,7 @@ HAIR_SECOND_POSITION_SCALE = 0.35
 HAIR_SCATTER = 0.3
 HAIR_COLOR_GAMMA = 0.85
 # Densité des cils (opacité tramée) : les cartes d'inZOI pleines donnaient des cils trop épais
-EYELASH_DENSITY = 0.9
+EYELASH_DENSITY = 1.0
 # Sourcils à 70 % (note du 9 novembre, vérifié au banc A/B) : pleins, ils faisaient des barres épaisses
 EYEBROW_DENSITY = 0.7
 DEFAULT_CARD = GROOM_REL + "/Textures/Hair/HairCard_001/HairCard_001_DIRO"
@@ -1990,7 +1990,7 @@ def build_hair_master():
     # où l'on voyait le fond à travers)
     spread = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -900, 680)
     set_prop(spread, "parameter_name", "DitherSpread")
-    set_prop(spread, "default_value", 0.4)
+    set_prop(spread, "default_value", 0.15)  # 0,15 : moins de grain de loin (banc AD : 0,4 granuleux, 0 trop dur)
     MEL.connect_material_expressions(spread, "", dither, "Spread")
     MEL.connect_material_property(dither, "", unreal.MaterialProperty.MP_OPACITY_MASK)
     roughness = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -500, 200)

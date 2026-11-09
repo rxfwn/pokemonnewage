@@ -116,7 +116,7 @@ private:
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UMaterialInstanceDynamic>> BackdropMaterials;
 
-	FLinearColor BackdropColor = FLinearColor(0.62f, 0.63f, 0.65f);
+	FLinearColor BackdropColor = FLinearColor(0.55f, 0.58f, 0.64f);
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTrainerAppearanceData> Data;

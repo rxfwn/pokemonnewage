@@ -639,12 +639,29 @@ private:
 				Add(P + TEXT("5_dos_") + L, [this]() { SetView(EStudioFocus::Body, 180.f); });
 			}
 		}
+		// AD) Grain des cheveux de loin : tramage de l'opacité (DitherSpread 0,4 actuel, 0,15, 0), corps puis visage
+		const int32 GrainPreset = FMath::Max(0, FindFullPreset(TEXT("Female_Head_007_CT010")));
+		for (const float Spread : { 0.4f, 0.15f, 0.f })
+		{
+			const FString Tag = FString::Printf(TEXT("%03d"), FMath::RoundToInt(Spread * 100.f));
+			Add(TEXT("AD_corps_") + Tag, [this, GrainPreset, Spread]()
+			{
+				ShowUI(false);
+				if (Spread == 0.4f)
+				{
+					Editor->ApplyPreset(GrainPreset, true, false);
+				}
+				SetScalar(TEXT("Hair"), TEXT("DitherSpread"), Spread);
+				SetView(EStudioFocus::Body, 0.f);
+			}, 3.f);
+			Add(TEXT("AD_visage_") + Tag, [this]() { SetView(EStudioFocus::Face, 0.f); }, 2.5f);
+		}
 		// 9) Fond du studio (cyclorama) : corps entier avec et sans interface, de biais, puis d'autres couleurs
 		const int32 BackdropPreset = FMath::Max(0, FindFullPreset(TEXT("Female_Head_007_CT010")));
 		Add(TEXT("90_fond_ui"), [this, BackdropPreset]()
 		{
 			Editor->ApplyPreset(BackdropPreset, true, false);
-			Studio->SetBackdropColor(FLinearColor(0.62f, 0.63f, 0.65f));
+			Studio->SetBackdropColor(FLinearColor(0.55f, 0.58f, 0.64f));
 			ShowUI(true);
 			Editor->SelectTab(UCharacterCreatorWidget::ETab::Presets);
 			SetView(EStudioFocus::Body, 0.f);
@@ -653,7 +670,7 @@ private:
 		Add(TEXT("92_fond_biais"), [this]() { SetView(EStudioFocus::Body, 40.f, -1.5f); }, 2.f);
 		Add(TEXT("93_fond_beige"), [this]() { Studio->SetBackdropColor(FLinearColor(0.7f, 0.6f, 0.48f)); SetView(EStudioFocus::Body, 0.f); }, 2.f);
 		Add(TEXT("94_fond_anthracite"), [this]() { Studio->SetBackdropColor(FLinearColor(0.06f, 0.065f, 0.075f)); }, 2.f);
-		Add(TEXT("95_fond_visage"), [this]() { Studio->SetBackdropColor(FLinearColor(0.62f, 0.63f, 0.65f)); SetView(EStudioFocus::Face, 0.f); }, 2.5f);
+		Add(TEXT("95_fond_visage"), [this]() { Studio->SetBackdropColor(FLinearColor(0.55f, 0.58f, 0.64f)); SetView(EStudioFocus::Face, 0.f); }, 2.5f);
 		Add(TEXT("99_fin"), [this]() { SetView(EStudioFocus::Body, 0.f); }, 1.f);
 	}
 

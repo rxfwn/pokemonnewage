@@ -87,9 +87,9 @@ namespace CharacterCreator
 		FLinearColor::FromSRGBColor(FColor(0x40, 0x3C, 0x5F)), FLinearColor::FromSRGBColor(FColor(0x8C, 0x8F, 0x94)),
 		FLinearColor::FromSRGBColor(FColor(0xE6, 0xE4, 0xDF)) };
 	constexpr float BottomY = 994.f;
-	/** Fond du studio : gris clair (par défaut), blanc, gris foncé, beige, bleu, rose, vert sauge, anthracite */
+	/** Fond du studio : gris bleuté clair (par défaut, comme inZOI), blanc, gris foncé, beige, bleu, rose, vert sauge, anthracite */
 	const FLinearColor BackdropColors[] = {
-		FLinearColor(0.62f, 0.63f, 0.65f), FLinearColor(0.9f, 0.9f, 0.9f), FLinearColor(0.25f, 0.26f, 0.28f),
+		FLinearColor(0.55f, 0.58f, 0.64f), FLinearColor(0.9f, 0.9f, 0.9f), FLinearColor(0.25f, 0.26f, 0.28f),
 		FLinearColor(0.7f, 0.6f, 0.48f), FLinearColor(0.42f, 0.55f, 0.7f), FLinearColor(0.75f, 0.55f, 0.58f),
 		FLinearColor(0.45f, 0.55f, 0.45f), FLinearColor(0.06f, 0.065f, 0.075f) };
 	constexpr float PillHeight = 52.f;
