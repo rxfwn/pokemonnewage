@@ -736,7 +736,7 @@ def constant(material, value, x, y):
     return node
 
 
-SKIN_VERSION = 10  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
+SKIN_VERSION = 11  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
 # Maquillage d'inZOI (table AppearanceMakeup) : catégorie, lettre du dossier de masques, emplacement du jeu (= nom du
 # paramètre texture de M_InZOI_Skin, couleurs dans <emplacement>_R/_G/_B), libellé, force du mélange (les reflets d'inZOI
 # mêlent un éclat blanc et une ombre de contour : à moitié pour rester naturels)
@@ -774,8 +774,12 @@ HEAD_DETAIL_AMOUNT = 0.3
 BODY_RELIEF = {g: ("Characters/AvatarParts/Body/%s/Textures/%s_Body_Main_M" % (g, g),
                    "Characters/AvatarParts/Body/%s/Textures/%s_Body_Physique_M" % (g, g),
                    "Characters/AvatarParts/Body/%s/Textures/%s_Body_Muscle_D" % (g, g)) for g in ("Male", "Female")}
-BODY_RELIEF_AMOUNT = 1.0
-BODY_PHYSIQUE_AMOUNT = 1.0
+# Réglés au banc (silhouettes M_Average01, M_Muscular01/03 comparées aux vignettes) : à 1, des abdominaux
+# apparaissaient même à Muscles = 0 et les « Musclé » étaient bien plus dessinés que dans inZOI
+BODY_RELIEF_AMOUNT = 0.4
+BODY_PHYSIQUE_AMOUNT = 0.8
+BODY_MUSCLE_COLOR_AMOUNT = 0.6
+BODY_FAT_COLOR_AMOUNT = 0.8
 SKIN_MICRO_NORMAL = [SKIN_TEXTURES + "/T_SkinMicro_N", "MetaHumans/Common/Materials/Textures/T_SkinMicroNormal"]
 
 
@@ -833,8 +837,23 @@ def build_skin_master():
     muscle_amount = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -1400, -900)
     set_prop(muscle_amount, "parameter_name", "MuscleColorAmount")
     set_prop(muscle_amount, "default_value", 0.0)
-    links = [(base, "RGB", "D"), (tint, "", "Tint"), (muscle_color, "RGB", "MD"), (muscle, "", "Mus"), (muscle_amount, "", "MusA")]
-    code = ["float3 c = lerp(D.rgb, MD.rgb, saturate(Mus * MusA)) * Tint.rgb;"]
+    # Corps fort d'inZOI (_Body_Fat_D : plis et poids du ventre) selon la corpulence (BodyFat, posé par le jeu)
+    fat_color = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -1700, -650)
+    set_prop(fat_color, "parameter_name", "FatColorMap")
+    set_prop(fat_color, "texture", unreal.load_asset("/Engine/EngineResources/WhiteSquareTexture"))
+    if shared_source is not None:
+        set_prop(fat_color, "sampler_source", shared_source)
+    fat = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -1700, -800)
+    set_prop(fat, "parameter_name", "BodyFat")
+    set_prop(fat, "default_value", 0.0)
+    fat_amount = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -1700, -900)
+    set_prop(fat_amount, "parameter_name", "FatColorAmount")
+    set_prop(fat_amount, "default_value", 0.0)
+    links = [(base, "RGB", "D"), (tint, "", "Tint"), (muscle_color, "RGB", "MD"), (muscle, "", "Mus"), (muscle_amount, "", "MusA"),
+             (fat_color, "RGB", "FD"), (fat, "", "Fat"), (fat_amount, "", "FatA")]
+    code = ["float3 d = lerp(D.rgb, MD.rgb, saturate(Mus * MusA));",
+            "d = lerp(d, FD.rgb, saturate(Fat * FatA));",
+            "float3 c = d * Tint.rgb;"]
     mask_texture = default_mask_texture()
     if mask_texture:
         for index, (_category, _letter, slot, _label, blend) in enumerate(MAKEUP_PARTS):
@@ -979,7 +998,7 @@ def build_skin_relief(material):
     rough_base = scalar("SkinRoughness", 0.66, -1100, 2300)
     normal = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -600, 1800)
     set_prop(normal, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
-    set_prop(normal, "code", "float2 xy = D.xy * DA + M.xy * MA + (B.rg * 2.0 - 1.0) * BA + (P.rg * 2.0 - 1.0) * PA * lerp(0.35, 1.0, Mus);\nreturn normalize(float3(xy, 1.0));")
+    set_prop(normal, "code", "float2 xy = D.xy * DA + M.xy * MA + (B.rg * 2.0 - 1.0) * BA + (P.rg * 2.0 - 1.0) * PA * Mus;\nreturn normalize(float3(xy, 1.0));")
     rough = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -600, 2050)
     set_prop(rough, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
     # Les creux du micro-relief (pores) un peu plus mats que les bosses
@@ -1235,14 +1254,18 @@ def set_head_relief(instance, gender):
 def set_body_relief(instance, gender):
     """Relief du corps (fin + muscles) et couleur musclée d'inZOI sur la peau du corps ; MuscleDefinition vient du jeu"""
     main, physique, muscle = BODY_RELIEF[gender]
-    for param, rel, role in (("BodyRelief", main, "mask"), ("PhysiqueRelief", physique, "mask"), ("MuscleColorMap", muscle, "color")):
+    fat = "Characters/AvatarParts/Body/%s/Textures/%s_Body_Fat_D" % (gender, gender)
+    for param, rel, role in (("BodyRelief", main, "mask"), ("PhysiqueRelief", physique, "mask"), ("MuscleColorMap", muscle, "color"),
+                             ("FatColorMap", fat, "color")):
         texture = import_texture(rel, role)
         if texture:
             if role == "color":
                 force_color_texture(texture)
             MEL.set_material_instance_texture_parameter_value(instance, param, texture)
             if param == "MuscleColorMap":
-                MEL.set_material_instance_scalar_parameter_value(instance, "MuscleColorAmount", 0.8)
+                MEL.set_material_instance_scalar_parameter_value(instance, "MuscleColorAmount", BODY_MUSCLE_COLOR_AMOUNT)
+            if param == "FatColorMap":
+                MEL.set_material_instance_scalar_parameter_value(instance, "FatColorAmount", BODY_FAT_COLOR_AMOUNT)
         else:
             log("Corps %s : %s absente" % (gender, rel))
     MEL.set_material_instance_scalar_parameter_value(instance, "BodyReliefAmount", BODY_RELIEF_AMOUNT)

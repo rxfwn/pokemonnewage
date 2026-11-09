@@ -655,7 +655,9 @@ bool TrainerAppearanceRender::Apply(const UTrainerAppearanceData* Data, AActor* 
 		// les cache (M_Overweight03 a Muscles à 1 : sans ça, un ventre rond montrait des abdominaux dessinés)
 		const float Muscle = FMath::Clamp(Appearance.GetSlider(Data->MuscleSliderId), 0.f, 1.f);
 		const float Fat = FMath::Clamp(Appearance.GetSlider(Data->MassSliderId), 0.f, 1.f);
-		ApplySkinScalar(Target, Data->SkinMaterialSlots, TEXT("MuscleDefinition"), Muscle * (1.f - 0.9f * Fat));
+		ApplySkinScalar(Target, Data->SkinMaterialSlots, TEXT("MuscleDefinition"), Muscle * (1.f - 0.6f * Fat));
+		// Corpulence (0 à 1) : plis et poids du ventre du corps « fort » d'inZOI (_Body_Fat_D)
+		ApplySkinScalar(Target, Data->SkinMaterialSlots, TEXT("BodyFat"), Fat);
 		ApplyColor(Target, Data->EyeMaterialSlots, Data->EyeColorParameter, Appearance.EyeColor);
 		ApplyPartColors(Target, Appearance);
 	}
