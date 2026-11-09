@@ -736,7 +736,7 @@ def constant(material, value, x, y):
     return node
 
 
-SKIN_VERSION = 8  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
+SKIN_VERSION = 10  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
 # Maquillage d'inZOI (table AppearanceMakeup) : catégorie, lettre du dossier de masques, emplacement du jeu (= nom du
 # paramètre texture de M_InZOI_Skin, couleurs dans <emplacement>_R/_G/_B), libellé, force du mélange (les reflets d'inZOI
 # mêlent un éclat blanc et une ombre de contour : à moitié pour rester naturels)
@@ -770,6 +770,12 @@ SKIN_TEXTURES = "Characters/Materials/DefaultTextures/Skin"
 HEAD_DETAIL_NORMAL = {"Female": SKIN_TEXTURES + "/Female_Head_Detail_Full_N", "Male": SKIN_TEXTURES + "/Male_Head_Detail_Full_N"}
 # Force du relief de la tête : à 1 les rides et plis (front, joues, cou) étaient bien trop marqués
 HEAD_DETAIL_AMOUNT = 0.3
+# Relief et couleur du corps d'inZOI : (relief fin _Main_M, relief des muscles _Physique_M, couleur musclée _Muscle_D)
+BODY_RELIEF = {g: ("Characters/AvatarParts/Body/%s/Textures/%s_Body_Main_M" % (g, g),
+                   "Characters/AvatarParts/Body/%s/Textures/%s_Body_Physique_M" % (g, g),
+                   "Characters/AvatarParts/Body/%s/Textures/%s_Body_Muscle_D" % (g, g)) for g in ("Male", "Female")}
+BODY_RELIEF_AMOUNT = 1.0
+BODY_PHYSIQUE_AMOUNT = 1.0
 SKIN_MICRO_NORMAL = [SKIN_TEXTURES + "/T_SkinMicro_N", "MetaHumans/Common/Materials/Textures/T_SkinMicroNormal"]
 
 
@@ -813,8 +819,22 @@ def build_skin_master():
 
     custom = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -400, -100)
     set_prop(custom, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
-    links = [(base, "RGB", "D"), (tint, "", "Tint")]
-    code = ["float3 c = D.rgb * Tint.rgb;"]
+    # Corps musclé d'inZOI (Male_Body_Muscle_D, ombres des abdominaux et des pectoraux) mélangé selon le curseur
+    # Muscles (MuscleDefinition, posé par le jeu) ; MuscleColorAmount à 0 sur les têtes et le corps de femme
+    muscle_color = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -1400, -650)
+    set_prop(muscle_color, "parameter_name", "MuscleColorMap")
+    set_prop(muscle_color, "texture", unreal.load_asset("/Engine/EngineResources/WhiteSquareTexture"))
+    shared_source = getattr(getattr(unreal, "SamplerSourceMode", None), "SSM_WRAP_WORLD_GROUP_SETTINGS", None)
+    if shared_source is not None:
+        set_prop(muscle_color, "sampler_source", shared_source)
+    muscle = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -1400, -800)
+    set_prop(muscle, "parameter_name", "MuscleDefinition")
+    set_prop(muscle, "default_value", 0.0)
+    muscle_amount = MEL.create_material_expression(material, unreal.MaterialExpressionScalarParameter, -1400, -900)
+    set_prop(muscle_amount, "parameter_name", "MuscleColorAmount")
+    set_prop(muscle_amount, "default_value", 0.0)
+    links = [(base, "RGB", "D"), (tint, "", "Tint"), (muscle_color, "RGB", "MD"), (muscle, "", "Mus"), (muscle_amount, "", "MusA")]
+    code = ["float3 c = lerp(D.rgb, MD.rgb, saturate(Mus * MusA)) * Tint.rgb;"]
     mask_texture = default_mask_texture()
     if mask_texture:
         for index, (_category, _letter, slot, _label, blend) in enumerate(MAKEUP_PARTS):
@@ -935,17 +955,36 @@ def build_skin_relief(material):
             set_prop(sample, "sampler_source", shared)
         MEL.connect_material_expressions(uv_node, "", sample, "UVs")
         samples.append(sample)
+    # Relief du corps d'inZOI (_Main_M fin, _Physique_M des muscles) : canaux R, V = pente (0,5 = plat).
+    # Lus en linéaire ; force à 0 sur les têtes (autres UV), posée sur le corps par set_body_relief.
+    body_default = import_texture(BODY_RELIEF["Male"][1], "mask")
+    for name, y in (("BodyRelief", 2400), ("PhysiqueRelief", 2650)):
+        sample = MEL.create_material_expression(material, unreal.MaterialExpressionTextureSampleParameter2D, -1100, y)
+        set_prop(sample, "parameter_name", name)
+        if body_default:
+            set_prop(sample, "texture", body_default)
+            set_prop(sample, "sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_MASKS)  # texture « mask »
+        else:
+            set_prop(sample, "texture", flat)
+            set_prop(sample, "sampler_type", unreal.MaterialSamplerType.SAMPLERTYPE_NORMAL)
+        if shared is not None:
+            set_prop(sample, "sampler_source", shared)
+        MEL.connect_material_expressions(uv, "", sample, "UVs")
+        samples.append(sample)
+    body_amount = scalar("BodyReliefAmount", 0.0, -1100, 2900)
+    physique_amount = scalar("PhysiqueStrength", 0.0, -1100, 3000)
+    muscle_relief = scalar("MuscleDefinition", 0.0, -1100, 3100)
     detail_amount = scalar("DetailNormalAmount", 0.0, -1100, 2100)
     micro_amount = scalar("MicroNormalAmount", 0.5, -1100, 2200)
     rough_base = scalar("SkinRoughness", 0.66, -1100, 2300)
     normal = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -600, 1800)
     set_prop(normal, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
-    set_prop(normal, "code", "float2 xy = D.xy * DA + M.xy * MA;\nreturn normalize(float3(xy, 1.0));")
+    set_prop(normal, "code", "float2 xy = D.xy * DA + M.xy * MA + (B.rg * 2.0 - 1.0) * BA + (P.rg * 2.0 - 1.0) * PA * lerp(0.35, 1.0, Mus);\nreturn normalize(float3(xy, 1.0));")
     rough = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -600, 2050)
     set_prop(rough, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
     # Les creux du micro-relief (pores) un peu plus mats que les bosses
     set_prop(rough, "code", "return saturate(R + (1.0 - M.z) * 0.6 * MA - length(D.xy) * 0.1 * DA);")
-    for node, names in ((normal, ("D", "M", "DA", "MA")), (rough, ("D", "M", "DA", "MA", "R"))):
+    for node, names in ((normal, ("D", "M", "DA", "MA", "B", "P", "BA", "PA", "Mus")), (rough, ("D", "M", "DA", "MA", "R"))):
         entries = []
         for input_name in names:
             entry = unreal.CustomInput()
@@ -957,6 +996,11 @@ def build_skin_relief(material):
         MEL.connect_material_expressions(detail_amount, "", node, "DA")
         MEL.connect_material_expressions(micro_amount, "", node, "MA")
     MEL.connect_material_expressions(rough_base, "", rough, "R")
+    MEL.connect_material_expressions(samples[2], "RGB", normal, "B")
+    MEL.connect_material_expressions(samples[3], "RGB", normal, "P")
+    MEL.connect_material_expressions(body_amount, "", normal, "BA")
+    MEL.connect_material_expressions(physique_amount, "", normal, "PA")
+    MEL.connect_material_expressions(muscle_relief, "", normal, "Mus")
     MEL.connect_material_property(normal, "", unreal.MaterialProperty.MP_NORMAL)
     MEL.connect_material_property(rough, "", unreal.MaterialProperty.MP_ROUGHNESS)
 
@@ -1188,6 +1232,25 @@ def set_head_relief(instance, gender):
     EAL.save_loaded_asset(instance)
 
 
+def set_body_relief(instance, gender):
+    """Relief du corps (fin + muscles) et couleur musclée d'inZOI sur la peau du corps ; MuscleDefinition vient du jeu"""
+    main, physique, muscle = BODY_RELIEF[gender]
+    for param, rel, role in (("BodyRelief", main, "mask"), ("PhysiqueRelief", physique, "mask"), ("MuscleColorMap", muscle, "color")):
+        texture = import_texture(rel, role)
+        if texture:
+            if role == "color":
+                force_color_texture(texture)
+            MEL.set_material_instance_texture_parameter_value(instance, param, texture)
+            if param == "MuscleColorMap":
+                MEL.set_material_instance_scalar_parameter_value(instance, "MuscleColorAmount", 0.8)
+        else:
+            log("Corps %s : %s absente" % (gender, rel))
+    MEL.set_material_instance_scalar_parameter_value(instance, "BodyReliefAmount", BODY_RELIEF_AMOUNT)
+    MEL.set_material_instance_scalar_parameter_value(instance, "PhysiqueStrength", BODY_PHYSIQUE_AMOUNT)
+    MEL.update_material_instance(instance)
+    EAL.save_loaded_asset(instance)
+
+
 def apply_skin(mesh, rel_folder, age, only_skin_slots):
     """Peau sur le corps ou la tête, plus yeux et dents des têtes ; renvoie les emplacements teintés par la couleur de peau"""
     prefer = ("Youth_D", "Main_D", "_D") if age == "Youth" else ("Main_D", "_D")
@@ -1197,6 +1260,8 @@ def apply_skin(mesh, rel_folder, age, only_skin_slots):
     instance = skin_instance(mi_folder + "/MI_SkinV2_" + mesh.get_name(), textures.get("color"))
     if only_skin_slots:
         set_head_relief(instance, "Female" if "female" in rel_folder.lower() else "Male")
+    else:
+        set_body_relief(instance, "Female" if "female" in rel_folder.lower() else "Male")
     # Le matériau voulu pour chaque emplacement. On ne compte plus sur l'asset : Unreal ignorait les changements
     # faits depuis Python sur les emplacements du Skeletal Mesh. Le jeu les pose lui-même (Materials de la base
     # ou de la pièce, appliqués par TrainerAppearanceRender).
@@ -1270,7 +1335,7 @@ def body_sliders(gender, age):
     for row in read_csv(MORPHO_BODY):
         if row.get("genre") != gender or row.get("age") != age:
             continue
-        group = groups.setdefault(row["groupe"], {"pos": [], "neg": [], "muscle": None, "mass": None})
+        group = groups.setdefault(row["groupe"], {"pos": [], "neg": [], "muscle": None, "mass": None, "gizmo": 1.0})
         offset = unreal.TrainerBoneOffset()
         offset.set_editor_property("bone", row["os"])
         offset.set_editor_property("location", unreal.Vector(float_of(row, "loc_x"), float_of(row, "loc_y"), float_of(row, "loc_z")))
@@ -1280,6 +1345,7 @@ def body_sliders(gender, age):
         if group["muscle"] is None:
             group["muscle"] = float_of(row, "delta_muscle")
             group["mass"] = float_of(row, "delta_masse")
+            group["gizmo"] = float_of(row, "delta_gizmo", 1.0)
 
     sliders = []
 
@@ -1303,6 +1369,7 @@ def body_sliders(gender, age):
         definition.set_editor_property("bones_negative", group["neg"])
         definition.set_editor_property("muscle_coef", group["muscle"] or 0.0)
         definition.set_editor_property("mass_coef", group["mass"] or 0.0)
+        definition.set_editor_property("gizmo_coef", group["gizmo"])
         sliders.append(definition)
     return sliders
 
@@ -2863,6 +2930,8 @@ def main():
         data.set_editor_property("part_slots", slot_defs)
         data.set_editor_property("full_presets", presets)
         data.set_editor_property("body_presets", body_presets(bases))
+        # Muscles et Corpulence en entier (coefficients delta_muscle / delta_masse d'inZOI, voir GizmoCoef)
+        data.set_editor_property("global_slider_share", 1.0)
         data.set_editor_property("parts", parts)
         log("Emplacements teintés par la couleur de peau : " + ", ".join(sorted(skin_slots)))
         data.set_editor_property("skin_material_slots", sorted(skin_slots))

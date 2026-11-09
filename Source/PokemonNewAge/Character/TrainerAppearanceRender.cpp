@@ -220,6 +220,28 @@ namespace
 		}
 	}
 
+	/** Réglage numérique des matériaux de peau (ex. MuscleDefinition : relief et couleur des muscles du corps) */
+	void ApplySkinScalar(USkeletalMeshComponent* Mesh, const TArray<FName>& Slots, FName Parameter, float Value)
+	{
+		for (const FName Slot : Slots)
+		{
+			const int32 Index = Mesh->GetMaterialIndex(Slot);
+			if (Index == INDEX_NONE)
+			{
+				continue;
+			}
+			UMaterialInstanceDynamic* MID = Cast<UMaterialInstanceDynamic>(Mesh->GetMaterial(Index));
+			if (!MID)
+			{
+				MID = Mesh->CreateDynamicMaterialInstance(Index);
+			}
+			if (MID)
+			{
+				MID->SetScalarParameterValue(Parameter, Value);
+			}
+		}
+	}
+
 	/** Couleurs choisies dans le nuancier pour la pièce de cet emplacement (Tint = couleur principale, Color1-3 = zones du masque) */
 	/**
 	 *  « Mèches devant » des cheveux : le matériau a besoin du centre de la tête et de l'axe avant dans le repère du
@@ -629,6 +651,11 @@ bool TrainerAppearanceRender::Apply(const UTrainerAppearanceData* Data, AActor* 
 		}
 		ApplyMorphs(Data, *Base, Appearance, Target);
 		ApplyColor(Target, Data->SkinMaterialSlots, Data->SkinColorParameter, Appearance.SkinColor);
+		// Muscles (0 à 1) : relief des abdominaux, pectoraux... et couleur « musclée » du corps d'inZOI. La corpulence
+		// les cache (M_Overweight03 a Muscles à 1 : sans ça, un ventre rond montrait des abdominaux dessinés)
+		const float Muscle = FMath::Clamp(Appearance.GetSlider(Data->MuscleSliderId), 0.f, 1.f);
+		const float Fat = FMath::Clamp(Appearance.GetSlider(Data->MassSliderId), 0.f, 1.f);
+		ApplySkinScalar(Target, Data->SkinMaterialSlots, TEXT("MuscleDefinition"), Muscle * (1.f - 0.9f * Fat));
 		ApplyColor(Target, Data->EyeMaterialSlots, Data->EyeColorParameter, Appearance.EyeColor);
 		ApplyPartColors(Target, Appearance);
 	}

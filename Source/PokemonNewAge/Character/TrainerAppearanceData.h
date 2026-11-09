@@ -98,6 +98,13 @@ struct FTrainerSliderDef
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones")
 	float MassCoef = 0.f;
 
+	/**
+	 *  Part de la valeur propre du curseur (delta_gizmo d'inZOI, 0,4 pour la plupart des groupes du corps) :
+	 *  valeur appliquée = curseur x GizmoCoef + Muscles x MuscleCoef + Corpulence x MassCoef
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones")
+	float GizmoCoef = 1.f;
+
 	/** Curseur de -1 à 1 même sans morph ni os négatifs (Muscles, Corpulence) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	bool bSigned = false;
@@ -445,16 +452,16 @@ public:
 	float BoneDeformationScale = 1.f;
 
 	/**
-	 *  Écart d'échelle maximal d'un os, toutes déformations cumulées (0,45 = de x0,55 à x1,45). Les tables d'inZOI
+	 *  Écart d'échelle maximal d'un os, toutes déformations cumulées (0,6 = de x0,4 à x1,6), par sécurité. Les tables d'inZOI
 	 *  grossissent certains os d'aide jusqu'à x2,5 (fessiers de « Musclé », ventre de « Rond ») : silhouette
 	 *  irréaliste et jean qui passait à travers le t-shirt.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones", meta=(ClampMin=0.1, ClampMax=3))
-	float MaxBoneScaleOffset = 0.45f;
+	float MaxBoneScaleOffset = 0.6f;
 
 	/** Part de Muscles et Corpulence ajoutée à chaque groupe d'os du corps (coefficients delta_muscle / delta_masse) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Sliders", meta=(ClampMin=0, ClampMax=1))
-	float GlobalSliderShare = 0.35f;
+	float GlobalSliderShare = 1.f;
 
 	/** Essai : échange les axes Y et Z des déplacements et échelles d'os (si l'import .glb a tourné les repères des os) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bones")

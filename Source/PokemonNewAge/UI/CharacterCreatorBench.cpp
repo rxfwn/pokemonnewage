@@ -372,6 +372,30 @@ private:
 				SetView(EStudioFocus::Face, 0.f, -1.5f);
 			}, 4.f);
 		}
+		// 8) Silhouettes à côté de leur vignette inZOI (torse nu, comme les vignettes) : homme puis femme
+		const int32 BodyBases[] = { HairPreset == 0 ? 1 : 0, HairPreset };
+		for (int32 B = 0; B < 2; ++B)
+		{
+			const int32 Full = BodyBases[B];
+			for (int32 Index = 0; Index < Data->BodyPresets.Num(); ++Index)
+			{
+				const FString Name = FString::Printf(TEXT("8%d%02d_silhouette"), B, Index);
+				Add(Name, [this, Full, Index, Name]()
+				{
+					ShowUI(false);
+					Editor->ApplyPreset(Full, true, false);
+					const FName Base = Data->BodyPresets[Index].Look.Base;
+					if (!Base.IsNone() && Base != Editor->Current.Base)
+					{
+						return; // silhouette de l'autre base : capture sans intérêt, ignorée par la planche
+					}
+					Editor->ApplyPreset(Index, false, true);
+					ShowPart(TEXT("Top"), false);
+					UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] Vignette %s = %s"), *Name, *Data->BodyPresets[Index].Thumbnail.ToSoftObjectPath().ToString());
+					SetView(EStudioFocus::Body, 0.f);
+				}, 3.f);
+			}
+		}
 		Add(TEXT("99_fin"), [this]() { SetView(EStudioFocus::Body, 0.f); }, 1.f);
 	}
 
