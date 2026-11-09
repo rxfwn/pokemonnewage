@@ -18,7 +18,7 @@
 namespace CharacterStudio
 {
 	// La pièce : 12 x 12 m, 6 m de haut, sol à Z = 0, personnage au centre, caméra côté +X
-	constexpr float RoomHalf = 600.f;
+	constexpr float RoomHalf = 1000.f;
 	constexpr float RoomHeight = 600.f;
 	constexpr float WallThickness = 20.f;
 
@@ -30,12 +30,13 @@ namespace CharacterStudio
 	constexpr float SideWallShade = 0.8f;
 
 	/** Cadrages : point visé, distance (cm), champ de vision (degrés) */
-	// Corps : ~2,1 m visibles en hauteur (16:9) ; visage : ~40 cm
+	// Objectifs du studio d'inZOI (Customize_StudioLevel) : 50 mm (26,7°) pour le corps, 85 mm (16°) pour le visage ;
+	// de plus loin, le visage est moins déformé que notre ancien grand angle (45° à 4,5 m, 28° à 1,4 m)
 	const FVector BodyTarget(0.f, 0.f, 95.f);
-	constexpr float BodyDistance = 450.f;
-	constexpr float BodyFov = 45.f;
-	constexpr float FaceDistance = 140.f;
-	constexpr float FaceFov = 28.f;
+	constexpr float BodyDistance = 780.f;
+	constexpr float BodyFov = 26.7f;
+	constexpr float FaceDistance = 260.f;
+	constexpr float FaceFov = 16.f;
 	/** Décalage du personnage vers la gauche de l'écran (0 = centré, 0,25 = à 37,5 % de la largeur) */
 	constexpr float ScreenShift = 0.25f;
 	/** Tête par défaut si l'os n'est pas trouvé */
