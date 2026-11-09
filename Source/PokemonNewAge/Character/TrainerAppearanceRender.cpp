@@ -12,6 +12,9 @@
 
 namespace
 {
+	/** Couverture du rouge à lèvres : intensité d'inZOI multipliée (1 au plus) */
+	constexpr float LipCoverage = 1.7f;
+
 	const TCHAR* DefaultAppearanceDataPath = TEXT("/Game/Characters/Player/DA_TrainerAppearance.DA_TrainerAppearance");
 
 	/** Catalogue créé par Tools/InZOI/import_inzoi.py dans le dossier local (hors Git) : prioritaire s'il existe */
@@ -517,6 +520,12 @@ namespace
 						if (!Choice && Part->MaskColors[Channel].A <= 0.f)
 						{
 							Color.A = 0.f; // canal désactivé dans inZOI (sauf si le modèle ou le joueur l'a réglé : brillance du highlight)
+						}
+						// Rouge à lèvres plus couvrant : à l'intensité d'inZOI (0,56 à 0,66), ~40 % de la texture d'origine
+						// (lèvres orange) restait visible ; vérifié au banc (W_Head07_CT022 : lèvres brunes comme la vignette)
+						if (SlotDef->MaskParameter == TEXT("MakeupLips"))
+						{
+							Color.A = FMath::Min(1.f, Color.A * LipCoverage);
 						}
 						MID->SetVectorParameterValue(FName(*(Prefix + Channels[Channel])), Color);
 					}

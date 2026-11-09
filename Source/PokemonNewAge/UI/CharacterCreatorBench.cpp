@@ -9,6 +9,7 @@
 #include "Character/CharacterStudio.h"
 #include "Character/TrainerAppearanceRender.h"
 #include "Character/TrainerAppearanceData.h"
+#include "Character/TrainerAnimInstance.h"
 #include "Components/CanvasPanel.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -192,6 +193,60 @@ private:
 			}
 		}
 	}
+
+	/** Composants des pièces d'un emplacement (None : tous, corps compris) */
+	TArray<USkeletalMeshComponent*> PartComponents(FName Slot) const
+	{
+		TArray<USkeletalMeshComponent*> Components, Result;
+		Studio->GetComponents<USkeletalMeshComponent>(Components);
+		for (USkeletalMeshComponent* Component : Components)
+		{
+			if (Slot.IsNone() || (Component->ComponentTags.Num() > 1 && Component->ComponentTags[1] == Slot))
+			{
+				Result.Add(Component);
+			}
+		}
+		return Result;
+	}
+
+	/** Essai A/B : réglage numérique posé en direct sur les matériaux d'un emplacement */
+	void SetScalar(FName Slot, FName Parameter, float Value)
+	{
+		for (USkeletalMeshComponent* Component : PartComponents(Slot))
+		{
+			Component->SetScalarParameterValueOnMaterials(Parameter, Value);
+		}
+		UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] Essai %s.%s = %.3f"), *Slot.ToString(), *Parameter.ToString(), Value);
+	}
+
+	/** Essai A/B : alpha (intensité) d'une couleur de maquillage, transformé ; garde la valeur d'origine pour la remettre */
+	void MapAlpha(FName Parameter, TFunction<float(float)> Map)
+	{
+		for (USkeletalMeshComponent* Component : PartComponents(NAME_None))
+		{
+			for (int32 Index = 0; Index < Component->GetNumMaterials(); ++Index)
+			{
+				UMaterialInterface* Material = Component->GetMaterial(Index);
+				FLinearColor Color;
+				if (!Material || !Material->GetVectorParameterValue(FHashedMaterialParameterInfo(Parameter), Color) || Color.A <= 0.f)
+				{
+					continue;
+				}
+				UMaterialInstanceDynamic* MID = Cast<UMaterialInstanceDynamic>(Material);
+				if (!MID)
+				{
+					MID = Component->CreateDynamicMaterialInstance(Index);
+				}
+				const FString Key = FString::Printf(TEXT("%p/%d/%s"), Component, Index, *Parameter.ToString());
+				const float Original = SavedAlphas.FindOrAdd(Key, Color.A);
+				Color.A = Map(Original);
+				MID->SetVectorParameterValue(Parameter, Color);
+				UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] Essai %s : %.3f -> %.3f"), *Parameter.ToString(), Original, Color.A);
+			}
+		}
+	}
+
+	TMap<FString, float> SavedAlphas;
 
 	/** Modèle complet dont une pièce (tête, coupe) contient ce texte, sinon INDEX_NONE */
 	int32 FindFullPreset(const FString& Text) const
@@ -466,6 +521,139 @@ private:
 				}, 3.f);
 			}
 		}
+		// A) Essais A/B en direct (sans réimport) sur les modèles de contrôle : couleur et reflet des cheveux, teinte
+		//    de peau, couverture des lèvres, sourcils. Chaque capture garde les réglages précédents remis à zéro.
+		const TCHAR* AbKeys[] = { TEXT("Female_Head_007_CT022"), TEXT("Female_Head_007_CT010"), TEXT("Female_Head_006_CT004"), TEXT("Beard") };
+		for (int32 K = 0; K < UE_ARRAY_COUNT(AbKeys); ++K)
+		{
+			const int32 Index = FindFullPreset(AbKeys[K]);
+			UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] Essai A/B %s : %d"), AbKeys[K], Index);
+			if (Index == INDEX_NONE)
+			{
+				continue;
+			}
+			const FString P = FString::Printf(TEXT("AB%d"), K);
+			Add(P + TEXT("0_base"), [this, Index]()
+			{
+				ShowUI(false);
+				SavedAlphas.Reset();
+				Editor->ApplyPreset(Index, true, false);
+				SetView(EStudioFocus::Face, 15.f);
+			}, 4.f);
+			Add(P + TEXT("1_cheveux_g100"), [this]() { SetScalar(TEXT("Hair"), TEXT("ColorGamma"), 1.0f); });
+			Add(P + TEXT("2_cheveux_g115"), [this]() { SetScalar(TEXT("Hair"), TEXT("ColorGamma"), 1.15f); });
+			Add(P + TEXT("3_reflet_doux"), [this]()
+			{
+				SetScalar(TEXT("Hair"), TEXT("ColorGamma"), 0.85f);
+				SetScalar(TEXT("Hair"), TEXT("Specular"), 0.22f);
+				SetScalar(TEXT("Beard"), TEXT("Specular"), 0.06f);
+				SetScalar(TEXT("Mustache"), TEXT("Specular"), 0.06f);
+			});
+			Add(P + TEXT("4_peau_chaude"), [this]()
+			{
+				SetScalar(TEXT("Hair"), TEXT("Specular"), 0.45f);
+				SetScalar(TEXT("Beard"), TEXT("Specular"), 0.12f);
+				SetScalar(TEXT("Mustache"), TEXT("Specular"), 0.12f);
+				// 15 % plus foncée, plus chaude (moins de bleu, un peu moins de vert), sans passer par le nuancier
+				FTrainerAppearance Look = Editor->Current;
+				Look.SkinColor = FLinearColor(Look.SkinColor.R * 0.87f, Look.SkinColor.G * 0.83f, Look.SkinColor.B * 0.76f, 1.f);
+				UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] Essai peau %s -> %s"), *Editor->Current.SkinColor.ToString(), *Look.SkinColor.ToString());
+				Studio->ShowAppearance(Look);
+			});
+			Add(P + TEXT("5_levres_sqrt"), [this]()
+			{
+				Studio->ShowAppearance(Editor->Current);
+				for (const TCHAR* Channel : { TEXT("MakeupLips_R"), TEXT("MakeupLips_G"), TEXT("MakeupLips_B") })
+				{
+					MapAlpha(Channel, [](float A) { return FMath::Sqrt(A); });
+				}
+			});
+			Add(P + TEXT("6_levres_pleines"), [this]()
+			{
+				for (const TCHAR* Channel : { TEXT("MakeupLips_R"), TEXT("MakeupLips_G"), TEXT("MakeupLips_B") })
+				{
+					MapAlpha(Channel, [](float A) { return 1.f; });
+				}
+			});
+			Add(P + TEXT("7_sourcils_70"), [this]()
+			{
+				for (const TCHAR* Channel : { TEXT("MakeupLips_R"), TEXT("MakeupLips_G"), TEXT("MakeupLips_B") })
+				{
+					MapAlpha(Channel, [](float A) { return A; });
+				}
+				SetScalar(TEXT("Eyebrows"), TEXT("Density"), 0.7f);
+				for (const TCHAR* Channel : { TEXT("MakeupBrows_R"), TEXT("MakeupBrows_G"), TEXT("MakeupBrows_B") })
+				{
+					MapAlpha(Channel, [](float A) { return A * 0.7f; });
+				}
+			});
+			Add(P + TEXT("8_sourcils_gros_plan"), [this]() { SetView(EStudioFocus::Face, 0.f, 6.f); });
+			Add(P + TEXT("9_base_gros_plan"), [this]()
+			{
+				SetScalar(TEXT("Eyebrows"), TEXT("Density"), 1.f);
+				for (const TCHAR* Channel : { TEXT("MakeupBrows_R"), TEXT("MakeupBrows_G"), TEXT("MakeupBrows_B") })
+				{
+					MapAlpha(Channel, [](float A) { return A; });
+				}
+			});
+		}
+		// B7) Vêtements à forte corpulence (0,86) : limite d'échelle des os d'aide du haut (0,35 actuelle) contre
+		//     la pose exacte du corps (0)
+		const TCHAR* FatKeys[] = { TEXT("Female_Head_007_CT010"), TEXT("Male_Head_007_CT011") };
+		for (int32 K = 0; K < UE_ARRAY_COUNT(FatKeys); ++K)
+		{
+			const int32 Index = FindFullPreset(FatKeys[K]);
+			if (Index == INDEX_NONE)
+			{
+				continue;
+			}
+			const FString P = FString::Printf(TEXT("B7%d"), K);
+			Add(P + TEXT("0_corpulence_limite035"), [this, Index]()
+			{
+				ShowUI(false);
+				Editor->ApplyPreset(Index, true, false);
+				Editor->Current.SetSlider(Data->MassSliderId, 0.86f);
+				Studio->ShowAppearance(Editor->Current);
+				SetView(EStudioFocus::Body, 0.f);
+			}, 4.f);
+			Add(P + TEXT("1_profil_limite035"), [this]() { SetView(EStudioFocus::Body, 90.f); });
+			Add(P + TEXT("2_dos_limite035"), [this]() { SetView(EStudioFocus::Body, 180.f); });
+			for (const float Limit : { 0.f, 0.6f })
+			{
+				const FString L = Limit == 0.f ? TEXT("exacte") : TEXT("limite060");
+				Add(P + TEXT("3_face_") + L, [this, Limit]()
+				{
+					for (const TCHAR* Slot : { TEXT("Top"), TEXT("Outer") })
+					{
+						for (USkeletalMeshComponent* Component : PartComponents(Slot))
+						{
+							if (UTrainerAnimInstance* Anim = Cast<UTrainerAnimInstance>(Component->GetAnimInstance()))
+							{
+								Anim->HelperScaleLimit = Limit;
+							}
+						}
+					}
+					SetView(EStudioFocus::Body, 0.f);
+				});
+				Add(P + TEXT("4_profil_") + L, [this]() { SetView(EStudioFocus::Body, 90.f); });
+				Add(P + TEXT("5_dos_") + L, [this]() { SetView(EStudioFocus::Body, 180.f); });
+			}
+		}
+		// 9) Fond du studio (cyclorama) : corps entier avec et sans interface, de biais, puis d'autres couleurs
+		const int32 BackdropPreset = FMath::Max(0, FindFullPreset(TEXT("Female_Head_007_CT010")));
+		Add(TEXT("90_fond_ui"), [this, BackdropPreset]()
+		{
+			Editor->ApplyPreset(BackdropPreset, true, false);
+			Studio->SetBackdropColor(FLinearColor(0.62f, 0.63f, 0.65f));
+			ShowUI(true);
+			Editor->SelectTab(UCharacterCreatorWidget::ETab::Presets);
+			SetView(EStudioFocus::Body, 0.f);
+		}, 4.f, true);
+		Add(TEXT("91_fond_corps"), [this]() { ShowUI(false); SetView(EStudioFocus::Body, 0.f); }, 2.f);
+		Add(TEXT("92_fond_biais"), [this]() { SetView(EStudioFocus::Body, 40.f, -1.5f); }, 2.f);
+		Add(TEXT("93_fond_beige"), [this]() { Studio->SetBackdropColor(FLinearColor(0.7f, 0.6f, 0.48f)); SetView(EStudioFocus::Body, 0.f); }, 2.f);
+		Add(TEXT("94_fond_anthracite"), [this]() { Studio->SetBackdropColor(FLinearColor(0.06f, 0.065f, 0.075f)); }, 2.f);
+		Add(TEXT("95_fond_visage"), [this]() { Studio->SetBackdropColor(FLinearColor(0.62f, 0.63f, 0.65f)); SetView(EStudioFocus::Face, 0.f); }, 2.5f);
 		Add(TEXT("99_fin"), [this]() { SetView(EStudioFocus::Body, 0.f); }, 1.f);
 	}
 

@@ -28,7 +28,8 @@ public class PokemonNewAge : ModuleRules
 			"DeveloperSettings"
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "Landscape" });
+		// ProceduralMeshComponent : fond arrondi du studio du créateur (ACharacterStudio)
+		PrivateDependencyModuleNames.AddRange(new string[] { "Landscape", "ProceduralMeshComponent" });
 
 		// Préparation des coupes de cheveux à l'import (InZOIImportLibrary::BakeHairStrands) : éditeur seulement
 		if (Target.bBuildEditor)

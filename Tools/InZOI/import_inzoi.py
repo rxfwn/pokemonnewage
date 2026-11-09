@@ -81,7 +81,8 @@ SLOTS = [
 
 # Vêtements qui pendent loin du corps : échelle des os d'aide bornée à 1 ± valeur (sinon le bas du t-shirt
 # s'envolait derrière avec les fessiers agrandis de « Musclé »), voir FTrainerPartSlotDef::HelperScaleLimit
-LOOSE_SLOTS = {"Top": 0.35, "Outer": 0.35}
+# 0,6 (et non 0,35) : à forte corpulence (0,86) le ventre et la poitrine traversaient le t-shirt (banc BancPerso B7)
+LOOSE_SLOTS = {"Top": 0.6, "Outer": 0.6}
 
 # Pièces portées au départ (si la base n'a rien de choisi)
 DEFAULT_SLOTS = ["Head", "Hair", "Eyebrows", "Eyelashes", "Top", "Bottom", "Shoes"]
@@ -1792,7 +1793,7 @@ def build_parts(slow):
 # ---------------------------------------------------------------- Barbes (dossier Groom)
 
 HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
-HAIR_VERSION = 23  # à augmenter quand le graphe change : le matériau est refait au même endroit
+HAIR_VERSION = 24  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
 GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"), ("Mustache", "Moustache", "Hair", "Head"),
@@ -1820,6 +1821,8 @@ HAIR_SCATTER = 0.3
 HAIR_COLOR_GAMMA = 0.85
 # Densité des cils (opacité tramée) : les cartes d'inZOI pleines donnaient des cils trop épais
 EYELASH_DENSITY = 0.9
+# Sourcils à 70 % (note du 9 novembre, vérifié au banc A/B) : pleins, ils faisaient des barres épaisses
+EYEBROW_DENSITY = 0.7
 DEFAULT_CARD = GROOM_REL + "/Textures/Hair/HairCard_001/HairCard_001_DIRO"
 BEARD_CARD = GROOM_REL + "/Textures/Beard/BeardCard_002/BeardCard_002_DIRO"
 # Brun foncé d'inZOI (MI_Beard_Scalp_003) quand le dossier n'a pas de fichier de matériau
@@ -1925,9 +1928,10 @@ def build_hair_master():
         # Comme les vignettes d'inZOI : couleurs éclaircies et adoucies (noir -> gris foncé, pêche -> platine,
         # rose vif -> rose pastel). Le modèle « Hair » d'Unreal assombrit beaucoup les couleurs claires.
         "c *= lerp(1.0 - RootDark, 1.0, smoothstep(0.0, RootArea, g));\n"
-        "c *= lerp(0.88, 1.08, frac(sin(ID * 12.9898 + 4.13) * 43758.5453));\n"
+        # Variation par mèche 0,15 et creux des mèches à 0,3 (réglages vérifiés dans Blender, note du 9 novembre)
+        "c *= lerp(0.925, 1.075, frac(sin(ID * 12.9898 + 4.13) * 43758.5453));\n"
         "c = pow(max(c, 0.0), Gamma);\n"
-        "return c * lerp(0.65, 1.0, saturate(Depth));"))
+        "return c * lerp(0.7, 1.0, saturate(Depth));"))
     inputs = []
     for input_name in ("Grad", "Root", "Tip", "Tint", "Depth", "ID", "C1", "C2", "C3", "C1a", "C2a", "C3a", "Pos", "Front", "Start", "Center", "Gamma", "RootDark", "RootArea", "VC"):
         entry = unreal.CustomInput()
@@ -2372,7 +2376,7 @@ def build_face_grooms(slow, bases, heads):
                     continue
                 folder = mesh_rel.rsplit("/Mesh/", 1)[0]
                 materials = groom_materials(mesh, folder, fallback_diro, (tuple(v * 0.7 for v in fallback_tip), fallback_tip),
-                                            EYELASH_DENSITY if slot == "Eyelashes" else None)
+                                            EYELASH_DENSITY if slot == "Eyelashes" else EYEBROW_DENSITY if slot == "Eyebrows" else None)
                 count += 1
                 part = unreal.TrainerPartDef()
                 part.set_editor_property("id", row["Id"])
@@ -2794,6 +2798,9 @@ def linear_hex(text):
     return tuple(srgb_to_linear(c) for c in (color.r, color.g, color.b))
 
 
+SKIN_WARM = (0.87, 0.83, 0.76)
+
+
 def skin_tint(tone_hex, palette_hex=None):
     """SkinTint (multiplié à la texture de peau) pour une teinte d'inZOI. La teinte vient de SkinTone (neutre), la
     luminosité de PalleteColor (celle de la vignette) : SkinTone seule assombrissait tous les visages, la palette
@@ -2811,6 +2818,8 @@ def skin_tint(tone_hex, palette_hex=None):
     # Un peu désaturée : les visages foncés viraient à l'orange sous la lumière du studio
     gray = 0.2126 * tint[0] + 0.7152 * tint[1] + 0.0722 * tint[2]
     tint = [gray + (t - gray) * 0.6 for t in tint]
+    # 15 % plus foncée et plus chaude (note du 9 novembre ; banc A/B sur W_Head07_CT010 : peau moins grise)
+    tint = [t * k for t, k in zip(tint, SKIN_WARM)]
     return tuple(max(0.05, min(1.0, t)) for t in tint)
 
 

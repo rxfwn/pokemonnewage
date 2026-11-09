@@ -6,6 +6,8 @@
 #include "CharacterStudio.generated.h"
 
 class UCameraComponent;
+class UMaterialInstanceDynamic;
+class UProceduralMeshComponent;
 class URectLightComponent;
 class USkeletalMeshComponent;
 class UStaticMeshComponent;
@@ -55,6 +57,10 @@ public:
 	/** Animation suivante (l'attente, puis les poses de la base) ; renvoie son nom. Sert au banc d'essai */
 	FText NextAnimation();
 
+	/** Couleur du fond (sol, courbe et mur d'un seul tenant) */
+	void SetBackdropColor(const FLinearColor& Color);
+	FLinearColor GetBackdropColor() const { return BackdropColor; }
+
 	/** Enchaînement automatique attente -> pose -> attente (vrai par défaut ; le banc d'essai le coupe) */
 	void SetAutoPoses(bool bEnable);
 
@@ -68,6 +74,8 @@ public:
 private:
 
 	UStaticMeshComponent* MakeWall(FName Name, const FVector& Location, const FVector& SizeCm);
+	/** Cyclorama : le sol remonte en mur par un quart de cercle, sans arête */
+	void BuildBackdrop();
 	URectLightComponent* MakeLight(FName Name, const FVector& Location, float Width);
 	void ApplyLighting();
 
@@ -97,6 +105,18 @@ private:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UStaticMeshComponent>> Walls;
+
+	UPROPERTY(VisibleAnywhere, Category="Studio")
+	TObjectPtr<UProceduralMeshComponent> Backdrop;
+
+	/** Éclaire le milieu du fond (dégradé clair derrière le personnage) ; canal de lumière 1 : ne touche pas le personnage */
+	UPROPERTY(VisibleAnywhere, Category="Studio")
+	TObjectPtr<URectLightComponent> BackdropLight;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UMaterialInstanceDynamic>> BackdropMaterials;
+
+	FLinearColor BackdropColor = FLinearColor(0.62f, 0.63f, 0.65f);
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTrainerAppearanceData> Data;

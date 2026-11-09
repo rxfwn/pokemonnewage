@@ -1,6 +1,7 @@
 #include "UI/CharacterCreatorWidget.h"
 #include "Character/CharacterStudio.h"
 #include "Character/TrainerAppearanceRender.h"
+#include "Core/PokemonSaveGame.h"
 #include "UI/GameFonts.h"
 #include "UI/GlassPanel.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
@@ -86,6 +87,11 @@ namespace CharacterCreator
 		FLinearColor::FromSRGBColor(FColor(0x40, 0x3C, 0x5F)), FLinearColor::FromSRGBColor(FColor(0x8C, 0x8F, 0x94)),
 		FLinearColor::FromSRGBColor(FColor(0xE6, 0xE4, 0xDF)) };
 	constexpr float BottomY = 994.f;
+	/** Fond du studio : gris clair (par défaut), blanc, gris foncé, beige, bleu, rose, vert sauge, anthracite */
+	const FLinearColor BackdropColors[] = {
+		FLinearColor(0.62f, 0.63f, 0.65f), FLinearColor(0.9f, 0.9f, 0.9f), FLinearColor(0.25f, 0.26f, 0.28f),
+		FLinearColor(0.7f, 0.6f, 0.48f), FLinearColor(0.42f, 0.55f, 0.7f), FLinearColor(0.75f, 0.55f, 0.58f),
+		FLinearColor(0.45f, 0.55f, 0.45f), FLinearColor(0.06f, 0.065f, 0.075f) };
 	constexpr float PillHeight = 52.f;
 	constexpr int32 GridColumns = 3;
 	constexpr int32 SwatchColumns = 6;
@@ -315,6 +321,10 @@ void UCharacterCreatorWidget::NativeConstruct()
 	if (Studio.IsValid())
 	{
 		StudioText->SetText(FText::Format(LOCTEXT("StudioLabel", "Studio : {0}"), Studio->GetLightingName()));
+		if (const UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions())
+		{
+			Studio->SetBackdropColor(Options->StudioBackdrop);
+		}
 	}
 	RefreshAll();
 	if (Mode == ETrainerEditorMode::Creation)
@@ -445,7 +455,7 @@ void UCharacterCreatorWidget::BuildBottomLeft()
 		Place(Canvas, MakeTextButton(WidgetTree, Label, 20.f, MoveTemp(Action)), FVector2D(78.f, Y - 2.f), FVector2D(240.f, 38.f));
 	};
 	// Plus de bouton « Changer de pose » : le studio enchaîne lui-même attente et poses (ACharacterStudio::Tick)
-	AddKeyHint(TEXT("U"), LOCTEXT("HideUI", "Masquer l'interface"), 942.f, [this]() { ToggleUI(); });
+	AddKeyHint(TEXT("U"), LOCTEXT("HideUI", "Masquer l'interface"), 892.f, [this]() { ToggleUI(); });
 
 	StudioText = MakeText(WidgetTree, LOCTEXT("Studio", "Studio"), 24.f);
 	UCreatorButton* StudioButton = MakeButton(WidgetTree, StudioText, ButtonFill, PillHeight * 0.5f, [this]()
@@ -456,6 +466,26 @@ void UCharacterCreatorWidget::BuildBottomLeft()
 		}
 	}, ButtonOutline, 1.5f);
 	Place(Canvas, StudioButton, FVector2D(32.f, BottomY), FVector2D(260.f, PillHeight));
+
+	// Couleur du fond du studio, gardée dans les options du joueur
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(BackdropColors); ++Index)
+	{
+		const FLinearColor Color = BackdropColors[Index];
+		UCreatorButton* Swatch = MakeButton(WidgetTree, nullptr, Color, 13.f, [this, Color]()
+		{
+			if (Studio.IsValid())
+			{
+				Studio->SetBackdropColor(Color);
+			}
+			if (UPokemonOptionsSave* Options = UPokemonSaveLibrary::GetOptions())
+			{
+				Options->StudioBackdrop = Color;
+				UPokemonSaveLibrary::SaveOptions(Options);
+			}
+		}, FLinearColor(1.f, 1.f, 1.f, 0.7f), 1.5f);
+		Swatch->SetToolTipText(LOCTEXT("BackdropColor", "Couleur du fond"));
+		Place(Canvas, Swatch, FVector2D(34.f + Index * 32.f, BottomY - 46.f), FVector2D(26.f, 26.f));
+	}
 
 	// Bas droite : message et Terminer
 	StatusText = MakeText(WidgetTree, FText::GetEmpty(), 20.f, PokemonFonts::EStyle::Regular, DimColor);

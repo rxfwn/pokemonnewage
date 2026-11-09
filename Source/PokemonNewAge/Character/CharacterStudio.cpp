@@ -10,6 +10,7 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "ProceduralMeshComponent.h"
 #include "UObject/ConstructorHelpers.h"
 
 #define LOCTEXT_NAMESPACE "CharacterStudio"
@@ -21,9 +22,12 @@ namespace CharacterStudio
 	constexpr float RoomHeight = 600.f;
 	constexpr float WallThickness = 20.f;
 
-	/** Gris clair doux des captures d'inZOI */
-	const FLinearColor WallColor(0.58f, 0.59f, 0.62f);
-	const FLinearColor FloorColor(0.48f, 0.49f, 0.52f);
+	/** Cyclorama : mur du fond à X = BackdropWallX, raccordé au sol par un quart de cercle de rayon BackdropRadius */
+	constexpr float BackdropWallX = -450.f;
+	constexpr float BackdropRadius = 320.f;
+	constexpr int32 BackdropArcSegments = 24;
+	/** Les autres faces (plafond, côtés, mur derrière la caméra) : un peu plus sombres que le fond */
+	constexpr float SideWallShade = 0.8f;
 
 	/** Cadrages : point visé, distance (cm), champ de vision (degrés) */
 	// Corps : ~2,1 m visibles en hauteur (16:9) ; visage : ~40 cm
@@ -95,12 +99,10 @@ ACharacterStudio::ACharacterStudio()
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube.Cube"));
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> ShapeMaterial(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
 
-	// Pièce fermée de cubes de 1 m étirés (sol, plafond, 4 murs)
+	// Pièce fermée : le fond (sol + courbe + mur) est un cyclorama, le reste des cubes de 1 m étirés
 	const float Size = RoomHalf * 2.f;
 	const struct { const TCHAR* Name; FVector Location; FVector SizeCm; } WallDefs[] = {
-		{ TEXT("Floor"), FVector(0.f, 0.f, -WallThickness * 0.5f), FVector(Size, Size, WallThickness) },
 		{ TEXT("Ceiling"), FVector(0.f, 0.f, RoomHeight + WallThickness * 0.5f), FVector(Size, Size, WallThickness) },
-		{ TEXT("WallBack"), FVector(-RoomHalf, 0.f, RoomHeight * 0.5f), FVector(WallThickness, Size, RoomHeight) },
 		{ TEXT("WallFront"), FVector(RoomHalf, 0.f, RoomHeight * 0.5f), FVector(WallThickness, Size, RoomHeight) },
 		{ TEXT("WallLeft"), FVector(0.f, -RoomHalf, RoomHeight * 0.5f), FVector(Size, WallThickness, RoomHeight) },
 		{ TEXT("WallRight"), FVector(0.f, RoomHalf, RoomHeight * 0.5f), FVector(Size, WallThickness, RoomHeight) },
@@ -114,6 +116,34 @@ ACharacterStudio::ACharacterStudio()
 			Wall->SetMaterial(0, ShapeMaterial.Object);
 		}
 	}
+
+	Backdrop = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("Backdrop"));
+	Backdrop->SetupAttachment(Root);
+	Backdrop->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Backdrop->LightingChannels.bChannel1 = true;
+	BuildBackdrop();
+	if (ShapeMaterial.Object)
+	{
+		Backdrop->SetMaterial(0, ShapeMaterial.Object);
+	}
+
+	// Dégradé du fond : une lumière douce au-dessus du personnage, tournée vers le bas du mur. Canal 1 seulement :
+	// le personnage (canal 0) n'en reçoit rien
+	BackdropLight = CreateDefaultSubobject<URectLightComponent>(TEXT("BackdropLight"));
+	BackdropLight->SetupAttachment(Root);
+	BackdropLight->SetRelativeLocation(FVector(150.f, 0.f, 420.f));
+	BackdropLight->SetRelativeRotation((FVector(BackdropWallX + 40.f, 0.f, 110.f) - FVector(150.f, 0.f, 420.f)).Rotation());
+	BackdropLight->SetMobility(EComponentMobility::Movable);
+	BackdropLight->SetIntensityUnits(ELightUnits::Candelas);
+	BackdropLight->SetSourceWidth(200.f);
+	BackdropLight->SetSourceHeight(200.f);
+	BackdropLight->SetAttenuationRadius(1500.f);
+	BackdropLight->SetBarnDoorAngle(35.f);
+	BackdropLight->SetBarnDoorLength(60.f);
+	BackdropLight->SetIntensity(14.f);
+	BackdropLight->SetCastShadows(false);
+	BackdropLight->LightingChannels.bChannel0 = false;
+	BackdropLight->LightingChannels.bChannel1 = true;
 
 	// Éclairage en trois points + douche du plafond, tous dirigés vers le personnage
 	KeyLight = MakeLight(TEXT("KeyLight"), FVector(320.f, -260.f, 230.f), 140.f);
@@ -134,6 +164,61 @@ UStaticMeshComponent* ACharacterStudio::MakeWall(FName Name, const FVector& Loca
 	return Wall;
 }
 
+void ACharacterStudio::BuildBackdrop()
+{
+	// Profil dans le plan XZ, de l'arrière de la caméra (+X) vers le mur du fond : sol plat, quart de cercle, mur.
+	// Normales tournées vers l'intérieur et continues d'un morceau à l'autre : aucune ligne d'horizon
+	struct FProfilePoint { float X, Z, NX, NZ; };
+	TArray<FProfilePoint> Profile;
+	const float ArcX = BackdropWallX + BackdropRadius;
+	Profile.Add({ RoomHalf, 0.f, 0.f, 1.f });
+	for (int32 Step = 0; Step <= BackdropArcSegments; ++Step)
+	{
+		const float Angle = HALF_PI * Step / BackdropArcSegments;
+		const float S = FMath::Sin(Angle), C = FMath::Cos(Angle);
+		Profile.Add({ ArcX - BackdropRadius * S, BackdropRadius * (1.f - C), S, C });
+	}
+	Profile.Add({ BackdropWallX, RoomHeight, 1.f, 0.f });
+
+	TArray<FVector> Vertices;
+	TArray<FVector> Normals;
+	TArray<FVector2D> UVs;
+	TArray<FProcMeshTangent> Tangents;
+	TArray<int32> Triangles;
+	for (const FProfilePoint& Point : Profile)
+	{
+		for (const float Y : { -RoomHalf, RoomHalf })
+		{
+			Vertices.Add(FVector(Point.X, Y, Point.Z));
+			Normals.Add(FVector(Point.NX, 0.f, Point.NZ));
+			UVs.Add(FVector2D(Y / 100.f, (Point.X + Point.Z) / 100.f));
+			Tangents.Add(FProcMeshTangent(0.f, 1.f, 0.f));
+		}
+	}
+	for (int32 Index = 0; Index + 1 < Profile.Num(); ++Index)
+	{
+		const int32 A = Index * 2, B = A + 1, C = A + 2, D = A + 3;
+		// Deux sens : la face tournée vers le personnage reste visible quel que soit le sens attendu par le moteur
+		Triangles.Append({ A, C, B, B, C, D });
+		Triangles.Append({ A, B, C, B, D, C });
+	}
+	Backdrop->CreateMeshSection(0, Vertices, Triangles, Normals, UVs, TArray<FColor>(), Tangents, false);
+}
+
+void ACharacterStudio::SetBackdropColor(const FLinearColor& Color)
+{
+	BackdropColor = Color;
+	for (int32 Index = 0; Index < BackdropMaterials.Num(); ++Index)
+	{
+		if (BackdropMaterials[Index])
+		{
+			// Le dernier est le cyclorama ; les cubes autour un peu plus sombres
+			const bool bBackdrop = Index == BackdropMaterials.Num() - 1;
+			BackdropMaterials[Index]->SetVectorParameterValue(TEXT("Color"), bBackdrop ? Color : Color * SideWallShade);
+		}
+	}
+}
+
 URectLightComponent* ACharacterStudio::MakeLight(FName Name, const FVector& Location, float Width)
 {
 	URectLightComponent* Light = CreateDefaultSubobject<URectLightComponent>(Name);
@@ -152,13 +237,13 @@ URectLightComponent* ACharacterStudio::MakeLight(FName Name, const FVector& Loca
 void ACharacterStudio::Init(UTrainerAppearanceData* InData, const FTrainerAppearance& Appearance)
 {
 	Data = InData;
-	for (int32 Index = 0; Index < Walls.Num(); ++Index)
+	BackdropMaterials.Reset();
+	for (UStaticMeshComponent* Wall : Walls)
 	{
-		if (UMaterialInstanceDynamic* MID = Walls[Index]->CreateDynamicMaterialInstance(0))
-		{
-			MID->SetVectorParameterValue(TEXT("Color"), Index == 0 ? FloorColor : WallColor);
-		}
+		BackdropMaterials.Add(Wall->CreateDynamicMaterialInstance(0));
 	}
+	BackdropMaterials.Add(Backdrop->CreateDynamicMaterialInstance(0));
+	SetBackdropColor(BackdropColor);
 	ApplyLighting();
 	ShowAppearance(Appearance);
 	bSnapCamera = true;
