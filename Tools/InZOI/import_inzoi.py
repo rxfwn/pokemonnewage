@@ -777,8 +777,8 @@ BODY_RELIEF = {g: ("Characters/AvatarParts/Body/%s/Textures/%s_Body_Main_M" % (g
 # Réglés au banc (silhouettes M_Average01, M_Muscular01/03 comparées aux vignettes) : à 1, des abdominaux
 # apparaissaient même à Muscles = 0 et les « Musclé » étaient bien plus dessinés que dans inZOI
 BODY_RELIEF_AMOUNT = 0.4
-BODY_PHYSIQUE_AMOUNT = 0.8
-BODY_MUSCLE_COLOR_AMOUNT = 0.6
+BODY_PHYSIQUE_AMOUNT = 1.0
+BODY_MUSCLE_COLOR_AMOUNT = 0.7
 BODY_FAT_COLOR_AMOUNT = 0.8
 SKIN_MICRO_NORMAL = [SKIN_TEXTURES + "/T_SkinMicro_N", "MetaHumans/Common/Materials/Textures/T_SkinMicroNormal"]
 
