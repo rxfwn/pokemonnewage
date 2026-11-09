@@ -279,8 +279,21 @@ namespace
 			{
 				continue;
 			}
-			const FVector HeadPos = FAnimationRuntime::GetComponentSpaceTransformRefPose(Ref, Head).GetLocation();
-			const FVector NosePos = FAnimationRuntime::GetComponentSpaceTransformRefPose(Ref, Nose).GetLocation();
+			FVector HeadPos = FAnimationRuntime::GetComponentSpaceTransformRefPose(Ref, Head).GetLocation();
+			FVector NosePos = FAnimationRuntime::GetComponentSpaceTransformRefPose(Ref, Nose).GetLocation();
+			// Le matériau compare ces valeurs aux positions du mesh des CHEVEUX, dont le repère n'est pas toujours celui
+			// de la tête (axe Y inversé : les mèches de derrière prenaient la couleur « devant »). On passe par l'os
+			// « head », commun aux deux squelettes : nez exprimé dans l'os head de la tête, puis replacé dans l'os head
+			// des cheveux.
+			const USkeletalMesh* OwnAsset = Cast<USkeletalMesh>(Component->GetSkeletalMeshAsset());
+			const int32 OwnHead = OwnAsset ? OwnAsset->GetRefSkeleton().FindBoneIndex(HeadBone) : INDEX_NONE;
+			if (OwnAsset && OwnAsset != Asset && OwnHead != INDEX_NONE)
+			{
+				const FTransform HeadInHead = FAnimationRuntime::GetComponentSpaceTransformRefPose(Ref, Head);
+				const FTransform HeadInOwn = FAnimationRuntime::GetComponentSpaceTransformRefPose(OwnAsset->GetRefSkeleton(), OwnHead);
+				NosePos = HeadInOwn.TransformPosition(HeadInHead.InverseTransformPosition(NosePos));
+				HeadPos = HeadInOwn.GetLocation();
+			}
 			FVector Forward = NosePos - HeadPos;
 			Forward.Z = 0.0; // horizontal : le nez est plus haut que l'os de la tête
 			if (!Forward.Normalize())
@@ -288,6 +301,15 @@ namespace
 				continue;
 			}
 			// Centre de la tête : à la hauteur du nez, au-dessus de l'os « head » (qui est à la base du crâne)
+			// Centre horizontal : celui de la boîte de la coupe elle-même (même repère que les sommets lus par le
+			// matériau). L'os « head » est à la base du crâne, trop en avant : mesuré au banc, toute la coupe était
+			// « derrière » lui et les mèches devant ne s'affichaient plus. Hauteur : celle du nez (sans effet, axe horizontal).
+			if (OwnAsset)
+			{
+				const FVector BoundsCenter = OwnAsset->GetImportedBounds().Origin;
+				HeadPos.X = BoundsCenter.X;
+				HeadPos.Y = BoundsCenter.Y;
+			}
 			const FVector Center(HeadPos.X, HeadPos.Y, NosePos.Z);
 			MID->SetVectorParameterValue(TEXT("FrontAxis"), FLinearColor(Forward.X, Forward.Y, Forward.Z, 0.f));
 			MID->SetVectorParameterValue(TEXT("HeadCenter"), FLinearColor(Center.X, Center.Y, Center.Z, 0.f));

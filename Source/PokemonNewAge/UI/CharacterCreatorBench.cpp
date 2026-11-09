@@ -11,6 +11,7 @@
 #include "Character/TrainerAppearanceData.h"
 #include "Components/CanvasPanel.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "ContentStreaming.h"
 #include "Containers/Ticker.h"
 #include "Engine/World.h"
@@ -166,6 +167,32 @@ private:
 		}
 	}
 
+	/** Journal : paramètres posés sur les matériaux des cheveux (mèches devant : Color3, FrontAxis, HeadCenter) */
+	void LogHairParameters()
+	{
+		TArray<USkeletalMeshComponent*> Components;
+		Studio->GetComponents<USkeletalMeshComponent>(Components);
+		for (USkeletalMeshComponent* Component : Components)
+		{
+			if (Component->ComponentTags.Num() < 2 || Component->ComponentTags[1] != TEXT("Hair"))
+			{
+				continue;
+			}
+			const TArray<FName> SlotNames = Component->GetMaterialSlotNames();
+			for (int32 Index = 0; Index < Component->GetNumMaterials(); ++Index)
+			{
+				const UMaterialInterface* Material = Component->GetMaterial(Index);
+				FLinearColor Color3, Front, Center;
+				Material->GetVectorParameterValue(FHashedMaterialParameterInfo(TEXT("Color3")), Color3);
+				Material->GetVectorParameterValue(FHashedMaterialParameterInfo(TEXT("FrontAxis")), Front);
+				Material->GetVectorParameterValue(FHashedMaterialParameterInfo(TEXT("HeadCenter")), Center);
+				UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] Cheveux %s [%d %s] %s : Color3 %s Front %s Center %s"),
+					*GetNameSafe(Component->GetSkeletalMeshAsset()), Index, SlotNames.IsValidIndex(Index) ? *SlotNames[Index].ToString() : TEXT("?"),
+					*GetNameSafe(Material), *Color3.ToString(), *Front.ToString(), *Center.ToString());
+			}
+		}
+	}
+
 	/** Modèle complet dont une pièce (tête, coupe) contient ce texte, sinon INDEX_NONE */
 	int32 FindFullPreset(const FString& Text) const
 	{
@@ -257,8 +284,17 @@ private:
 			Editor->ChangeAppearance(New, TEXT("Bench"), false);
 			SetView(EStudioFocus::Face, 0.f);
 		}, 4.f);
-		Add(TEXT("21_meches_34"), [this]() { SetView(EStudioFocus::Face, 35.f); });
+		Add(TEXT("21_meches_34"), [this]() { SetView(EStudioFocus::Face, 35.f); LogHairParameters(); });
 		Add(TEXT("22_meches_profil"), [this]() { SetView(EStudioFocus::Face, 90.f); });
+		// Mèches devant sur une coupe courte d'homme (modèle 0)
+		Add(TEXT("22c_meches_homme"), [this]()
+		{
+			Editor->ApplyPreset(0, true, false);
+			FTrainerAppearance New = Editor->Current;
+			New.SetPartColor(TEXT("Hair"), 3, FLinearColor(0.05f, 0.45f, 1.f, 1.f));
+			Editor->ChangeAppearance(New, TEXT("Bench"), false);
+			SetView(EStudioFocus::Face, 35.f);
+		}, 4.f);
 		Add(TEXT("23_meches_dos"), [this]() { SetView(EStudioFocus::Face, 180.f); });
 
 		// 4) Cou : un peu plus loin, pour voir le col et le cou (lignes sombres), femme puis homme
