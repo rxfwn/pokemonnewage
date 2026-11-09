@@ -738,7 +738,7 @@ def constant(material, value, x, y):
     return node
 
 
-SKIN_VERSION = 16  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
+SKIN_VERSION = 17  # à augmenter quand le graphe de la peau change : refait au même endroit (les têtes gardent le lien)
 # Maquillage d'inZOI (table AppearanceMakeup) : catégorie, lettre du dossier de masques, emplacement du jeu (= nom du
 # paramètre texture de M_InZOI_Skin, couleurs dans <emplacement>_R/_G/_B), libellé, force du mélange (les reflets d'inZOI
 # mêlent un éclat blanc et une ombre de contour : à moitié pour rester naturels)
@@ -879,8 +879,11 @@ def build_skin_master():
                 set_prop(color, "default_value", unreal.LinearColor(0, 0, 0, 0))
                 links.append((color, "", "%s%d" % (channel, index)))
                 links.append((color, "A", "%s%da" % (channel, index)))  # alpha à part : la sortie principale n'a que RVB
-                if slot == "MakeupLips" and channel == "R":
+                if slot == "MakeupLips" and channel == "B":
+                    # Canal B du masque des lèvres = brillance (lipstick_Spec_Roughness / _Spec_Intensity du modèle) :
+                    # R de la « couleur » = rugosité, alpha = intensité ; jamais affiché en couleur
                     lip_inputs = (sample, color)
+                    continue
                 if slot == "MakeupHighlight" and channel == "G":
                     # Canal G de Makeup_Part_A = BRILLANCE du highlight (pas une couleur) : l'afficher en couleur
                     # faisait des plaques claires sur les joues, le nez et le menton (peaux foncées 702, 706)
@@ -964,7 +967,7 @@ def build_skin_master():
         # Rugosité propre au rouge à lèvres (lipstick_Spec_Roughness d'inZOI) : mélange selon masque x intensité
         lips = MEL.create_material_expression(material, unreal.MaterialExpressionCustom, -800, 3500)
         set_prop(lips, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
-        set_prop(lips, "code", "return saturate(M.r * A);")
+        set_prop(lips, "code", "return saturate(M.b * A);")
         entries = []
         for input_name in ("M", "A"):
             entry = unreal.CustomInput()
@@ -973,7 +976,7 @@ def build_skin_master():
         set_prop(lips, "inputs", entries)
         MEL.connect_material_expressions(lip_inputs[0], "RGBA", lips, "M")
         MEL.connect_material_expressions(lip_inputs[1], "A", lips, "A")
-    build_skin_relief(material, gloss, lips)
+    build_skin_relief(material, gloss, lips, lip_inputs[1] if lip_inputs else None)
     # 7) Fausse lumière d'inZOI (T_Head_FakeLightMask_M, R = dégradé du centre du visage) : un peu d'émissif de la
     # couleur de peau ; FakeLightAmount à 0 par défaut (corps), posé par set_head_relief sur les têtes
     fake_texture = import_texture(FAKE_LIGHT_MASK, "mask")
@@ -1038,7 +1041,7 @@ def skin_subsurface_profile():
         return None
 
 
-def build_skin_relief(material, gloss=None, lips=None):
+def build_skin_relief(material, gloss=None, lips=None, lip_rough=None):
     """Normale et rugosité de la peau : normale de détail de la tête (DetailNormal, force DetailNormalAmount, 0 sur le
     corps qui a d'autres UV) + micro-relief répété (SkinMicroNormal, MicroTiling fois), rugosité un peu variée"""
     shared = getattr(getattr(unreal, "SamplerSourceMode", None), "SSM_WRAP_WORLD_GROUP_SETTINGS", None)
@@ -1122,8 +1125,8 @@ def build_skin_relief(material, gloss=None, lips=None):
     set_prop(rough, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT1)
     # Les creux du micro-relief (pores) un peu plus mats que les bosses
     # G = brillance du highlight du maquillage (canal G de Makeup_Part_A) : peau plus lisse à ces endroits
-    set_prop(rough, "code", "float r = lerp(R, lerp(0.399, 0.95, RS.r), RSA);\nr = lerp(r, 0.12, L);\nreturn saturate(r + (1.0 - M.z) * 0.6 * MA - length(D.xy) * 0.1 * DA - G * 0.35);")
-    for node, names in ((normal, ("D", "M", "DA", "MA", "B", "P", "BA", "PA", "Mus")), (rough, ("D", "M", "DA", "MA", "R", "G", "RS", "RSA", "L"))):
+    set_prop(rough, "code", "float r = lerp(R, lerp(0.399, 0.95, RS.r), RSA);\nr = lerp(r, LR, L);\nreturn saturate(r + (1.0 - M.z) * 0.6 * MA - length(D.xy) * 0.1 * DA - G * 0.35);")
+    for node, names in ((normal, ("D", "M", "DA", "MA", "B", "P", "BA", "PA", "Mus")), (rough, ("D", "M", "DA", "MA", "R", "G", "RS", "RSA", "L", "LR"))):
         entries = []
         for input_name in names:
             entry = unreal.CustomInput()
@@ -1137,6 +1140,10 @@ def build_skin_relief(material, gloss=None, lips=None):
     MEL.connect_material_expressions(rough_base, "", rough, "R")
     MEL.connect_material_expressions(rs_sample, "RGBA", rough, "RS")
     MEL.connect_material_expressions(rs_amount, "", rough, "RSA")
+    if lip_rough is not None:
+        MEL.connect_material_expressions(lip_rough, "R", rough, "LR")
+    else:
+        MEL.connect_material_expressions(scalar("LipRoughness", 0.5, -800, 3700), "", rough, "LR")
     if lips is not None:
         MEL.connect_material_expressions(lips, "", rough, "L")
     else:
@@ -1793,7 +1800,7 @@ def build_parts(slow):
 # ---------------------------------------------------------------- Barbes (dossier Groom)
 
 HAIR_MASTER = DEST + "/Materials/M_InZOI_Hair"
-HAIR_VERSION = 26  # à augmenter quand le graphe change : le matériau est refait au même endroit
+HAIR_VERSION = 27  # à augmenter quand le graphe change : le matériau est refait au même endroit
 # Emplacements sans table inZOI (catalogue fait d'après les dossiers) : emplacement, libellé, onglet, suit
 # Les cheveux sont skinnés sur les os du corps (head) : ils suivent le corps ; la barbe suit la tête.
 GROOM_SLOTS = [("Hair", "Cheveux", "Hair", None), ("Beard", "Barbe", "Hair", "Head"), ("Mustache", "Moustache", "Hair", "Head"),
@@ -2077,6 +2084,36 @@ def groom_json(json_rel):
     return colors, diro
 
 
+HAIR_SCALARS = {"Specular": "Specular", "Roughness": "Roughness", "Scatter": "Scatter",
+                "Root_Darkness": "RootDarkness", "Root_Area": "RootArea"}
+
+
+def groom_scalars(json_rel):
+    """Réglages numériques d'un matériau de poils inZOI repris tels quels (HAIR_SCALARS : nom inZOI -> nom du jeu) ;
+    ceux absents du JSON viennent du parent MI_HairCard_Base (illisible) : on garde alors nos valeurs par défaut"""
+    filename = src(json_rel, ".json")
+    found = {}
+    try:
+        with open(filename, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return found
+    if isinstance(data, dict):
+        for name, value in (data.get("Scalars") or {}).items():
+            if name in HAIR_SCALARS and isinstance(value, (int, float)):
+                found[HAIR_SCALARS[name]] = float(value)
+        return found
+    for obj in data if isinstance(data, list) else []:
+        props = (obj.get("Properties") or {}) if isinstance(obj, dict) else {}
+        for entry in props.get("ScalarParameterValues", []) or []:
+            name = (entry.get("ParameterInfo") or {}).get("Name", "")
+            if name in HAIR_SCALARS and isinstance(entry.get("ParameterValue"), (int, float)):
+                found[HAIR_SCALARS[name]] = float(entry["ParameterValue"])
+        if props:
+            break
+    return found
+
+
 def groom_colors(json_rel):
     """RootColor / TipColor d'un fichier de matériau inZOI (valeurs linéaires), sinon le brun par défaut"""
     colors, _diro = groom_json(json_rel)
@@ -2098,7 +2135,8 @@ def diro_texture(diro_rel, fallback):
     return None
 
 
-def hair_instance(asset_path, diro_rel, colors, fallback=None, zones=False, density=None, root_darkness=0.5, specular=None):
+def hair_instance(asset_path, diro_rel, colors, fallback=None, zones=False, density=None, root_darkness=0.5, specular=None,
+                  scalars=None):
     """Matériau de poils ; refait à chaque import (texture et couleurs), pour corriger les anciens.
     zones : expose Color1-3 (dégradé, mèches) pour que le nuancier les montre ; density : < 1 éclaircit (cils)"""
     instance = load(asset_path)
@@ -2119,6 +2157,15 @@ def hair_instance(asset_path, diro_rel, colors, fallback=None, zones=False, dens
     MEL.set_material_instance_scalar_parameter_value(instance, "Density", density if density is not None else 1.0)
     MEL.set_material_instance_scalar_parameter_value(instance, "RootDarkness", root_darkness)
     MEL.set_material_instance_scalar_parameter_value(instance, "Specular", specular if specular is not None else 0.45)
+    # Valeurs propres du matériau d'inZOI (sinon celles du maître : Roughness 0,42, Scatter 0,3, RootArea 0,15)
+    defaults = {"Roughness": 0.42, "Scatter": HAIR_SCATTER, "RootArea": 0.15}
+    for name, value in dict(defaults, **(scalars or {})).items():
+        if name in ("Specular", "RootDarkness") and scalars and name in scalars:
+            if name == "Specular" and specular is not None:
+                continue  # barbe et moustache : spéculaire faible imposé
+            if name == "RootDarkness" and root_darkness == 0.0:
+                continue  # sourcils et cils : pas de racine
+        MEL.set_material_instance_scalar_parameter_value(instance, name, value)
     MEL.update_material_instance(instance)
     EAL.save_loaded_asset(instance)
     return instance
@@ -2153,10 +2200,10 @@ def groom_materials(mesh, folder, card_fallback, default_colors, density=None):
     for slot_name in material_slot_names(mesh):
         json_rel = folder + "/Materials/" + slot_name
         colors, diro = groom_json(json_rel)
-        infos.append((slot_name, json_rel, colors, diro))
-    shared = next((c for _n, _j, c, _d in infos if "TipColor" in c), {})
+        infos.append((slot_name, json_rel, colors, diro, groom_scalars(json_rel)))
+    shared = next((c for _n, _j, c, _d, _s in infos if "TipColor" in c), {})
     materials = []
-    for slot_name, json_rel, colors, diro in infos:
+    for slot_name, json_rel, colors, diro, scalars in infos:
         colors = colors if "TipColor" in colors else shared
         tip = colors.get("TipColor", default_colors[1])
         root = colors.get("RootColor", tuple(v * 0.6 for v in tip) if "TipColor" in colors else default_colors[0])
@@ -2168,7 +2215,8 @@ def groom_materials(mesh, folder, card_fallback, default_colors, density=None):
         # Barbe et moustache : spéculaire faible (0,12 : reflets blancs sinon)
         beard = any(key in folder for key in ("Beard", "Mustache"))
         materials.append(hair_instance(dest(json_rel + "_Jeu"), diro or card_fallback, (root, tip), card_fallback, density=density,
-                                       root_darkness=0.0 if no_root else 0.5, specular=0.12 if beard else None))
+                                       root_darkness=0.0 if no_root else 0.5, specular=0.12 if beard else None,
+                                       scalars=scalars))
     return materials
 
 
@@ -3028,6 +3076,17 @@ def full_presets(bases, parts):
                     amounts = [v for k, v in (mask.get("ScalarValues") or {}).items() if k.lower().endswith("intensity")]
                     if zone and hexes:
                         add_color(slot, hexes[0], zone, max(0.0, min(1.0, float(amounts[0]) if amounts else 1.0)))
+                    elif zone == 3 and slot == "MakeupLips":
+                        scalars = mask.get("ScalarValues") or {}
+                        rough = [v for k, v in scalars.items() if k.lower().endswith("spec_roughness")]
+                        spec = [v for k, v in scalars.items() if k.lower().endswith("spec_intensity")]
+                        if rough or spec:
+                            entry = unreal.TrainerPartColor()
+                            entry.set_editor_property("slot", slot)
+                            entry.set_editor_property("zone", zone)
+                            entry.set_editor_property("color", unreal.LinearColor(
+                                float(rough[0]) if rough else 0.5, 0.0, 0.0, max(0.0, min(1.0, float(spec[0]) if spec else 1.0))))
+                            colors.append(entry)
                     elif zone and slot == "MakeupHighlight":
                         # Canal sans couleur du highlight = brillance (HighlightSpec_Intensity) : alpha = intensité
                         spec = [v for k, v in (mask.get("ScalarValues") or {}).items() if k.lower().endswith("spec_intensity")]
