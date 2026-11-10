@@ -219,6 +219,32 @@ struct FTrainerPartSlotDef
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	TArray<FText> ZoneLabels;
 
+	/**
+	 *  Matériaux d'inZOI (ModKit) : nom du paramètre couleur de chaque zone (0 = principale), à la place de
+	 *  Tint / Color1-3 (ex. cheveux : TipColor, 2ndColor, BridgeColor1, BridgeColor2 ; lèvres : -, Lipstick_A_Color...)
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<FName> ColorParameters;
+
+	/** Paramètre numérique qui reçoit l'alpha de la couleur de chaque zone (ex. 2ndColorPosition, Lipstick_A_Intensity) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<FName> ColorAmountParameters;
+
+	/** Paramètres que les modèles peuvent régler (FTrainerPartParam) : remis à la valeur du matériau avant chaque application */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<FName> ResetParameters;
+
+	/** Paramètre d'une zone de couleur : celui d'inZOI s'il est donné, sinon Tint / Color1-3 */
+	FName ZoneParameter(int32 Zone) const
+	{
+		return ColorParameters.IsValidIndex(Zone) && !ColorParameters[Zone].IsNone() ? ColorParameters[Zone] : TrainerPartColorParameter(Zone);
+	}
+
+	FName ZoneAmountParameter(int32 Zone) const
+	{
+		return ColorAmountParameters.IsValidIndex(Zone) ? ColorAmountParameters[Zone] : NAME_None;
+	}
+
 	/** Curseur sous le nuancier qui règle l'alpha de la zone (début du dégradé, quantité de mèches, intensité) ; vide = pas de curseur */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
 	TArray<FText> ZoneAmountLabels;

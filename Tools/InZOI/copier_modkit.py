@@ -61,6 +61,12 @@ def move_in_unreal():
     reg = unreal.AssetRegistryHelpers.get_asset_registry()
     reg.scan_paths_synchronous(["/Game/Characters/Materials", "/Game/BG", "/Game/MetaHumans", "/Game/Characters/AvatarParts"], True)
     moved = 0
+    # Fichiers isolés d'abord : les dossiers déplacés ensuite pointent ainsi vers leur nouveau chemin
+    for rel in FILES:
+        source = "/Game/" + rel
+        if eal.does_asset_exist(source):
+            if eal.rename_asset(source, DEST_GAME + "/" + rel):
+                moved += 1
     for folder in FOLDERS:
         source = "/Game/" + folder
         if eal.does_directory_exist(source) and eal.list_assets(source, True, False):
@@ -71,11 +77,6 @@ def move_in_unreal():
                 moved += 1
             else:
                 unreal.log_error("[ModKit] échec du déplacement de " + source)
-    for rel in FILES:
-        source = "/Game/" + rel
-        if eal.does_asset_exist(source):
-            if eal.rename_asset(source, DEST_GAME + "/" + rel):
-                moved += 1
     # Redirections laissées par les déplacements : résolues puis supprimées
     redirectors = []
     for root in ("/Game/Characters", "/Game/BG", "/Game/MetaHumans", DEST_GAME):
@@ -91,7 +92,10 @@ def move_in_unreal():
     for root in ("/Game/Characters/Materials", "/Game/Characters/AvatarParts", "/Game/BG", "/Game/MetaHumans"):
         if eal.does_directory_exist(root) and not eal.list_assets(root, True, False):
             eal.delete_directory(root)
-    eal.save_directory(DEST_GAME, False, True)
+    # Tout réenregistré : les liens pointent vers les nouveaux chemins (voir aussi [CoreRedirects] de DefaultEngine.ini)
+    for path in eal.list_assets(DEST_GAME, True, False):
+        if eal.load_asset(path):
+            eal.save_asset(path, False)
     unreal.log("[ModKit] %d déplacements vers %s, %d redirections corrigées" % (moved, DEST_GAME, len(redirectors)))
 
 

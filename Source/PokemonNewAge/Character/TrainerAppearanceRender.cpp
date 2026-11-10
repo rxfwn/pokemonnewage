@@ -337,13 +337,61 @@ namespace
 		return Source && Source->GetName().Contains(TEXT("Scalp"));
 	}
 
-	void ApplyPartColors(USkeletalMeshComponent* Component, const FTrainerAppearance& Appearance)
+	/** Remet un paramètre (couleur ou nombre) à la valeur du matériau parent */
+	void ResetToParent(UMaterialInstanceDynamic* MID, FName Parameter)
+	{
+		if (!MID || !MID->Parent || Parameter.IsNone())
+		{
+			return;
+		}
+		FLinearColor Color;
+		float Value = 0.f;
+		if (MID->Parent->GetVectorParameterValue(FHashedMaterialParameterInfo(Parameter), Color))
+		{
+			MID->SetVectorParameterValue(Parameter, Color);
+		}
+		else if (MID->Parent->GetScalarParameterValue(FHashedMaterialParameterInfo(Parameter), Value))
+		{
+			MID->SetScalarParameterValue(Parameter, Value);
+		}
+	}
+
+	/** Réglages exacts d'un modèle (matériaux d'inZOI) pour un emplacement */
+	void ApplyPartParams(UMaterialInstanceDynamic* MID, const FTrainerPartSlotDef* SlotDef, const FTrainerAppearance& Appearance)
+	{
+		if (!MID || !SlotDef)
+		{
+			return;
+		}
+		for (const FName Parameter : SlotDef->ResetParameters)
+		{
+			ResetToParent(MID, Parameter);
+		}
+		for (const FTrainerPartParam& Param : Appearance.PartParams)
+		{
+			if (Param.Slot != SlotDef->Slot || Param.Name.IsNone())
+			{
+				continue;
+			}
+			if (Param.bVector)
+			{
+				MID->SetVectorParameterValue(Param.Name, Param.Value);
+			}
+			else
+			{
+				MID->SetScalarParameterValue(Param.Name, Param.Value.R);
+			}
+		}
+	}
+
+	void ApplyPartColors(const UTrainerAppearanceData* Data, USkeletalMeshComponent* Component, const FTrainerAppearance& Appearance)
 	{
 		if (!Component->ComponentHasTag(PartTag) || Component->ComponentTags.Num() < 2)
 		{
 			return;
 		}
 		const FName Slot = Component->ComponentTags[1];
+		const FTrainerPartSlotDef* SlotDef = Data ? Data->FindSlot(Slot) : nullptr;
 		// MID gardé d'un clic à l'autre : les zones sans choix reprennent d'abord la couleur du matériau
 		for (int32 Index = 0; Index < Component->GetNumMaterials(); ++Index)
 		{
@@ -358,11 +406,15 @@ namespace
 				{
 					continue; // crâne : toujours remis à sa couleur d'origine
 				}
-				const FName Parameter = TrainerPartColorParameter(Zone);
+				const FName Parameter = SlotDef ? SlotDef->ZoneParameter(Zone) : TrainerPartColorParameter(Zone);
 				FLinearColor Original;
 				if (MID->Parent->GetVectorParameterValue(FHashedMaterialParameterInfo(Parameter), Original))
 				{
 					MID->SetVectorParameterValue(Parameter, Original);
+				}
+				if (SlotDef)
+				{
+					ResetToParent(MID, SlotDef->ZoneAmountParameter(Zone));
 				}
 			}
 		}
@@ -372,7 +424,8 @@ namespace
 			{
 				continue;
 			}
-			const FName Parameter = TrainerPartColorParameter(Choice.Zone);
+			const FName Parameter = SlotDef ? SlotDef->ZoneParameter(Choice.Zone) : TrainerPartColorParameter(Choice.Zone);
+			const FName Amount = SlotDef ? SlotDef->ZoneAmountParameter(Choice.Zone) : NAME_None;
 			for (int32 Index = 0; Index < Component->GetNumMaterials(); ++Index)
 			{
 				if (IsScalpMaterial(Component, Index))
@@ -387,6 +440,10 @@ namespace
 				if (MID)
 				{
 					MID->SetVectorParameterValue(Parameter, Choice.Color);
+					if (!Amount.IsNone())
+					{
+						MID->SetScalarParameterValue(Amount, Choice.Color.A);
+					}
 					if (Choice.Zone == 3)
 					{
 						ApplyHeadFrame(Component, MID);
@@ -461,6 +518,12 @@ namespace
 						for (int32 Channel = 0; Channel < 3; ++Channel)
 						{
 							MID->SetVectorParameterValue(FName(*(Prefix + Channels[Channel])), FLinearColor(0.f, 0.f, 0.f, 0.f));
+							ResetToParent(MID, SlotDef->ColorParameters.IsValidIndex(Channel + 1) ? SlotDef->ColorParameters[Channel + 1] : NAME_None);
+							ResetToParent(MID, SlotDef->ZoneAmountParameter(Channel + 1));
+						}
+						for (const FName Parameter : SlotDef->ResetParameters)
+						{
+							ResetToParent(MID, Parameter);
 						}
 						// Réglages des pièces de cet emplacement remis à la valeur du matériau
 						TSet<FName> Scalars;
@@ -528,7 +591,19 @@ namespace
 							Color.A = FMath::Min(1.f, Color.A * LipCoverage);
 						}
 						MID->SetVectorParameterValue(FName(*(Prefix + Channels[Channel])), Color);
+						// Matériau de peau d'inZOI : couleur et intensité du canal sous leurs noms (Lipstick_A_Color...)
+						if (SlotDef->ColorParameters.IsValidIndex(Channel + 1) && !SlotDef->ColorParameters[Channel + 1].IsNone())
+						{
+							const FLinearColor Source = Choice ? Choice->Color : Part->MaskColors[Channel];
+							MID->SetVectorParameterValue(SlotDef->ColorParameters[Channel + 1], FLinearColor(Source.R, Source.G, Source.B, 1.f));
+							const FName Amount = SlotDef->ZoneAmountParameter(Channel + 1);
+							if (!Amount.IsNone())
+							{
+								MID->SetScalarParameterValue(Amount, (!Choice && Part->MaskColors[Channel].A <= 0.f) ? 0.f : Source.A);
+							}
+						}
 					}
+					ApplyPartParams(MID, SlotDef, Appearance);
 				}
 			}
 		}
@@ -690,7 +765,29 @@ bool TrainerAppearanceRender::Apply(const UTrainerAppearanceData* Data, AActor* 
 		// Corpulence (0 à 1) : plis et poids du ventre du corps « fort » d'inZOI (_Body_Fat_D)
 		ApplySkinScalar(Target, Data->SkinMaterialSlots, TEXT("BodyFat"), Fat);
 		ApplyColor(Target, Data->EyeMaterialSlots, Data->EyeColorParameter, Appearance.EyeColor);
-		ApplyPartColors(Target, Appearance);
+		ApplyPartColors(Data, Target, Appearance);
+		if (Target->ComponentHasTag(PartTag) && Target->ComponentTags.Num() > 1)
+		{
+			if (const FTrainerPartSlotDef* SlotDef = Data->FindSlot(Target->ComponentTags[1]))
+			{
+				if (!SlotDef->ResetParameters.IsEmpty() || Appearance.PartParams.ContainsByPredicate([SlotDef](const FTrainerPartParam& P) { return P.Slot == SlotDef->Slot; }))
+				{
+					for (int32 Index = 0; Index < Target->GetNumMaterials(); ++Index)
+					{
+						if (IsScalpMaterial(Target, Index))
+						{
+							continue;
+						}
+						UMaterialInstanceDynamic* MID = Cast<UMaterialInstanceDynamic>(Target->GetMaterial(Index));
+						if (!MID)
+						{
+							MID = Target->CreateDynamicMaterialInstance(Index);
+						}
+						ApplyPartParams(MID, SlotDef, Appearance);
+					}
+				}
+			}
+		}
 	}
 	return true;
 }

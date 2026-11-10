@@ -36,6 +36,31 @@ struct FTrainerPartColor
 	FLinearColor Color = FLinearColor::White;
 };
 
+/**
+ *  Réglage exact d'un matériau d'inZOI (ModKit), repris tel quel d'un modèle : position de la 2e couleur des cheveux,
+ *  intensité et rugosité d'un maquillage... Appliqué aux matériaux de la pièce de l'emplacement (ou, pour le
+ *  maquillage, à la peau de la tête). Absent = valeur du matériau.
+ */
+USTRUCT(BlueprintType)
+struct FTrainerPartParam
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	FName Slot;
+
+	/** Nom du paramètre du matériau (ex. 2ndColorPosition, Lipstick_A_Color) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	FName Name;
+
+	/** Vrai : couleur (Value) ; faux : nombre (Value.R) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	bool bVector = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	FLinearColor Value = FLinearColor::Black;
+};
+
 /** Paramètre du matériau M_InZOI_Part pour une zone de couleur */
 inline FName TrainerPartColorParameter(int32 Zone)
 {
@@ -75,6 +100,10 @@ struct FTrainerAppearance
 	/** Couleurs des pièces choisies dans le nuancier (absent = couleur d'origine) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
 	TArray<FTrainerPartColor> PartColors;
+
+	/** Réglages exacts des matériaux d'inZOI venus d'un modèle (voir FTrainerPartParam) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	TArray<FTrainerPartParam> PartParams;
 
 	/** Faux tant que le joueur n'est pas passé par l'éditeur (après le discours du Prof. Chen) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")

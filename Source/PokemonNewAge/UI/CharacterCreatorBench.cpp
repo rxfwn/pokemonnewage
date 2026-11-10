@@ -639,6 +639,49 @@ private:
 				Add(P + TEXT("5_dos_") + L, [this]() { SetView(EStudioFocus::Body, 180.f); });
 			}
 		}
+		// HX) Couleurs des cheveux des modèles : hexadécimal d'inZOI converti en linéaire (actuel) ou pris tel quel ?
+		const TCHAR* HexKeys[] = { TEXT("Female_Head_006_CT004"), TEXT("Female_Head_003_CT017") };
+		for (int32 K = 0; K < UE_ARRAY_COUNT(HexKeys); ++K)
+		{
+			const int32 Index = FindFullPreset(HexKeys[K]);
+			if (Index == INDEX_NONE)
+			{
+				continue;
+			}
+			const FString P = FString::Printf(TEXT("HX%d"), K);
+			Add(P + TEXT("0_lineaire"), [this, Index]()
+			{
+				ShowUI(false);
+				Editor->ApplyPreset(Index, true, false);
+				SetView(EStudioFocus::Face, 0.f);
+			}, 4.f);
+			Add(P + TEXT("1_brut"), [this]()
+			{
+				// Couleur linéaire reconvertie en sRGB : la valeur hexadécimale prise telle quelle
+				for (USkeletalMeshComponent* Component : PartComponents(TEXT("Hair")))
+				{
+					for (int32 Index = 0; Index < Component->GetNumMaterials(); ++Index)
+					{
+						UMaterialInstanceDynamic* MID = Cast<UMaterialInstanceDynamic>(Component->GetMaterial(Index));
+						if (!MID)
+						{
+							continue;
+						}
+						for (const TCHAR* Name : { TEXT("TipColor"), TEXT("2ndColor"), TEXT("BridgeColor1"), TEXT("BridgeColor2"), TEXT("BridgeColor3") })
+						{
+							FLinearColor Color;
+							if (MID->GetVectorParameterValue(FHashedMaterialParameterInfo(Name), Color))
+							{
+								const FColor SRGB = Color.ToFColorSRGB();
+								const FLinearColor Raw(SRGB.R / 255.f, SRGB.G / 255.f, SRGB.B / 255.f, 1.f);
+								UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] %s %s -> %s"), Name, *Color.ToString(), *Raw.ToString());
+								MID->SetVectorParameterValue(Name, Raw);
+							}
+						}
+					}
+				}
+			});
+		}
 		// DR) Dreadlocks trop claires (W_Head07_CT022, couleur du jeu 402909) : couleur appliquée ? reflets ? diffusion ?
 		const int32 DreadPreset = FindFullPreset(TEXT("Female_Head_007_CT022"));
 		if (DreadPreset != INDEX_NONE)

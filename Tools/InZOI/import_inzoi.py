@@ -1441,12 +1441,33 @@ def apply_skin(mesh, rel_folder, age, only_skin_slots):
     textures = scan_textures(rel_folder, prefer)
     mi_folder = dest(rel_folder + "/Materials")
     # Nouveau nom (MI_SkinV2_) : les anciennes instances mélangeaient d'autres textures
-    instance = skin_instance(mi_folder + "/MI_SkinV2_" + mesh.get_name(), textures.get("color"))
-    set_skin_rs(instance, rel_folder, only_skin_slots)
-    if only_skin_slots:
-        set_head_relief(instance, "Female" if "female" in rel_folder.lower() else "Male")
-    else:
-        set_body_relief(instance, "Female" if "female" in rel_folder.lower() else "Male")
+    gender = "Female" if "female" in rel_folder.lower() else "Male"
+    instance = None
+    if modkit_ready():
+        found = {"color": textures.get("color")}
+        for sub in ("Textures", "Texture", ""):
+            root = os.path.join(EXPORTS, *rel_folder.split("/"), sub) if sub else os.path.join(EXPORTS, *rel_folder.split("/"))
+            if os.path.isdir(root):
+                names = sorted(f[:-4] for f in os.listdir(root) if f.lower().endswith(".png"))
+                for key, suffixes in (("rs", ("_Main_RS", "_RS")), ("m", ("_Main_M",))):
+                    match = next((n for n in names if n.endswith(suffixes)), None)
+                    if match and key not in found:
+                        found[key] = (rel_folder + "/" + sub + "/" + match).replace("//", "/")
+        if only_skin_slots and "rs" not in found:
+            # Têtes sans _Main_RS dans l'export : celui commun d'inZOI (sinon la peau du ModKit brillait comme mouillée)
+            found["rs"] = SKIN_RS_SHARED
+        if not only_skin_slots:
+            main, physique, muscle = BODY_RELIEF[gender]
+            found.update(m=found.get("m") or main, physique=physique, muscle=muscle,
+                         fat="Characters/AvatarParts/Body/%s/Textures/%s_Body_Fat_D" % (gender, gender))
+        instance = modkit_skin_instance(mi_folder + "/MI_SkinMK_" + mesh.get_name(), rel_folder, only_skin_slots, gender, found)
+    if not instance:
+        instance = skin_instance(mi_folder + "/MI_SkinV2_" + mesh.get_name(), textures.get("color"))
+        set_skin_rs(instance, rel_folder, only_skin_slots)
+        if only_skin_slots:
+            set_head_relief(instance, gender)
+        else:
+            set_body_relief(instance, gender)
     # Le matériau voulu pour chaque emplacement. On ne compte plus sur l'asset : Unreal ignorait les changements
     # faits depuis Python sur les emplacements du Skeletal Mesh. Le jeu les pose lui-même (Materials de la base
     # ou de la pièce, appliqués par TrainerAppearanceRender).
@@ -2050,6 +2071,300 @@ def build_hair_master():
     return finish_material(material, HAIR_MASTER)
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+# Matériaux d'inZOI du ModKit officiel (Tools/InZOI/copier_modkit.py les copie dans /Game/ImportedAssets/InZOIModKit).
+# S'ils sont là, cheveux, poils, peau de tête (maquillage compris) et peau du corps utilisent ces vrais matériaux, avec
+# les réglages de chaque matériau d'inZOI repris tels quels (JSON de l'export). Sinon, nos matériaux (M_InZOI_*).
+# ---------------------------------------------------------------------------------------------------------------------
+MODKIT_GAME = "/Game/ImportedAssets/InZOIModKit/Characters/Materials"
+MODKIT_VERSION = 2  # à augmenter pour refaire les instances ModKit
+MODKIT_SAMPLERS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "modkit_samplers.json")
+_modkit_state = {}
+
+
+def modkit_ready():
+    """Vrai si les matériaux du ModKit sont dans le projet (copier_modkit.py)"""
+    if "ready" not in _modkit_state:
+        _modkit_state["ready"] = bool(load(MODKIT_GAME + "/MasterInstances/Hair/MI_HairCard_Base")) \
+            and bool(load(MODKIT_GAME + "/MasterInstances/Skin/MI_HeadSkin_Base_V02"))
+        if _modkit_state["ready"]:
+            log("Matériaux d'inZOI du ModKit trouvés : ils remplacent nos matériaux de cheveux et de peau")
+    return _modkit_state["ready"]
+
+
+def modkit_parent(name, default=None):
+    """Instance ou matériau maître du ModKit par son nom (MI_HairCard_Base...), sinon `default`"""
+    if "index" not in _modkit_state:
+        index = {}
+        for path in EAL.list_assets(MODKIT_GAME, recursive=True, include_folder=False):
+            index[path.rsplit("/", 1)[-1].split(".")[0]] = path.split(".")[0]
+        _modkit_state["index"] = index
+    path = _modkit_state["index"].get(name or "")
+    if path:
+        return load(path)
+    return load(_modkit_state["index"][default]) if default in _modkit_state["index"] else None
+
+
+def modkit_sampler(param):
+    if "samplers" not in _modkit_state:
+        try:
+            with open(MODKIT_SAMPLERS_FILE, encoding="utf-8") as handle:
+                _modkit_state["samplers"] = json.load(handle)
+        except (OSError, ValueError):
+            _modkit_state["samplers"] = {}
+    return _modkit_state["samplers"].get(param, "")
+
+
+def modkit_texture(rel, param):
+    """Texture d'inZOI réglée comme l'attend le paramètre du matériau (type d'échantillonnage lu dans ses graphes,
+    modkit_samplers.json) : couleur sRGB, linéaire, masques, normale, niveaux de gris ; virtuelle si le paramètre l'est"""
+    sampler = modkit_sampler(param)
+    role = "normal" if "Normal" in sampler else ("color" if sampler.endswith("_Color") or sampler.endswith("VirtualColor") else "mask")
+    texture = import_texture(rel, role)
+    if not texture:
+        return None
+    TCS = unreal.TextureCompressionSettings
+    wanted = {"virtual_texture_streaming": sampler.startswith("SAMPLERTYPE_Virtual")}
+    kind = sampler.replace("SAMPLERTYPE_Virtual", "").replace("SAMPLERTYPE_", "")
+    if kind == "Normal":
+        wanted.update(compression_settings=TCS.TC_NORMALMAP, srgb=False)
+    elif kind == "Color":
+        wanted.update(compression_settings=TCS.TC_DEFAULT, srgb=True)
+    elif kind == "LinearColor":
+        wanted.update(compression_settings=TCS.TC_DEFAULT, srgb=False)
+    elif kind == "Masks":
+        wanted.update(compression_settings=TCS.TC_MASKS, srgb=False)
+    elif kind == "Grayscale":
+        wanted.update(compression_settings=TCS.TC_GRAYSCALE, srgb=True)
+    elif kind == "LinearGrayscale":
+        wanted.update(compression_settings=TCS.TC_GRAYSCALE, srgb=False)
+    changed = False
+    for key, value in wanted.items():
+        try:
+            if texture.get_editor_property(key) != value:
+                set_prop(texture, key, value)
+                changed = True
+        except Exception:
+            pass
+    if changed:
+        EAL.save_loaded_asset(texture)
+    return texture
+
+
+def read_mi_json(json_rel):
+    """Réglages d'un matériau d'inZOI exporté (FModel ou format de l'exercice) :
+    {"parent": nom, "scalars": {}, "vectors": {nom: (r, g, b, a)}, "textures": {nom: chemin du jeu}, "overrides": {}}"""
+    info = {"parent": None, "scalars": {}, "vectors": {}, "textures": {}, "switches": {}, "overrides": {}}
+    filename = src(json_rel, ".json")
+    try:
+        with open(filename, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError):
+        return None
+    if isinstance(data, dict):
+        for name, value in (data.get("Scalars") or {}).items():
+            if isinstance(value, (int, float)):
+                info["scalars"][name] = float(value)
+        for name, value in (data.get("Colors") or {}).items():
+            if isinstance(value, dict) and "R" in value:
+                info["vectors"][name] = (value["R"], value["G"], value["B"], value.get("A", 1.0))
+        for name, value in (data.get("Textures") or {}).items():
+            if isinstance(value, dict) and value.get("ObjectPath"):
+                info["textures"][name] = game_rel(value["ObjectPath"])
+        for name, value in (data.get("Switches") or {}).items():
+            info["switches"][name] = bool(value)
+        return info
+    for obj in data if isinstance(data, list) else []:
+        props = (obj.get("Properties") or {}) if isinstance(obj, dict) else {}
+        if not props:
+            continue
+        parent = (props.get("Parent") or {}).get("ObjectName", "")
+        if "'" in parent:
+            info["parent"] = parent.split("'")[1]
+        for entry in props.get("ScalarParameterValues", []) or []:
+            name = (entry.get("ParameterInfo") or {}).get("Name")
+            if name and isinstance(entry.get("ParameterValue"), (int, float)):
+                info["scalars"][name] = float(entry["ParameterValue"])
+        for entry in props.get("VectorParameterValues", []) or []:
+            name = (entry.get("ParameterInfo") or {}).get("Name")
+            value = entry.get("ParameterValue") or {}
+            if name and isinstance(value, dict) and "R" in value:
+                info["vectors"][name] = (value["R"], value["G"], value["B"], value.get("A", 1.0))
+        for entry in props.get("TextureParameterValues", []) or []:
+            name = (entry.get("ParameterInfo") or {}).get("Name")
+            value = entry.get("ParameterValue") or {}
+            if name and isinstance(value, dict) and value.get("ObjectPath"):
+                info["textures"][name] = game_rel(value["ObjectPath"])
+        info["overrides"] = props.get("BasePropertyOverrides") or {}
+        break
+    return info
+
+
+def modkit_instance(asset_path, parent, info, textures=None, scalars=None, vectors=None, switches=None):
+    """Instance d'un matériau d'inZOI : tous les réglages du JSON tels quels (ceux que le parent connaît), puis les
+    ajouts du jeu (textures trouvées à côté, couleurs par défaut). Refaite à chaque import (MODKIT_VERSION)"""
+    instance = load(asset_path)
+    if not instance:
+        folder, name = split(asset_path)
+        instance = asset_tools.create_asset(name, folder, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
+        stats["materials"] += 1
+    elif EAL.get_metadata_tag(instance, "InZOIModKit") == str(MODKIT_VERSION) and EAL.get_metadata_tag(instance, "InZOIParent") == parent.get_name():
+        return instance
+    MEL.set_material_instance_parent(instance, parent)
+    MEL.clear_all_material_instance_parameters(instance)
+    known_scalars = set(str(n) for n in MEL.get_scalar_parameter_names(parent))
+    known_vectors = set(str(n) for n in MEL.get_vector_parameter_names(parent))
+    known_textures = set(str(n) for n in MEL.get_texture_parameter_names(parent))
+    known_switches = set(str(n) for n in MEL.get_static_switch_parameter_names(parent))
+    info = info or {"scalars": {}, "vectors": {}, "textures": {}, "switches": {}, "overrides": {}}
+    for name, value in dict(info["scalars"], **(scalars or {})).items():
+        if name in known_scalars:
+            MEL.set_material_instance_scalar_parameter_value(instance, name, value)
+    for name, value in dict(info["vectors"], **(vectors or {})).items():
+        if name in known_vectors:
+            MEL.set_material_instance_vector_parameter_value(instance, name, unreal.LinearColor(*value))
+    for name, rel in dict(info["textures"], **(textures or {})).items():
+        if name in known_textures and rel:
+            texture = modkit_texture(rel, name)
+            if texture:
+                MEL.set_material_instance_texture_parameter_value(instance, name, texture)
+    for name, value in dict(info.get("switches") or {}, **(switches or {})).items():
+        if name in known_switches:
+            MEL.set_material_instance_static_switch_parameter_value(instance, name, bool(value))
+    overrides = info.get("overrides") or {}
+    if overrides:
+        try:
+            base = instance.get_editor_property("base_property_overrides")
+            for flag, key, prop in (("bOverride_OpacityMaskClipValue", "OpacityMaskClipValue", "opacity_mask_clip_value"),
+                                    ("bOverride_TwoSided", "TwoSided", "two_sided")):
+                if overrides.get(flag) and key in overrides:
+                    base.set_editor_property("override_" + prop, True)
+                    base.set_editor_property(prop, overrides[key])
+            instance.set_editor_property("base_property_overrides", base)
+        except Exception as error:
+            log("ModKit : réglages de base non repris pour %s (%s)" % (asset_path, error))
+    MEL.update_material_instance(instance)
+    EAL.set_metadata_tag(instance, "InZOIModKit", str(MODKIT_VERSION))
+    EAL.set_metadata_tag(instance, "InZOIParent", parent.get_name())
+    EAL.save_loaded_asset(instance)
+    return instance
+
+
+RAW_HEX_SLOTS = ("Hair", "Eyebrows", "Eyelashes", "Beard", "Mustache")
+
+
+def groom_hex(color):
+    """Couleur de poils d'un modèle pour le matériau d'inZOI. Banc HX/mk3 : convertie en linéaire, les couleurs claires
+    sortent trop foncées (platine -> beige) ; prise telle quelle, les foncées sortent grises (noir -> gris). Mélange
+    selon la clarté : foncées en linéaire, claires telles quelles."""
+    raw = (color.r, color.g, color.b)
+    lin = tuple(srgb_to_linear(v) for v in raw)
+    light = 0.2126 * raw[0] + 0.7152 * raw[1] + 0.0722 * raw[2]
+    t = max(0.0, min(1.0, (light - 0.3) / 0.45))
+    t = t * t * (3.0 - 2.0 * t)
+    return tuple(l + (r - l) * t for l, r in zip(lin, raw))
+
+
+def part_param(slot, name, value):
+    """Réglage exact d'un modèle (FTrainerPartParam) : couleur (texte hexadécimal sRGB d'inZOI) ou nombre"""
+    entry = unreal.TrainerPartParam()
+    entry.set_editor_property("slot", slot)
+    entry.set_editor_property("name", name)
+    if isinstance(value, str):
+        rgb = hex_color(value)
+        if not rgb or value.strip().lower() in ("", "none"):
+            return None
+        text = value.strip()
+        alpha = int(text[6:8], 16) / 255.0 if len(text) >= 8 else 1.0
+        entry.set_editor_property("vector", True)
+        if slot in RAW_HEX_SLOTS:
+            # Poils : inZOI passe l'hexadécimal du modèle tel quel au matériau (banc HX : platine et rose justes ainsi)
+            mixed = groom_hex(rgb)
+            entry.set_editor_property("value", unreal.LinearColor(mixed[0], mixed[1], mixed[2], alpha))
+        else:
+            entry.set_editor_property("value", unreal.LinearColor(srgb_to_linear(rgb.r), srgb_to_linear(rgb.g), srgb_to_linear(rgb.b), alpha))
+    elif isinstance(value, (int, float)):
+        entry.set_editor_property("value", unreal.LinearColor(float(value), 0.0, 0.0, 0.0))
+    else:
+        return None
+    return entry
+
+
+def makeup_parameter_names(rows):
+    """Pour chaque catégorie de maquillage : noms d'inZOI de la couleur et de l'intensité de chaque canal (R, V, B), et
+    tous les réglages vus dans les modèles (remis à zéro avant chaque application)"""
+    names = {}
+    for row in rows:
+        try:
+            makeups = json.loads(row.get("Makeup") or "[]")
+        except ValueError:
+            continue
+        for entry in makeups if isinstance(makeups, list) else []:
+            kind = (entry.get("MakeupType") or "").lower()
+            slot_names = names.setdefault(kind, {"colors": ["", "", "", ""], "amounts": ["", "", "", ""], "all": set()})
+            for mask in entry.get("MaskData") or []:
+                zone = {"R": 1, "G": 2, "B": 3}.get(mask.get("MakeupChannel"))
+                colors = [k for k, v in (mask.get("ColorValues") or {}).items() if k and v]
+                amounts = [k for k in (mask.get("ScalarValues") or {}) if k.lower().endswith("_intensity") and "spec" not in k.lower()]
+                if zone and colors and not slot_names["colors"][zone]:
+                    slot_names["colors"][zone] = colors[0]
+                if zone and amounts and not slot_names["amounts"][zone]:
+                    slot_names["amounts"][zone] = amounts[0]
+                slot_names["all"].update(k for k in (mask.get("ColorValues") or {}) if k)
+                slot_names["all"].update(mask.get("ScalarValues") or {})
+    return names
+
+
+HAIR_PRESET_PARAMS = ["2ndColor", "2ndColorPosition", "2ndColorSharpen", "2ndColorOffset", "BridgeColor1", "BridgeColor2",
+                      "BridgeColor3", "BridgeColor1Position", "BridgeColor2Position", "BridgeColor3Position", "BridgeColor1Blend",
+                      "BridgeColor2Blend", "BridgeColor3Blend", "White Age"]
+
+
+def modkit_groom_instance(json_rel, folder, card_fallback):
+    """Matériau de poils (cheveux, sourcils, cils, barbe) d'après le matériau d'inZOI du même nom ; None sans ModKit"""
+    if not modkit_ready():
+        return None
+    info = read_mi_json(json_rel) or {"parent": None, "scalars": {}, "vectors": {}, "textures": {}, "switches": {}, "overrides": {}}
+    lower = folder.lower()
+    default = "MI_Eyebrow_Base" if "eyebrow" in lower else ("MI_Eyelash_Base" if "eyelash" in lower else
+                                                              ("MI_Beard_Base" if ("beard" in lower or "mustache" in lower) else "MI_HairCard_Base"))
+    parent = modkit_parent(info.get("parent"), default) or modkit_parent(default, "MI_HairCard_Base")
+    if not parent:
+        return None
+    textures = {}
+    if not info["textures"].get("DIRO Map") and card_fallback:
+        textures["DIRO Map"] = card_fallback
+    return modkit_instance(dest(json_rel + "_MK"), parent, info, textures=textures)
+
+
+def modkit_skin_instance(asset_path, rel_folder, is_head, gender, textures):
+    """Peau de tête (maquillage compris) ou du corps avec le matériau d'inZOI ; None sans ModKit.
+    Les textures viennent du JSON du matériau d'inZOI de la tête / du corps, complétées par celles du dossier."""
+    if not modkit_ready():
+        return None
+    json_rel = None
+    root = os.path.join(EXPORTS, *rel_folder.split("/"), "Materials")
+    if os.path.isdir(root):
+        for filename in sorted(os.listdir(root)):
+            lower = filename.lower()
+            if filename.startswith("MI_") and lower.endswith(".json") and ("head" in lower if is_head else "body" in lower):
+                json_rel = rel_folder + "/Materials/" + filename[:-5]
+                break
+    info = read_mi_json(json_rel) if json_rel else None
+    if is_head:
+        parent = modkit_parent("MI_HeadSkin_Base_Male" if gender == "Male" else "MI_HeadSkin_Base_V02", "MI_HeadSkin_Base_V02")
+        extra = {"Color_Base0": textures.get("color"), "Roughness_MAIN": textures.get("rs"), "Normal_MAIN": textures.get("m")}
+    else:
+        parent = modkit_parent("MI_BodySkin_Base")
+        extra = {"BaseColor MAIN": textures.get("color"), "Spec_Rough_MAIN": textures.get("rs"), "Normal MAIN": textures.get("m"),
+                 "BaseColor Muscle": textures.get("muscle"), "BaseColor Fat": textures.get("fat"), "Normal Physique": textures.get("physique")}
+    if not parent:
+        return None
+    if info:
+        extra = {k: v for k, v in extra.items() if v and k not in info["textures"]}
+    return modkit_instance(asset_path, parent, info, textures={k: v for k, v in extra.items() if v})
+
+
 def groom_json(json_rel):
     """Couleurs (linéaires) et texture DIRO d'un matériau de poils inZOI. Deux formats d'export :
     {"Textures", "Colors"} (exercice) ou [{"Properties": {"TextureParameterValues", "VectorParameterValues"}}] (FModel)"""
@@ -2214,6 +2529,10 @@ def groom_materials(mesh, folder, card_fallback, default_colors, density=None):
         no_root = any(key in folder for key in ("Eyebrow", "Eyelash"))
         # Barbe et moustache : spéculaire faible (0,12 : reflets blancs sinon)
         beard = any(key in folder for key in ("Beard", "Mustache"))
+        modkit = modkit_groom_instance(json_rel, folder, diro or card_fallback)
+        if modkit:
+            materials.append(modkit)
+            continue
         materials.append(hair_instance(dest(json_rel + "_Jeu"), diro or card_fallback, (root, tip), card_fallback, density=density,
                                        root_darkness=0.0 if no_root else 0.5, specular=0.12 if beard else None,
                                        scalars=scalars))
@@ -2385,7 +2704,8 @@ def build_hairs(slow, bases):
                     diro = DEFAULT_CARD
                 tip = colors.get("TipColor", BEARD_TIP)
                 root = colors.get("RootColor", tuple(v * 0.5 for v in tip))
-                materials.append(hair_instance(dest(json_rel + "_Jeu"), diro, (root, tip), DEFAULT_CARD, zones=True))
+                modkit = modkit_groom_instance(json_rel, folder, diro)
+                materials.append(modkit or hair_instance(dest(json_rel + "_Jeu"), diro, (root, tip), DEFAULT_CARD, zones=True))
             label = HAIR_CATEGORY_FR.get(category, category or "Cheveux")
             counters[label] = counters.get(label, 0) + 1
             part = unreal.TrainerPartDef()
@@ -3012,10 +3332,12 @@ def full_presets(bases, parts):
             seen.add(row.get("Id"))
             look = unreal.TrainerAppearance()
             look.set_editor_property("base", base_id)
-            outfit, colors = [head_id], []
+            outfit, colors, params = [head_id], [], []
 
             def add_color(slot, hex_text, zone=0, amount=1.0):
                 rgb = linear_hex(hex_text)
+                if rgb and modkit_ready() and slot in RAW_HEX_SLOTS:
+                    rgb = groom_hex(hex_color(hex_text))
                 if rgb:
                     entry = unreal.TrainerPartColor()
                     entry.set_editor_property("slot", slot)
@@ -3028,6 +3350,16 @@ def full_presets(bases, parts):
                 outfit.append(hair_id)
                 tip = row.get("Hair.VectorParameters.tipColor")
                 add_color("Hair", tip)
+                if modkit_ready():
+                    # Matériau d'inZOI : tous les réglages de la coupe du modèle tels quels (2ndColor, BridgeColor...)
+                    for key, value in row.items():
+                        if key.startswith(("Hair.ScalarParameters.", "Hair.VectorParameters.")) and value not in (None, ""):
+                            name = key.split(".", 2)[2]
+                            if name.lower() == "tipcolor":
+                                continue
+                            entry = part_param("Hair", name, value if "Vector" in key else float_of(row, key, 0.0))
+                            if entry:
+                                params.append(entry)
                 # Coupe bicolore d'inZOI (2ndColor à partir de 2ndColorPosition) -> zone Dégradé, alpha = début.
                 # Le dégradé des cartes d'inZOI (canal B) n'est pas réparti sur toute la longueur : à position égale,
                 # la 2e couleur commençait bien plus bas que sur la vignette (W_Head03_CT017 : rose dès le haut).
@@ -3035,7 +3367,9 @@ def full_presets(bases, parts):
                 # Sans 2e couleur, bridgeColor1 + sa position donnent les pointes (M_Head04_CT011 : pointes blondes).
                 second = row.get("Hair.VectorParameters.2ndColor")
                 position = float_of(row, "Hair.ScalarParameters.2ndColorPosition", 0.5)
-                if not (second and linear_hex(second) and second.upper() != (tip or "").upper() and position > 0.0):
+                if modkit_ready():
+                    second = None  # déjà dans les réglages exacts
+                elif not (second and linear_hex(second) and second.upper() != (tip or "").upper() and position > 0.0):
                     second = row.get("Hair.VectorParameters.bridgeColor1")
                     position = float_of(row, "Hair.ScalarParameters.bridgeColor1Position", 1.0)
                 if second and linear_hex(second) and second.upper() != (tip or "").upper() and 0.0 < position < 1.0:
@@ -3056,6 +3390,12 @@ def full_presets(bases, parts):
                     outfit.append(prefix + groom_id)
                     if slot != "Eyelashes":  # les cils gardent leur noir naturel
                         add_color(slot, (entry.get("VectorParameters") or {}).get("tipColor"))
+                    if modkit_ready():
+                        for name, value in list((entry.get("ScalarParameters") or {}).items()) + [
+                                (k, v) for k, v in (entry.get("VectorParameters") or {}).items() if k.lower() != "tipcolor"]:
+                            param = part_param(slot, name, value)
+                            if param:
+                                params.append(param)
             # Maquillage du modèle (lèvres, fard, blush...) : pièce + couleurs de chaque canal (alpha = intensité)
             try:
                 makeups = json.loads(row.get("Makeup") or "[]")
@@ -3071,6 +3411,13 @@ def full_presets(bases, parts):
                 used.add(slot)
                 zones = {"R": 1, "G": 2, "B": 3}
                 for mask in entry.get("MaskData") or []:
+                    if modkit_ready():
+                        # Matériau de peau d'inZOI : couleurs et réglages du maquillage sous leurs noms, tels quels
+                        for name, value in list((mask.get("ColorValues") or {}).items()) + list((mask.get("ScalarValues") or {}).items()):
+                            if name:
+                                param = part_param(slot, name, value)
+                                if param:
+                                    params.append(param)
                     zone = zones.get(mask.get("MakeupChannel"))
                     hexes = [v for v in (mask.get("ColorValues") or {}).values() if v]
                     amounts = [v for k, v in (mask.get("ScalarValues") or {}).items() if k.lower().endswith("intensity")]
@@ -3097,12 +3444,16 @@ def full_presets(bases, parts):
                     outfit.append("-" + slot)  # sinon le maquillage du modèle précédent restait
             look.set_editor_property("outfit", outfit)
             look.set_editor_property("part_colors", colors)
+            look.set_editor_property("part_params", params)
             # Formes du visage du modèle (FaceShapeParameters : une valeur par groupe C_* de Morphologie_Visage_Os,
             # rangé par index_groupe) -> curseurs « Visage_<partie>_<axe> » du jeu (gauche et droite : moyenne).
             # Sans elles, chaque modèle gardait le visage de base de sa tête (yeux trop ouverts, air renfrogné).
             look.set_editor_property("sliders", face_shape_sliders(row, face_groups.get(gender, {})))
             tone, palette = skin_tones.get(row.get("FaceSkinColorId")) or (row.get("SkinTone"), None)
             tint = skin_tint(tone, palette)
+            if modkit_ready():
+                # Matériau d'inZOI : « SkinTone Color » reçoit la teinte du tableau telle quelle
+                tint = linear_hex(tone) or tint
             if tint:
                 look.set_editor_property("skin_color", unreal.LinearColor(tint[0], tint[1], tint[2], 1.0))
             eye = linear_hex(row.get("IrisVectorParameters.eyeColor1"))
@@ -3239,19 +3590,35 @@ def main():
             definition.set_editor_property("tab", tab)
             if follow:
                 definition.set_editor_property("follow_slot", follow)
+            if modkit_ready():
+                if slot == "Hair":
+                    definition.set_editor_property("color_parameters", ["TipColor", "2ndColor", "BridgeColor1", "BridgeColor2"])
+                    definition.set_editor_property("color_amount_parameters", ["", "2ndColorPosition", "BridgeColor1Blend", "BridgeColor2Blend"])
+                    definition.set_editor_property("reset_parameters", HAIR_PRESET_PARAMS)
+                else:
+                    definition.set_editor_property("color_parameters", ["TipColor"])
             if slot == "Hair":
                 definition.set_editor_property("zone_labels", [unreal.Text(t) for t in HAIR_ZONE_LABELS])
                 definition.set_editor_property("zone_amount_labels", [unreal.Text(t) for t in HAIR_ZONE_AMOUNT_LABELS])
                 definition.set_editor_property("zone_default_amounts", HAIR_ZONE_AMOUNTS)
             slot_defs.append(definition)
         # Pièces sans modèle posées sur la tête : maquillage (onglet Visage > Maquillage), motif d'iris (Visage > Yeux)
-        for _category, _letter, slot, slot_label, _blend in MAKEUP_PARTS:
+        makeup_names = makeup_parameter_names(read_csv(os.path.join(TABLES, "AppearanceFacePreset.csv"))) if modkit_ready() else {}
+        for category, letter, slot, slot_label, _blend in MAKEUP_PARTS:
             definition = unreal.TrainerPartSlotDef()
             definition.set_editor_property("slot", slot)
             definition.set_editor_property("label", slot_label)
             definition.set_editor_property("tab", "Makeup")
             definition.set_editor_property("follow_slot", "Head")
             definition.set_editor_property("mask_parameter", slot)
+            names = makeup_names.get(category.lower()) or makeup_names.get("lip" if category == "Lip" else "")
+            if modkit_ready():
+                # Matériau de peau d'inZOI : masque Makeup_Part_<lettre>, couleurs et intensités sous leurs noms
+                definition.set_editor_property("mask_parameter", "Makeup_Part_" + letter)
+                if names:
+                    definition.set_editor_property("color_parameters", names["colors"])
+                    definition.set_editor_property("color_amount_parameters", names["amounts"])
+                    definition.set_editor_property("reset_parameters", sorted(names["all"]))
             definition.set_editor_property("zone_labels", [unreal.Text(t) for t in MAKEUP_ZONE_LABELS])
             definition.set_editor_property("zone_amount_labels", [unreal.Text(t) for t in MAKEUP_AMOUNT_LABELS])
             slot_defs.append(definition)
@@ -3293,6 +3660,15 @@ def main():
         log("Emplacements teintés par la couleur de peau : " + ", ".join(sorted(skin_slots)))
         data.set_editor_property("skin_material_slots", sorted(skin_slots))
         data.set_editor_property("skin_color_parameter", "SkinTint")
+        if modkit_ready():
+            data.set_editor_property("skin_color_parameter", "SkinTone Color")
+            palette = []
+            for row in read_csv(os.path.join(TABLES, "AppearanceSkinColor.csv")):
+                rgb = linear_hex(row.get("SkinTone"))
+                if rgb and len(palette) < 30:
+                    palette.append(unreal.LinearColor(rgb[0], rgb[1], rgb[2], 1.0))
+            if palette:
+                data.set_editor_property("skin_palette", palette)
         data.set_editor_property("eye_material_slots", sorted(EYE_SLOTS))
         data.set_editor_property("eye_color_parameter", "IrisColor")
         data.set_editor_property("drag_handles", [])  # les poignées de CC visaient des os CC_Base_*

@@ -54,6 +54,28 @@ MAX_VARIANTS_PER_MESH = 4   # variantes de couleur gardées par modèle (0 = tou
 Garder **15** pour le premier essai (un quart d'heure environ). Quand tout marche, mettre **0** et relancer : le
 script saute ce qui est déjà importé.
 
+### 2 bis. Matériaux d'inZOI du ModKit (conseillé, 2026-11-10)
+
+Le **inZOI ModKit** officiel (Epic Games Store, gratuit) contient les vrais matériaux des personnages en version
+ouvrable : cheveux (`M_HairCard_V03`), peau de tête avec maquillage (`M_HeadSkin_SkinTone_Makeup_V02`), peau du
+corps, sourcils, cils, et toutes leurs fonctions. Avec eux, coiffures, peaux et maquillages sont rendus comme dans
+inZOI, avec les réglages de chaque modèle repris tels quels. Sans eux, l'import garde nos matériaux (`M_InZOI_*`).
+
+1. Installer le ModKit depuis l'Epic Games Store (ici dans `D:\Dev\inZOIModKit`).
+2. Fermer Unreal, puis lancer dans un terminal, à la racine du projet :
+   ```
+   python Tools\InZOI\copier_modkit.py D:\Dev\inZOIModKit
+   "D:\Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" PokemonNewAge.uproject -run=pythonscript -script=Tools/InZOI/copier_modkit.py -nullrhi -unattended
+   ```
+   La 1re commande copie les fichiers du ModKit à leur place d'origine ; la 2e les range, dans Unreal, dans
+   `Content/ImportedAssets/InZOIModKit/` (Unreal met les liens à jour). **Ce dossier n'est jamais envoyé sur Git** :
+   ces fichiers appartiennent à inZOI.
+3. Le projet active les textures virtuelles (`r.VirtualTextures=True`, utilisées par ces matériaux) : le premier
+   lancement d'Unreal recompile beaucoup de shaders, c'est normal.
+4. Lancer l'import (étape 3). Le journal dit « Matériaux d'inZOI du ModKit trouvés ».
+5. `Tools/InZOI/modkit_samplers.json` (dans Git) donne, pour chaque texture des matériaux d'inZOI, le réglage
+   attendu (couleur, linéaire, normale, virtuelle) : l'import règle les textures en conséquence.
+
 ### 3. Lancer l'import
 
 **Conseillé (sans carte graphique)** : fermer Unreal, puis double-cliquer sur `Tools/InZOI/import_inzoi.bat`.
