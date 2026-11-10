@@ -389,13 +389,32 @@ void ACharacterStudio::ApplyLighting()
 
 bool ACharacterStudio::GetBoneLocation(FName Bone, const FVector& Offset, FVector& OutLocation) const
 {
-	if (Bone.IsNone() || !Preview->GetSkeletalMeshAsset() || !Preview->DoesSocketExist(Bone))
+	if (Bone.IsNone() || !Preview->GetSkeletalMeshAsset())
+	{
+		return false;
+	}
+	// Os du corps, sinon d'une pièce (os FACIAL_* du visage : ils ne sont que dans la tête)
+	const USkeletalMeshComponent* BoneOwner = Preview->DoesSocketExist(Bone) ? Preview.Get() : nullptr;
+	if (!BoneOwner)
+	{
+		TArray<USkeletalMeshComponent*> Components;
+		GetComponents<USkeletalMeshComponent>(Components);
+		for (const USkeletalMeshComponent* Component : Components)
+		{
+			if (Component->IsVisible() && Component->GetSkeletalMeshAsset() && Component->DoesSocketExist(Bone))
+			{
+				BoneOwner = Component;
+				break;
+			}
+		}
+	}
+	if (!BoneOwner)
 	{
 		return false;
 	}
 	// Offset dans le repère du personnage : X devant lui (vers la caméra quand il est de face), Z en haut
 	const FRotator Facing = Turntable->GetComponentRotation();
-	OutLocation = Preview->GetSocketLocation(Bone) + Facing.RotateVector(Offset);
+	OutLocation = BoneOwner->GetSocketLocation(Bone) + Facing.RotateVector(Offset);
 	return true;
 }
 

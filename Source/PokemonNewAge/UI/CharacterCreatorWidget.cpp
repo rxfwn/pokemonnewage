@@ -2,6 +2,8 @@
 #include "Character/CharacterStudio.h"
 #include "Character/TrainerAppearanceRender.h"
 #include "Core/PokemonSaveGame.h"
+#include "UI/CreatorColorWheel.h"
+#include "Misc/Paths.h"
 #include "UI/GameFonts.h"
 #include "UI/GlassPanel.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
@@ -1180,6 +1182,72 @@ void UCharacterCreatorWidget::RefreshColorPanel(FName SlotName, const FTrainerPa
 	AddColorRow(Dark, 32.f);
 	AddColorRow(Greys, 32.f);
 
+	// Roue de couleur (teinte et saturation) + luminosité, en plus des couleurs prédéfinies, comme inZOI
+	{
+		const int32 Zone = ColorZone;
+		const FLinearColor StartHSV = Selected.LinearRGBToHSV();
+		UHorizontalBox* WheelRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+		UCreatorColorWheel* Wheel = WidgetTree->ConstructWidget<UCreatorColorWheel>(UCreatorColorWheel::StaticClass());
+		Wheel->SetHSV(StartHSV);
+		UCreatorSlider* Bright = WidgetTree->ConstructWidget<UCreatorSlider>(UCreatorSlider::StaticClass());
+		Bright->SetMinValue(0.f);
+		Bright->SetMaxValue(1.f);
+		Bright->SetStepSize(0.01f);
+		Bright->SetIndentHandle(false);
+		Bright->SetSliderBarColor(FLinearColor(1.f, 1.f, 1.f, 0.45f));
+		Bright->SetSliderHandleColor(FLinearColor::White);
+		Bright->SetValue(StartHSV.B);
+		TWeakObjectPtr<UCreatorColorWheel> WeakWheel(Wheel);
+		TWeakObjectPtr<UCreatorSlider> WeakBright(Bright);
+		// Couleur choisie appliquée en direct ; le panneau (pastilles, code) n'est refait qu'au relâchement
+		auto Apply = [this, SlotName, Zone](const FLinearColor& HSV, bool bFinished)
+		{
+			FLinearColor Color = FLinearColor(HSV.R, HSV.G, HSV.B, 1.f).HSVToLinearRGB();
+			if (const FTrainerPartColor* Previous = Current.FindPartColor(SlotName, Zone))
+			{
+				Color.A = Previous->Color.A;
+			}
+			else
+			{
+				Color.A = 1.f;
+			}
+			if (bFinished)
+			{
+				SetPartColor(SlotName, Zone, Color);
+				return;
+			}
+			FTrainerAppearance New = Current;
+			New.SetPartColor(SlotName, Zone, Color);
+			ChangeAppearance(New, TEXT("ColorWheel"));
+			if (HexBox)
+			{
+				HexBox->SetText(FText::FromString(Color.ToFColorSRGB().ToHex().Left(6)));
+			}
+		};
+		Wheel->Setup([Apply, WeakBright](const FLinearColor& HSV, bool bFinished)
+		{
+			const float Value = WeakBright.IsValid() ? WeakBright->GetValue() : HSV.B;
+			Apply(FLinearColor(HSV.R, HSV.G, FMath::Max(Value, 0.02f), 1.f), bFinished);
+		});
+		Bright->Setup([Apply, WeakWheel](float Value)
+		{
+			FLinearColor HSV = WeakWheel.IsValid() ? WeakWheel->GetHSV() : FLinearColor(0.f, 0.f, Value, 1.f);
+			HSV.B = Value;
+			if (WeakWheel.IsValid())
+			{
+				WeakWheel->SetHSV(HSV);
+			}
+			Apply(HSV, false);
+		});
+		WheelRow->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(150.f, 150.f), Wheel))->SetPadding(FMargin(0.f, 0.f, 16.f, 0.f));
+		UVerticalBox* BrightBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass());
+		BrightBox->AddChildToVerticalBox(MakeText(WidgetTree, LOCTEXT("Brightness", "Luminosité"), 18.f, PokemonFonts::EStyle::Regular, DimColor));
+		BrightBox->AddChildToVerticalBox(MakeBox(WidgetTree, FVector2D(220.f, 40.f), Bright));
+		UHorizontalBoxSlot* BrightSlot = WheelRow->AddChildToHorizontalBox(BrightBox);
+		BrightSlot->SetVerticalAlignment(VAlign_Center);
+		ColorBox->AddChildToVerticalBox(WheelRow)->SetPadding(FMargin(0.f, 4.f, 0.f, 10.f));
+	}
+
 	// Code hexadécimal, comme le champ « 403C5F » d'inZOI
 	UHorizontalBox* HexRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
 	HexRow->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(40.f, 32.f), MakeRounded(WidgetTree, Selected, 8.f, FLinearColor::White, 1.f)))->SetPadding(FMargin(0.f, 0.f, 10.f, 0.f));
@@ -1233,6 +1301,97 @@ void UCharacterCreatorWidget::RefreshColorPanel(FName SlotName, const FTrainerPa
 		SliderSlot->SetVerticalAlignment(VAlign_Center);
 		Row->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(64.f, 0.f), Slider->ValueText))->SetVerticalAlignment(VAlign_Center);
 		ColorBox->AddChildToVerticalBox(MakeBox(WidgetTree, FVector2D(0.f, 40.f), Row))->SetPadding(FMargin(0.f, 8.f, 0.f, 0.f));
+	}
+
+	// Motif ou image sur les vêtements (matériau d'inZOI), comme le « Craft » d'inZOI : motifs du jeu + images du
+	// joueur déposées dans Saved/Motifs
+	if (SlotDef && SlotDef->Tab == TEXT("Outfit"))
+	{
+		TArray<FName> Choices;
+		for (const FTrainerPatternDef& Def : Data->Patterns)
+		{
+			Choices.Add(Def.Id);
+		}
+		Choices.Append(TrainerAppearanceRender::ListUserPatterns());
+		const int32 Channel = FMath::Max(ColorZone - 1, 0);
+		const FTrainerPartPattern* Worn = Current.FindPartPattern(SlotName, Channel);
+		ColorBox->AddChildToVerticalBox(MakeText(WidgetTree, LOCTEXT("PatternTitle", "Motif ou image"), 20.f))->SetPadding(FMargin(0.f, 12.f, 0.f, 6.f));
+		UWrapBox* PatternWrap = WidgetTree->ConstructWidget<UWrapBox>(UWrapBox::StaticClass());
+		PatternWrap->SetInnerSlotPadding(FVector2D(8.f, 8.f));
+		auto Choose = [this, SlotName, Channel](FName Pattern)
+		{
+			FTrainerAppearance New = Current;
+			FTrainerPartPattern Value;
+			Value.Scale = 4.f; // motif répété : à 1, une rayure couvrait la moitié du t-shirt
+			if (const FTrainerPartPattern* Previous = Current.FindPartPattern(SlotName, Channel))
+			{
+				Value = *Previous;
+			}
+			Value.Slot = SlotName;
+			Value.Channel = Channel;
+			Value.Pattern = Pattern;
+			New.SetPartPattern(Value);
+			ChangeAppearance(New, TEXT("Pattern"));
+			RefreshRightPanel();
+		};
+		UTextBlock* NoneText = MakeText(WidgetTree, LOCTEXT("PatternNone", "Aucun"), 16.f, PokemonFonts::EStyle::Regular, DarkText);
+		NoneText->SetJustification(ETextJustify::Center);
+		PatternWrap->AddChildToWrapBox(MakeBox(WidgetTree, FVector2D(56.f, 56.f), MakeButton(WidgetTree, NoneText, Worn ? ButtonFill : SelectedFill, 10.f,
+			[Choose]() { Choose(NAME_None); })));
+		for (const FName Id : Choices)
+		{
+			UImage* Thumb = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass());
+			if (UTexture2D* Texture = TrainerAppearanceRender::ResolvePattern(Data, Id))
+			{
+				Thumb->SetBrushFromTexture(Texture);
+			}
+			Thumb->SetToolTipText(FText::FromName(Id));
+			const bool bSelected = Worn && Worn->Pattern == Id;
+			PatternWrap->AddChildToWrapBox(MakeBox(WidgetTree, FVector2D(56.f, 56.f), MakeButton(WidgetTree, Thumb, ButtonFill, 10.f,
+				[Choose, Id]() { Choose(Id); }, bSelected ? FLinearColor::White : FLinearColor(1.f, 1.f, 1.f, 0.3f), bSelected ? 3.f : 1.f)));
+		}
+		ColorBox->AddChildToVerticalBox(PatternWrap);
+		ColorBox->AddChildToVerticalBox(MakeText(WidgetTree, FText::Format(LOCTEXT("PatternHint", "Vos images (.png, .jpg) : {0}"),
+			FText::FromString(FPaths::ConvertRelativePathToFull(TrainerAppearanceRender::UserPatternFolder()))), 14.f, PokemonFonts::EStyle::Regular, DimColor))
+			->SetPadding(FMargin(0.f, 6.f, 0.f, 4.f));
+		if (Worn)
+		{
+			// Taille et intensité du motif
+			const struct { FText Label; float Min, Max, Value; int32 Field; } Rows[] = {
+				{ LOCTEXT("PatternScale", "Taille"), 0.2f, 6.f, Worn->Scale, 0 },
+				{ LOCTEXT("PatternIntensity", "Intensité"), 0.f, 1.f, Worn->Intensity, 1 } };
+			for (const auto& RowDef : Rows)
+			{
+				UHorizontalBox* Row = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass());
+				Row->AddChildToHorizontalBox(MakeBox(WidgetTree, FVector2D(120.f, 0.f), MakeText(WidgetTree, RowDef.Label, 18.f)))->SetVerticalAlignment(VAlign_Center);
+				UCreatorSlider* Slider = WidgetTree->ConstructWidget<UCreatorSlider>(UCreatorSlider::StaticClass());
+				Slider->SetMinValue(RowDef.Min);
+				Slider->SetMaxValue(RowDef.Max);
+				Slider->SetStepSize(0.01f);
+				Slider->SetIndentHandle(false);
+				Slider->SetSliderBarColor(FLinearColor(1.f, 1.f, 1.f, 0.45f));
+				Slider->SetSliderHandleColor(FLinearColor::White);
+				Slider->SetValue(RowDef.Value);
+				const int32 PatternField = RowDef.Field;
+				Slider->Setup([this, SlotName, Channel, PatternField](float Value)
+				{
+					const FTrainerPartPattern* Previous = Current.FindPartPattern(SlotName, Channel);
+					if (!Previous)
+					{
+						return;
+					}
+					FTrainerPartPattern Pattern = *Previous;
+					(PatternField == 0 ? Pattern.Scale : Pattern.Intensity) = Value;
+					FTrainerAppearance New = Current;
+					New.SetPartPattern(Pattern);
+					ChangeAppearance(New, TEXT("PatternAmount"));
+				});
+				UHorizontalBoxSlot* SliderSlot = Row->AddChildToHorizontalBox(Slider);
+				SliderSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+				SliderSlot->SetVerticalAlignment(VAlign_Center);
+				ColorBox->AddChildToVerticalBox(MakeBox(WidgetTree, FVector2D(0.f, 36.f), Row));
+			}
+		}
 	}
 }
 

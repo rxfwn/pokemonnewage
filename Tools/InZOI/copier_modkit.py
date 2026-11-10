@@ -28,6 +28,13 @@ FILES = [
     "Characters/AvatarParts/Body/Male/Textures/Male_BodyHair_Body_001_M",
     "MetaHumans/Common/Face/Textures/IrisTextures/iris_001/T_Iris_A_M",
     "MetaHumans/Common/Materials/Textures/Clothing/upresTest/MF_NormalStrength",
+    # Vêtements (M_Char_Standard_Master : usure et météo)
+    "BG/Material/MaterialFunction/MF_MaskEdge",
+    "BG/Material/Texture/T_Snow_masks",
+    "Textures/SurfaceFeature/T_clothWeathering_combined",
+    "BG/citysample/Textures/Grunge/tile_noiseDirtSmear_MaskA",
+    "MetaHumans/Common/Materials/Textures/Clothing/Wrinkles/crease_a_tileable_N",
+    "Textures/SurfaceFeature/T_GrimeScratched",
 ]
 
 

@@ -2,6 +2,8 @@
 #include "Animation/AnimSequence.h"
 #include "Animation/Skeleton.h"
 #include "Engine/SkeletalMesh.h"
+#include "Materials/MaterialExpressionFunctionInput.h"
+#include "Materials/MaterialExpressionFunctionOutput.h"
 
 #if WITH_EDITOR
 #include "MeshDescription.h"
@@ -112,6 +114,44 @@ UAnimSequence* UInZOIImportLibrary::ImportUEAnim(const FString& Filename, USkele
 #else
 	return nullptr;
 #endif
+}
+
+bool UInZOIImportLibrary::SetFunctionIOId(UMaterialExpression* Expression, const FString& GuidText)
+{
+#if WITH_EDITOR
+	FGuid Id;
+	if (!FGuid::Parse(GuidText, Id))
+	{
+		return false;
+	}
+	if (UMaterialExpressionFunctionInput* Input = Cast<UMaterialExpressionFunctionInput>(Expression))
+	{
+		Input->Id = Id;
+		return true;
+	}
+	if (UMaterialExpressionFunctionOutput* Output = Cast<UMaterialExpressionFunctionOutput>(Expression))
+	{
+		Output->Id = Id;
+		return true;
+	}
+#endif
+	return false;
+}
+
+int32 UInZOIImportLibrary::CountUVChannels(USkeletalMesh* Mesh)
+{
+#if WITH_EDITOR
+	if (!Mesh || !Mesh->HasMeshDescription(0))
+	{
+		return -1;
+	}
+	if (FMeshDescription* Description = Mesh->GetMeshDescription(0))
+	{
+		FSkeletalMeshAttributes Attributes(*Description);
+		return Attributes.GetVertexInstanceUVs().GetNumChannels();
+	}
+#endif
+	return -1;
 }
 
 FString UInZOIImportLibrary::BakeHairStrands(USkeletalMesh* Mesh, FVector FrontAxis, float FrontAngleDegrees, float MinHeightAboveCenter, float MinForward)

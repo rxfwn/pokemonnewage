@@ -563,6 +563,19 @@ def make_instance(asset_path, textures, colors, skin):
 
 
 def part_material(mi_rel):
+    if modkit_ready():
+        info = read_mi_json(mi_rel)
+        if info and (info.get("parent") or info["textures"]):
+            parent = modkit_parent(info.get("parent"), "MI_Char_Standard")
+            if parent:
+                # Vêtements neufs dans le créateur : pas de saleté, d'usure ni de pluie (taches grises sinon)
+                clean = {"Weathering Intensity": 0.0, "Dirt Intensity Min": 0.0, "Dirt Intensity Max": 0.0, "Wet Intensity": 0.0,
+                         "Rain Intensity": 0.0, "Raindrop Intensity": 0.0, "Outdoor": 0.0}
+                return modkit_instance(dest(mi_rel + "_MK"), parent, info, scalars=clean)
+    return part_material_ours(mi_rel)
+
+
+def part_material_ours(mi_rel):
     """Material Instance de notre matériau maître d'après celle du jeu étudié (même chemin, préfixe conservé)"""
     textures, colors = read_material_json(mi_rel)
     if not textures:
@@ -1693,6 +1706,47 @@ def face_sliders(gender, age):
     return sliders
 
 
+# Points à glisser sur le visage (comme inZOI) : une partie par point, glissement horizontal = écart / largeur,
+# vertical = hauteur. Les parties « principales » seulement, pour ne pas couvrir le visage de points.
+FACE_HANDLE_FEATURES = ["ForeHead", "Brow", "BrowOut", "Eye", "EyeCornerOut", "NoseUp", "NoseTip", "Nostril", "Cheek",
+                        "CheekLow", "MouthUp", "MouthLow", "MouthCorner", "Jaw", "JawBack", "Chin_C", "Ear"]
+
+
+def face_drag_handles(sliders):
+    """Poignées du mode Détaillé sur le visage, d'après les curseurs « Visage_<partie>_<axe> » et leurs os FACIAL_*"""
+    by_id = {str(s.get_editor_property("id")): s for s in sliders}
+    handles = []
+    for feature in FACE_HANDLE_FEATURES:
+        horizontal = next((by_id[i] for i in ("Visage_%s_X" % feature, "Visage_%s_ScaleX" % feature, "Visage_%s_Scale" % feature) if i in by_id), None)
+        vertical = next((by_id[i] for i in ("Visage_%s_Z" % feature, "Visage_%s_ScaleY" % feature, "Visage_%s_Y" % feature) if i in by_id), None)
+        if not horizontal and not vertical:
+            continue
+        bone = None
+        for source in (vertical, horizontal):
+            if not source:
+                continue
+            bones = [str(b.get_editor_property("bone")) for b in source.get_editor_property("bones_positive")]
+            # Os du côté gauche du personnage de préférence (un seul point par partie), sinon le premier
+            bone = next((b for b in bones if b.startswith("FACIAL_L_") and "12IPV" not in b), None) \
+                or next((b for b in bones if b.startswith("FACIAL_C_") and "12IPV" not in b), None) or (bones[0] if bones else None)
+            if bone:
+                break
+        if not bone:
+            continue
+        handle = unreal.TrainerDragHandle()
+        handle.set_editor_property("label", FACE_FEATURE_FR.get(feature, ("", feature))[1])
+        handle.set_editor_property("group", unreal.TrainerSliderGroup.FACE)
+        handle.set_editor_property("bone", bone)
+        if horizontal:
+            handle.set_editor_property("slider_x", horizontal.get_editor_property("id"))
+        if vertical:
+            handle.set_editor_property("slider_y", vertical.get_editor_property("id"))
+        handle.set_editor_property("pixels_per_unit", 120.0)
+        handles.append(handle)
+    log("Points du visage à glisser : %d" % len(handles))
+    return handles
+
+
 # ---------------------------------------------------------------- Catalogue
 
 # Longueurs (dossier sous la catégorie) : Pants/Short = shorts, Skirt/Long = jupes longues...
@@ -2077,7 +2131,7 @@ def build_hair_master():
 # les réglages de chaque matériau d'inZOI repris tels quels (JSON de l'export). Sinon, nos matériaux (M_InZOI_*).
 # ---------------------------------------------------------------------------------------------------------------------
 MODKIT_GAME = "/Game/ImportedAssets/InZOIModKit/Characters/Materials"
-MODKIT_VERSION = 2  # à augmenter pour refaire les instances ModKit
+MODKIT_VERSION = 4  # à augmenter pour refaire les instances ModKit
 MODKIT_SAMPLERS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "modkit_samplers.json")
 _modkit_state = {}
 
@@ -2265,6 +2319,81 @@ def groom_hex(color):
     return tuple(l + (r - l) * t for l, r in zip(lin, raw))
 
 
+def write_png(path, width, height, pixel):
+    """PNG RVB simple (sans bibliothèque) : pixel(x, y) -> (r, g, b) 0-255"""
+    import struct
+    import zlib
+    rows = bytearray()
+    for y in range(height):
+        rows.append(0)
+        for x in range(width):
+            rows.extend(pixel(x, y))
+    def chunk(kind, data):
+        body = kind + data
+        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body) & 0xffffffff)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "wb") as handle:
+        handle.write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+                     + chunk(b"IDAT", zlib.compress(bytes(rows), 9)) + chunk(b"IEND", b""))
+
+
+PATTERN_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "Saved", "InZOI_Motifs")
+
+
+def build_patterns():
+    """Motifs de base pour les vêtements (onglet Tenue) : rayures, vichy, pois, carreaux, chevrons, étoiles"""
+    S = 256
+    navy, white, red, black, cream, green = (28, 40, 82), (240, 240, 236), (196, 36, 46), (24, 24, 26), (236, 226, 200), (40, 92, 60)
+    def stripes(x, y):
+        return navy if (x // 32) % 2 == 0 else white
+    def vichy(x, y):
+        a, b = (x // 32) % 2, (y // 32) % 2
+        return red if a and b else ((226, 140, 144) if a or b else white)
+    def dots(x, y):
+        cx, cy = x % 64 - 32, y % 64 - 32
+        return white if cx * cx + cy * cy < 144 else navy
+    def tartan(x, y):
+        band = lambda v: (v % 128) < 24 or 56 <= (v % 128) < 64
+        if band(x) and band(y):
+            return black
+        if band(x) or band(y):
+            return (120, 30, 36)
+        return red if ((x // 128 + y // 128) % 2 == 0) else (170, 30, 40)
+    def chevron(x, y):
+        return black if ((y + abs((x % 64) - 32)) // 16) % 2 == 0 else cream
+    def stars(x, y):
+        import math
+        cx, cy = x % 64 - 32, y % 64 - 32
+        angle = math.atan2(cy, cx)
+        radius = math.hypot(cx, cy)
+        return (250, 214, 64) if radius < 14 * (0.55 + 0.45 * abs(math.cos(2.5 * angle))) else green
+    defs = []
+    for key, label, func in (("Rayures", "Rayures", stripes), ("Vichy", "Vichy", vichy), ("Pois", "Pois", dots),
+                             ("Ecossais", "Écossais", tartan), ("Chevrons", "Chevrons", chevron), ("Etoiles", "Étoiles", stars)):
+        filename = os.path.join(PATTERN_DIR, "T_Motif_%s.png" % key)
+        if not os.path.isfile(filename):
+            write_png(filename, S, S, func)
+        asset_path = DEST + "/Motifs/T_Motif_" + key
+        texture = load(asset_path)
+        if not texture:
+            task = unreal.AssetImportTask()
+            task.set_editor_property("filename", filename)
+            task.set_editor_property("destination_path", DEST + "/Motifs")
+            task.set_editor_property("destination_name", "T_Motif_" + key)
+            task.set_editor_property("automated", True)
+            task.set_editor_property("replace_existing", True)
+            task.set_editor_property("save", True)
+            asset_tools.import_asset_tasks([task])
+            texture = load(asset_path)
+        if texture:
+            entry = unreal.TrainerPatternDef()
+            entry.set_editor_property("id", "Motif_" + key)
+            entry.set_editor_property("label", label)
+            entry.set_editor_property("texture", texture)
+            defs.append(entry)
+    return defs
+
+
 def part_param(slot, name, value):
     """Réglage exact d'un modèle (FTrainerPartParam) : couleur (texte hexadécimal sRGB d'inZOI) ou nombre"""
     entry = unreal.TrainerPartParam()
@@ -2362,7 +2491,9 @@ def modkit_skin_instance(asset_path, rel_folder, is_head, gender, textures):
         return None
     if info:
         extra = {k: v for k, v in extra.items() if v and k not in info["textures"]}
-    return modkit_instance(asset_path, parent, info, textures={k: v for k, v in extra.items() if v})
+    # Poils du corps : à 100 % dans MI_BodySkin_Base ; le jeu les choisit (pièce « Poils ») : rien par défaut
+    scalars = {} if is_head else {"ChestHair Intensity": 0.0, "ArmHair Intensity": 0.0, "LegHair Intensity": 0.0}
+    return modkit_instance(asset_path, parent, info, textures={k: v for k, v in extra.items() if v}, scalars=scalars)
 
 
 def groom_json(json_rel):
@@ -2662,6 +2793,31 @@ def groom_thumbnail(mesh_rel):
 STRANDS_VERSION = 3
 
 
+def ensure_hair_uvs(mesh, rel):
+    """Matériau d'inZOI : la 2e couleur et les couleurs de transition se placent avec le 2e jeu d'UV des mèches (UV1).
+    Les coupes importées plus tôt n'en avaient qu'un (les .glb en ont 8) : réimportées par-dessus, puis repréparées."""
+    library = getattr(unreal, "InZOIImportLibrary", None)
+    if not mesh or not library or not hasattr(library, "count_uv_channels") or library.count_uv_channels(mesh) > 1:
+        return mesh
+    filename = src(rel, ".glb")
+    if not os.path.isfile(filename):
+        return mesh
+    folder, name = split(dest(rel))
+    task = unreal.AssetImportTask()
+    task.set_editor_property("filename", fixed_glb(filename) if glb_needs_fix(filename) else filename)
+    task.set_editor_property("destination_path", folder)
+    task.set_editor_property("destination_name", name)
+    task.set_editor_property("automated", True)
+    task.set_editor_property("replace_existing", True)
+    task.set_editor_property("save", True)
+    asset_tools.import_asset_tasks([task])
+    fresh = find_mesh(dest(rel)) or mesh
+    ensure_skeletal_usage(fresh)
+    EAL.set_metadata_tag(fresh, "InZOIStrands", "0")
+    log("Coupe %s réimportée avec ses UV : %d jeux" % (name, library.count_uv_channels(fresh)))
+    return fresh
+
+
 def bake_hair_strands(mesh):
     """Pour « Mèches » et « Mèches devant » : chaque carte reçoit en couleur de sommet R = devant (racine sur la frange
     ou les côtés du visage), G = numéro de mèche, B = 0. Fait une fois par coupe (étiquette InZOIStrands)."""
@@ -2694,6 +2850,8 @@ def build_hairs(slow, bases):
             mesh = import_mesh(mesh_rel)
             if not mesh:
                 continue
+            if modkit_ready():
+                mesh = ensure_hair_uvs(mesh, mesh_rel)
             bake_hair_strands(mesh)
             folder = mesh_rel.rsplit("/Mesh/", 1)[0] if "/Mesh/" in mesh_rel else mesh_rel.rsplit("/", 1)[0]
             materials = []
@@ -2722,6 +2880,27 @@ def build_hairs(slow, bases):
             parts.append(part)
             for base_id in fits:
                 defaults.setdefault(base_id, {}).setdefault("Hair", "InZOI_" + name)
+            # Variantes de matériau d'inZOI (AppearanceHairMesh : W_Hair_L_002_02 = même coupe, matériau _CT002 :
+            # tresses roses à perles du modèle W_Head03_CT017) : une pièce par variante, choisie par les modèles
+            if modkit_ready():
+                for variant_id, material_rels, icon_rel in hair_variants().get(name, []):
+                    variant_materials = []
+                    for index, slot_name in enumerate(material_slot_names(mesh)):
+                        json_rel = material_rels[index] if index < len(material_rels) else folder + "/Materials/" + slot_name
+                        _colors, diro = groom_json(json_rel)
+                        variant_materials.append(modkit_groom_instance(json_rel, folder, diro or DEFAULT_CARD) or materials[index])
+                    variant = unreal.TrainerPartDef()
+                    variant.set_editor_property("id", hair_variant_part_id(variant_id))
+                    variant.set_editor_property("label", "%s %d (%s)" % (label, counters[label], variant_id.rsplit("_", 1)[-1]))
+                    variant.set_editor_property("slot", "Hair")
+                    variant.set_editor_property("category", label)
+                    variant.set_editor_property("bases", fits)
+                    variant.set_editor_property("mesh", mesh)
+                    variant.set_editor_property("materials", variant_materials)
+                    icon = import_texture(icon_rel, "ui") if icon_rel else None
+                    if icon or thumbnail:
+                        variant.set_editor_property("thumbnail", icon or thumbnail)
+                    parts.append(variant)
         log("Cheveux %s : %d coupes" % (gender, sum(counters.values())))
     return parts, defaults
 
@@ -3204,6 +3383,32 @@ def skin_tint(tone_hex, palette_hex=None):
     return tuple(max(0.05, min(1.0, t)) for t in tint)
 
 
+_hair_variants = {}
+
+
+def hair_variants():
+    """AppearanceHairMesh : {nom du mesh : [(id de la variante, [matériaux d'inZOI], icône)]} pour les variantes dont les
+    matériaux diffèrent de la coupe de base (W_Hair_L_002_02 -> MI_Female_Hair_L_002_CT002...)"""
+    if _hair_variants:
+        return _hair_variants
+    for row in read_csv(os.path.join(TABLES, "AppearanceHairMesh.csv")):
+        variant_id, mesh_path = row.get("Id") or "", row.get("Mesh") or ""
+        if variant_id == row.get("GroupId") or "'" not in mesh_path:
+            continue
+        mesh_name = mesh_path.split("'")[1].rsplit("/", 1)[-1].split(".")[0]
+        materials = [game_rel(m.split("'")[1]) for m in re.findall(r"MaterialInterface'[^']+'", row.get("OverrideMaterials") or "")]
+        if not materials:
+            continue
+        thumb = row.get("Thumbnail") or ""
+        icon = game_rel(thumb.split("'")[1]) if "'" in thumb else None
+        _hair_variants.setdefault(mesh_name, []).append((variant_id, materials, icon))
+    return _hair_variants
+
+
+def hair_variant_part_id(variant_id):
+    return "InZOI_HairVariant_" + variant_id
+
+
 def hair_part_id(mesh_id):
     """W_Hair_M_009_05 -> InZOI_SKM_Female_Hair_M_009 (le _05 final est une variante de couleur)"""
     pieces = (mesh_id or "").split("_")
@@ -3346,6 +3551,9 @@ def full_presets(bases, parts):
                     colors.append(entry)
 
             hair_id = hair_part_id(row.get("Hair.MeshId"))
+            variant_part = hair_variant_part_id(row.get("Hair.MeshId") or "")
+            if modkit_ready() and fits(variant_part):
+                hair_id = variant_part
             if hair_id and fits(hair_id):
                 outfit.append(hair_id)
                 tip = row.get("Hair.VectorParameters.tipColor")
@@ -3582,6 +3790,8 @@ def main():
             definition.set_editor_property("replaces", replaces)
             if slot in LOOSE_SLOTS:
                 definition.set_editor_property("helper_scale_limit", LOOSE_SLOTS[slot])
+            if modkit_ready() and tab in ("Outfit", "Accessories"):
+                definition.set_editor_property("color_parameters", ["Custom(R)", "Custom(R)", "Custom(G)", "Custom(B)"])
             slot_defs.append(definition)
         for slot, slot_label, tab, follow in GROOM_SLOTS:
             definition = unreal.TrainerPartSlotDef()
@@ -3661,6 +3871,8 @@ def main():
         data.set_editor_property("skin_material_slots", sorted(skin_slots))
         data.set_editor_property("skin_color_parameter", "SkinTint")
         if modkit_ready():
+            data.set_editor_property("patterns", build_patterns())
+        if modkit_ready():
             data.set_editor_property("skin_color_parameter", "SkinTone Color")
             palette = []
             for row in read_csv(os.path.join(TABLES, "AppearanceSkinColor.csv")):
@@ -3671,7 +3883,8 @@ def main():
                 data.set_editor_property("skin_palette", palette)
         data.set_editor_property("eye_material_slots", sorted(EYE_SLOTS))
         data.set_editor_property("eye_color_parameter", "IrisColor")
-        data.set_editor_property("drag_handles", [])  # les poignées de CC visaient des os CC_Base_*
+        # Points à glisser sur le visage (os FACIAL_* d'inZOI), comme la retouche directe d'inZOI
+        data.set_editor_property("drag_handles", face_drag_handles(face_sliders("Female", "Adult")))
         EAL.save_loaded_asset(data)
         EAL.save_directory(DEST, only_if_is_dirty=True, recursive=True)
 

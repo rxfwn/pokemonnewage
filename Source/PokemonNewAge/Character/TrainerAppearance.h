@@ -61,6 +61,41 @@ struct FTrainerPartParam
 	FLinearColor Value = FLinearColor::Black;
 };
 
+/**
+ *  Motif ou image posé sur un vêtement (matériau d'inZOI : emplacements « AI Map » R, V, B du masque de couleur).
+ *  Pattern : id d'un motif du catalogue (UTrainerAppearanceData::Patterns) ou « Fichier:nom.png » (image du joueur,
+ *  dans Saved/Motifs). Comme le « Craft » d'inZOI.
+ */
+USTRUCT(BlueprintType)
+struct FTrainerPartPattern
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	FName Slot;
+
+	/** Zone du masque de couleur : 0 = R, 1 = V, 2 = B */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	int32 Channel = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	FName Pattern;
+
+	/** Taille du motif (plus grand = motif plus petit, répété plus souvent) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	float Scale = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	float OffsetX = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	float OffsetY = 0.f;
+
+	/** 0 = invisible, 1 = motif plein */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	float Intensity = 1.f;
+};
+
 /** Paramètre du matériau M_InZOI_Part pour une zone de couleur */
 inline FName TrainerPartColorParameter(int32 Zone)
 {
@@ -104,6 +139,25 @@ struct FTrainerAppearance
 	/** Réglages exacts des matériaux d'inZOI venus d'un modèle (voir FTrainerPartParam) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
 	TArray<FTrainerPartParam> PartParams;
+
+	/** Motifs et images posés sur les vêtements (voir FTrainerPartPattern) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")
+	TArray<FTrainerPartPattern> PartPatterns;
+
+	const FTrainerPartPattern* FindPartPattern(FName Slot, int32 Channel) const
+	{
+		return PartPatterns.FindByPredicate([Slot, Channel](const FTrainerPartPattern& P) { return P.Slot == Slot && P.Channel == Channel; });
+	}
+
+	/** Pattern None : enlève le motif de cette zone */
+	void SetPartPattern(const FTrainerPartPattern& Pattern)
+	{
+		PartPatterns.RemoveAll([&Pattern](const FTrainerPartPattern& P) { return P.Slot == Pattern.Slot && P.Channel == Pattern.Channel; });
+		if (!Pattern.Pattern.IsNone())
+		{
+			PartPatterns.Add(Pattern);
+		}
+	}
 
 	/** Faux tant que le joueur n'est pas passé par l'éditeur (après le discours du Prof. Chen) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Appearance")

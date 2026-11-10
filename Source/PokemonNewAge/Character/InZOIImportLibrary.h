@@ -7,6 +7,7 @@
 class UAnimSequence;
 class USkeleton;
 class USkeletalMesh;
+class UMaterialExpression;
 
 /**
  *  Outils appelés par Tools/InZOI/import_inzoi.py (éditeur seulement). Import des animations .ueanim de l'exercice
@@ -43,4 +44,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category="InZOI")
 	static FString BakeHairStrands(USkeletalMesh* Mesh, FVector FrontAxis, float FrontAngleDegrees = 70.f, float MinHeightAboveCenter = -6.f,
 		float MinForward = 5.f);
+
+	/** Nombre de jeux de coordonnées de texture (UV) du mesh de LOD 0 (diagnostic de l'import des coiffures) */
+	UFUNCTION(BlueprintCallable, Category="InZOI")
+	static int32 CountUVChannels(USkeletalMesh* Mesh);
+
+	/** Identifiant d'une entrée ou sortie de fonction de matériau (protégé en Python) : pour refaire une fonction
+	 *  compatible avec les appels existants (MF_MaskEdge d'inZOI). Faux si l'expression n'est ni l'une ni l'autre. */
+	UFUNCTION(BlueprintCallable, Category="InZOI")
+	static bool SetFunctionIOId(UMaterialExpression* Expression, const FString& GuidText);
 };

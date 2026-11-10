@@ -17,6 +17,7 @@
 #include "Containers/Ticker.h"
 #include "Engine/World.h"
 #include "Engine/SkeletalMesh.h"
+#include "Rendering/SkeletalMeshRenderData.h"
 #include "GameFramework/PlayerController.h"
 #include "HAL/IConsoleManager.h"
 #include "HAL/FileManager.h"
@@ -639,6 +640,146 @@ private:
 				Add(P + TEXT("5_dos_") + L, [this]() { SetView(EStudioFocus::Body, 180.f); });
 			}
 		}
+		// HT) Hauteur selon Corpulence / Muscles : position de la tête et des pieds, os déplacés ou étirés le plus
+		const TCHAR* HeightKeys[] = { TEXT("Female_Head_007_CT010"), TEXT("Male_Head_007_CT011") };
+		for (int32 K = 0; K < UE_ARRAY_COUNT(HeightKeys); ++K)
+		{
+			const int32 Index = FindFullPreset(HeightKeys[K]);
+			if (Index == INDEX_NONE)
+			{
+				continue;
+			}
+			const struct { const TCHAR* Tag; float Mass; float Muscle; } Cases[] = {
+				{ TEXT("mince"), -1.f, 0.f }, { TEXT("normal"), 0.f, 0.f }, { TEXT("gros"), 1.f, 0.f }, { TEXT("muscle"), 0.f, 1.f } };
+			for (const auto& Case : Cases)
+			{
+				const FString Name = FString::Printf(TEXT("HT%d_%s"), K, Case.Tag);
+				const float Mass = Case.Mass, Muscle = Case.Muscle;
+				Add(Name, [this, Index, Mass, Muscle, Name]()
+				{
+					ShowUI(false);
+					Editor->ApplyPreset(Index, true, false);
+					Editor->Current.SetSlider(Data->MassSliderId, Mass);
+					Editor->Current.SetSlider(Data->MuscleSliderId, Muscle);
+					Studio->ShowAppearance(Editor->Current);
+					SetView(EStudioFocus::Body, 90.f);
+					const FTrainerBaseDef* Base = Data->FindBase(Editor->Current.Base);
+					if (Base)
+					{
+						TArray<FTrainerBoneOffset> Offsets = Data->ComputeBoneOffsets(*Base, Editor->Current);
+						Offsets.Sort([](const FTrainerBoneOffset& A, const FTrainerBoneOffset& B)
+						{
+							return A.Location.Size() + A.Scale.Size() * 20.f > B.Location.Size() + B.Scale.Size() * 20.f;
+						});
+						for (int32 I = 0; I < FMath::Min(12, Offsets.Num()); ++I)
+						{
+							UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] %s os %s : deplacement %s echelle %s"), *Name,
+								*Offsets[I].Bone.ToString(), *Offsets[I].Location.ToString(), *Offsets[I].Scale.ToString());
+						}
+					}
+				}, 3.f);
+				Add(Name + TEXT("_mesure"), [this, Name]()
+				{
+					USkeletalMeshComponent* Mesh = Studio->GetPreview();
+					for (const TCHAR* Bone : { TEXT("head"), TEXT("Head"), TEXT("pelvis"), TEXT("Pelvis"), TEXT("foot_l"), TEXT("Foot_L"), TEXT("ball_l") })
+					{
+						if (Mesh->DoesSocketExist(Bone))
+						{
+							UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] %s hauteur %s = %.1f"), *Name, Bone, Mesh->GetSocketLocation(Bone).Z - Studio->GetActorLocation().Z);
+						}
+					}
+				}, 0.5f);
+			}
+		}
+		// PT) Motifs sur les vêtements (matériau d'inZOI) et panneau des couleurs avec la roue
+		{
+			const int32 PatternPreset = FMath::Max(0, FindFullPreset(TEXT("Female_Head_007_CT010")));
+			const struct { const TCHAR* Tag; const TCHAR* Pattern; float Scale; } Cases[] = {
+				{ TEXT("0_sans"), nullptr, 1.f }, { TEXT("1_rayures"), TEXT("Motif_Rayures"), 4.f }, { TEXT("2_vichy"), TEXT("Motif_Vichy"), 6.f },
+				{ TEXT("3_pois"), TEXT("Motif_Pois"), 5.f } };
+			for (const auto& Case : Cases)
+			{
+				const FName Pattern = Case.Pattern ? FName(Case.Pattern) : NAME_None;
+				const float Scale = Case.Scale;
+				Add(FString(TEXT("PT")) + Case.Tag, [this, PatternPreset, Pattern, Scale]()
+				{
+					ShowUI(false);
+					Editor->ApplyPreset(PatternPreset, true, false);
+					FTrainerPartPattern Value;
+					Value.Slot = TEXT("Top");
+					Value.Channel = 0;
+					Value.Pattern = Pattern;
+					Value.Scale = Scale;
+					Editor->Current.SetPartPattern(Value);
+					Studio->ShowAppearance(Editor->Current);
+					SetView(EStudioFocus::Body, 0.f, 3.f);
+				}, 4.f);
+			}
+			Add(TEXT("PT5_visage_points"), [this]()
+			{
+				ShowUI(true);
+				Editor->SelectTab(UCharacterCreatorWidget::ETab::Face);
+				Editor->SetDetailed(true);
+				SetView(EStudioFocus::Face, 0.f);
+			}, 3.f, true);
+			Add(TEXT("PT6_points_glisses"), [this]()
+			{
+				// Glissement simulé : nez plus haut et plus large, menton plus bas, comme avec les points
+				Editor->Current.SetSlider(TEXT("Visage_NoseTip_Z"), 0.8f);
+				Editor->Current.SetSlider(TEXT("Visage_Chin_C_Z"), -0.8f);
+				Editor->Current.SetSlider(TEXT("Visage_Cheek_X"), 0.8f);
+				Studio->ShowAppearance(Editor->Current);
+			}, 3.f, true);
+			Add(TEXT("PT4_panneau"), [this]()
+			{
+				ShowUI(true);
+				Editor->SetDetailed(false);
+				Editor->SelectTab(UCharacterCreatorWidget::ETab::Outfit);
+				SetView(EStudioFocus::Body, 0.f);
+			}, 3.f, true);
+		}
+		// R1) Premier modèle femme de la grille (W_Head02, tresses Female_Hair_B_003) : visage et corps
+		{
+			int32 First = INDEX_NONE;
+			for (int32 Index = 0; Index < Data->FullPresets.Num(); ++Index)
+			{
+				if (Data->FullPresets[Index].Look.Base == TEXT("Femme"))
+				{
+					First = Index;
+					break;
+				}
+			}
+			if (First != INDEX_NONE)
+			{
+				Add(TEXT("R10_visage"), [this, First]()
+				{
+					ShowUI(false);
+					Editor->ApplyPreset(First, true, false);
+					UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] Vignette R10_visage = %s"), *Data->FullPresets[First].Thumbnail.ToSoftObjectPath().ToString());
+					SetView(EStudioFocus::Face, 0.f, -1.5f);
+				}, 4.f);
+				Add(TEXT("R11_corps"), [this]() { SetView(EStudioFocus::Body, 0.f); });
+			}
+		}
+		// CI) Cils : collés à la paupière ? Gros plan de face et de profil, avec et sans les formes du visage
+		const int32 LashPreset = FindFullPreset(TEXT("Female_Head_007_CT010"));
+		if (LashPreset != INDEX_NONE)
+		{
+			Add(TEXT("CI0_face"), [this, LashPreset]()
+			{
+				ShowUI(false);
+				Editor->ApplyPreset(LashPreset, true, false);
+				SetView(EStudioFocus::Face, 0.f, 6.f);
+			}, 4.f);
+			Add(TEXT("CI1_profil"), [this]() { SetView(EStudioFocus::Face, 75.f, 6.f); });
+			Add(TEXT("CI2_profil_sans_formes"), [this]()
+			{
+				FTrainerAppearance Look = Editor->Current;
+				Look.Sliders.RemoveAll([](const FTrainerSliderValue& S) { return S.Slider.ToString().StartsWith(TEXT("Visage_")); });
+				Studio->ShowAppearance(Look);
+			});
+			Add(TEXT("CI3_face_sans_formes"), [this]() { SetView(EStudioFocus::Face, 0.f, 6.f); });
+		}
 		// HX) Couleurs des cheveux des modèles : hexadécimal d'inZOI converti en linéaire (actuel) ou pris tel quel ?
 		const TCHAR* HexKeys[] = { TEXT("Female_Head_006_CT004"), TEXT("Female_Head_003_CT017") };
 		for (int32 K = 0; K < UE_ARRAY_COUNT(HexKeys); ++K)
@@ -655,6 +796,42 @@ private:
 				Editor->ApplyPreset(Index, true, false);
 				SetView(EStudioFocus::Face, 0.f);
 			}, 4.f);
+			Add(P + TEXT("0b_valeurs"), [this]()
+			{
+				for (USkeletalMeshComponent* Component : PartComponents(TEXT("Hair")))
+				{
+					for (int32 M = 0; M < Component->GetNumMaterials(); ++M)
+					{
+						const UMaterialInterface* Material = Component->GetMaterial(M);
+						FString Line = GetNameSafe(Material) + TEXT(" parent ") + GetNameSafe(Cast<UMaterialInstance>(Material) ? Cast<UMaterialInstance>(Material)->Parent.Get() : nullptr);
+						for (const TCHAR* Name : { TEXT("TipColor"), TEXT("2ndColor"), TEXT("BridgeColor1"), TEXT("BridgeColor3") })
+						{
+							FLinearColor C;
+							if (Material->GetVectorParameterValue(FHashedMaterialParameterInfo(Name), C))
+							{
+								Line += FString::Printf(TEXT(" %s=%s"), Name, *C.ToString());
+							}
+						}
+						for (const TCHAR* Name : { TEXT("2ndColorPosition"), TEXT("2ndColorSharpen"), TEXT("2ndColorOffset"), TEXT("BridgeColor3Position"), TEXT("BridgeColor3Blend") })
+						{
+							float V = -1.f;
+							if (Material->GetScalarParameterValue(FHashedMaterialParameterInfo(Name), V))
+							{
+								Line += FString::Printf(TEXT(" %s=%.3f"), Name, V);
+							}
+						}
+						if (const FSkeletalMeshRenderData* Render = Component->GetSkeletalMeshAsset() ? Component->GetSkeletalMeshAsset()->GetResourceForRendering() : nullptr)
+						{
+							if (Render->LODRenderData.Num() > 0)
+							{
+								Line += FString::Printf(TEXT(" UV=%d"), Render->LODRenderData[0].GetNumTexCoords());
+							}
+						}
+						UE_LOG(LogPokemonNewAge, Display, TEXT("[BancPerso] Cheveux %s"), *Line);
+					}
+				}
+				SetScalar(TEXT("Hair"), TEXT("2ndColorPosition"), 0.9f);
+			});
 			Add(P + TEXT("1_brut"), [this]()
 			{
 				// Couleur linéaire reconvertie en sRGB : la valeur hexadécimale prise telle quelle

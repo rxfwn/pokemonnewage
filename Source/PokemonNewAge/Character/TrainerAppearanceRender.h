@@ -4,6 +4,7 @@
 #include "Character/TrainerAppearance.h"
 
 class AActor;
+class UTexture2D;
 class USkeletalMeshComponent;
 class UTrainerAppearanceData;
 
@@ -21,6 +22,15 @@ namespace TrainerAppearanceRender
 	 *  InOutAppliedBase évite de recharger le mesh quand seule une valeur change. Faux si rien n'a pu être appliqué.
 	 */
 	bool Apply(const UTrainerAppearanceData* Data, AActor* Owner, USkeletalMeshComponent* Mesh, const FTrainerAppearance& Appearance, FName& InOutAppliedBase);
+
+	/** Texture d'un motif : id du catalogue (Data->Patterns) ou « Fichier:nom.png » (Saved/Motifs). Nul si introuvable */
+	UTexture2D* ResolvePattern(const UTrainerAppearanceData* Data, FName Pattern);
+
+	/** Images du joueur utilisables comme motifs : fichiers .png / .jpg de Saved/Motifs, en ids « Fichier:nom » */
+	TArray<FName> ListUserPatterns();
+
+	/** Dossier des images du joueur (Saved/Motifs), créé s'il manque */
+	FString UserPatternFolder();
 
 	/** Catalogue du jeu : /Game/Characters/Player/DA_TrainerAppearance (nul s'il n'existe pas encore) */
 	UTrainerAppearanceData* LoadDefaultData();

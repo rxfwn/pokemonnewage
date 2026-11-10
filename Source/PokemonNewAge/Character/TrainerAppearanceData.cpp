@@ -125,6 +125,9 @@ TArray<FTrainerBoneOffset> UTrainerAppearanceData::ComputeBoneOffsets(const FTra
 			continue;
 		}
 		const float Weight = FMath::Abs(Value) * BoneDeformationScale;
+		// Part de Muscles / Corpulence dans la valeur : ils ne doivent pas changer la taille du personnage. inZOI déplace
+		// spine_03 de 5,5 cm le long de la colonne (axe X de l'os) : la tête montait ou descendait de 10 cm (banc HT)
+		const float GlobalShare = FMath::Abs(Own + Global) > KINDA_SMALL_NUMBER ? FMath::Clamp(Global / (Own + Global), 0.f, 1.f) : 0.f;
 		for (const FTrainerBoneOffset& Bone : Value > 0.f ? Def.BonesPositive : Def.BonesNegative)
 		{
 			int32& Index = IndexByBone.FindOrAdd(Bone.Bone, INDEX_NONE);
@@ -135,7 +138,12 @@ TArray<FTrainerBoneOffset> UTrainerAppearanceData::ComputeBoneOffsets(const FTra
 				New.Bone = Bone.Bone;
 			}
 			FTrainerBoneOffset& Sum = Offsets[Index];
-			const FVector Location = bSwapBoneYZ ? FVector(Bone.Location.X, Bone.Location.Z, Bone.Location.Y) : Bone.Location;
+			FVector Location = bSwapBoneYZ ? FVector(Bone.Location.X, Bone.Location.Z, Bone.Location.Y) : Bone.Location;
+			const FString BoneName = Bone.Bone.ToString();
+			if (BoneName.StartsWith(TEXT("spine_")) || BoneName.StartsWith(TEXT("neck_")))
+			{
+				Location.X *= 1.f - GlobalShare;
+			}
 			const FVector Scale = bSwapBoneYZ ? FVector(Bone.Scale.X, Bone.Scale.Z, Bone.Scale.Y) : Bone.Scale;
 			Sum.Location += Location * Weight;
 			Sum.Scale += Scale * Weight;

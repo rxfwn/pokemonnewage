@@ -340,6 +340,22 @@ struct FTrainerPartDef
 };
 
 /** Animation proposée dans le studio de l'éditeur (bouton « Pose ») */
+/** Motif proposé pour les vêtements (onglet Tenue > couleur > Motif) */
+USTRUCT(BlueprintType)
+struct FTrainerPatternDef
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FName Id;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	FText Label;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TSoftObjectPtr<UTexture2D> Texture;
+};
+
 USTRUCT(BlueprintType)
 struct FTrainerStudioAnimation
 {
@@ -452,6 +468,10 @@ public:
 	/** Teintes de peau proposées (Visage > Peau) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Editor")
 	TArray<FLinearColor> SkinPalette;
+
+	/** Motifs proposés pour les vêtements (FTrainerPartPattern) ; les images du joueur viennent de Saved/Motifs */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Appearance")
+	TArray<FTrainerPatternDef> Patterns;
 
 	/** Couleurs d'yeux proposées (Visage > Yeux) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Editor")

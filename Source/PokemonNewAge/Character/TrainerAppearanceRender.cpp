@@ -9,6 +9,11 @@
 #include "Materials/MaterialInterface.h"
 #include "Engine/Texture.h"
 #include "AnimationRuntime.h"
+#include "Engine/Texture2D.h"
+#include "HAL/FileManager.h"
+#include "ImageUtils.h"
+#include "Misc/Paths.h"
+#include "UObject/StrongObjectPtr.h"
 
 namespace
 {
@@ -152,8 +157,11 @@ namespace
 			// Vêtements du haut (HelperScaleLimit) : même copie de pose, avec l'échelle des os d'aide bornée
 			const FTrainerPartSlotDef* SlotDef = Data->FindSlot(Pair.Key);
 			const bool bFace = SlotDef && SlotDef->Tab == TEXT("Face");
+			// Cils, sourcils, barbe (suivent la tête) : leurs os du visage n'existent pas dans le corps ; en Leader Pose ils
+			// restaient à la pose de référence quand les formes du visage déplaçaient la paupière (cils décollés)
+			const bool bFollowHead = SlotDef && SlotDef->FollowSlot == TEXT("Head");
 			const float ScaleLimit = (SlotDef && !bFace && Leader == Mesh) ? SlotDef->HelperScaleLimit : 0.f;
-			if (bFace || ScaleLimit > 0.f)
+			if (bFace || bFollowHead || ScaleLimit > 0.f)
 			{
 				Component->SetLeaderPoseComponent(nullptr);
 				Component->bUseBoundsFromLeaderPoseComponent = false;
@@ -384,6 +392,51 @@ namespace
 		}
 	}
 
+	/** Motifs des vêtements (matériau d'inZOI : AI Map(R/G/B) et leurs réglages) ; sans motif, l'intensité est à 0 */
+	void ApplyPatterns(const UTrainerAppearanceData* Data, USkeletalMeshComponent* Component, const FTrainerAppearance& Appearance)
+	{
+		if (!Component->ComponentHasTag(PartTag) || Component->ComponentTags.Num() < 2)
+		{
+			return;
+		}
+		const FName Slot = Component->ComponentTags[1];
+		const bool bAny = Appearance.PartPatterns.ContainsByPredicate([Slot](const FTrainerPartPattern& P) { return P.Slot == Slot; });
+		static const TCHAR* Letters[] = { TEXT("R"), TEXT("G"), TEXT("B") };
+		for (int32 Index = 0; Index < Component->GetNumMaterials(); ++Index)
+		{
+			UMaterialInstanceDynamic* MID = Cast<UMaterialInstanceDynamic>(Component->GetMaterial(Index));
+			if (!MID && bAny)
+			{
+				UMaterialInterface* Material = Component->GetMaterial(Index);
+				float Probe = 0.f;
+				if (Material && Material->GetScalarParameterValue(FHashedMaterialParameterInfo(TEXT("AI Area Intensity(R)")), Probe))
+				{
+					MID = Component->CreateDynamicMaterialInstance(Index);
+				}
+			}
+			if (!MID)
+			{
+				continue;
+			}
+			for (int32 Channel = 0; Channel < 3; ++Channel)
+			{
+				const FString L = Letters[Channel];
+				const FTrainerPartPattern* Pattern = Appearance.FindPartPattern(Slot, Channel);
+				UTexture2D* Texture = Pattern ? TrainerAppearanceRender::ResolvePattern(Data, Pattern->Pattern) : nullptr;
+				if (!Texture)
+				{
+					MID->SetScalarParameterValue(FName(*FString::Printf(TEXT("AI Area Intensity(%s)"), *L)), 0.f);
+					continue;
+				}
+				MID->SetTextureParameterValue(FName(*FString::Printf(TEXT("AI Map(%s)"), *L)), Texture);
+				MID->SetScalarParameterValue(FName(*FString::Printf(TEXT("AI Area Intensity(%s)"), *L)), Pattern->Intensity);
+				MID->SetScalarParameterValue(FName(*FString::Printf(TEXT("AI Texture Scale(%s)"), *L)), Pattern->Scale);
+				MID->SetScalarParameterValue(FName(*FString::Printf(TEXT("AI Texture Offset X(%s)"), *L)), Pattern->OffsetX);
+				MID->SetScalarParameterValue(FName(*FString::Printf(TEXT("AI Texture Offset Y(%s)"), *L)), Pattern->OffsetY);
+			}
+		}
+	}
+
 	void ApplyPartColors(const UTrainerAppearanceData* Data, USkeletalMeshComponent* Component, const FTrainerAppearance& Appearance)
 	{
 		if (!Component->ComponentHasTag(PartTag) || Component->ComponentTags.Num() < 2)
@@ -610,6 +663,68 @@ namespace
 	}
 }
 
+FString TrainerAppearanceRender::UserPatternFolder()
+{
+	const FString Folder = FPaths::ProjectSavedDir() / TEXT("Motifs");
+	IFileManager::Get().MakeDirectory(*Folder, true);
+	return Folder;
+}
+
+TArray<FName> TrainerAppearanceRender::ListUserPatterns()
+{
+	TArray<FString> Files;
+	const FString Folder = UserPatternFolder();
+	for (const TCHAR* Extension : { TEXT("*.png"), TEXT("*.jpg"), TEXT("*.jpeg") })
+	{
+		TArray<FString> Found;
+		IFileManager::Get().FindFiles(Found, *(Folder / Extension), true, false);
+		Files.Append(Found);
+	}
+	Files.Sort();
+	TArray<FName> Ids;
+	for (const FString& File : Files)
+	{
+		Ids.Add(FName(*(TEXT("Fichier:") + File)));
+	}
+	return Ids;
+}
+
+UTexture2D* TrainerAppearanceRender::ResolvePattern(const UTrainerAppearanceData* Data, FName Pattern)
+{
+	if (Pattern.IsNone())
+	{
+		return nullptr;
+	}
+	const FString Text = Pattern.ToString();
+	if (Text.StartsWith(TEXT("Fichier:")))
+	{
+		// Images du joueur : chargées une fois, gardées en mémoire
+		static TMap<FName, TStrongObjectPtr<UTexture2D>> Loaded;
+		if (const TStrongObjectPtr<UTexture2D>* Found = Loaded.Find(Pattern))
+		{
+			return Found->Get();
+		}
+		const FString File = UserPatternFolder() / Text.RightChop(8);
+		UTexture2D* Texture = FPaths::FileExists(File) ? FImageUtils::ImportFileAsTexture2D(File) : nullptr;
+		if (Texture)
+		{
+			Loaded.Add(Pattern, TStrongObjectPtr<UTexture2D>(Texture));
+		}
+		return Texture;
+	}
+	if (Data)
+	{
+		for (const FTrainerPatternDef& Def : Data->Patterns)
+		{
+			if (Def.Id == Pattern)
+			{
+				return Def.Texture.LoadSynchronous();
+			}
+		}
+	}
+	return nullptr;
+}
+
 UTrainerAppearanceData* TrainerAppearanceRender::LoadDefaultData()
 {
 	if (UTrainerAppearanceData* Imported = LoadObject<UTrainerAppearanceData>(nullptr, ImportedAppearanceDataPath, nullptr, LOAD_NoWarn | LOAD_Quiet))
@@ -766,6 +881,7 @@ bool TrainerAppearanceRender::Apply(const UTrainerAppearanceData* Data, AActor* 
 		ApplySkinScalar(Target, Data->SkinMaterialSlots, TEXT("BodyFat"), Fat);
 		ApplyColor(Target, Data->EyeMaterialSlots, Data->EyeColorParameter, Appearance.EyeColor);
 		ApplyPartColors(Data, Target, Appearance);
+		ApplyPatterns(Data, Target, Appearance);
 		if (Target->ComponentHasTag(PartTag) && Target->ComponentTags.Num() > 1)
 		{
 			if (const FTrainerPartSlotDef* SlotDef = Data->FindSlot(Target->ComponentTags[1]))
