@@ -1,0 +1,84 @@
+{
+  "Bulbasaur": {
+    "M_Bulbasaur_2": "T_Bulbasaur_2",
+    "M_Bulbasaur_3": "T_Bulbasaur_1",
+    "M_Bulbasaur_Shiny_2": "T_Bulbasaur_Shiny_2",
+    "M_Bulbasaur_Shiny_3": "T_Bulbasaur_Shiny_1"
+  },
+  "Charmander": {
+    "M_Charmander_1": "T_Charmander_2",
+    "M_Charmander_Shiny_1": "T_Charmander_Shiny_2"
+  },
+  "Charmeleon": {
+    "M_Charmeleon_2": "T_Charmeleon_1",
+    "M_Charmeleon_3": "T_Charmeleon_2",
+    "M_Charmeleon_Shiny_2": "T_Charmeleon_Shiny_1",
+    "M_Charmeleon_Shiny_3": "T_Charmeleon_Shiny_2"
+  },
+  "Geodude": {
+    "M_Geodude_2": "T_Geodude_2",
+    "M_Geodude_3": "T_Geodude_1",
+    "M_Geodude_Shiny_2": "T_Geodude_Shiny_2",
+    "M_Geodude_Shiny_3": "T_Geodude_Shiny_1"
+  },
+  "Ivysaur": {
+    "M_Ivysaur_2": "T_Ivysaur_4",
+    "M_Ivysaur_Shiny_2": "T_Ivysaur_Shiny_4"
+  },
+  "Kakuna": {
+    "M_Kakuna_2": "T_Kakuna_2",
+    "M_Kakuna_Shiny_2": "T_Kakuna_Shiny_2"
+  },
+  "Mankey": {
+    "M_Mankey_2": "T_Mankey_2",
+    "M_Mankey_Shiny_2": "T_Mankey_Shiny_2"
+  },
+  "Metapod": {
+    "M_Metapod_2": "T_Metapod_2",
+    "M_Metapod_Shiny_2": "T_Metapod_Shiny_2"
+  },
+  "Onix": {
+    "M_Onix_4": "T_Onix_2",
+    "M_Onix_5": "T_Onix_1",
+    "M_Onix_Shiny_4": "T_Onix_Shiny_2",
+    "M_Onix_Shiny_5": "T_Onix_Shiny_1"
+  },
+  "Pidgey": {
+    "M_Pidgey_2": "T_Pidgey_2",
+    "M_Pidgey_Shiny_2": "T_Pidgey_Shiny_2"
+  },
+  "Pikachu": {
+    "M_Pikachu_3": "T_Pikachu_3",
+    "M_Pikachu_4": "T_Pikachu_3",
+    "M_Pikachu_Shiny_3": "T_Pikachu_Shiny_3",
+    "M_Pikachu_Shiny_4": "T_Pikachu_Shiny_3"
+  },
+  "Rattata": {
+    "M_Rattata_2": "T_Rattata_2",
+    "M_Rattata_3": "T_Rattata_1",
+    "M_Rattata_Shiny_2": "T_Rattata_Shiny_2",
+    "M_Rattata_Shiny_3": "T_Rattata_Shiny_1"
+  },
+  "Sandshrew": {
+    "M_Sandshrew_2": "T_Sandshrew_3",
+    "M_Sandshrew_Shiny_2": "T_Sandshrew_Shiny_3"
+  },
+  "Spearow": {
+    "M_Spearow_3": "T_Spearow_3",
+    "M_Spearow_Shiny_3": "T_Spearow_Shiny_3"
+  },
+  "Squirtle": {
+    "M_Squirtle_2": "T_Squirtle_2",
+    "M_Squirtle_Shiny_2": "T_Squirtle_Shiny_2"
+  },
+  "Wartortle": {
+    "M_Wartortle_2": "T_Wartortle_2",
+    "M_Wartortle_3": "T_Wartortle_1",
+    "M_Wartortle_Shiny_2": "T_Wartortle_Shiny_2",
+    "M_Wartortle_Shiny_3": "T_Wartortle_Shiny_1"
+  },
+  "Weedle": {
+    "M_Weedle_4": "T_Weedle_2",
+    "M_Weedle_Shiny_4": "T_Weedle_Shiny_2"
+  }
+}

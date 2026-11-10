@@ -34,6 +34,7 @@
 #include "Dialogue/DialogueComponent.h"
 #include "Town/PokemonCenterComponent.h"
 #include "Town/ShopComponent.h"
+#include "Follower/PokemonFollowerComponent.h"
 #include "Pokemon/PokemonDatabase.h"
 #include "Pokemon/PokemonDataSubsystem.h"
 #include "Engine/Engine.h"
@@ -73,6 +74,7 @@ APokemonNewAgePlayerController::APokemonNewAgePlayerController()
 	DialogueComponent = CreateDefaultSubobject<UDialogueComponent>(TEXT("DialogueComponent"));
 	PokemonCenterComponent = CreateDefaultSubobject<UPokemonCenterComponent>(TEXT("PokemonCenterComponent"));
 	ShopComponent = CreateDefaultSubobject<UShopComponent>(TEXT("ShopComponent"));
+	FollowerComponent = CreateDefaultSubobject<UPokemonFollowerComponent>(TEXT("FollowerComponent"));
 }
 
 void APokemonNewAgePlayerController::BeginPlay()
@@ -1265,6 +1267,7 @@ namespace PokemonKeys
 		{ TEXT("Sprint"), TEXT("Courir") },
 		{ TEXT("Jump"), TEXT("Sauter") },
 		{ TEXT("Interact"), TEXT("Parler, ouvrir") },
+		{ TEXT("Whistle"), TEXT("Siffler son Pokémon") },
 		{ TEXT("Menu"), TEXT("Ouvrir le Pokédex") },
 		{ TEXT("Settings"), TEXT("Menu Paramètres") },
 		{ TEXT("Pokedex"), TEXT("Pokédex : encyclopédie") },
@@ -1348,6 +1351,10 @@ void APokemonNewAgePlayerController::GetSourceContexts(TArray<TPair<UInputMappin
 	{
 		OutContexts.Emplace(Hero->GetInteractContext(), 1);
 	}
+	if (const APokemonNewAgeCharacter* Hero = Cast<APokemonNewAgeCharacter>(GetPawn()); Hero && Hero->GetWhistleContext())
+	{
+		OutContexts.Emplace(Hero->GetWhistleContext(), 1);
+	}
 }
 
 FName APokemonNewAgePlayerController::GetBindingId(const FEnhancedActionKeyMapping& Mapping) const
@@ -1386,6 +1393,10 @@ FName APokemonNewAgePlayerController::GetBindingId(const FEnhancedActionKeyMappi
 	else if (Hero && Action == Hero->GetInteractAction())
 	{
 		Base = TEXT("Interact");
+	}
+	else if (Hero && Action == Hero->GetWhistleAction())
+	{
+		Base = TEXT("Whistle");
 	}
 	else if (Hero && Action == Hero->GetMoveAction())
 	{
@@ -1704,4 +1715,16 @@ void APokemonNewAgePlayerController::RetourCentre()
 	{
 		PrintDebug(TEXT("Aucun PokemonCenterPoint ni Player Start dans la map"));
 	}
+}
+
+void APokemonNewAgePlayerController::Siffler()
+{
+	FollowerComponent->Whistle();
+}
+
+void APokemonNewAgePlayerController::Suiveur(int32 bShow)
+{
+	const bool bEnabled = bShow < 0 ? !FollowerComponent->IsFollowerEnabled() : bShow != 0;
+	FollowerComponent->SetFollowerEnabled(bEnabled);
+	PrintDebug(bEnabled ? TEXT("Le premier Pokemon de l'equipe suit le joueur") : TEXT("Pokemon qui suit : range dans sa Ball"));
 }
